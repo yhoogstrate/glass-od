@@ -2,16 +2,22 @@
 
 # 1. idat level ----
 
-metadata.glass_od.idat <- list.files(path="data/GLASS_OD/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |> 
-  dplyr::tibble(.name_repair = ~c("filename")) |> 
-  (function(.) {assertthat::assert_that(nrow(.) == 418); return(.)})() |>  # in-pipe stopifnot(nrow(metadata.glass_od.idat) == 418)
-  dplyr::mutate(prefix = gsub("^.+/([^/]+)_(Grn|Red)\\.idat$","\\1", filename)) |> 
-  dplyr::mutate(channel = gsub("^.+_(Grn|Red)\\.idat$","\\1", filename)) |> 
-  tidyr::pivot_wider(id_cols = prefix, names_from = channel, values_from = c(filename)) |> 
-  dplyr::rename(channel_green = Grn) |> 
-  dplyr::rename(channel_red = Red) |> 
-  (function(.) {assertthat::assert_that(nrow(.) == (418/2)); return(.)})() |> 
-  assertr::verify(!is.na(channel_green)) |> 
+metadata.glass_od.idat <- list.files(path = "data/GLASS_OD/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |>
+  dplyr::tibble(.name_repair = ~ c("filename")) |>
+  (function(.) {
+    assertthat::assert_that(nrow(.) == 418)
+    return(.)
+  })() |> # in-pipe stopifnot(nrow(metadata.glass_od.idat) == 418)
+  dplyr::mutate(idat_prefix = gsub("^.+/([^/]+)_(Grn|Red)\\.idat$", "\\1", filename)) |>
+  dplyr::mutate(channel = gsub("^.+_(Grn|Red)\\.idat$", "\\1", filename)) |>
+  tidyr::pivot_wider(id_cols = idat_prefix, names_from = channel, values_from = c(filename)) |>
+  dplyr::rename(channel_green = Grn) |>
+  dplyr::rename(channel_red = Red) |>
+  (function(.) {
+    assertthat::assert_that(nrow(.) == (418 / 2))
+    return(.)
+  })() |>
+  assertr::verify(!is.na(channel_green)) |>
   assertr::verify(!is.na(channel_red))
 
 
