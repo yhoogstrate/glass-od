@@ -20,18 +20,18 @@ source('scripts/load_chrom_sizes.R')
 
 
 tpc.estimate = data.frame()
-for(bc in  glass_od.metadata.idat |> dplyr::filter(!is.na(heidelberg_CNV_segments)) |> dplyr::pull(idat_prefix) ) {
+for(bc in  glass_od.metadata.idat |> dplyr::filter(!is.na(heidelberg_CNV_segments)) |> dplyr::pull(Sentrix_ID) ) {
   #bc = "204808700074_R05C01"
   print(bc)
   seg <- glass_od.metadata.idat |> 
-    dplyr::filter(`idat_prefix` == bc)
+    dplyr::filter(`Sentrix_ID` == bc)
   
   
   segs <- read.delim(seg |> 
                         dplyr::pull(heidelberg_CNV_segments)) |> 
     dplyr::rename(seg.median.l2fc = seg.median) |> 
     dplyr::rename(seg.mean.l2fc = seg.mean) |> 
-    dplyr::filter(num.mark >= 40)
+    dplyr::filter(num.mark >= 35)
   
   center <-  segs |> 
     dplyr::filter(is.na(pval))
@@ -111,7 +111,7 @@ for(bc in  glass_od.metadata.idat |> dplyr::filter(!is.na(heidelberg_CNV_segment
     dplyr::arrange(dist) |> 
     dplyr::slice(1) |> 
     dplyr::mutate(
-                  idat_prefix = bc
+                  Sentrix_ID = bc
                   #sample.short = gsub("^([^-]+-[^-]+-[^-]+-[^-]+).+$","\\1",bc),
                   #portion_barcode = gsub("^([^\\-]+)-([^\\-]+)-([^\\-]+)-([^\\-]+)-([0-9]+).+$$","\\1-\\2-\\3-\\4-\\5",bc),
                   #estimate.purity = p.tpc.estimate,
@@ -130,7 +130,7 @@ for(bc in  glass_od.metadata.idat |> dplyr::filter(!is.na(heidelberg_CNV_segment
     dplyr::mutate(chrom = factor(chrom, levels = gtools::mixedsort(unique(as.character(chrom))))) |>
     dplyr::arrange(chrom) |> 
     dplyr::mutate(pos = pos / 1000000) |> 
-    dplyr::filter(num.mark >= 40) |> 
+    dplyr::filter(num.mark >= 35) |> 
     dplyr::mutate(pos2=NA, seg.median.l2fc2=NA)
 
   
@@ -196,13 +196,13 @@ for(bc in  glass_od.metadata.idat |> dplyr::filter(!is.na(heidelberg_CNV_segment
     labs(
       x = NULL,
       y = paste0("CNVP ",seg$heidelberg_cnvp_version," log2 ratio"),
-      caption = paste0("", bc, "  -  ", class_txt , "  -  purity estimate: ", purity * 100, "%")
+      caption = paste0(seg$GLASS_OD_patient, " / ", bc, "  -  ", class_txt , "  -  purity estimate: ", purity * 100, "%")
     ) +
     scale_x_continuous(breaks = c(0, 50, 100, 150, 200, 250, 300))
   
   
   
-  ggsave(paste0("output/figures/purity_cnv-epic/", bc ,".tpc.estimate.png"), width = 8.3, height = 3.5, scale = 1.75)
+  ggsave(paste0("output/figures/purity_cnv-epic/",seg$GLASS_OD_patient,"_", bc ,".tpc.estimate.png"), width = 8.3, height = 3.5, scale = 1.75)
   
   
 }
