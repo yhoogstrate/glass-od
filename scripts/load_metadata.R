@@ -21,7 +21,10 @@ glass_od.metadata.patients <- read.table("data/GLASS_OD/Clinical_data/20230208_S
   dplyr::rename(GLASS_OD_patient = GLASS_OD_nr) |>
   dplyr::mutate(GLASS_OD_patient = paste0(GLASS_OD_patient, " [tmp-id]")) |>
   dplyr::mutate(Sentrix_ID = ifelse(Sentrix_ID == "", NA, Sentrix_ID)) |>
-  dplyr::mutate(GLASS_OD_patient = ifelse(GLASS_OD_patient == "", NA, GLASS_OD_patient))
+  dplyr::mutate(GLASS_OD_patient = ifelse(GLASS_OD_patient == "", NA, GLASS_OD_patient)) |> 
+  dplyr::select(GLASS_OD_patient) |> 
+  dplyr::distinct(GLASS_OD_patient) |> 
+  dplyr::filter(grepl("NO_GLASS_OD", GLASS_OD_patient) == F)
 
 
 
@@ -42,39 +45,60 @@ glass_od.metadata.patients <- read.table("data/GLASS_OD/Clinical_data/20230208_S
 
 glass_od.metadata.idat <- list.files(path = "data/GLASS_OD/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |>
   data.frame(filename = _) |>
+  dplyr::mutate(filename = paste0("data/GLASS_OD/", filename)) |> 
   (function(.) {
-    assertthat::assert_that(nrow(.) == 422)
+    assertthat::assert_that(nrow(.) == 404)
     return(.)
-  })() |> # equals in-pipe stopifnot(nrow(.) == 422)
+  })() |> # equals in-pipe stopifnot(nrow(.) == 404)
+  assertr::verify(file.exists(filename)) |>
   dplyr::mutate(Sentrix_ID = gsub("^.+/([^/]+)_(Grn|Red)\\.idat$", "\\1", filename)) |>
   dplyr::mutate(channel = gsub("^.+_(Grn|Red)\\.idat$", "\\1", filename)) |>
   tidyr::pivot_wider(id_cols = Sentrix_ID, names_from = channel, values_from = c(filename)) |>
   dplyr::rename(channel_green = Grn) |>
   dplyr::rename(channel_red = Red) |>
   (function(.) {
-    assertthat::assert_that(nrow(.) == (422 / 2))
+    assertthat::assert_that(nrow(.) == (404 / 2))
     return(.)
   })() |>
   assertr::verify(!is.na(channel_green)) |>
   assertr::verify(!is.na(channel_red)) |>
-  dplyr::left_join(glass_od.metadata.patients, by = c("Sentrix_ID" = "Sentrix_ID"), suffix = c("", "")) |> 
-  dplyr::mutate()
-
-
-"206119350032_R01C01" %in% glass_od.metadata.idat$Sentrix_ID # 331: '_#3'
-"206119350032_R02C01" %in% glass_od.metadata.idat$Sentrix_ID # 331: '_#2'
-"206119350032_R03C01" %in% glass_od.metadata.idat$Sentrix_ID # 331: '_#1'
-"206119350032_R04C01" %in% glass_od.metadata.idat$Sentrix_ID # 331: '_5C'
-"206119350032_R05C01" %in% glass_od.metadata.idat$Sentrix_ID # 331: '_U87'
-"204808700073_R07C01" %in% glass_od.metadata.idat$Sentrix_ID # 240: 'Medullo22'
-"204808700074_R08C01" %in% glass_od.metadata.idat$Sentrix_ID # 240: 'MvdB_1'
-'204808700074_R07C01' %in% glass_od.metadata.idat$Sentrix_ID # ??
-'204808700074_R06C01' %in% glass_od.metadata.idat$Sentrix_ID # ??
+  assertr::verify(Sentrix_ID != "206119350032_R01C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(Sentrix_ID != "206119350032_R02C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(Sentrix_ID != "206119350032_R03C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(Sentrix_ID != "206119350032_R04C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(Sentrix_ID != "206119350032_R05C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(Sentrix_ID != "204808700073_R07C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(Sentrix_ID != "204808700074_R06C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(Sentrix_ID != "204808700074_R07C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(Sentrix_ID != "204808700074_R08C01") # sample not part in GLASS-OD - removal confirmed by Iris
 
 
 
+## link patient identifier ----
 
 
+tmp <- read.table("data/GLASS_OD/Clinical_data/20230208_SentrixID_patient_link.txt", sep = "\t", header = T) |>
+  dplyr::rename(GLASS_OD_patient = GLASS_OD_nr) |>
+  dplyr::mutate(GLASS_OD_patient = paste0(GLASS_OD_patient, " [tmp-id]")) |>
+  dplyr::mutate(Sentrix_ID = ifelse(Sentrix_ID == "", NA, Sentrix_ID)) |>
+  dplyr::mutate(GLASS_OD_patient = ifelse(GLASS_OD_patient == "", NA, GLASS_OD_patient)) |> 
+  dplyr::filter(grepl("NO_GLASS_OD", GLASS_OD_patient) == F) |> 
+  dplyr::filter(!is.na(Sentrix_ID))
+
+
+stopifnot(tmp$Sentrix_ID %in% glass_od.metadata.idat$Sentrix_ID)
+stopifnot(glass_od.metadata.idat$Sentrix_ID %in% tmp$Sentrix_ID)
+stopifnot(tmp$GLASS_OD_patient %in% glass_od.metadata.patients$GLASS_OD_patient)
+
+
+glass_od.metadata.idat <- glass_od.metadata.idat |> 
+  dplyr::left_join(tmp,
+                   by=c('Sentrix_ID'='Sentrix_ID'), suffix=c('','')
+  )
+
+
+
+stopifnot(!is.na(glass_od.metadata.idat$GLASS_OD_patient))
 
 
 
@@ -101,7 +125,7 @@ stopifnot(tmp$Sentrix_ID %in% glass_od.metadata.idat$Sentrix_ID)
 stopifnot(duplicated(tmp$Sentrix_ID) == F)
 
 
-stopifnot(nrow(glass_od.metadata.idat) == 211)
+stopifnot(nrow(glass_od.metadata.idat) == 202)
 
 
 glass_od.metadata.idat <- glass_od.metadata.idat |> 
@@ -109,7 +133,14 @@ glass_od.metadata.idat <- glass_od.metadata.idat |>
 rm(tmp)
 
 
-stopifnot(nrow(glass_od.metadata.idat) == 211)
+stopifnot(nrow(glass_od.metadata.idat) == 202)
+
+
+
+
+
+
+
 
 
 ## heidelberg CNV segment files ----
@@ -172,7 +203,7 @@ stopifnot(duplicated(tmp$Sentrix_ID) == F)
 
 
 
-stopifnot(nrow(glass_od.metadata.idat) == 211)
+stopifnot(nrow(glass_od.metadata.idat) == 202)
 
 
 glass_od.metadata.idat <- glass_od.metadata.idat |> 
@@ -180,7 +211,7 @@ glass_od.metadata.idat <- glass_od.metadata.idat |>
 rm(tmp)
 
 
-stopifnot(nrow(glass_od.metadata.idat) == 211)
+stopifnot(nrow(glass_od.metadata.idat) == 202)
 
 
 rm(x)
@@ -215,6 +246,9 @@ md6a <- read.csv('data/GLASS_OD/Methylation_data/MET2020-240-014/STS/MET2020-240
 
 md6d <- readxl::read_xlsx("data/GLASS_OD/Methylation_data/MET2020-240-014/docs/Datasheet MET2020-240-014.xlsx")
 md6f <- readxl::read_xlsx("data/GLASS_OD/Methylation_data/MET2020-240-014/docs/MET2020-240-014.xlsx")
+
+
+
 
 
 
@@ -253,7 +287,7 @@ md6f <- readxl::read_xlsx("data/GLASS_OD/Methylation_data/MET2020-240-014/docs/M
 #   dplyr::filter(!in.md6a)  |> 
 #   dim()
 
-stopifnot(nrow(glass_od.metadata.idat) == 211)
+stopifnot(nrow(glass_od.metadata.idat) == 202)
 
 glass_od.metadata.idat <- glass_od.metadata.idat |> 
   dplyr::left_join(md1 ,  by=c('Sentrix_ID'='Sample_ID')) |> 
@@ -266,18 +300,15 @@ glass_od.metadata.idat <- glass_od.metadata.idat |>
   dplyr::left_join(md6f, by=c('Sentrix_ID'='Sentrix id'))
 rm(md1, md2, md3, md4, md5, md6a, md6d, md6f)
 
-stopifnot(nrow(glass_od.metadata.idat) == 211)
+stopifnot(nrow(glass_od.metadata.idat) == 202)
 
 
-
-glass_od.metadata.idat |> 
-  dplyr::filter(Sentrix_ID %in% c('204808700074_R07C01','204808700074_R06C01'))
-
-
-
-
-
-
+# 
+# glass_od.metadata.idat |> 
+#   dplyr::filter(Sentrix_ID %in% c('204808700074_R07C01','204808700074_R06C01')) |> 
+#   View()
+# 
+# 
 
 
 
