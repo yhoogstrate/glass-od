@@ -1,5 +1,9 @@
 #!/usr/bin/env R
 
+# load libs, config & db ----
+
+
+metadata.db.con <- DBI::dbConnect(RSQLite::SQLite(), "../glass-od-clinical-database/glass-od-clinical-database.db")
 
 
 # 1. patient level ----
@@ -16,89 +20,101 @@
 
 ## temporary file - incomplete as of yet
 
+glass_od.metadata.patients <- DBI::dbReadTable(metadata.db.con, 'view_patients') |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == 98)
+    return(.)
+  })()
 
-glass_od.metadata.patients <- read.table("data/GLASS_OD/Clinical_data/20230208_SentrixID_patient_link.txt", sep = "\t", header = T) |>
-  dplyr::rename(GLASS_OD_patient = GLASS_OD_nr) |>
-  dplyr::mutate(GLASS_OD_patient = paste0(GLASS_OD_patient, " [tmp-id]")) |>
-  dplyr::mutate(Sentrix_ID = ifelse(Sentrix_ID == "", NA, Sentrix_ID)) |>
-  dplyr::mutate(GLASS_OD_patient = ifelse(GLASS_OD_patient == "", NA, GLASS_OD_patient)) |> 
-  dplyr::select(GLASS_OD_patient) |> 
-  dplyr::distinct(GLASS_OD_patient) |> 
-  dplyr::filter(grepl("NO_GLASS_OD", GLASS_OD_patient) == F)
+patients_without_array_samples <- DBI::dbReadTable(metadata.db.con, 'view_check_patients_without_array_samples')
+stopifnot(sort(patients_without_array_samples$patient_id) == c(1,2,59,63,85,92)) # x-checked, patients currently missing samples
+
+glass_od.metadata.patients <- glass_od.metadata.patients |> 
+  dplyr::filter(patient_id %in% patients_without_array_samples$patient_id == F) |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == 92)
+    return(.)
+  })() |> 
+  dplyr::filter(is.na(exclusion_reason)) |> # 7 non(-canonical) codels
+  (function(.) {
+    assertthat::assert_that(nrow(.) == 85)
+    return(.)
+  })()
+  
+
+rm(patients_without_array_samples)
 
 
 
 # 2. resection level ----
 
-# no overall operations / resection table available, yet?
-# some resections have 1 or more arrays
-
-
-
-## per probe level? ----
+glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resections') |> 
+  dplyr::filter(patient_id %in% glass_od.metadata.patients$patient_id) |> 
+  dplyr::filter(is.na(resection_exclusion_reason)) |> 
+  assertr::verify(patient_id %in% c(27, 56, 76, 93, 96, 97, 98) == F) |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == 183)
+    return(.)
+  })()
 
 
 
 
 # 3. idat level ----
+## a. load all idat files ----
 
 
-glass_od.metadata.idat <- list.files(path = "data/GLASS_OD/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |>
+glass_od.metadata.idats <- list.files(path = "data/GLASS_OD/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |>
   data.frame(filename = _) |>
   dplyr::mutate(filename = paste0("data/GLASS_OD/", filename)) |> 
   (function(.) {
-    assertthat::assert_that(nrow(.) == 404)
+    assertthat::assert_that(nrow(.) == (414 + 28))
     return(.)
   })() |> # equals in-pipe stopifnot(nrow(.) == 404)
   assertr::verify(file.exists(filename)) |>
-  dplyr::mutate(Sentrix_ID = gsub("^.+/([^/]+)_(Grn|Red)\\.idat$", "\\1", filename)) |>
+  dplyr::mutate(sentrix_id = gsub("^.+/([^/]+)_(Grn|Red)\\.idat$", "\\1", filename)) |>
   dplyr::mutate(channel = gsub("^.+_(Grn|Red)\\.idat$", "\\1", filename)) |>
-  tidyr::pivot_wider(id_cols = Sentrix_ID, names_from = channel, values_from = c(filename)) |>
+  tidyr::pivot_wider(id_cols = sentrix_id, names_from = channel, values_from = c(filename)) |>
   dplyr::rename(channel_green = Grn) |>
   dplyr::rename(channel_red = Red) |>
   (function(.) {
-    assertthat::assert_that(nrow(.) == (404 / 2))
+    assertthat::assert_that(nrow(.) == ((414 + 28) / 2))
     return(.)
   })() |>
   assertr::verify(!is.na(channel_green)) |>
   assertr::verify(!is.na(channel_red)) |>
-  assertr::verify(Sentrix_ID != "206119350032_R01C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
-  assertr::verify(Sentrix_ID != "206119350032_R02C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
-  assertr::verify(Sentrix_ID != "206119350032_R03C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
-  assertr::verify(Sentrix_ID != "206119350032_R04C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
-  assertr::verify(Sentrix_ID != "206119350032_R05C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
-  assertr::verify(Sentrix_ID != "204808700073_R07C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
-  assertr::verify(Sentrix_ID != "204808700074_R06C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
-  assertr::verify(Sentrix_ID != "204808700074_R07C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
-  assertr::verify(Sentrix_ID != "204808700074_R08C01") # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(sentrix_id != "206119350032_R01C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(sentrix_id != "206119350032_R02C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(sentrix_id != "206119350032_R03C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(sentrix_id != "206119350032_R04C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(sentrix_id != "206119350032_R05C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(sentrix_id != "204808700073_R07C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(sentrix_id != "204808700074_R06C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(sentrix_id != "204808700074_R07C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(sentrix_id != "204808700074_R08C01") # sample not part in GLASS-OD - removal confirmed by Iris
+
+
+
+
+## b. load all idat metadata from access ----
+
+glass_od.metadata.array_samples <- DBI::dbReadTable(metadata.db.con, 'view_array_samples')
+
+
+stopifnot(length(setdiff(glass_od.metadata.array_samples$sentrix_id, glass_od.metadata.idats$sentrix_id)) == 0)
+stopifnot(length(setdiff(glass_od.metadata.idats$sentrix_id, glass_od.metadata.array_samples$sentrix_id)) == 0) # 28 need to be added.. !
+
 
 
 
 ## link patient identifier ----
 
 
-tmp <- read.table("data/GLASS_OD/Clinical_data/20230208_SentrixID_patient_link.txt", sep = "\t", header = T) |>
-  dplyr::rename(GLASS_OD_patient = GLASS_OD_nr) |>
-  dplyr::mutate(GLASS_OD_patient = paste0(GLASS_OD_patient, " [tmp-id]")) |>
-  dplyr::mutate(Sentrix_ID = ifelse(Sentrix_ID == "", NA, Sentrix_ID)) |>
-  dplyr::mutate(GLASS_OD_patient = ifelse(GLASS_OD_patient == "", NA, GLASS_OD_patient)) |> 
-  dplyr::filter(grepl("NO_GLASS_OD", GLASS_OD_patient) == F) |> 
-  dplyr::filter(!is.na(Sentrix_ID))
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(glass_od.metadata.array_samples, by=c('sentrix_id' = 'sentrix_id'), suffix=c('',''))
 
+rm(glass_od.metadata.array_samples)
 
-stopifnot(tmp$Sentrix_ID %in% glass_od.metadata.idat$Sentrix_ID)
-stopifnot(glass_od.metadata.idat$Sentrix_ID %in% tmp$Sentrix_ID)
-stopifnot(tmp$GLASS_OD_patient %in% glass_od.metadata.patients$GLASS_OD_patient)
-
-
-glass_od.metadata.idat <- glass_od.metadata.idat |> 
-  dplyr::left_join(tmp,
-                   by=c('Sentrix_ID'='Sentrix_ID'), suffix=c('','')
-  )
-
-
-
-stopifnot(!is.na(glass_od.metadata.idat$GLASS_OD_patient))
 
 
 
