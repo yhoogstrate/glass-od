@@ -22,25 +22,26 @@ metadata.db.con <- DBI::dbConnect(RSQLite::SQLite(), "../glass-od-clinical-datab
 
 glass_od.metadata.patients <- DBI::dbReadTable(metadata.db.con, 'view_patients') |> 
   (function(.) {
-    assertthat::assert_that(nrow(.) == 98)
+    assertthat::assert_that(nrow(.) == 101)
     return(.)
   })()
 
 patients_without_array_samples <- DBI::dbReadTable(metadata.db.con, 'view_check_patients_without_array_samples')
-stopifnot(sort(patients_without_array_samples$patient_id) == c(1,2,59,63,85,92)) # x-checked, patients currently missing samples
+stopifnot(sort(patients_without_array_samples$patient_id) == c(1)) # x-checked, patients currently missing samples
 
 glass_od.metadata.patients <- glass_od.metadata.patients |> 
   dplyr::filter(patient_id %in% patients_without_array_samples$patient_id == F) |> 
   (function(.) {
-    assertthat::assert_that(nrow(.) == 92)
+    assertthat::assert_that(nrow(.) == 100)
     return(.)
   })() |> 
   dplyr::filter(is.na(exclusion_reason)) |> # 7 non(-canonical) codels
   (function(.) {
-    assertthat::assert_that(nrow(.) == 85)
+    assertthat::assert_that(nrow(.) == 93)
     return(.)
   })()
-  
+
+
 
 rm(patients_without_array_samples)
 
@@ -52,9 +53,9 @@ rm(patients_without_array_samples)
 glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resections') |> 
   dplyr::filter(patient_id %in% glass_od.metadata.patients$patient_id) |> 
   dplyr::filter(is.na(resection_exclusion_reason)) |> 
-  assertr::verify(patient_id %in% c(27, 56, 76, 93, 96, 97, 98) == F) |> 
+  assertr::verify(patient_id %in% c(27, 56, 76, 93, 96, 97, 98) == F) |> # hard coded non-codels
   (function(.) {
-    assertthat::assert_that(nrow(.) == 191)
+    assertthat::assert_that(nrow(.) == 206)
     return(.)
   })()
 
@@ -102,9 +103,11 @@ glass_od.metadata.idats <- list.files(path = "data/GLASS_OD/", pattern = "_(Grn|
 glass_od.metadata.array_samples <- DBI::dbReadTable(metadata.db.con, 'view_array_samples')
 
 
-stopifnot(length(setdiff(glass_od.metadata.array_samples$sentrix_id, glass_od.metadata.idats$sentrix_id)) == 0)
-stopifnot(length(setdiff(glass_od.metadata.idats$sentrix_id, glass_od.metadata.array_samples$sentrix_id)) == 0) # 28 need to be added.. !
+# setdiff(glass_od.metadata.array_samples$sentrix_id, glass_od.metadata.idats$sentrix_id)
+# setdiff(glass_od.metadata.idats$sentrix_id, glass_od.metadata.array_samples$sentrix_id)
 
+stopifnot(length(setdiff(glass_od.metadata.array_samples$sentrix_id, glass_od.metadata.idats$sentrix_id)) == 0)
+stopifnot(length(setdiff(glass_od.metadata.idats$sentrix_id, glass_od.metadata.array_samples$sentrix_id)) == 0)
 
 
 
@@ -112,7 +115,18 @@ stopifnot(length(setdiff(glass_od.metadata.idats$sentrix_id, glass_od.metadata.a
 
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
-  dplyr::left_join(glass_od.metadata.array_samples, by=c('sentrix_id' = 'sentrix_id'), suffix=c('',''))
+  (function(.) {
+    assertthat::assert_that(nrow(.) == 221)
+    return(.)
+  })() |> 
+  dplyr::left_join(glass_od.metadata.array_samples, by=c('sentrix_id' = 'sentrix_id'), suffix=c('','')) |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == 221)
+    return(.)
+  })() |> 
+  assertr::verify(!is.na(resection_id))
+
+
 
 rm(glass_od.metadata.array_samples)
 
@@ -120,6 +134,7 @@ rm(glass_od.metadata.array_samples)
 
 ## add percentage detP probes ----
 
+# from: scripts/analysis_percentage_detP_probes.R
 
 tmp <- read.table("output/tables/percentage_detP_probes.txt") |> 
   assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id)
