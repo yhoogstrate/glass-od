@@ -37,7 +37,7 @@ tmp <- glass_od.metadata.idats |>
 
 
 
-saveRDS(tmp |> 
+write.table(tmp |> 
           dplyr::mutate(channel_green = NULL) |> 
           dplyr::mutate(files = NULL)
         , file="output/tables/percentage_detP_probes.txt")

@@ -118,6 +118,19 @@ rm(glass_od.metadata.array_samples)
 
 
 
+## add percentage detP probes ----
+
+
+tmp <- read.table("output/tables/percentage_detP_probes.txt") |> 
+  assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id)
+
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(percentage.detP.signi))
+
+
+
+
 ## heidelberg reportBrain files ----
 
 
