@@ -48,15 +48,15 @@ rm(patients_without_array_samples)
 
 # 2. resection level ----
 
+
 glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resections') |> 
   dplyr::filter(patient_id %in% glass_od.metadata.patients$patient_id) |> 
   dplyr::filter(is.na(resection_exclusion_reason)) |> 
   assertr::verify(patient_id %in% c(27, 56, 76, 93, 96, 97, 98) == F) |> 
   (function(.) {
-    assertthat::assert_that(nrow(.) == 183)
+    assertthat::assert_that(nrow(.) == 191)
     return(.)
   })()
-
 
 
 
@@ -98,6 +98,7 @@ glass_od.metadata.idats <- list.files(path = "data/GLASS_OD/", pattern = "_(Grn|
 
 ## b. load all idat metadata from access ----
 
+
 glass_od.metadata.array_samples <- DBI::dbReadTable(metadata.db.con, 'view_array_samples')
 
 
@@ -114,8 +115,6 @@ glass_od.metadata.idats <- glass_od.metadata.idats |>
   dplyr::left_join(glass_od.metadata.array_samples, by=c('sentrix_id' = 'sentrix_id'), suffix=c('',''))
 
 rm(glass_od.metadata.array_samples)
-
-
 
 
 
