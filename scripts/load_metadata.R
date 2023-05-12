@@ -35,7 +35,7 @@ glass_od.metadata.patients <- glass_od.metadata.patients |>
     assertthat::assert_that(nrow(.) == 100)
     return(.)
   })() |> 
-  dplyr::filter(is.na(exclusion_reason)) |> # 7 non(-canonical) codels
+  dplyr::filter(is.na(reason_excluded)) |> # 7 non(-canonical) codels
   (function(.) {
     assertthat::assert_that(nrow(.) == 93)
     return(.)
@@ -52,12 +52,13 @@ rm(patients_without_array_samples)
 
 glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resections') |> 
   dplyr::filter(patient_id %in% glass_od.metadata.patients$patient_id) |> 
-  dplyr::filter(is.na(resection_exclusion_reason)) |> 
+  dplyr::filter(is.na(reason_excluded_resection)) |> 
   assertr::verify(patient_id %in% c(27, 56, 76, 93, 96, 97, 98) == F) |> # hard coded non-codels
   (function(.) {
     assertthat::assert_that(nrow(.) == 206)
     return(.)
-  })()
+  })() |> 
+  assertr::verify(is.numeric(resection_number))
 
 
 
@@ -149,67 +150,7 @@ glass_od.metadata.idats <- glass_od.metadata.idats |>
 ## heidelberg reportBrain files ----
 
 
-tmp <- c(
-  list.files(path = "data/GLASS_OD/", pattern = "idat_reportBrain_*", recursive = TRUE),
-  list.files(path = "data/GLASS_OD/", pattern = "report_website_mnp_brain_*", recursive = TRUE)
-) |>
-  data.frame(filename = _) |>
-  dplyr::mutate(filename = paste0("data/GLASS_OD/", filename)) |>
-  dplyr::filter(grepl("\\.pdf$", filename)) |>
-  dplyr::mutate(basename = gsub("^.+/([^/]+)$", "\\1", filename)) |>
-  dplyr::mutate(version = gsub("^.+_(v[0-9+]+[a-zA-Z0-9\\.]+)_.+$", "\\1", basename)) |>
-  dplyr::filter(grepl("_sample_version_", basename) == F) |>
-  dplyr::mutate(Sentrix_ID = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", filename)) |>
-  dplyr::select(-basename) |>
-  tidyr::pivot_wider(id_cols = Sentrix_ID, names_from = version, values_from = c(filename), names_prefix = "heidelberg_reportBrain_")
-
-
-stopifnot(tmp$Sentrix_ID %in% glass_od.metadata.idat$Sentrix_ID)
-stopifnot(duplicated(tmp$Sentrix_ID) == F)
-
-
-stopifnot(nrow(glass_od.metadata.idat) == 202)
-
-
-glass_od.metadata.idat <- glass_od.metadata.idat |> 
-  dplyr::left_join(tmp, by=c('Sentrix_ID'='Sentrix_ID'), suffix=c('',''))
-rm(tmp)
-
-
-stopifnot(nrow(glass_od.metadata.idat) == 202)
-
-
-
-
-
-
-
-
-
-## heidelberg CNV segment files ----
-
-
-tmp <- list.files(path = "data/GLASS_OD/", pattern = "*.seg", recursive = TRUE) |> 
-  data.frame(heidelberg_CNV_segments = _) |> 
-  dplyr::mutate(heidelberg_CNV_segments = paste0("data/GLASS_OD/", heidelberg_CNV_segments)) |> 
-  dplyr::mutate(heidelberg_cnvp_version = gsub("^.+/cnvp_([^/]+)/.+$","\\1", heidelberg_CNV_segments)) |> 
-  dplyr::mutate(Sentrix_ID = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$","\\1", heidelberg_CNV_segments)) |> 
-  assertr::verify(!is.na(duplicated(Sentrix_ID)))
-
-
-glass_od.metadata.idat <- glass_od.metadata.idat |> 
-  dplyr::left_join(tmp, by=c('Sentrix_ID'='Sentrix_ID'), suffix=c('',''))
-rm(tmp)
-
-
-stopifnot(glass_od.metadata.idat |> 
-  dplyr::filter(!is.na(heidelberg_reportBrain_v11b4) & is.na(heidelberg_CNV_segments)) |> 
-  nrow() == 0)
-
-
-## brain classifier 11 ----
-
-x <- function(fn) {
+w <- function(fn, prefix) {
   
   a = read.csv(fn) |> 
     tibble::column_to_rownames('X') |> 
@@ -225,133 +166,186 @@ x <- function(fn) {
   a<- a |> 
     t() |> 
     as.data.frame() |> 
-    dplyr::rename_with( ~ paste0("predictBrain_11_scores_cal_", .x)) |> 
-    dplyr::mutate(predictBrain_11_scores_cal_class = top)
+    dplyr::mutate(class = top) |> 
+    dplyr::rename_with( ~ paste0(prefix,"cal_", .x)) 
   
   return(a)
 }
 
 
-tmp <- list.files(path = "data/GLASS_OD/", pattern = "*_scores_cal.csv", recursive = TRUE) |> 
-  data.frame(predictBrain_11 = _) |> 
-  dplyr::mutate(predictBrain_11 = paste0("data/GLASS_OD/", predictBrain_11)) |> 
-  dplyr::filter(grepl("predictBrain_v2\\.", predictBrain_11)) |> 
+
+
+tmp <- c(
+  list.files(path = "data/GLASS_OD/Heidelberg_classifier_output/", pattern = "*_scores_cal.csv", recursive = TRUE)
+) |>
+  data.frame(filename = _) |>
+  dplyr::mutate(filename = paste0("data/GLASS_OD/Heidelberg_classifier_output/", filename)) |>
+  dplyr::mutate(basename = gsub("^.+/([^/]+)$", "\\1", filename)) |>
+  dplyr::mutate(version = gsub("^.+predictBrain_([^_\\/]+)[_/].+$","\\1", filename)) |>
+  dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", filename)) |>
+  dplyr::select(-basename) |>
+  tidyr::pivot_wider(id_cols = sentrix_id, names_from = version, values_from = c(filename), names_prefix = "heidelberg_reportBrain_") |> 
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = x(predictBrain_11)) |> 
+  dplyr::mutate(tmp = w(heidelberg_reportBrain_v12.5, "predictBrain_12.5_")) |>
   dplyr::ungroup() |> 
-  tidyr::unnest(tmp) |> 
-  dplyr::mutate(Sentrix_ID = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$","\\1", predictBrain_11)) 
-
-stopifnot(duplicated(tmp$Sentrix_ID) == F)
+  tidyr::unnest(tmp)
 
 
+stopifnot(tmp$sentrix_id %in% glass_od.metadata.idats$sentrix_id)
+stopifnot(duplicated(tmp$sentrix_id) == F)
 
-stopifnot(nrow(glass_od.metadata.idat) == 202)
+
+stopifnot(nrow(glass_od.metadata.idats) == 221)
 
 
-glass_od.metadata.idat <- glass_od.metadata.idat |> 
-  dplyr::left_join(tmp, by=c('Sentrix_ID'='Sentrix_ID'), suffix=c('',''))
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
 rm(tmp)
 
 
-stopifnot(nrow(glass_od.metadata.idat) == 202)
+stopifnot(nrow(glass_od.metadata.idats) == 221)
 
 
-rm(x)
-
-
-
-
-## more metadata ----
-
-
-md1 <- readxl::read_xlsx("data/GLASS_OD/Methylation_data/GLASS-NL_1p19qcodel/docs/Datasheet.xlsx")
-#md1$Sample_ID
-
-md2 <- readxl::read_xlsx("data/GLASS_OD/Methylation_data/GLASS-NL_1p19qcodel/docs/Datasheet EMC GLASS-OD+GLASS-NL.xlsx")
-#md2$`Sentrix ID`
-
-md3 <- readxl::read_xlsx("data/GLASS_OD/Methylation_data/MET2022-331-014/controls/MET2022-331-014_DATAControls.xlsx") |> 
-  dplyr::mutate(Sentrix_ID = paste0(`Sentrix Barcode`, "_", `Sentrix Position`))
-md3$Sentrix_ID
-
-md4 <- read.csv("data/GLASS_OD/Methylation_data/MET2022-321-014/STS/MET2022-321-014.csv",skip=8) |> 
-  dplyr::mutate(Sentrix_ID = paste0(Sentrix_ID, "_", Sentrix_Position))
-md4$Sentrix_ID
-
-md5 <- read.csv('data/GLASS_OD/Methylation_data/MET2020-240-014_plate2/STS/MET2020-240-014_plate2.csv',skip=7) |> 
-  dplyr::mutate(Sentrix_ID = paste0(Sentrix_ID, "_", Sentrix_Position))
-
-
-md6a <- read.csv('data/GLASS_OD/Methylation_data/MET2020-240-014/STS/MET2020-240-014.csv',skip=8) |> 
-  dplyr::mutate(Sentrix_ID = paste0(Sentrix_ID, "_", Sentrix_Position))
-
-
-md6d <- readxl::read_xlsx("data/GLASS_OD/Methylation_data/MET2020-240-014/docs/Datasheet MET2020-240-014.xlsx")
-md6f <- readxl::read_xlsx("data/GLASS_OD/Methylation_data/MET2020-240-014/docs/MET2020-240-014.xlsx")
+stopifnot(!is.na(glass_od.metadata.idats$heidelberg_reportBrain_v12.5))
+stopifnot(!is.na(glass_od.metadata.idats$heidelberg_reportBrain_v2.0.1))
 
 
 
 
 
-
-# 
-# 
-#   dplyr::mutate(in.md1 = Sentrix_ID %in% md1$Sample_ID) |> 
-#   dplyr::mutate(in.md2 = Sentrix_ID %in% md2$`Sentrix ID`)|> 
-#   dplyr::mutate(in.md3 = Sentrix_ID %in% md3$Sentrix_ID)|> 
-#   dplyr::mutate(in.md4 = Sentrix_ID %in% md4$Sentrix_ID) |> 
-#   dplyr::mutate(in.md5 = Sentrix_ID %in% md5$Sentrix_ID) |> 
-#   dplyr::mutate(in.md6a = Sentrix_ID %in% md6a$Sentrix_ID)|> 
-#   dplyr::mutate(in.md6d = Sentrix_ID %in% md6d$`Sentrix id`)|> 
-#   dplyr::mutate(in.md6f = Sentrix_ID %in% md6f$`Sentrix id`)
+## heidelberg CNV segment files ----
 
 
-
-##
-
-# table(glass_od.metadata.idat$in.md1)
-# table(glass_od.metadata.idat$in.md2)
-# table(glass_od.metadata.idat$in.md3)
-# table(glass_od.metadata.idat$in.md4)
-# table(glass_od.metadata.idat$in.md5)
-# table(glass_od.metadata.idat$in.md6a)
-# table(glass_od.metadata.idat$in.md6d)
-# table(glass_od.metadata.idat$in.md6f)
+tmp <- list.files(path = "data/GLASS_OD/Heidelberg_classifier_output/", pattern = "*.seg", recursive = TRUE) |> 
+  data.frame(heidelberg_cnvp_segments = _) |> 
+  dplyr::mutate(heidelberg_cnvp_segments = paste0("data/GLASS_OD/Heidelberg_classifier_output/", heidelberg_cnvp_segments)) |> 
+  dplyr::mutate(heidelberg_cnvp_version = gsub("^.+/cnvp_([^/]+)/.+$","\\1", heidelberg_cnvp_segments)) |> 
+  dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$","\\1", heidelberg_cnvp_segments)) |> 
+  assertr::verify(!is.na(duplicated(sentrix_id)))
 
 
-# 
-# glass_od.metadata.idat |> 
-#   dplyr::filter(!in.md1)  |> 
-#   dplyr::filter(!in.md2)  |> 
-#   dplyr::filter(!in.md3)  |> 
-#   dplyr::filter(!in.md4)  |> 
-#   #dplyr::filter(!in.md5)  |> 
-#   dplyr::filter(!in.md6a)  |> 
-#   dim()
-
-stopifnot(nrow(glass_od.metadata.idat) == 202)
-
-glass_od.metadata.idat <- glass_od.metadata.idat |> 
-  dplyr::left_join(md1 ,  by=c('Sentrix_ID'='Sample_ID')) |> 
-  dplyr::left_join(md2 , by=c('Sentrix_ID'='Sentrix ID'))|> 
-  dplyr::left_join(md3 , by=c('Sentrix_ID'='Sentrix_ID'))|> 
-  dplyr::left_join(md4 , by=c('Sentrix_ID'='Sentrix_ID')) |> 
-  dplyr::left_join(md5 , by=c('Sentrix_ID'='Sentrix_ID')) |> 
-  dplyr::left_join(md6a,  by=c('Sentrix_ID'='Sentrix_ID'))|> 
-  dplyr::left_join(md6d, by=c('Sentrix_ID'='Sentrix id'))|> 
-  dplyr::left_join(md6f, by=c('Sentrix_ID'='Sentrix id'))
-rm(md1, md2, md3, md4, md5, md6a, md6d, md6f)
-
-stopifnot(nrow(glass_od.metadata.idat) == 202)
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+rm(tmp)
 
 
-# 
-# glass_od.metadata.idat |> 
-#   dplyr::filter(Sentrix_ID %in% c('204808700074_R07C01','204808700074_R06C01')) |> 
-#   View()
-# 
-# 
+stopifnot(!is.na(glass_od.metadata.idats$heidelberg_cnvp_segments))
+stopifnot(!is.na(glass_od.metadata.idats$heidelberg_cnvp_version))
+
+
+## heidelberg qc full ----
+
+
+x <- function(fn, prefix) {
+  a <- read.csv(fn,header=T, sep="\t") |> 
+    dplyr::mutate(key=paste0(type, "_",name, "_",color, "_",check.if, "_",warning, "_",fail)) |> 
+    dplyr::select(key, norm) |> 
+    tibble::column_to_rownames('key') |> 
+    `colnames<-`('value') |> 
+    t() |> 
+    as.data.frame() |> 
+    dplyr::rename_with( ~ paste0(prefix, .x)) 
+  
+  return(a)
+}
+
+
+tmp <- list.files(path = "data/GLASS_OD/Heidelberg_classifier_output/", pattern = "_qc_full.txt", recursive = TRUE) |> 
+  data.frame(heidelberg_qc_report_full = _) |> 
+  dplyr::mutate(heidelberg_qc_report_full = paste0("data/GLASS_OD/Heidelberg_classifier_output/", heidelberg_qc_report_full)) |>
+  dplyr::mutate(basename = gsub("^.+/([^/]+)$", "\\1", heidelberg_qc_report_full)) |>
+  dplyr::mutate(heidelberg_qc_report_version = gsub("^.+qc_(v[^_\\/]+)[_/].+$","\\1", heidelberg_qc_report_full)) |>
+  dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", heidelberg_qc_report_full)) |>
+  dplyr::select(-basename) |> 
+  dplyr::rowwise() |> 
+  dplyr::mutate(tmp = x(heidelberg_qc_report_full, "qc_")) |>
+  dplyr::ungroup() |> 
+  tidyr::unnest(tmp)
+
+
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+rm(tmp)
+
+stopifnot(!is.na(glass_od.metadata.idats$heidelberg_qc_report_full))
+glass_od.metadata.idats$heidelberg_qc_report_full <- NULL # already parsed
+
+
+
+## predictMGMT ----
+
+
+y <- function(fn, prefix) {
+
+  a <- read.csv(fn,header=T) |> 
+    dplyr::mutate(X=NULL, Status = NULL) |>  # also returns status if it is inconfident 
+    dplyr::mutate(status = dplyr::case_when(
+      Estimated < Cutoff & CI_Lower < Cutoff & CI_Upper < Cutoff ~ "unmethylated",
+      Estimated > Cutoff & CI_Lower > Cutoff & CI_Upper > Cutoff ~ "methylated",
+      T ~ as.character(NA)
+    )) |> 
+    dplyr::mutate(Cutoff = 0) |> 
+    dplyr::rename_with( ~ paste0(prefix, .x)) 
+  
+  return(a)
+}
+
+
+
+tmp <- list.files(path = "data/GLASS_OD/Heidelberg_classifier_output/", pattern = "_mgmt.csv", recursive = TRUE) |> 
+  data.frame(heidelberg_mgmt_report = _) |> 
+  dplyr::mutate(heidelberg_mgmt_report = paste0("data/GLASS_OD/Heidelberg_classifier_output/", heidelberg_mgmt_report)) |>
+  dplyr::mutate(basename = gsub("^.+/([^/]+)$", "\\1", heidelberg_mgmt_report)) |>
+  dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", heidelberg_mgmt_report)) |>
+  dplyr::select(-basename) |> 
+  dplyr::rowwise() |> 
+  dplyr::mutate(tmp = y(heidelberg_mgmt_report, "mgmt_")) |>
+  dplyr::ungroup() |> 
+  tidyr::unnest(tmp)
+
+
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+rm(tmp)
+
+stopifnot(!is.na(glass_od.metadata.idats$heidelberg_mgmt_report))
+glass_od.metadata.idats$heidelberg_mgmt_report <- NULL # already parsed
+
+
+
+## rs_gender ----
+
+
+z <- function(fn, prefix) {
+
+  a <- read.csv(fn,header=T) |> 
+    dplyr::mutate(idat = NULL, array = NULL) |>  # also returns status if it is inconfident 
+    dplyr::mutate(predicted = ifelse(predicted == F, "F", predicted)) |> 
+    dplyr::rename_with( ~ paste0(prefix, .x)) 
+  
+  return(a)
+}
+
+
+tmp <- list.files(path = "data/GLASS_OD/Heidelberg_classifier_output/", pattern = "*.mix_gender.csv", recursive = TRUE) |> 
+  data.frame(heidelberg_rs_gender_report = _) |> 
+  dplyr::mutate(heidelberg_rs_gender_report = paste0("data/GLASS_OD/Heidelberg_classifier_output/", heidelberg_rs_gender_report)) |>
+  dplyr::mutate(basename = gsub("^.+/([^/]+)$", "\\1", heidelberg_rs_gender_report)) |>
+  dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", heidelberg_rs_gender_report)) |>
+  dplyr::select(-basename) |> 
+  dplyr::rowwise() |> 
+  dplyr::mutate(tmp = z(heidelberg_rs_gender_report, "rs_gender_")) |>
+  dplyr::ungroup() |> 
+  tidyr::unnest(tmp)
+
+
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+rm(tmp)
+
+stopifnot(!is.na(glass_od.metadata.idats$heidelberg_rs_gender_report))
+glass_od.metadata.idats$heidelberg_rs_gender_report <- NULL # already parsed
+
 
 
 
