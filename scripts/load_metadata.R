@@ -200,7 +200,7 @@ stopifnot(nrow(glass_od.metadata.idats) == 221)
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
-rm(tmp)
+rm(tmp, w)
 
 
 stopifnot(nrow(glass_od.metadata.idats) == 221)
@@ -265,7 +265,7 @@ tmp <- list.files(path = "data/GLASS_OD/Heidelberg_classifier_output/", pattern 
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
-rm(tmp)
+rm(tmp, x)
 
 stopifnot(!is.na(glass_od.metadata.idats$heidelberg_qc_report_full))
 glass_od.metadata.idats$heidelberg_qc_report_full <- NULL # already parsed
@@ -306,7 +306,7 @@ tmp <- list.files(path = "data/GLASS_OD/Heidelberg_classifier_output/", pattern 
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
-rm(tmp)
+rm(tmp, y)
 
 stopifnot(!is.na(glass_od.metadata.idats$heidelberg_mgmt_report))
 glass_od.metadata.idats$heidelberg_mgmt_report <- NULL # already parsed
@@ -341,12 +341,10 @@ tmp <- list.files(path = "data/GLASS_OD/Heidelberg_classifier_output/", pattern 
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
-rm(tmp)
+rm(tmp, z)
 
 stopifnot(!is.na(glass_od.metadata.idats$heidelberg_rs_gender_report))
 glass_od.metadata.idats$heidelberg_rs_gender_report <- NULL # already parsed
-
-
 
 
 
