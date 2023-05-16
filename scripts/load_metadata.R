@@ -213,7 +213,9 @@ stopifnot(!is.na(glass_od.metadata.idats$heidelberg_reportBrain_v2.0.1))
 
 
 
-## heidelberg CNV segment files ----
+## heidelberg CNV files ----
+
+### segment file ----
 
 
 tmp <- list.files(path = "data/GLASS_OD/Heidelberg_classifier_output/", pattern = "*.seg", recursive = TRUE) |> 
@@ -231,6 +233,26 @@ rm(tmp)
 
 stopifnot(!is.na(glass_od.metadata.idats$heidelberg_cnvp_segments))
 stopifnot(!is.na(glass_od.metadata.idats$heidelberg_cnvp_version))
+
+
+
+### bins file ----
+
+
+tmp <- list.files(path = "data/GLASS_OD/Heidelberg_classifier_output/", pattern = "*.bins.igv", recursive = TRUE) |> 
+  data.frame(heidelberg_cnvp_bins = _) |> 
+  dplyr::mutate(heidelberg_cnvp_bins = paste0("data/GLASS_OD/Heidelberg_classifier_output/", heidelberg_cnvp_bins)) |> 
+  dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$","\\1", heidelberg_cnvp_bins)) |> 
+  assertr::verify(!is.na(duplicated(sentrix_id)))
+
+
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+rm(tmp)
+
+
+stopifnot(!is.na(glass_od.metadata.idats$heidelberg_cnvp_bins))
+
 
 
 ## heidelberg qc full ----
@@ -345,6 +367,16 @@ rm(tmp, z)
 
 stopifnot(!is.na(glass_od.metadata.idats$heidelberg_rs_gender_report))
 glass_od.metadata.idats$heidelberg_rs_gender_report <- NULL # already parsed
+
+
+
+# cleanup db connection ----
+
+DBI::dbDisconnect(metadata.db.con)
+rm(metadata.db.con)
+
+
+# add tumor purity calls? ----
 
 
 
