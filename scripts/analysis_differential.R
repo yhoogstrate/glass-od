@@ -1,0 +1,203 @@
+#!/usr/bin/env R
+
+
+# load data ----
+
+
+library(ggplot2)
+library(minfi)
+source('scripts/youri_gg_theme.R')
+
+
+# obtain patients ----
+
+patients <- glass_od.metadata.patients |> 
+  dplyr::filter(is.na(reason_excluded))
+
+resections <- glass_od.metadata.patients |> 
+  dplyr::filter(is.na(reason_excluded))
+
+stopifnot(resections$patient_id %in% patients$patient_id)
+
+
+# glass_od.metadata.idats$reason_exclusion_resection_isolation
+# glass_od.metadata.idats$reason_exclusion_resection_isolation
+array_samples <- glass_od.metadata.idats |> 
+  dplyr::filter(is.na(reason_excluded_patient)) |> 
+  dplyr::filter(is.na(reason_excluded_resection)) |> 
+  dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
+  dplyr::filter(is.na(reason_excluded_array_sample)) |> 
+  dplyr::filter(percentage.detP.signi < 5) # QC metric that needs to be below 5%
+
+
+array_samples_primary <- array_samples |> 
+  dplyr::filter(resection_id %in% 
+                  
+                  (glass_od.metadata.resections |>
+                    dplyr::filter(is.na(reason_excluded_resection)) |> 
+                    dplyr::filter(resection_number == 1) |> 
+                    dplyr::pull(resection_id))
+  ) |> 
+  dplyr::filter(patient_id %in% c("0006-R1", "0019-R1") == F)
+
+
+
+array_samples_recurrent <- array_samples |> 
+  dplyr::filter(resection_id %in% 
+                  
+                  (glass_od.metadata.resections |>
+                     dplyr::filter(is.na(reason_excluded_resection)) |> 
+                     dplyr::filter(resection_number > 1) |> 
+                     dplyr::pull(resection_id))
+  ) |> 
+  dplyr::arrange(desc(resection_id), desc(resection_isolation_id)) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::top_n(n=1)
+
+
+isct <- intersect(array_samples_primary$patient_id, array_samples_recurrent$patient_id) |> 
+  head(n=20)
+
+
+
+targets <- rbind(
+  array_samples_primary |>
+    dplyr::mutate(status = "primary") |> 
+    dplyr::filter(patient_id %in% isct)
+  ,
+  array_samples_recurrent |> dplyr::mutate(status = "last_recurrence")  |> 
+    dplyr::filter(patient_id %in% isct)
+) |> 
+  dplyr::rename(Sample_Name = resection_isolation_id) |>
+  dplyr::mutate(Array = gsub("^.+_","",sentrix_id)) |> 
+  dplyr::rename(Slide = methylation_array_chip_id) |> 
+  dplyr::mutate(Basename = gsub("_Grn.idat$","", channel_green)) |> 
+  dplyr::select(Sample_Name, sentrix_id, status, Array,Slide, Basename) 
+
+RGSet <- read.metharray.exp(targets = targets, force =T)
+
+
+# manifest <- getManifest(RGSet)
+# manifest
+# 
+# #MSet.illumina <- preprocessIllumina(RGSet, bg.correct = TRUE,
+# #                                    normalize = "controls")
+# 
+# GRset.funnorm <- preprocessFunnorm(RGSet)
+# 
+# beta <- getBeta(GRset.funnorm)
+# status  <- pData(GRset.funnorm)$status
+
+
+# store m-values
+
+proc <- preprocessNoob(RGSet, offset = 0, dyeCorr = TRUE, verbose = TRUE, dyeMethod="reference") 
+proc.r.mvalue <- ratioConvert(proc , what = "M")
+
+mvalues <- as.data.frame(assays(proc.r.mvalue)$M)
+
+stats <- data.frame(mad = pbapply::pbapply(mvalues, 1, mad)) |> 
+  dplyr::mutate(
+    mean.a =
+      pbapply::pbapply(mvalues |> 
+                         dplyr::select(targets |> dplyr::filter(status == "primary") |> dplyr::mutate(id = gsub("^.+/","",Basename)) |>  dplyr::pull(id)),
+                       1, mean, na.rm=T)
+  ) |> 
+  dplyr::mutate(
+    mean.b =
+      pbapply::pbapply(mvalues |> 
+                         dplyr::select(targets |> dplyr::filter(status == "last_recurrence") |> dplyr::mutate(id = gsub("^.+/","",Basename)) |>  dplyr::pull(id)),
+                       1, mean, na.rm=T)
+  )
+
+
+
+
+stats <- stats |> 
+  dplyr::mutate(delta1 = mean.b - mean.a) |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+
+beta <- getBeta(proc)
+status  <- pData(proc)$status
+
+
+dmp <- dmpFinder(beta, pheno = status  , type = "categorical") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::left_join(stats,
+                   by=c('probe_id'='probe_id'),
+                   suffix = c('','')
+                     )
+
+
+
+
+
+
+ggplot(dmp |> 
+         dplyr::filter(mad > 1) 
+       , aes(x=delta1, y=-log10(pval))) +
+  geom_point(pch=19,cex=0.1, alpha=0.1) +
+  labs(x = "delta M-value primary recurrence [20 random matching pairs]") +
+  youri_gg_theme
+
+
+
+# odd pca?
+
+pc <- prcomp(t(mvalues))
+pc_plt <- pc$x |> 
+  as.data.frame() |> 
+  tibble::rownames_to_column('sentrix_id') |> 
+  dplyr::left_join(targets, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+
+ggplot(pc_plt, aes(x=PC1, y=PC2, label=Sample_Name) ) +
+  #geom_point() +
+  geom_text()
+
+## 0006-R1
+## 0019-R1
+
+
+
+
+plt <- read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |>
+  dplyr::filter(MASK_general == F) |> 
+  dplyr::mutate(pos = round((CpG_beg + CpG_end )/2)) |> 
+  dplyr::select(CpG_chrm, pos, probeID, probe_strand  ) |> 
+  dplyr::left_join(dmp, by=c('probeID' = 'probe_id'), suffix=c('','')) |> 
+  dplyr::filter(!is.na(delta1) & !is.na(qval)) |> 
+  dplyr::rename(chr = CpG_chrm) |> 
+  dplyr::mutate(chr = factor(chr, levels=gtools::mixedsort(unique(as.character(chr))) )) |> 
+  dplyr::mutate(significant = qval < 0.000001) |> 
+  dplyr::filter(chr %in% c("chrM","chrX","chrY", "NA",NA) == F)  |> 
+  dplyr::mutate(absdiff = abs(delta1))
+
+
+ggplot(plt, aes(x=pos / 1000000,y=delta1, col=chr)) + 
+  #geom_vline(xintercept=175, col="blue", alpha=0.5) + 
+  facet_grid(cols = vars(chr), scales = "free", space="free") +
+  geom_point(pch=19,cex=0.2, alpha=0.25) +
+  #geom_point(data = subset(plt, significant==T), pch=21,cex=0.8,col='black',fill=NA, alpha=0.5) +
+  geom_smooth(se=F,col="black", lwd=0.7, n=500) +
+  youri_gg_theme +
+  labs(x=NULL)
+
+
+# maybe stranded adds sth?
+
+ggplot(subset(plt, chr == "chr2"), aes(x=pos / 1000000,y=delta1, col=chr)) + 
+  geom_vline(xintercept=176.125, col="blue", alpha=0.5) + 
+  facet_grid(cols = vars(chr), scales = "free", space="free") +
+  geom_point(pch=19,cex=0.2) +
+  geom_point(data = subset(plt, significant==T & chr == "chr2"), pch=21,cex=0.8,col='black',fill=NA, alpha=0.5) +
+  geom_smooth(se=F,col="black", lwd=0.7,n=1000, span=0.2) +
+  youri_gg_theme +
+  labs(x=NULL) + 
+  xlim(170,180)
+
+
+
+
+

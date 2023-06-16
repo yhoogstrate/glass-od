@@ -6,15 +6,29 @@ source('scripts/load_chrom_sizes.R')
 
 # CNV based purity estimation
 
-# example 1 ----
+# type 1: segment based ----
 
-## SNV issues:
-# 206522890076_R05C01
-# 206522890026_R05C01
-# 206467010089_R03C01 & 206467010089_R02C01
-# 206467010069_R02C01
-# 206467010147_R06C01 - low res or full 1 and 19 del
-# 206467010147_R03C01 & 206467010147_R02C01
+estimate_1p19q_purity_segment_based <- function(fn) {
+  fn = glass_od.metadata.idats$heidelberg_cnvp_segments[1]
+  
+  segs <- read.delim(fn) |> 
+    dplyr::rename(seg.median.l2fc = seg.median) |> 
+    dplyr::rename(seg.mean.l2fc = seg.mean) |> 
+    dplyr::filter(num.mark >= 35)
+  
+  
+  center <-  segs |> 
+    dplyr::filter(is.na(pval))
+  center <- mean(rep(center$seg.mean.l2fc, center$num.mark))
+}
+
+
+
+glass_od.metadata.idats |> 
+  dplyr::filter(is.na(reason_excluded_patient)) |> 
+  dplyr::filter(is.na(reason_excluded_resection)) |> 
+  dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
+  dplyr::filter(is.na(reason_excluded_array_sample))
 
 
 
