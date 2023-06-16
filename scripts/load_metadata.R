@@ -55,7 +55,7 @@ glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resectio
   dplyr::filter(is.na(reason_excluded_resection)) |> 
   assertr::verify(patient_id %in% c(27, 56, 76, 93, 96, 97, 98) == F) |> # hard coded non-codels
   (function(.) {
-    assertthat::assert_that(nrow(.) == 206)
+    assertthat::assert_that(nrow(.) == 205)
     return(.)
   })() |> 
   assertr::verify(is.numeric(resection_number))
@@ -306,7 +306,6 @@ y <- function(fn, prefix) {
       Estimated > Cutoff & CI_Lower > Cutoff & CI_Upper > Cutoff ~ "methylated",
       T ~ as.character(NA)
     )) |> 
-    dplyr::mutate(Cutoff = 0) |> 
     dplyr::rename_with( ~ paste0(prefix, .x)) 
   
   return(a)

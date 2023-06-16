@@ -12,13 +12,13 @@ source('scripts/load_metadata.R')
 
 # obtain patients ----
 
-patients <- glass_od.metadata.patients |> 
-  dplyr::filter(is.na(reason_excluded))
-
-resections <- glass_od.metadata.patients |> 
-  dplyr::filter(is.na(reason_excluded))
-
-stopifnot(resections$patient_id %in% patients$patient_id)
+# patients <- glass_od.metadata.patients |> 
+#   dplyr::filter(is.na(reason_excluded))
+# 
+# resections <- glass_od.metadata.patients |> 
+#   dplyr::filter(is.na(reason_excluded))
+# 
+# stopifnot(resections$patient_id %in% patients$patient_id)
 
 
 
@@ -91,15 +91,22 @@ mvalue <- readRDS("cache/mvalues.Rds") |>
   tibble::column_to_rownames("probeID")
 
 
-pca <- mvalue |> 
+pca.raw <- mvalue |> 
   (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |>  # this synthax, oh my
   dplyr::filter(mad > 1.0) |> 
-  dplyr::mutate(mad = NULL) %>% # remove the sd to obtain original vst matrix
+  dplyr::mutate(mad = NULL)  |>  # remove the sd to obtain original vst matrix
   t() |> 
-  prcomp() |> 
-  purrr::pluck('x') %>%  # take coordinates
-  as.data.frame(stringsAsFactor=F) %>% # transform back from matrix to data.frame 
+  prcomp()
+
+#saveRDS(pca.raw, "cache/analysis_supervised_qc_pca.Rds")
+pca.raw <- readRDS("cache/analysis_supervised_qc_pca.Rds")
+
+
+pca2 <- pca.raw |> 
+  purrr::pluck('x')  |>   # take coordinates
+  as.data.frame(stringsAsFactor=F) |>  # transform back from matrix to data.frame 
   dplyr::select(PC1, PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC10)
+
 
 
 
@@ -122,12 +129,12 @@ cplt <- glass_od.metadata.idats  |>
   dplyr::rename_with( ~ gsub("_smaller.+$","", .x)) |> 
   tibble::rownames_to_column('sentrix_id') |> 
   dplyr::left_join(
-    pca |> tibble::rownames_to_column('sentrix_id'),
+    pca2 |> tibble::rownames_to_column('sentrix_id'),
     by=c('sentrix_id'='sentrix_id')
   ) |> 
   tibble::column_to_rownames('sentrix_id') |> 
   dplyr::filter(!is.na(PC1)) |> 
-  dplyr::mutate(PC1 = -1 * PC1) |> 
+  #dplyr::mutate(PC1 = -1 * PC1) |> 
   dplyr::mutate(percentage.detP.signi = -1 * percentage.detP.signi)
 
 
@@ -152,12 +159,25 @@ plt <- cplt |>
       resection_id %in% c("0006-R1", "0019-R1") ~ "obfuscating results when included in n=20 test set",
       T ~ "-"
     )
-  )
+  ) |> 
+  dplyr::mutate(resection = gsub("^.+\\-","", resection_id))
 
 
 ggplot(plt, aes(x=PC1, y=log(percentage.detP.signi + 1), label=resection_id, color = col)) +
   geom_point() +
   ggrepel::geom_text_repel() +
   youri_gg_theme
+
+
+rm(mvalue)
+gc()
+
+
+
+
+ggplot(plt, aes(x=-PC3, y=PC4, label=resection_id, col=resection)) +
+  geom_point() +
+  ggrepel::geom_text_repel()
+
 
 
