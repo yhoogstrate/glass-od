@@ -16,6 +16,6 @@ youri_gg_theme <- theme(
   panel.grid.major.y = element_line(colour = 'grey20', linetype = 'dotted'),
   panel.grid.minor.y = element_line(colour = 'grey50', linetype = 'dotted')
 ) + theme(
-  panel.grid.major.x = element_line(colour = 'grey20', linetype = 'dotted',size=0.25),
+  panel.grid.major.x = element_line(colour = 'grey20', linetype = 'dotted', linewidth=0.25),
   panel.grid.minor.x = element_line(colour = 'grey50', linetype = 'dotted')
 )
