@@ -13,7 +13,10 @@ if(!exists('youri_gg_theme')) {
 }
 
 
-source('scripts/load_metadata.R')
+
+if(!exists('glass_od.metadata.idats')) {
+  source('scripts/load_metadata.R')
+}
 
 
 
@@ -41,8 +44,6 @@ array_samples <- glass_od.metadata.idats |>
 
 
 
-rm(RGSet)
-gc()
 targets <- array_samples |> 
   dplyr::rename(Sample_Name = resection_isolation_id) |>
   dplyr::mutate(Array = gsub("^.+_","",sentrix_id)) |> 
@@ -50,16 +51,16 @@ targets <- array_samples |>
   dplyr::mutate(Basename = gsub("_Grn.idat$","", channel_green)) |> 
   dplyr::select(Sample_Name, sentrix_id, Array,Slide, Basename)
 
-#RGSet <- read.metharray.exp(targets = targets, force = T) #red/green channel together
-#saveRDS(RGSet, "cache/RGSet.Rds")
+RGSet <- minfi::read.metharray.exp(targets = targets, force = T) #red/green channel together
+saveRDS(RGSet, "cache/RGSet.Rds")
 #RGSet <- readRDS("cache/RGSet.Rds")
 
 
 #detP <- detectionP(RGSet, type = "m+u")
 
-proc <- preprocessNoob(RGSet, offset = 0, dyeCorr = TRUE, verbose = TRUE, dyeMethod="reference") 
-rm(RGSet)
-gc()
+proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = TRUE, verbose = TRUE, dyeMethod="reference") 
+#rm(RGSet)
+#gc()
 
 ## m-values ----
 
