@@ -6,7 +6,13 @@
 
 library(ggplot2)
 library(minfi)
-source('scripts/youri_gg_theme.R')
+
+
+if(!exists('youri_gg_theme')) {
+  source('scripts/youri_gg_theme.R')
+}
+
+
 source('scripts/load_metadata.R')
 
 
