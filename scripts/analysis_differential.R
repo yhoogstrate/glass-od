@@ -13,6 +13,9 @@ if(!exists('glass_od.metadata.patients')) {
   source('scripts/load_metadata.R')
 }
 
+if(!exists('glass_od.data.mvalues')) {
+  source('scripts/load_mvalues.R')
+}
 
 
 # fully paired analysis ----
@@ -21,7 +24,7 @@ if(!exists('glass_od.metadata.patients')) {
 
 
 # glass_od.metadata.idats$reason_exclusion_resection_isolation
-array_samples <- glass_od.metadata.idats |> 
+array_samples_all <- glass_od.metadata.idats |> 
   dplyr::filter(is.na(reason_excluded_patient)) |> 
   dplyr::filter(is.na(reason_excluded_resection)) |> 
   dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
@@ -29,32 +32,43 @@ array_samples <- glass_od.metadata.idats |>
   dplyr::filter(!is.na(qc.pca.outlier ) & qc.pca.outlier == F)
 
 
-array_samples_primary <- array_samples |> 
+array_samples_primary <- array_samples_all |> 
   dplyr::filter(resection_number == 1)
 
 
-array_samples_recurrent <- array_samples |>  # take last recurrence, to max out the time effect
+array_samples_recurrent <- array_samples_all |>  # take last recurrence, to max out the time effect
   dplyr::filter(resection_number > 1) |> 
   dplyr::arrange(desc(resection_id), desc(resection_isolation_id)) |> 
   dplyr::group_by(patient_id) |> 
   dplyr::top_n(n=1)
 
 
-array_samples <- rbind(
-  array_samples_primary |> dplyr::mutate(status = "primary")  ,
-  array_samples_recurrent |> dplyr::mutate(status = "last_recurrence")
+metadata <- rbind(
+  array_samples_primary |> dplyr::mutate(primary_recurrence_status = "primary")  ,
+  array_samples_recurrent |> dplyr::mutate(primary_recurrence_status = "last_recurrence")
 ) |> 
-  dplyr::filter(patient_id %in% intersect(array_samples_primary$patient_id, array_samples_recurrent$patient_id))
+  dplyr::filter(patient_id %in% intersect(array_samples_primary$patient_id, array_samples_recurrent$patient_id)) |> 
+  dplyr::mutate(patient = as.factor(paste0("pat",patient_id)))
 
 
-rm(array_samples_primary, array_samples_recurrent)
+rm(array_samples_all, array_samples_primary, array_samples_recurrent)
 
 
 ## limma ~ Wies' style ----
 
 
-data <- mvalues |> 
-  
+data <- glass_od.data.mvalues |> 
+  dplyr::select(metadata$sentrix_id)
+
+
+stopifnot(metadata$sentrix_id == colnames(data))
+
+
+design <- model.matrix(~0 + patient + primary_recurrence_status, data=metadata)
+fit <- limma::lmFit(data, design)
+
+saveRDS(fit, file="cache/analysis_differential_fully-paired.Rds")
+
 
 
 
