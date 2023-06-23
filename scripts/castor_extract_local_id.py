@@ -30,20 +30,26 @@ with open("/home/youri/Downloads/Glioma_Longitudinal_AnalySiS_export_20230508.cs
             header = clean_line(line.split(";"))
             
             key_pid = find_key(header, "Participant Id")
-            key_gender = find_key(header, "Gender")
+            key_local_id = find_key(header, "LOC_ID")
             
-            #print("castor_id\tgender")
+            print("castor_id\tlocal_id")
         else:
             params = clean_line(line.split(";"))
             
-            pid = params[key_pid]
-            gender = {'0':'male','1':'female'}[params[key_gender]]
+            castor_id = params[key_pid]
+            local_id = params[key_local_id].lstrip('0')
             
-            print("UPDATE patients SET")
-            print("    sex = '" + gender + "',")
-            print("    notes = COALESCE(notes || ' ' , '') || '[2023-05-08 gender extracted from castor: ' || COALESCE(sex , 'NA') || ' -> "+gender+"]'")
-            print("WHERE")
-            print("    castor_id = '"+pid+"' LIMIT 1;\n\n")
+            if len(local_id.strip()) >= 6:
+              #print(pid + "\t" + local_id)
+              print("UPDATE patients SET")
+              print("    castor_id = '" + castor_id + "',")
+              print("    notes = COALESCE(notes || ' ' , '') || '[2023-05-08 castor id added -> "+castor_id+"]'")
+              print("WHERE")
+              print("    castor_id IS NULL AND")
+              print("    local_id = '"+local_id+"';")
+              print("\n\n")
 
+#UPDATE patients SET castor_id = 1337
+#WHERE castor_id IS NULL AND local_id = 8264462;
 
 
