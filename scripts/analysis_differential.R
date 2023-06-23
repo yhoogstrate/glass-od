@@ -54,12 +54,14 @@ metadata <- rbind(
 rm(array_samples_all, array_samples_primary, array_samples_recurrent)
 
 
-## limma ~ Wies' style ----
+## limma ----
 
 
 data <- glass_od.data.mvalues |> 
   dplyr::select(metadata$sentrix_id)
 
+#data <- data |> 
+#  dplyr::slice_head(n=4000)
 
 stopifnot(metadata$sentrix_id == colnames(data))
 

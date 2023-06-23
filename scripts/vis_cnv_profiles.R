@@ -1,6 +1,10 @@
 #!/usr/bin/env
 
 
+if(!exists('glass_od.metadata.idats')) {
+  source('scripts/load_metadata.R')
+}
+
 source('scripts/load_chrom_sizes.R')
 
 
@@ -320,7 +324,7 @@ pbapply::pblapply(glass_od.metadata.idats |>
 )
 
 
-saveRDS(purities.bin, file="cache/analysis_tumor_purity_EPIC_bin-based.Rds")
+saveRDS(purities.bin, file="cache/analysis_tumor_purity_EPIC_bin-based.RDs")
 
 
 
