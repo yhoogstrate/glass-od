@@ -160,7 +160,7 @@ w <- function(fn, prefix) {
   
   top <- a |> 
     tibble::rownames_to_column('class') |> 
-    dplyr::slice(n=1) |> 
+    dplyr::slice_head(n=1) |> 
     dplyr::pull(class)
   
   a<- a |> 
@@ -189,6 +189,7 @@ tmp <- c(
   dplyr::mutate(tmp = w(heidelberg_reportBrain_v12.5, "predictBrain_12.5_")) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp)
+
 
 
 stopifnot(tmp$sentrix_id %in% glass_od.metadata.idats$sentrix_id)
@@ -366,6 +367,18 @@ rm(tmp, z)
 
 stopifnot(!is.na(glass_od.metadata.idats$heidelberg_rs_gender_report))
 glass_od.metadata.idats$heidelberg_rs_gender_report <- NULL # already parsed
+
+
+## QC PCA ----
+
+
+
+
+tmp <- readRDS("cache/unsupervised_qc_qc.outliers.Rds")
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+
+rm(tmp)
 
 
 

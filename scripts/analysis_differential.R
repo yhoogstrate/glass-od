@@ -9,70 +9,80 @@ library(minfi)
 source('scripts/youri_gg_theme.R')
 
 
-# obtain patients ----
+if(!exists('glass_od.metadata.patients')) {
+  source('scripts/load_metadata.R')
+}
 
-patients <- glass_od.metadata.patients |> 
-  dplyr::filter(is.na(reason_excluded))
+if(!exists('glass_od.data.mvalues')) {
+  source('scripts/load_mvalues.R')
+}
 
-resections <- glass_od.metadata.patients |> 
-  dplyr::filter(is.na(reason_excluded))
 
-stopifnot(resections$patient_id %in% patients$patient_id)
+# fully paired analysis ----
+## obtain patients ----
+
 
 
 # glass_od.metadata.idats$reason_exclusion_resection_isolation
-# glass_od.metadata.idats$reason_exclusion_resection_isolation
-array_samples <- glass_od.metadata.idats |> 
+array_samples_all <- glass_od.metadata.idats |> 
   dplyr::filter(is.na(reason_excluded_patient)) |> 
   dplyr::filter(is.na(reason_excluded_resection)) |> 
   dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
   dplyr::filter(is.na(reason_excluded_array_sample)) |> 
-  dplyr::filter(percentage.detP.signi < 5) # QC metric that needs to be below 5%
+  dplyr::filter(!is.na(qc.pca.outlier ) & qc.pca.outlier == F)
 
 
-array_samples_primary <- array_samples |> 
-  dplyr::filter(resection_id %in% 
-                  
-                  (glass_od.metadata.resections |>
-                    dplyr::filter(is.na(reason_excluded_resection)) |> 
-                    dplyr::filter(resection_number == 1) |> 
-                    dplyr::pull(resection_id))
-  ) |> 
-  dplyr::filter(patient_id %in% c("0006-R1", "0019-R1") == F)
+array_samples_primary <- array_samples_all |> 
+  dplyr::filter(resection_number == 1)
 
 
-
-array_samples_recurrent <- array_samples |> 
-  dplyr::filter(resection_id %in% 
-                  
-                  (glass_od.metadata.resections |>
-                     dplyr::filter(is.na(reason_excluded_resection)) |> 
-                     dplyr::filter(resection_number > 1) |> 
-                     dplyr::pull(resection_id))
-  ) |> 
+array_samples_recurrent <- array_samples_all |>  # take last recurrence, to max out the time effect
+  dplyr::filter(resection_number > 1) |> 
   dplyr::arrange(desc(resection_id), desc(resection_isolation_id)) |> 
   dplyr::group_by(patient_id) |> 
   dplyr::top_n(n=1)
 
 
-isct <- intersect(array_samples_primary$patient_id, array_samples_recurrent$patient_id) |> 
-  head(n=20)
-
-
-
-targets <- rbind(
-  array_samples_primary |>
-    dplyr::mutate(status = "primary") |> 
-    dplyr::filter(patient_id %in% isct)
-  ,
-  array_samples_recurrent |> dplyr::mutate(status = "last_recurrence")  |> 
-    dplyr::filter(patient_id %in% isct)
+metadata <- rbind(
+  array_samples_primary |> dplyr::mutate(primary_recurrence_status = "primary")  ,
+  array_samples_recurrent |> dplyr::mutate(primary_recurrence_status = "last_recurrence")
 ) |> 
+  dplyr::filter(patient_id %in% intersect(array_samples_primary$patient_id, array_samples_recurrent$patient_id)) |> 
+  dplyr::mutate(patient = as.factor(paste0("pat",patient_id)))
+
+
+rm(array_samples_all, array_samples_primary, array_samples_recurrent)
+
+
+## limma ~ Wies' style ----
+
+
+data <- glass_od.data.mvalues |> 
+  dplyr::select(metadata$sentrix_id)
+
+
+stopifnot(metadata$sentrix_id == colnames(data))
+
+
+design <- model.matrix(~0 + patient + primary_recurrence_status, data=metadata)
+fit <- limma::lmFit(data, design)
+
+saveRDS(fit, file="cache/analysis_differential_fully-paired.Rds")
+
+
+
+
+## dmpFinder ----
+
+targets <- array_samples |> 
   dplyr::rename(Sample_Name = resection_isolation_id) |>
   dplyr::mutate(Array = gsub("^.+_","",sentrix_id)) |> 
   dplyr::rename(Slide = methylation_array_chip_id) |> 
   dplyr::mutate(Basename = gsub("_Grn.idat$","", channel_green)) |> 
   dplyr::select(Sample_Name, sentrix_id, status, Array,Slide, Basename) 
+
+
+
 
 RGSet <- read.metharray.exp(targets = targets, force =T)
 
@@ -199,5 +209,5 @@ ggplot(subset(plt, chr == "chr2"), aes(x=pos / 1000000,y=delta1, col=chr)) +
 
 
 
-
+# fully paired analysis ----
 
