@@ -23,21 +23,9 @@ if(!exists('glass_od.metadata.idats')) {
 }
 
 
+# GLASS-OD ----
 
-# obtain patients ----
-
-# patients <- glass_od.metadata.patients |> 
-#   dplyr::filter(is.na(reason_excluded))
-# 
-# resections <- glass_od.metadata.patients |> 
-#   dplyr::filter(is.na(reason_excluded))
-# 
-# stopifnot(resections$patient_id %in% patients$patient_id)
-
-
-
-
-# load all samples, qc and corr w/ qc stats ----
+## load all samples, qc and corr w/ qc stats ----
 
 
 targets <- glass_od.metadata.idats |> 
@@ -61,7 +49,8 @@ proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = TRUE, verbose = TRUE,
 rm(RGSet)
 gc()
 
-## m-values ----
+
+### m-values ----
 
 
 mvalue <- minfi::ratioConvert(proc, what = "M")
@@ -73,16 +62,49 @@ stopifnot(colnames(mvalue) == colnames(detP))
 mvalue <-  mvalue |> 
   assays() |> 
   purrr::pluck('listData') |> 
-  purrr::pluck("M") |> 
-  magrittr::multiply_by(ifelse(detP > 0.01 , NA, 1)) |> 
+  purrr::pluck("M")
+
+
+stopifnot(dim(mvalue) == dim(detP))
+
+
+#mvalue.mask <- mvalue |> 
+#  magrittr::multiply_by(ifelse(detP > 0.01 , NA, 1))
+
+mvalue.mask <- ifelse(detP > 0.01 , NA, 1) |> 
   data.table::as.data.table(keep.rownames = "probeID") |> 
   dplyr::filter(probeID %in% (
     read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |> 
       dplyr::filter(MASK_general == F) |> 
       dplyr::pull(probeID)
-  ))
+  )) |> 
+  tibble::column_to_rownames('probeID')
 
-stopifnot(targets$sentrix_id == colnames(mvalue |>dplyr::select(-probeID)))
+dim(mvalue.mask)
+
+
+mvalue <- mvalue |> 
+  data.table::as.data.table(keep.rownames = "probeID") |> 
+  dplyr::filter(probeID %in% (
+    read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |> 
+      dplyr::filter(MASK_general == F) |> 
+      dplyr::pull(probeID)
+  )) |> 
+  tibble::column_to_rownames('probeID')
+
+dim(mvalue)
+
+
+
+
+
+
+
+stopifnot(sum(is.na(mvalue)) == 0)
+stopifnot(sum(is.na(mvalue.mask)) > 0)
+
+
+stopifnot(targets$sentrix_id == colnames(mvalue))
 
 # cleanup 
 
@@ -91,10 +113,10 @@ gc()
 
 
 saveRDS(mvalue, "cache/mvalues.Rds")
+saveRDS(mvalue.mask, "cache/mvalues_detP_mask.Rds")
 
-rm(mvalue)
+rm(mvalue, mvalue.mask)
 gc()
-
 
 
 
