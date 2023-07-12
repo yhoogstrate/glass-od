@@ -545,25 +545,23 @@ parse_predictbrain_csv <- function(file, suffix) {
 }
 
 
-tmp.4 <- data.frame(predictBrain.scores.file = Sys.glob("data/GLASS_NL/Methylation/Heidelberg/Heidelberg_unzip/*/predictBrain_v2.1/*_scores.csv")) %>%
-  dplyr::mutate(Sample_ID = gsub("^.+_v2.1/([^/]+)_scores.csv$","\\1", predictBrain.scores.file)) %>% 
-  dplyr::mutate(stats = pbapply::pblapply(predictBrain.scores.file, parse_predictbrain_csv, suffix='')) %>% 
-  #mutate(tmp = map(stats, ~ data.frame(t(.)))) %>%
-  tidyr::unnest(stats) %>% 
-  dplyr::mutate(predictBrain.scores.file = NULL) %>% 
-  tibble::column_to_rownames('Sample_ID') %>% 
-  dplyr::mutate_all(as.numeric) %>% 
+tmp.4 <- data.frame(predictBrain.scores.file = Sys.glob("data/GLASS_NL/Methylation/Heidelberg/Heidelberg_unzip/*/predictBrain_v2.1/*_scores.csv")) |> 
+  dplyr::mutate(Sample_ID = gsub("^.+_v2.1/([^/]+)_scores.csv$","\\1", predictBrain.scores.file)) |> 
+  dplyr::mutate(stats = pbapply::pblapply(predictBrain.scores.file, parse_predictbrain_csv, suffix='')) |> 
+  tidyr::unnest(stats) |>  
+  dplyr::mutate(predictBrain.scores.file = NULL) |> 
+  tibble::column_to_rownames('Sample_ID') |> 
+  dplyr::mutate_all(as.numeric) |> 
   tibble::rownames_to_column('Sample_ID')
 
 
-tmp.5 <- data.frame(predictBrain.scores.file = Sys.glob("data/GLASS_NL/Methylation/Heidelberg/Heidelberg_unzip/*/predictBrain_v2.1/*_scores_cal.csv")) %>%
-  dplyr::mutate(Sample_ID = gsub("^.+_v2.1/([^/]+)_scores_cal.csv$","\\1", predictBrain.scores.file)) %>% 
-  dplyr::mutate(stats = pbapply::pblapply(predictBrain.scores.file, parse_predictbrain_csv, suffix='_cal')) %>% 
-  #mutate(tmp = map(stats, ~ data.frame(t(.)))) %>%
-  tidyr::unnest(stats) %>% 
-  dplyr::mutate(predictBrain.scores.file = NULL) %>% 
-  tibble::column_to_rownames('Sample_ID') %>% 
-  dplyr::mutate_all(as.numeric) %>% 
+tmp.5 <- data.frame(predictBrain.scores.file = Sys.glob("data/GLASS_NL/Methylation/Heidelberg/Heidelberg_unzip/*/predictBrain_v2.1/*_scores_cal.csv")) |> 
+  dplyr::mutate(Sample_ID = gsub("^.+_v2.1/([^/]+)_scores_cal.csv$","\\1", predictBrain.scores.file)) |> 
+  dplyr::mutate(stats = pbapply::pblapply(predictBrain.scores.file, parse_predictbrain_csv, suffix='_cal')) |> 
+  tidyr::unnest(stats) |> 
+  dplyr::mutate(predictBrain.scores.file = NULL) |> 
+  tibble::column_to_rownames('Sample_ID') |> 
+  dplyr::mutate_all(as.numeric) |> 
   tibble::rownames_to_column('Sample_ID') |> 
   dplyr::mutate(IDH_HG_IDH_ratio = log(A_IDH_HG_cal/A_IDH_cal))
 
@@ -576,12 +574,12 @@ stopifnot(tmp.1$Sample_ID %in% tmp.3$Sample_ID)
 stopifnot(tmp.3$Sample_ID %in% tmp.1$Sample_ID)
 
 
-tmp <- tmp.1 %>% 
-  dplyr::left_join(tmp.2, by=c('Sample_ID'='Sample_ID')) %>% 
-  dplyr::left_join(tmp.3, by=c('Sample_ID'='Sample_ID')) %>% 
-  dplyr::left_join(tmp.4, by=c('Sample_ID'='Sample_ID')) %>% 
-  dplyr::left_join(tmp.5, by=c('Sample_ID'='Sample_ID')) %>% 
-  dplyr::rename(methylation.sid = Sample_ID) %>% 
+tmp <- tmp.1 |> 
+  dplyr::left_join(tmp.2, by=c('Sample_ID'='Sample_ID')) |> 
+  dplyr::left_join(tmp.3, by=c('Sample_ID'='Sample_ID')) |>  
+  dplyr::left_join(tmp.4, by=c('Sample_ID'='Sample_ID')) |>  
+  dplyr::left_join(tmp.5, by=c('Sample_ID'='Sample_ID'))  |> 
+  dplyr::rename(methylation.sid = Sample_ID) |> 
   dplyr::rename(methylation.sub.diagnosis = sub.diagnosis)
 
 
