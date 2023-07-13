@@ -487,7 +487,7 @@ rm(metadata.db.con)
 # GLASS-NL ----
 
 
-glass_nl.metadata.resections <- read.csv("data/GLASS_NL//Metadata/Cleaned_clinical/metadata_2022/Samplesheet_GLASS_RNAseq__ALL.csv") |> 
+glass_nl.metadata.resections <- read.csv("data/GLASS_NL/Metadata/Cleaned_clinical/metadata_2022/Samplesheet_GLASS_RNAseq__ALL.csv") |> 
   dplyr::mutate(institute = gsub("^.+_(.+)_.+$","\\1",GLASS_ID)) |> 
   dplyr::rename(genomescan.sid = GS_ID) |> 
   dplyr::mutate(rid = paste0(gsub("^(.+_)[^_]+$","\\1",GLASS_ID),Sample_Name)) |> 
@@ -579,7 +579,7 @@ tmp <- tmp.1 |>
   dplyr::left_join(tmp.3, by=c('Sample_ID'='Sample_ID')) |>  
   dplyr::left_join(tmp.4, by=c('Sample_ID'='Sample_ID')) |>  
   dplyr::left_join(tmp.5, by=c('Sample_ID'='Sample_ID'))  |> 
-  dplyr::rename(methylation.sid = Sample_ID) |> 
+  dplyr::rename(sentrix_id = Sample_ID) |> 
   dplyr::rename(methylation.sub.diagnosis = sub.diagnosis)
 
 
@@ -594,7 +594,6 @@ glass_nl.metadata.resections <- glass_nl.metadata.resections |>
   dplyr::left_join(tmp, by=c('Sample_Name'='Sample_Name'))
 
 rm(tmp)
-
 
 
 
