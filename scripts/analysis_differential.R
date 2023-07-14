@@ -18,6 +18,44 @@ if(!exists('glass_od.data.mvalues')) {
 }
 
 
+# unpaired grading ----
+
+
+
+metadata <- glass_od.metadata.idats |> 
+  dplyr::filter(is.na(reason_excluded_patient)) |> 
+  dplyr::filter(is.na(reason_excluded_resection)) |> 
+  dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
+  dplyr::filter(is.na(reason_excluded_array_sample)) |> 
+  dplyr::filter(study_name == "GLASS-OD") |> 
+  assertr::verify(!is.na(qc.pca.outlier))  |> 
+  dplyr::filter(qc.pca.outlier == F) |> 
+  dplyr::filter(!is.na(resection_tumor_grade)) |> 
+  dplyr::mutate(grading = ifelse(resection_tumor_grade == 2, 0, 1))
+
+
+data <- glass_od.data.mvalues |> 
+  dplyr::select(metadata$sentrix_id)
+
+
+stopifnot(metadata$sentrix_id == colnames(data))
+
+
+design <- model.matrix(~0 + grading, data=metadata)
+fit <- limma::lmFit(data, design)
+fit <- limma::eBayes(fit)
+
+top <- limma::topTable(fit, n=nrow(fit), sort="p") |> # adjust="BH"
+  tibble::rownames_to_column('cg') |> 
+  dplyr::mutate('A_IDH_LG_HG_predictor' = cg %in% probes)
+
+
+ggplot(top, aes(x = logFC, y=-log10(adj.P.Val), col=A_IDH_LG_HG_predictor)) +
+  geom_point(data = top |> dplyr::filter(A_IDH_LG_HG_predictor==F), pch=19,cex=0.1,alpha=0.5) +
+  geom_point(data = top |> dplyr::filter(A_IDH_LG_HG_predictor==T), pch=19,cex=0.5)
+
+
+
 # fully paired analysis ----
 ## obtain patients ----
 
