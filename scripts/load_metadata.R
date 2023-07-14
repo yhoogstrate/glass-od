@@ -62,7 +62,8 @@ glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resectio
     assertthat::assert_that(nrow(.) == 200)
     return(.)
   })() |> 
-  assertr::verify(is.numeric(resection_number))
+  assertr::verify(is.numeric(resection_number)) |> 
+  assertr::verify(is.na(resection_tumor_grade) | resection_tumor_grade %in% c(2,3))
 
 
 

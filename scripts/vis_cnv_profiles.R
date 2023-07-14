@@ -7,37 +7,164 @@ if(!exists('glass_od.metadata.idats')) {
 
 source('scripts/load_chrom_sizes.R')
 
+library(patchwork)
 
-# CNV based purity estimation
 
-# type 1: segment based ----
+# make as-much-as-possible covering CNV plot per sample ----
 
-estimate_1p19q_purity_segment_based <- function(fn) {
-  #fn = glass_od.metadata.idats$heidelberg_cnvp_segments[1]
+
+cnv_plot <- function(cur_sentrix_id) {
+  #cur_sentrix_id <- "204808700074_R05C01"
   
-  segs <- read.delim(fn) |> 
-    dplyr::rename(seg.median.l2fc = seg.median) |> 
-    dplyr::rename(seg.mean.l2fc = seg.mean) |> 
-    dplyr::filter(num.mark >= 35)
+  cur_idat <- glass_od.metadata.idats |> 
+    dplyr::filter(`sentrix_id` == cur_sentrix_id)
+  
+  bins <- read.delim(cur_idat$heidelberg_cnvp_bins)
+  segments <- read.delim(cur_idat$heidelberg_cnvp_segments)
+  
+  plt.bins <- bins |> 
+    dplyr::rename(log2fc = 5) |> 
+    dplyr::mutate(Feature = NULL) |> 
+    dplyr::rename(chr = Chromosome, start = Start, end = End) |> 
+    dplyr::filter(end - start > 35) |> 
+    dplyr::mutate(type="bin")
+  
+  plt.segments <- segments |> 
+    dplyr::select(chrom, loc.start, loc.end, seg.median) |> 
+    dplyr::rename(chr = chrom, start = loc.start, end = loc.end, log2fc=seg.median) |> 
+    dplyr::mutate(type="segment")
+  
+  plt <- rbind(plt.bins, plt.segments) |>
+    dplyr::mutate(group = paste0("line-",1:n())) |> 
+    dplyr::filter(log2fc >= -1.2 & log2fc <= 1.7) |> 
+    tidyr::pivot_longer(cols = c(start, end), values_to = "pos",names_to = "segment_point") |> 
+    dplyr::filter(chr %in% c("chrX","chrY","chrM") == F ) |> 
+    dplyr::mutate(chr = factor(chr, levels = gtools::mixedsort(unique(as.character(chr))))) |> 
+    dplyr::mutate(pos = round(pos/1000000))
+  
+  sel <- unique(c(cur_idat$predictBrain_12.5_cal_class, "O_IDH", "A_IDH_LG", "A_IDH_HG"))
+  pct <- cur_idat |> dplyr::select(paste0("predictBrain_12.5_cal_",sel))
+  class_txt <- data.frame(sel=sel, pct) |> 
+    dplyr::mutate(txt = paste0(sel, ": ",pct,"%")) |> 
+    dplyr::pull(txt) |> 
+    stringi::stri_paste(collapse='  -  ')
+  
+  p1 <- ggplot(plt, aes(x = pos, y=log2fc, group=group, col=log2fc)) +
+    facet_grid(cols = vars(chr), scales = "free", space="free") +
+    
+    geom_hline(yintercept = 0, col="gray80", lty=2) +
+    geom_hline(yintercept = -1, col="gray80", lty=2) +
+    geom_hline(yintercept = 1.5, col="gray80", lty=2) +
+
+    geom_hline(yintercept = cur_idat$methylation_bins_1p19q_median.lfc, col="blue", lty=3) +
+    
+    geom_line(data = plt |> dplyr::filter(type =="bin")) +
+    geom_line(data = plt |> dplyr::filter(type =="segment"), lwd=1.2, col="red") +
+
+    
+    theme_bw() +
+    theme(
+      axis.title = element_text(face = "bold", size = rel(1)),
+      # axis.text.x = element_blank(),
+      legend.position = "bottom",
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.major.y = element_blank(),
+      panel.grid.minor.y = element_blank(),
+      axis.text.x = element_text(angle = 90, vjust = 0.45, hjust = 1),
+      
+      panel.spacing = unit(0.1, "lines")
+    ) +
+    labs(
+      x = NULL,
+      y = paste0("CNVP ",cur_idat$heidelberg_cnvp_version," log2 ratio"),
+      caption = paste0(cur_idat$resection_id, " / ", 
+                       cur_idat$sentrix_id, "  -  ",
+                       class_txt , 
+                       "  -  purity: ", round(100 * cur_idat$methylation_bins_1p19q_purity,1), "%", 
+                       "  -  grade: ", as.character(cur_idat$resection_tumor_grade))
+    ) +
+    scale_x_continuous(breaks = c(0, 50, 100, 150, 200, 250, 300)) +
+    coord_cartesian(ylim = c(-1.2, 1.7))
   
   
-  center <-  segs |> 
-    dplyr::filter(is.na(pval))
-  center <- mean(rep(center$seg.mean.l2fc, center$num.mark))
+  
+  
+  plt <- glass_od.metadata.idats |> 
+    dplyr::filter(is.na(reason_excluded_patient)) |> 
+    dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
+    dplyr::filter(is.na(reason_excluded_resection)) |> 
+    dplyr::filter(is.na(reason_excluded_array_sample)) |> 
+    dplyr::filter(!is.na(methylation_bins_1p19q_median.lfc))|> 
+    dplyr::filter(!is.na(methylation_bins_1p19q_sd))
+  
+  p2 <- ggplot(plt, aes(x=methylation_bins_1p19q_purity,
+                  y=methylation_bins_1p19q_sd,
+                  col=predictBrain_12.5_cal_class,
+                  label=resection_id)
+  ) + 
+    geom_point(size=1.75) +
+    ggrepel::geom_text_repel(data = cur_idat, col="black",
+                             nudge_x = 0.1*0.4,
+                             nudge_y = 0.05*0.4) +
+    theme_bw() +
+    labs(x = "Tumor purity [1P/19Q log2Fc based]",
+         y="Standard deviation purity estimator") +
+    coord_cartesian(ylim = c(0, 0.8))
+  
+  
+  plt <- glass_od.metadata.idats |> 
+    dplyr::filter(is.na(reason_excluded_patient)) |> 
+    dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
+    dplyr::filter(is.na(reason_excluded_resection)) |> 
+    dplyr::filter(is.na(reason_excluded_array_sample)) |> 
+    dplyr::filter(!is.na(qc.pca.comp1)) |> 
+    dplyr::filter(!is.na(percentage.detP.signi))
+    
+  p3 <- ggplot(plt, aes(x=qc.pca.comp1,
+                  y=log2(percentage.detP.signi + 1),
+                  col=predictBrain_12.5_cal_class,
+                  label=resection_id,
+                  shape = percentage.detP.signi >= 5)
+  ) + 
+    geom_point(size=1.75) +
+    ggrepel::geom_text_repel(data = cur_idat, col="black",
+                             nudge_x = 25,
+                             nudge_y = 0.2) +
+    labs(x = "PC1 (quality associated component)",y="log(detP + 1) -- qc metric") +
+    theme_bw() +
+    geom_hline(yintercept = log2(5 +1 ), lty=2, col="red",lwd=0.5) +
+    theme(legend.position = "none")
+  
+  p1 / (p2 + p3 )
+  
+  
+  ggsave(paste0("output/figures/cnv_profiles/",
+                cur_idat$resection_id,".tpc.estimate.png"), width = 8.3, height = 5, scale = 2)
 }
 
 
+pbapply::pblapply(glass_od.metadata.idats |> 
+                    dplyr::filter(is.na(reason_excluded_patient)) |> 
+                    dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
+                    dplyr::filter(is.na(reason_excluded_resection)) |> 
+                    #dplyr::filter(is.na(reason_excluded_array_sample)) |> 
+                    dplyr::pull(sentrix_id), cnv_plot)
 
+
+a = glass_od.metadata.idats |> 
+  dplyr::filter(is.na(reason_excluded_patient)) |> 
+  dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
+  dplyr::filter(is.na(reason_excluded_resection)) 
 
 
 
 
 tpc.estimate = data.frame()
 for(bc in  glass_od.metadata.idat |> dplyr::filter(!is.na(heidelberg_CNV_segments)) |> dplyr::pull(Sentrix_ID) ) {
-  #bc = "204808700074_R05C01"
-  print(bc)
-  seg <- glass_od.metadata.idat |> 
-    dplyr::filter(`Sentrix_ID` == bc)
+  
+  seg <- glass_od.metadata.idats |> 
+    dplyr::filter(`sentrix_id` == sentrix_id)
   
   
   segs <- read.delim(seg |> 
@@ -220,111 +347,12 @@ for(bc in  glass_od.metadata.idat |> dplyr::filter(!is.na(heidelberg_CNV_segment
 }
 
 
-
-# type 2: bin based ----
-
-## 1. preliminary analysis finding important bins
-
-fun <- function(fn) {
-  df <- read.delim(fn) |> 
-    dplyr::filter(Chromosome %in% c("chr1", "chr19")) |> 
-    tibble::column_to_rownames('Feature') |> 
-    dplyr::select(c(4)) |> 
-    t() |> 
-    as.data.frame(stringsAsFactors=F)
-
-  return(df)
-}
+# per grade CNV plot normalised ----
 
 
 
-df <- do.call(
-  rbind,
-  pbapply::pblapply(glass_od.metadata.idats |> 
-                      dplyr::filter(is.na(reason_excluded_array_sample)) |> 
-                      dplyr::filter(is.na(reason_excluded_patient)) |> 
-                      dplyr::filter(is.na(reason_excluded_resection)) |> 
-                      dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
-                      dplyr::pull(heidelberg_cnvp_bins)
-                    , FUN = fun)
-) 
+## test with simple small test set [3x g2, 3x g3] ----
 
-
-df[1:5,1:5]
-
-pca.raw <- prcomp(df)
-
-
-plt <- pca.raw$rotation |> 
-  as.data.frame(stringsAsFactors = F) |> 
-  dplyr::select(paste0("PC", 1:5)) |> 
-  tibble::rownames_to_column('bin') |> 
-  dplyr::mutate(chr = gsub("^([^\\-]+).+$","\\1",bin)) |> 
-  tidyr::pivot_longer(cols = -c(bin, chr)) |> 
-  dplyr::rename(pca_rotation_val = value) |> 
-  dplyr::filter(name == "PC1")
-
-
-ggplot(plt, aes(x = bin, y = pca_rotation_val, col=chr)) +
-  facet_grid(rows = vars(name), scales = "free", space="free") +
-  geom_hline(yintercept = -0.021,col="gray", lty=2) +
-  geom_point(pch=19,cex=0.5) +
-  geom_hline(yintercept = -0.0345,col="gray", lty=2)
-
-
-
-features <- plt |> 
-  dplyr::filter(pca_rotation_val >= -0.0345 & pca_rotation_val <= -0.021) |> 
-  dplyr::pull(bin)
-
-stopifnot(length(features) == 1013)
-
-# saveRDS(features, "cache/1p_19q_purity_most_informative_bins.Rds")
-
-
-## 2. calc
-
-glass_od.data.1p_19q_purity_most_informative_bins <- readRDS("cache/1p_19q_purity_most_informative_bins.Rds")
-
-
-estimate_1p19q_purity_bin_based <- function(fn) {
-  #fn <- glass_od.metadata.idats$heidelberg_cnvp_bins[1]
-  
-  sentrix <- gsub("^.+\\/([0-9]+_R[0-9]+C[0-9]+)\\.bins\\.igv$","\\1", fn)
-  
-  bins <- read.delim(fn) |> 
-    dplyr::filter(Feature %in% glass_od.data.1p_19q_purity_most_informative_bins) |> 
-    (function(.) {
-      assertthat::assert_that(nrow(.) == 1013)
-      return(.)
-    })()
-    
-  median.lfc <- median(bins |> dplyr::pull(c(5)))
-  purity <- -2 * (2^{median.lfc} - 1)
-  sd <- sd(bins |> dplyr::pull(c(5)))
-  
-  out <- data.frame(sentrix_id = sentrix,
-                    methylation_bins_1p19q_median.lfc = median.lfc,
-                    methylation_bins_1p19q_purity = purity,
-                    methylation_bins_1p19q_sd = sd
-                    )
-  
-  return (out)
-}
-
-purities.bin <- do.call(
-rbind,
-pbapply::pblapply(glass_od.metadata.idats |> 
-         dplyr::filter(is.na(reason_excluded_patient)) |> 
-         dplyr::filter(is.na(reason_excluded_resection)) |> 
-         dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
-         dplyr::filter(is.na(reason_excluded_array_sample)) |> 
-         dplyr::pull(heidelberg_cnvp_bins)
-       , estimate_1p19q_purity_bin_based)
-)
-
-
-saveRDS(purities.bin, file="cache/analysis_tumor_purity_EPIC_bin-based.RDs")
 
 
 
