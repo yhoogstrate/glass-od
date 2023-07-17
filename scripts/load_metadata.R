@@ -592,12 +592,96 @@ rm(tmp.1,tmp.2,tmp.3,tmp.4,tmp.5, parse_predictbrain_csv)
 
 
 glass_nl.metadata.resections <- glass_nl.metadata.resections |> 
-  dplyr::left_join(tmp, by=c('Sample_Name'='Sample_Name'))
+  dplyr::left_join(tmp, by=c('Sample_Name'='Sample_Name')) 
 
 rm(tmp)
 
 
 
+
+## idats ----
+
+
+tmp <-  list.files(path = "data/GLASS_NL/Methylation/Methylation Array Data/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |>
+  data.frame(filename = _) |>
+  dplyr::mutate(filename = paste0("data/GLASS_NL/Methylation/Methylation Array Data/", filename)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (658))
+    return(.)
+  })() |>
+  assertr::verify(file.exists(filename)) |>
+  dplyr::mutate(sentrix_id = gsub("^.+/([^/]+)_(Grn|Red)\\.idat$", "\\1", filename)) |>
+  dplyr::mutate(channel = gsub("^.+_(Grn|Red)\\.idat$", "\\1", filename)) |>
+  tidyr::pivot_wider(id_cols = sentrix_id, names_from = channel, values_from = c(filename)) |>
+  dplyr::rename(channel_green = Grn) |>
+  dplyr::rename(channel_red = Red) |> 
+  assertr::verify(is.na(sentrix_id) == is.na(channel_green)) |>
+  assertr::verify(is.na(sentrix_id) == is.na(channel_red))
+
+
+glass_nl.metadata.resections <- glass_nl.metadata.resections |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (217))
+    return(.)
+  })() |>
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  dplyr::filter(!is.na(sentrix_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (214))
+    return(.)
+  })()
+
+
+
+
+# G-SAM ----
+
+## idats ----
+
+
+gsam.metadata <- read.csv("data/G-SAM/MET2022-350-014/MET2022-350-014_IdH.csv", skip=8) |> 
+  dplyr::filter(!is.na(Sentrix_ID)) |> 
+  assertr::verify(grepl("^[0-9]{12}_[A-Z][0-9]{2}[A-Z][0-9]{2}$", Column2)) |> 
+  dplyr::rename(sentrix_id = Column2) |> 
+  dplyr::mutate(study = gsub("^(....).+$","\\1",Sample_Name)) |> 
+  dplyr::filter(study %in% c("MINT","GLSO") == F) |> 
+  assertr::verify(study == "GSAM") |> 
+  dplyr::select(sentrix_id, Sample_Name)
+
+
+tmp <-  list.files(path = "data/G-SAM/", pattern = "_(Grn|Red).idat$", recursive = T) |>
+  data.frame(filename = _) |>
+  dplyr::mutate(filename = paste0("data/G-SAM/", filename)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (240))
+    return(.)
+  })() |> 
+  assertr::verify(file.exists(filename)) |>
+  dplyr::mutate(sentrix_id = gsub("^.+/([^/]+)_(Grn|Red)\\.idat$", "\\1", filename)) |>
+  dplyr::mutate(channel = gsub("^.+_(Grn|Red)\\.idat$", "\\1", filename)) |>
+  tidyr::pivot_wider(id_cols = sentrix_id, names_from = channel, values_from = c(filename)) |>
+  dplyr::rename(channel_green = Grn) |>
+  dplyr::rename(channel_red = Red) |> 
+  dplyr::filter(!grepl("/MET2017-126-014/", channel_green)) |> # stored there for historical reasons - IDH-mutant loss study
+  dplyr::filter(!grepl("/GLSO/", channel_green)) |> # stored there for historical reasons
+  dplyr::filter(!grepl("/MINT/", channel_green)) |> # stored there for historical reasons
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 75)
+    return(.)
+  })()
+
+
+stopifnot(nrow(gsam.metadata) == nrow(tmp))
+stopifnot(gsam.metadata$sentrix_id %in% tmp$sentrix_id)
+
+
+gsam.metadata <- gsam.metadata |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
 
 
 
