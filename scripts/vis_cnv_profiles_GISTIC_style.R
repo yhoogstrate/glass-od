@@ -18,7 +18,13 @@ metadata <- glass_od.metadata.idats |>
   dplyr::filter(is.na(reason_excluded_array_sample)) |> 
   dplyr::filter(study_name == "GLASS-OD") |> 
   assertr::verify(!is.na(qc.pca.outlier)) |> 
-  dplyr::filter(qc.pca.outlier == F) 
+  dplyr::filter(qc.pca.outlier == F) |> 
+  
+  dplyr::filter(!is.na(resection_tumor_grade)) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  
+  dplyr::mutate(resection_tumor_hg = ifelse(resection_tumor_grade == 3, 1, 0)) # 1 or 0 for regression multiplication factor
+
 
 #'@todo remove interim samples, second g2's and non-last g3's etc.
 #'@todo first grading needs to be complete
@@ -46,19 +52,32 @@ f <- function(fn, purity) {
 
 
 data.cnv.profiles <- metadata |> 
-  dplyr::filter(!is.na(resection_tumor_grade)) |> 
-  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
   dplyr::select(sentrix_id, heidelberg_cnvp_bins, methylation_bins_1p19q_purity) |> 
-  tibble::column_to_rownames('sentrix_id') |> 
   dplyr::rowwise() |> 
   dplyr::mutate(tmp = f(heidelberg_cnvp_bins, methylation_bins_1p19q_purity)) |> 
   tidyr::unnest(tmp) |> 
   dplyr::mutate(heidelberg_cnvp_bins = NULL) |> 
-  dplyr::mutate(methylation_bins_1p19q_purity = NULL)
+  dplyr::mutate(methylation_bins_1p19q_purity = NULL) |> 
+  tibble::column_to_rownames('sentrix_id')
 
 
+# limma - g2~g3 as condition ----
 
-p <- data.cnv.profiles |> 
+
+design <- model.matrix(~0 + resection_tumor_hg, data=metadata)
+fit <- limma::lmFit(t(data.cnv.profiles), design)
+fit <- limma::eBayes(fit)
+stats.conditional <- limma::topTable(fit, n=nrow(fit), sort="p") |> # adjust="BH"
+  tibble::rownames_to_column('cnvp_bin')
+
+
+# plot
+
+plt <- data.cnv.profiles |> 
+  tibble::rownames_to_column('sentrix_id') |> 
+  dplyr::left_join(
+    metadata |> dplyr::select(sentrix_id, resection_tumor_grade), by=c('sentrix_id'='sentrix_id')
+  ) |> 
   t() |> 
   as.data.frame() |> 
   tibble::rownames_to_column('bid') |> 
@@ -69,12 +88,6 @@ p <- data.cnv.profiles |>
   dplyr::mutate(end = as.numeric(gsub("^.+_chr[^_]+_[0-9]+_([0-9]+)$","\\1",bid))) |> 
   dplyr::mutate(pos = (start + end)/2) |> 
   tidyr::pivot_longer(cols = c(g2, g3), names_to="grade", values_to="avg_bin_lfc_normalised")
-
-  
-  
-
-plot(colMeans(m2),pch=19,cex=0.1)
-points(colMeans(m3),pch=19,cex=0.1,col="red",alpha=0.5)
 
 
 

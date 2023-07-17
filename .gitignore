@@ -5,3 +5,4 @@
 output/
 *.RData
 *.RDataTmp
+.directory
