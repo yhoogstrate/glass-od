@@ -5,7 +5,7 @@ parse_reportBrain_csv <- function(fn, prefix) {
     tibble::column_to_rownames('X') |> 
     dplyr::rename(pval = 1) |> 
     dplyr::arrange(-pval) |> 
-    dplyr::mutate(pval = round(pval * 100,1)) 
+    dplyr::mutate(pval = pval * 100) 
   
   top <- a |> 
     tibble::rownames_to_column('class') |> 
