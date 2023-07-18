@@ -71,31 +71,81 @@ stats.conditional <- limma::topTable(fit, n=nrow(fit), sort="p") |> # adjust="BH
   tibble::rownames_to_column('cnvp_bin')
 
 
-# plot
+# per group quantiles [only for as-condition] ----
 
-plt <- data.cnv.profiles |> 
+
+plt.quantiles.g2 <-  data.cnv.profiles |> 
   tibble::rownames_to_column('sentrix_id') |> 
-  dplyr::left_join(
-    metadata |> dplyr::select(sentrix_id, resection_tumor_grade), by=c('sentrix_id'='sentrix_id')
-  ) |> 
+  dplyr::filter(sentrix_id %in% (metadata |> dplyr::filter(resection_tumor_grade == 2) |> dplyr::pull(sentrix_id))) |> 
+  tibble::column_to_rownames('sentrix_id') |> 
+  pbapply::pblapply(function(x) {return(quantile(x))}) |> 
+  as.data.frame() |> 
   t() |> 
   as.data.frame() |> 
+  dplyr::rename_with( ~ paste0("quantile.", .x)) |> 
   tibble::rownames_to_column('bid') |> 
+  #tidyr::pivot_longer(cols = -c('bid'), names_to = 'type', values_to='bin_lfc_normalised') |> 
+  #dplyr::filter(type %in% c('quantile.25%','quantile.25%')) |> 
+  
   dplyr::mutate(chr = gsub("^.+_(chr[^_]+)_.+$","\\1",bid)) |> 
   dplyr::filter(chr %in% c("chrX", "chrY") == F ) |> 
   dplyr::mutate(chr = factor(chr, levels = gtools::mixedsort(unique(as.character(chr))))) |> 
   dplyr::mutate(start = as.numeric(gsub("^.+_chr[^_]+_([0-9]+)_.+$","\\1",bid))) |> 
   dplyr::mutate(end = as.numeric(gsub("^.+_chr[^_]+_[0-9]+_([0-9]+)$","\\1",bid))) |> 
   dplyr::mutate(pos = (start + end)/2) |> 
-  tidyr::pivot_longer(cols = c(g2, g3), names_to="grade", values_to="avg_bin_lfc_normalised")
+  dplyr::mutate(bin_lfc_normalised = NULL)
+
+
+ggplot(plt.quantiles.g2[1:160,], aes(x=pos/1000000, y=bin_lfc_normalised)) +
+  geom_rect(aes(NULL,NULL,xmin=start,xmax=end,ymin=`quantile.25%`,ymax=`quantile.75%`), size=0.5, alpha=0.2)
+
+  
+# plt.quantiles.g3 <-  data.cnv.profiles |> 
+#   tibble::rownames_to_column('sentrix_id') |> 
+#   dplyr::filter(sentrix_id %in% (metadata |> dplyr::filter(resection_tumor_grade == 2) |> dplyr::pull(sentrix_id))) |> 
+#   tibble::column_to_rownames('sentrix_id') |> 
+#   pbapply::pblapply(function(x) {return(quantile(x))}) |> 
+#   as.data.frame() |> 
+#   t() |> 
+#   as.data.frame() |> 
+#   dplyr::rename_with( ~ paste0("quantile.", .x)) |> 
+#   tibble::rownames_to_column('bid') |> 
+#   tidyr::pivot_longer(cols = -c('bid'), names_to = 'type', values_to='bin_lfc_normalised') |> 
+#   dplyr::filter(type %in% c('quantile.25%','quantile.25%'))
 
 
 
-ggplot(p, aes(x=pos/1000000, y=avg_bin_lfc_normalised, col=grade)) +
+
+
+# plot
+
+plt <- data.cnv.profiles |> 
+  t() |> 
+  as.data.frame() |> 
+  tibble::rownames_to_column('bid') |> 
+  tidyr::pivot_longer(cols = -c(bid),names_to = "sentrix_id",values_to = 'bin_lfc_normalised') |> 
+  dplyr::mutate(chr = gsub("^.+_(chr[^_]+)_.+$","\\1",bid)) |> 
+  dplyr::filter(chr %in% c("chrX", "chrY") == F ) |> 
+  dplyr::mutate(chr = factor(chr, levels = gtools::mixedsort(unique(as.character(chr))))) |> 
+  dplyr::mutate(start = as.numeric(gsub("^.+_chr[^_]+_([0-9]+)_.+$","\\1",bid))) |> 
+  dplyr::mutate(end = as.numeric(gsub("^.+_chr[^_]+_[0-9]+_([0-9]+)$","\\1",bid))) |> 
+  dplyr::mutate(pos = (start + end)/2) |> 
+  dplyr::left_join(metadata |> dplyr::select(sentrix_id, resection_tumor_grade), by=c('sentrix_id'='sentrix_id'), suffix = c('','')) 
+
+
+
+
+ggplot(plt, aes(x=pos/1000000, y=bin_lfc_normalised, col=as.factor(resection_tumor_grade))) +
   facet_grid(cols = vars(chr), scales = "free", space="free")  +
-  geom_point(pch=19,cex=0.2,alpha=0.1) +
+  geom_point(pch=19,cex=0.2,alpha=0.05) +
   theme_bw() +
-  geom_smooth()
+  geom_smooth() +
+  coord_cartesian(ylim=c(-2.5, 2.5))
+
+
+
+
+  
 
 
 

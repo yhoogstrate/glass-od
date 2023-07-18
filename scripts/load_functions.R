@@ -1,4 +1,5 @@
 #!/usr/bin/env R
 
-source('scripts/func_filter_GLASS_OD_idats.R')
+
+lapply(Sys.glob('scripts/func_*.R'), source)
 
