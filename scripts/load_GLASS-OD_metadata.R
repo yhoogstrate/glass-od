@@ -154,10 +154,43 @@ glass_od.metadata.idats <- glass_od.metadata.idats |>
   assertr::verify(!is.na(percentage.detP.signi))
 
 
+## Heidelberg 11b4[+12.5] QC full ----
+
+# quite some of these files contain odd N/A's
+
+tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", pattern = "_qc_full.txt", recursive = TRUE) |> 
+  data.frame(heidelberg_qc_report_full = _) |> 
+  dplyr::mutate(heidelberg_qc_report_full = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", heidelberg_qc_report_full)) |>
+  dplyr::mutate(heidelberg_qc_report_version = gsub("^.+qc_(v[^_\\/]+)[_/].+$","\\1", heidelberg_qc_report_full)) |>
+  dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", heidelberg_qc_report_full)) |>
+  dplyr::rowwise() |> 
+  dplyr::mutate(tmp = parse_mnpQCReport_csv(heidelberg_qc_report_full, "qc_")) |>
+  dplyr::ungroup() |> 
+  tidyr::unnest(tmp) |> 
+  assertr::verify(!is.na(sentrix_id))|> 
+  assertr::verify(!duplicated(sentrix_id)) |> 
+  assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id)
+
+
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(heidelberg_qc_report_version)) |> 
+  assertr::verify(!is.na(heidelberg_qc_report_full)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 222)
+    return(.)
+  })() |> 
+  dplyr::mutate(heidelberg_qc_report_full = NULL)
+
+rm(tmp)
+
+
+
+
 
 ## Heidelberg 11b4[+12.5] reportBrain files ----
 #' needed to correlate LGC
-
 
 
 tmp <- c(list.files(
@@ -196,8 +229,23 @@ tmp <- c(list.files(
   assertr::verify(!is.na(mnp_predictBrain_v12.5_cal_O_IDH))  |> 
   assertr::verify(!is.na(mnp_predictBrain_v12.5_cal_A_IDH_LG))  |> 
   assertr::verify(!is.na(mnp_predictBrain_v12.5_cal_A_IDH_HG)) |>  
-  assertr::verify(!is.na(mnp_predictBrain_v12.5_cal_OLIGOSARC_IDH))
+  assertr::verify(!is.na(mnp_predictBrain_v12.5_cal_OLIGOSARC_IDH)) |> 
+  
+  dplyr::mutate(A_IDH_HG__A_IDH_lr = log(mnp_predictBrain_v2.0.1_cal_A_IDH_HG / mnp_predictBrain_v2.0.1_cal_A_IDH)) |> 
+  assertr::verify(!is.na(A_IDH_HG__A_IDH_lr))
 
+
+
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(A_IDH_HG__A_IDH_lr)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 222)
+    return(.)
+  })()
+
+rm(tmp)
 
 
 
@@ -224,10 +272,10 @@ tmp <- c(list.files(
     assertthat::assert_that(nrow(.) == 222)
     return(.)
   })() |> 
-  assertr::verify(!is.na(predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
-  assertr::verify(!is.na(predictBrain_v12.8_cal_A_IDH_LG)) |>
-  assertr::verify(!is.na(predictBrain_v12.8_cal_A_IDH_HG)) |>
-  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(predictBrain_v12.8_cal_A_IDH_HG / predictBrain_v12.8_cal_A_IDH_LG)) 
+  assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
+  assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_A_IDH_LG)) |>
+  assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_A_IDH_HG)) |>
+  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(mnp_predictBrain_v12.8_cal_A_IDH_HG / mnp_predictBrain_v12.8_cal_A_IDH_LG)) 
 
 
 
@@ -363,53 +411,6 @@ rm(tmp, v)
 
 
 
-## heidelberg qc full ----
-
-
-x <- function(fn, prefix) {
-  a <- read.csv(fn,header=T, sep="\t") |> 
-    dplyr::mutate(key=paste0(type, "_",name, "_",color, "_",check.if, "_",warning, "_",fail)) |> 
-    dplyr::select(key, norm) |> 
-    tibble::column_to_rownames('key') |> 
-    `colnames<-`('value') |> 
-    t() |> 
-    as.data.frame() |> 
-    dplyr::rename_with( ~ paste0(prefix, .x)) 
-  
-  return(a)
-}
-
-
-tmp <- list.files(path = "data/GLASS_OD/Methylation data - EPIC arrays - brain classifier/", pattern = "_qc_full.txt", recursive = TRUE) |> 
-  data.frame(heidelberg_qc_report_full = _) |> 
-  dplyr::mutate(heidelberg_qc_report_full = paste0("data/GLASS_OD/Methylation data - EPIC arrays - brain classifier/", heidelberg_qc_report_full)) |>
-  dplyr::mutate(basename = gsub("^.+/([^/]+)$", "\\1", heidelberg_qc_report_full)) |>
-  dplyr::mutate(heidelberg_qc_report_version = gsub("^.+qc_(v[^_\\/]+)[_/].+$","\\1", heidelberg_qc_report_full)) |>
-  dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", heidelberg_qc_report_full)) |>
-  dplyr::select(-basename) |> 
-  dplyr::rowwise() |> 
-  dplyr::mutate(tmp = x(heidelberg_qc_report_full, "qc_")) |>
-  dplyr::ungroup() |> 
-  tidyr::unnest(tmp) |> 
-  assertr::verify(!is.na(sentrix_id))|> 
-  assertr::verify(!duplicated(sentrix_id)) |> 
-  assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id)
-
-
-glass_od.metadata.idats <- glass_od.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(heidelberg_qc_report_version)) |> 
-  assertr::verify(!is.na(heidelberg_qc_report_full)) |> 
-    (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 222)
-    return(.)
-  })() |> 
-  dplyr::mutate(heidelberg_qc_report_full = NULL)
-  
-rm(tmp, x)
-
-
 
 
 
@@ -527,210 +528,6 @@ rm(tmp)
 
 DBI::dbDisconnect(metadata.db.con)
 rm(metadata.db.con)
-
-
-
-# GLASS-NL ----
-
-
-glass_nl.metadata.resections <- read.csv("data/GLASS_NL/Metadata/Cleaned_clinical/metadata_2022/Samplesheet_GLASS_RNAseq__ALL.csv") |> 
-  dplyr::mutate(institute = gsub("^.+_(.+)_.+$","\\1",GLASS_ID)) |> 
-  dplyr::rename(genomescan.sid = GS_ID) |> 
-  dplyr::mutate(rid = paste0(gsub("^(.+_)[^_]+$","\\1",GLASS_ID),Sample_Name)) |> 
-  dplyr::rename(Exclude.by.Wies.on.complete.pair = Exclude) |> 
-  dplyr::mutate(Sample_Type = dplyr::case_when(Sample_Type == "I" ~ "initial",
-                                        Sample_Type == "R" ~ "recurrent",
-                                        T ~ as.character(NA))) |> 
-  dplyr::mutate(Sample_Type = factor(Sample_Type, levels=c('initial','recurrent','X'))) |> 
-  dplyr::mutate(Customer_ID = NULL) # horribly confusing set of identifiers, some of which match Sample_Name but on different samples
-
-
-
-
-
-
-tmp.1 <- read.csv('data/GLASS_NL/Methylation/Metadata/Datasheet4.csv') |> 
-  dplyr::mutate(X=NULL) |> 
-  dplyr::mutate(GLASS_ID = NULL,
-                Surgery_ID = NULL,
-                Sample_Sex = NULL,
-                Recurrent_Type = NULL,
-                Sample_Type = NULL,
-                Sample_Resection = NULL,
-                
-                Sample_Plate = NULL,
-                Basename = NULL,
-                Array = NULL,
-                Slide = NULL
-                )
-
-
-tmp.2 <- data.frame(Heidelberg.segment.file = Sys.glob("data/GLASS_NL/Methylation/Heidelberg/Heidelberg_unzip/*/cnvp_v3.0/*.segments.seg")) |> 
-  dplyr::mutate(Sample_ID = gsub("^.+_unzip/([^/]+)_Run.+$","\\1",Heidelberg.segment.file))
-
-
-tmp.3 <- read.csv("data/GLASS_NL/Metadata/(Epi)genetic_data/(Epi)genetic data_GLASS-NL_01092021.csv") |> 
-  dplyr::mutate(X=NULL)
-
-
-parse_predictbrain_csv <- function(file, suffix) {
-  # file = 'data/GLASS_NL/Methylation/Heidelberg/Heidelberg_unzip/203989100107_R01C01_Run_78486/predictBrain_v2.1/203989100107_R01C01_scores.csv'
-  tmp <- read.csv(file)
-  colnames(tmp)[2] <- 'score'
-  
-  out <- list(
-    A_IDH =    tmp |>  dplyr::filter(grepl('^A_IDH$',X))    |>  dplyr::pull(score) |>  as.numeric(),
-    A_IDH_HG = tmp |>  dplyr::filter(grepl('^A_IDH_HG$',X)) |> dplyr::pull(score) |>  as.numeric(),
-    O_IDH =    tmp |>  dplyr::filter(grepl('^O_IDH$',X))    |>  dplyr::pull(score) |>  as.numeric(),
-    GBM_MES =  tmp  |>  dplyr::filter(grepl('^GBM_MES$',X))  |>  dplyr::pull(score) |>  as.numeric()
-  )
-  
-  names(out) <- paste0(names(out), suffix)
-  
-  return(as.data.frame(out))
-}
-
-
-tmp.4 <- data.frame(predictBrain.scores.file = Sys.glob("data/GLASS_NL/Methylation/Heidelberg/Heidelberg_unzip/*/predictBrain_v2.1/*_scores.csv")) |> 
-  dplyr::mutate(Sample_ID = gsub("^.+_v2.1/([^/]+)_scores.csv$","\\1", predictBrain.scores.file)) |> 
-  dplyr::mutate(stats = pbapply::pblapply(predictBrain.scores.file, parse_predictbrain_csv, suffix='')) |> 
-  tidyr::unnest(stats) |>  
-  dplyr::mutate(predictBrain.scores.file = NULL) |> 
-  tibble::column_to_rownames('Sample_ID') |> 
-  dplyr::mutate_all(as.numeric) |> 
-  tibble::rownames_to_column('Sample_ID')
-
-
-tmp.5 <- data.frame(predictBrain.scores.file = Sys.glob("data/GLASS_NL/Methylation/Heidelberg/Heidelberg_unzip/*/predictBrain_v2.1/*_scores_cal.csv")) |> 
-  dplyr::mutate(Sample_ID = gsub("^.+_v2.1/([^/]+)_scores_cal.csv$","\\1", predictBrain.scores.file)) |> 
-  dplyr::mutate(stats = pbapply::pblapply(predictBrain.scores.file, parse_predictbrain_csv, suffix='_cal')) |> 
-  tidyr::unnest(stats) |> 
-  dplyr::mutate(predictBrain.scores.file = NULL) |> 
-  tibble::column_to_rownames('Sample_ID') |> 
-  dplyr::mutate_all(as.numeric) |> 
-  tibble::rownames_to_column('Sample_ID') |> 
-  dplyr::mutate(IDH_HG_IDH_ratio = log(A_IDH_HG_cal/A_IDH_cal))
-
-
-
-stopifnot(duplicated(tmp.1$Sample_ID) == FALSE)
-stopifnot(duplicated(tmp.2$Sample_ID) == FALSE)
-stopifnot(duplicated(tmp.3$Sample_ID) == FALSE)
-stopifnot(tmp.1$Sample_ID %in% tmp.3$Sample_ID)
-stopifnot(tmp.3$Sample_ID %in% tmp.1$Sample_ID)
-
-
-tmp <- tmp.1 |> 
-  dplyr::left_join(tmp.2, by=c('Sample_ID'='Sample_ID')) |> 
-  dplyr::left_join(tmp.3, by=c('Sample_ID'='Sample_ID')) |>  
-  dplyr::left_join(tmp.4, by=c('Sample_ID'='Sample_ID')) |>  
-  dplyr::left_join(tmp.5, by=c('Sample_ID'='Sample_ID'))  |> 
-  dplyr::rename(sentrix_id = Sample_ID) |> 
-  dplyr::rename(methylation.sub.diagnosis = sub.diagnosis)
-
-
-stopifnot(sum(is.na(tmp$Heidelberg.segment.file)) <= 1) # one file missing so far, that's known
-
-
-rm(tmp.1,tmp.2,tmp.3,tmp.4,tmp.5, parse_predictbrain_csv)
-
-
-
-glass_nl.metadata.resections <- glass_nl.metadata.resections |> 
-  dplyr::left_join(tmp, by=c('Sample_Name'='Sample_Name')) 
-
-rm(tmp)
-
-
-
-
-## idats ----
-
-
-tmp <-  list.files(path = "data/GLASS_NL/Methylation/Methylation Array Data/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |>
-  data.frame(filename = _) |>
-  dplyr::mutate(filename = paste0("data/GLASS_NL/Methylation/Methylation Array Data/", filename)) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (658))
-    return(.)
-  })() |>
-  assertr::verify(file.exists(filename)) |>
-  dplyr::mutate(sentrix_id = gsub("^.+/([^/]+)_(Grn|Red)\\.idat$", "\\1", filename)) |>
-  dplyr::mutate(channel = gsub("^.+_(Grn|Red)\\.idat$", "\\1", filename)) |>
-  tidyr::pivot_wider(id_cols = sentrix_id, names_from = channel, values_from = c(filename)) |>
-  dplyr::rename(channel_green = Grn) |>
-  dplyr::rename(channel_red = Red) |> 
-  assertr::verify(is.na(sentrix_id) == is.na(channel_green)) |>
-  assertr::verify(is.na(sentrix_id) == is.na(channel_red))
-
-
-glass_nl.metadata.resections <- glass_nl.metadata.resections |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (217))
-    return(.)
-  })() |>
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  dplyr::filter(!is.na(sentrix_id)) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (214))
-    return(.)
-  })()
-
-
-
-
-# G-SAM ----
-
-## idats ----
-
-
-gsam.metadata <- read.csv("data/G-SAM/MET2022-350-014/MET2022-350-014_IdH.csv", skip=8) |> 
-  dplyr::filter(!is.na(Sentrix_ID)) |> 
-  assertr::verify(grepl("^[0-9]{12}_[A-Z][0-9]{2}[A-Z][0-9]{2}$", Column2)) |> 
-  dplyr::rename(sentrix_id = Column2) |> 
-  dplyr::mutate(study = gsub("^(....).+$","\\1",Sample_Name)) |> 
-  dplyr::filter(study %in% c("MINT","GLSO") == F) |> 
-  assertr::verify(study == "GSAM") |> 
-  dplyr::select(sentrix_id, Sample_Name)
-
-
-tmp <-  list.files(path = "data/G-SAM/", pattern = "_(Grn|Red).idat$", recursive = T) |>
-  data.frame(filename = _) |>
-  dplyr::mutate(filename = paste0("data/G-SAM/", filename)) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (240))
-    return(.)
-  })() |> 
-  assertr::verify(file.exists(filename)) |>
-  dplyr::mutate(sentrix_id = gsub("^.+/([^/]+)_(Grn|Red)\\.idat$", "\\1", filename)) |>
-  dplyr::mutate(channel = gsub("^.+_(Grn|Red)\\.idat$", "\\1", filename)) |>
-  tidyr::pivot_wider(id_cols = sentrix_id, names_from = channel, values_from = c(filename)) |>
-  dplyr::rename(channel_green = Grn) |>
-  dplyr::rename(channel_red = Red) |> 
-  dplyr::filter(!grepl("/MET2017-126-014/", channel_green)) |> # stored there for historical reasons - IDH-mutant loss study
-  dplyr::filter(!grepl("/GLSO/", channel_green)) |> # stored there for historical reasons
-  dplyr::filter(!grepl("/MINT/", channel_green)) |> # stored there for historical reasons
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 75)
-    return(.)
-  })()
-
-
-stopifnot(nrow(gsam.metadata) == nrow(tmp))
-stopifnot(gsam.metadata$sentrix_id %in% tmp$sentrix_id)
-
-
-gsam.metadata <- gsam.metadata |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
-
-
-# heidelberg reportBrain ----
-
 
 
 
