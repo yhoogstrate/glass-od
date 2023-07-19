@@ -164,7 +164,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   dplyr::mutate(heidelberg_qc_report_version = gsub("^.+qc_(v[^_\\/]+)[_/].+$","\\1", heidelberg_qc_report_full)) |>
   dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", heidelberg_qc_report_full)) |>
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_mnpQCReport_csv(heidelberg_qc_report_full, "qc_")) |>
+  dplyr::mutate(tmp = parse_mnp_QCReport_csv(heidelberg_qc_report_full, "qc_")) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
   assertr::verify(!is.na(sentrix_id))|> 
