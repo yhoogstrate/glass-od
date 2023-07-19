@@ -1,5 +1,5 @@
 
-parse_predictMGMT_csv <- function(fn, prefix) {
+parse_mnp_predictMGMT_csv <- function(fn, prefix) {
   
   a <- read.csv(fn,header=T) |> 
     dplyr::mutate(X=NULL, Status = NULL) |>  # also returns status if it is inconfident 

@@ -414,7 +414,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   assertr::verify(!duplicated(sentrix_id)) |> 
   assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_predictMGMT_csv(heidelberg_mgmt_report, "mnp_MGMT_")) |>
+  dplyr::mutate(tmp = parse_mnp_predictMGMT_csv(heidelberg_mgmt_report, "mnp_MGMT_")) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
   dplyr::mutate(heidelberg_mgmt_report = NULL) |> 
