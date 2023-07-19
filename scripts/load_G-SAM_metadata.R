@@ -57,7 +57,7 @@ rm(tmp)
 
 
 
-## heidelberg 12.8 reportBrain files ----
+## Heidelberg 12.8 reportBrain files ----
 
 
 tmp <- c(
@@ -100,7 +100,44 @@ rm(tmp)
 
 
 
-## CNVP segment files ----
+## Heidelberg 12.8 Frozen ~ FFPE status ----
+
+
+tmp <- list.files(path = "data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/",  pattern = "_ffpe_frozen.txt", recursive = TRUE) |> 
+  data.frame(mnpQC_FrozenFFPEstatus_table = _) |> 
+  dplyr::mutate(mnpQC_FrozenFFPEstatus_table = paste0("data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", mnpQC_FrozenFFPEstatus_table)) |>
+  dplyr::rowwise() |> 
+  dplyr::mutate(tmp = parse_mnpFrozenFFPEstatus_table(mnpQC_FrozenFFPEstatus_table, "mnpQC_")) |>
+  dplyr::ungroup() |> 
+  tidyr::unnest(tmp) |> 
+  assertr::verify(!is.na(sentrix_id))|> 
+  assertr::verify(!duplicated(sentrix_id)) |> 
+  assertr::verify(sentrix_id %in% gsam.metadata.idats$sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 75)
+    return(.)
+  })()
+
+
+
+gsam.metadata.idats <- gsam.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(mnpQC_predicted_array_type)) |> 
+  assertr::verify(!is.na(mnpQC_predicted_sample_type)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 75)
+    return(.)
+  })()
+
+rm(tmp)
+
+
+
+
+
+## Heidelberg 12.8 CNVP segment files ----
 
 
 tmp <- list.files(path = "data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/",
