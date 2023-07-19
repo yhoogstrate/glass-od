@@ -105,7 +105,7 @@ tmp <- c(
   assertr::verify(!duplicated(sentrix_id)) |>  # only one version per sentrix_id desired
   assertr::verify(sentrix_id %in% glass_nl.metadata.idats$sentrix_id) |> 
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_reportBrain_csv(mnp_predictBrain_filename, paste0("mnp_predictBrain_", mnp_predictBrain_version, "_"))) |>
+  dplyr::mutate(tmp = parse_mnp_reportBrain_csv(mnp_predictBrain_filename, paste0("mnp_predictBrain_", mnp_predictBrain_version, "_"))) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
   (function(.) {

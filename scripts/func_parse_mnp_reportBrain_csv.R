@@ -1,5 +1,5 @@
 
-parse_reportBrain_csv <- function(fn, prefix) {
+parse_mnp_reportBrain_csv <- function(fn, prefix) {
   
   a <- read.csv(fn) |> 
     tibble::column_to_rownames('X') |> 

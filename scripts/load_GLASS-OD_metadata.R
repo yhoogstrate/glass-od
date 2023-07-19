@@ -218,8 +218,8 @@ tmp <- c(list.files(
   assertr::verify(file.exists(`mnp_predictBrain_v2.0.1_filename`)) |>
   assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
   dplyr::rowwise() |> 
-  dplyr::mutate(`tmp_v2.0.1` = parse_reportBrain_csv(`mnp_predictBrain_v2.0.1_filename`, paste0("mnp_predictBrain_v2.0.1_"))) |>
-  dplyr::mutate(tmp_v12.5 = parse_reportBrain_csv(`mnp_predictBrain_v12.5_filename`, paste0("mnp_predictBrain_v12.5_"))) |>
+  dplyr::mutate(`tmp_v2.0.1` = parse_mnp_reportBrain_csv(`mnp_predictBrain_v2.0.1_filename`, paste0("mnp_predictBrain_v2.0.1_"))) |>
+  dplyr::mutate(tmp_v12.5 = parse_mnp_reportBrain_csv(`mnp_predictBrain_v12.5_filename`, paste0("mnp_predictBrain_v12.5_"))) |>
   dplyr::ungroup() |> 
   tidyr::unnest(`tmp_v2.0.1`) |> 
   tidyr::unnest(tmp_v12.5) |> 
@@ -264,7 +264,7 @@ tmp <- c(list.files(
   assertr::verify(!duplicated(sentrix_id)) |>  # only one version per sentrix_id 
   assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_reportBrain_csv(mnp_predictBrain_filename, paste0("mnp_predictBrain_", mnp_predictBrain_version, "_"))) |>
+  dplyr::mutate(tmp = parse_mnp_reportBrain_csv(mnp_predictBrain_filename, paste0("mnp_predictBrain_", mnp_predictBrain_version, "_"))) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
   (function(.) {
