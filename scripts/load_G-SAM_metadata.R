@@ -80,15 +80,9 @@ tmp <- c(
     return(.)
   })() |> 
   assertr::verify(!is.na(predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
-  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(predictBrain_v12.8_cal_A_IDH_HG / predictBrain_v12.8_cal_A_IDH_LG)) 
-
-
-tmp |> 
   assertr::verify(!is.na(predictBrain_v12.8_cal_A_IDH_LG)) |>
   assertr::verify(!is.na(predictBrain_v12.8_cal_A_IDH_HG)) |>
-  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(predictBrain_v12.8_cal_A_IDH_HG / predictBrain_v12.8_cal_A_IDH_LG)) |>
-  dplyr::select(predictBrain_v12.8_cal_A_IDH_LG, predictBrain_v12.8_cal_A_IDH_HG, A_IDH_HG__A_IDH_LG_lr)
-
+  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(predictBrain_v12.8_cal_A_IDH_HG / predictBrain_v12.8_cal_A_IDH_LG)) 
 
 
 
@@ -100,9 +94,9 @@ gsam.metadata.idats <- gsam.metadata.idats |>
     print(dim(.))
     assertthat::assert_that(nrow(.) == 75)
     return(.)
-  })()
+  })() 
 
-
+rm(tmp)
 
 
 
