@@ -179,26 +179,18 @@ rm(tmp)
 
 ## Heidelberg 12.8 CNVP segment files ----
 
+tmp <- query_Heidelberg_12_8_CNVP_segment_files(
+  "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/",
+  214, # 235 to become
+  glass_nl.metadata.idats$sentrix_id)
 
-tmp <- list.files(path = "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/",
-                  pattern = "*.seg", recursive = TRUE) |> 
-  data.frame(heidelberg_cnvp_segments = _) |> 
-  dplyr::mutate(heidelberg_cnvp_segments = paste0("data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/", heidelberg_cnvp_segments)) |> 
-  assertr::verify(file.exists(heidelberg_cnvp_segments)) |> 
-  dplyr::mutate(heidelberg_cnvp_version = gsub("^.+/cnvp_([^/]+)/.+$","\\1", heidelberg_cnvp_segments)) |> 
-  dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$","\\1", heidelberg_cnvp_segments)) |> 
-  assertr::verify(!is.na(sentrix_id)) |> 
-  assertr::verify(!duplicated(sentrix_id)) |> # only one version per sample needed
-  assertr::verify(sentrix_id %in% glass_nl.metadata.idats$sentrix_id) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 214) # 235 t.b.
-    return(.)
-  })()
 
 
 glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+  #assertr::verify(!is.na(heidelberg_cnvp_segments)) 
+  #assertr::verify(!is.na(heidelberg_cnvp_version)) 
 rm(tmp)
+
 
 

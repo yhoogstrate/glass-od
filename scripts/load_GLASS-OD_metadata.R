@@ -156,86 +156,84 @@ glass_od.metadata.idats <- glass_od.metadata.idats |>
 
 
 
-## heidelberg reportBrain files ----
-
-
-w <- function(fn, prefix) {
-  
-  a <- read.csv(fn) |> 
-    tibble::column_to_rownames('X') |> 
-    dplyr::rename(pval = 1) |> 
-    dplyr::arrange(-pval) |> 
-    dplyr::mutate(pval = round(pval * 100,1)) 
-  
-  top <- a |> 
-    tibble::rownames_to_column('class') |> 
-    dplyr::slice_head(n=1) |> 
-    dplyr::pull(class)
-  
-  a <- a |> 
-    t() |> 
-    as.data.frame() |> 
-    dplyr::mutate(class = top) |> 
-    dplyr::rename_with( ~ paste0(prefix,"cal_", .x)) 
-  
-  return(a)
-}
-
-
-
+## Heidelberg 12.8 reportBrain files ----
 
 tmp <- c(
-  list.files(path = "data/GLASS_OD/Methylation data - EPIC arrays - brain classifier/", pattern = "*_scores_cal.csv", recursive = TRUE)
+  list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "*_scores_cal.csv", recursive = TRUE)
 ) |>
   data.frame(filename = _) |>
-  dplyr::mutate(filename = paste0("data/GLASS_OD/Methylation data - EPIC arrays - brain classifier/", filename)) |>
-  dplyr::mutate(basename = gsub("^.+/([^/]+)$", "\\1", filename)) |>
-  dplyr::mutate(version = gsub("^.+predictBrain_([^_\\/]+)[_/].+$","\\1", filename)) |>
+  dplyr::mutate(mnp_predictBrain_filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", filename)) |>
+  dplyr::mutate(mnp_predictBrain_version = gsub("^.+predictBrain_([^_\\/]+)[_/].+$","\\1", filename)) |>
   dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", filename)) |>
-  dplyr::select(-basename) |>
-  tidyr::pivot_wider(id_cols = sentrix_id, names_from = version, values_from = c(filename), names_prefix = "heidelberg_reportBrain_") |> 
+  assertr::verify(!is.na(sentrix_id))|> 
+  assertr::verify(!duplicated(sentrix_id)) |>  # only one version per sentrix_id 
+  assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = w(heidelberg_reportBrain_v12.5, "predictBrain_12.5_")) |>
+  dplyr::mutate(tmp = parse_reportBrain_csv(mnp_predictBrain_filename, paste0("predictBrain_", mnp_predictBrain_version, "_"))) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
-  assertr::verify(!is.na(sentrix_id))|> 
-  assertr::verify(!duplicated(sentrix_id)) |> 
-  assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id)
-
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 222)
+    return(.)
+  })() |> 
+  assertr::verify(!is.na(predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
+  assertr::verify(!is.na(predictBrain_v12.8_cal_A_IDH_LG)) |>
+  assertr::verify(!is.na(predictBrain_v12.8_cal_A_IDH_HG)) |>
+  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(predictBrain_v12.8_cal_A_IDH_HG / predictBrain_v12.8_cal_A_IDH_LG)) 
 
 
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(heidelberg_reportBrain_v12.5)) |> 
-  assertr::verify(!is.na(heidelberg_reportBrain_v2.0.1)) |> 
+  assertr::verify(!is.na(predictBrain_v12.8_cal_class)) |> 
+  assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 222)
+    return(.)
+  })() 
+
+rm(tmp)
+
+
+
+## Heidelberg 12.8 Frozen ~ FFPE status ----
+
+tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/",  pattern = "_ffpe_frozen.txt", recursive = TRUE) |> 
+  data.frame(mnpQC_FrozenFFPEstatus_table = _) |> 
+  dplyr::mutate(mnpQC_FrozenFFPEstatus_table = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", mnpQC_FrozenFFPEstatus_table)) |>
+  dplyr::rowwise() |> 
+  dplyr::mutate(tmp = parse_mnpFrozenFFPEstatus_table(mnpQC_FrozenFFPEstatus_table, "mnpQC_")) |>
+  dplyr::ungroup() |> 
+  tidyr::unnest(tmp) |> 
+  assertr::verify(!is.na(sentrix_id))|> 
+  assertr::verify(!duplicated(sentrix_id)) |> 
+  assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 222)
     return(.)
   })()
-  
-rm(tmp, w)
+
+
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(mnpQC_predicted_array_type)) |> 
+  assertr::verify(!is.na(mnpQC_predicted_sample_type)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 222)
+    return(.)
+  })()
+
+rm(tmp)
 
 
 
+## Heidelberg 12.8 CNVP segment files ----
 
-
-
-## heidelberg CNV files ----
-
-### segment file ----
-
-
-tmp <- list.files(path = "data/GLASS_OD/Methylation data - EPIC arrays - brain classifier/", pattern = "*.seg", recursive = TRUE) |> 
-  data.frame(heidelberg_cnvp_segments = _) |> 
-  dplyr::mutate(heidelberg_cnvp_segments = paste0("data/GLASS_OD/Methylation data - EPIC arrays - brain classifier/", heidelberg_cnvp_segments)) |> 
-  dplyr::mutate(heidelberg_cnvp_version = gsub("^.+/cnvp_([^/]+)/.+$","\\1", heidelberg_cnvp_segments)) |> 
-  dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$","\\1", heidelberg_cnvp_segments)) |> 
-  assertr::verify(!is.na(sentrix_id))|> 
-  assertr::verify(!duplicated(sentrix_id)) |> 
-  assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id)
-
+tmp <- query_Heidelberg_12_8_CNVP_segment_files("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", 222, glass_od.metadata.idats$sentrix_id)
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
