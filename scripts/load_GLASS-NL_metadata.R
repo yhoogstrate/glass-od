@@ -179,7 +179,7 @@ rm(tmp)
 
 ## Heidelberg 12.8 CNVP segment files ----
 
-tmp <- query_Heidelberg_12_8_CNVP_segment_files(
+tmp <- query_mnp_12.8_CNVP_segment_csv(
   "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/",
   214, # 235 to become
   glass_nl.metadata.idats$sentrix_id)

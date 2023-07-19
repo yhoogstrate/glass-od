@@ -328,7 +328,7 @@ rm(tmp)
 
 ## Heidelberg 12.8 CNVP segment files ----
 
-tmp <- query_Heidelberg_12_8_CNVP_segment_files("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", 222, glass_od.metadata.idats$sentrix_id)
+tmp <- query_mnp_12.8_CNVP_segment_csv("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", 222, glass_od.metadata.idats$sentrix_id)
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 

@@ -1,7 +1,7 @@
 #!/usr/bin/env R
 
 
-query_Heidelberg_12_8_CNVP_segment_files <- function(path, n, sentrix_check = NULL) {
+query_mnp_12.8_CNVP_segment_csv <- function(path, n, sentrix_check = NULL) {
   tmp <- list.files(path = path, pattern = "*.seg", recursive = TRUE) |> 
     data.frame(heidelberg_cnvp_segments = _) |> 
     dplyr::mutate(heidelberg_cnvp_segments = paste0(path, heidelberg_cnvp_segments)) |> 

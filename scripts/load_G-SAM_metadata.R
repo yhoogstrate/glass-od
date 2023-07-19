@@ -140,7 +140,7 @@ rm(tmp)
 ## Heidelberg 12.8 CNVP segment files ----
 
 
-tmp <- query_Heidelberg_12_8_CNVP_segment_files(
+tmp <- query_mnp_12.8_CNVP_segment_csv(
   "data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/",
   75,
   gsam.metadata.idats$sentrix_id)
