@@ -1,6 +1,6 @@
 #!/usr/bin/env R
 
-parse_CNVPoncogeneScores_csv <- function(fn, prefix) {
+parse_mnp_CNVPoncogeneScores_csv <- function(fn, prefix) {
   a <- read.csv(fn,header=T, sep="\t", stringsAsFactors = F) |> 
     dplyr::select(name, value) |> 
     tibble::column_to_rownames('name') |> 

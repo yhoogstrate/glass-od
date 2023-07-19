@@ -381,7 +381,7 @@ tmp <- c(
   assertr::verify(!duplicated(sentrix_id)) |> 
   assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_CNVPoncogeneScores_csv (filename, "heidelberg_cnvp_")) |>
+  dplyr::mutate(tmp = parse_mnp_CNVPoncogeneScores_csv (filename, "heidelberg_cnvp_")) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
   dplyr::mutate(filename = NULL)
