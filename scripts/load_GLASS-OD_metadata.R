@@ -3,6 +3,7 @@
 # load libs, config & db ----
 
 
+source('scripts/load_functions.R')
 metadata.db.con <- DBI::dbConnect(RSQLite::SQLite(), "../glass-od-clinical-database/glass-od-clinical-database.db")
 
 
@@ -71,9 +72,9 @@ glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resectio
 ## a. load all idat files ----
 
 
-glass_od.metadata.idats <- list.files(path = "data/GLASS_OD/Methylation data - EPIC arrays/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |>
+glass_od.metadata.idats <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |>
   data.frame(filename = _) |>
-  dplyr::mutate(filename = paste0("data/GLASS_OD/Methylation data - EPIC arrays/", filename)) |> 
+  dplyr::mutate(filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays/", filename)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == (414 + 28 + 2))
@@ -281,7 +282,7 @@ tmp <- c(list.files(
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(predictBrain_v12.8_cal_class)) |> 
+  assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_class)) |> 
   assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr)) |> 
   (function(.) {
     print(dim(.))
@@ -347,9 +348,9 @@ rm(tmp)
 ## Heidelberg 12.8 CNVP bins files ----
 
 
-tmp <- list.files(path = "data/GLASS_OD/Methylation data - EPIC arrays - brain classifier/", pattern = "*.bins.igv", recursive = TRUE) |> 
+tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "*.bins.igv", recursive = TRUE) |> 
   data.frame(heidelberg_cnvp_bins = _) |> 
-  dplyr::mutate(heidelberg_cnvp_bins = paste0("data/GLASS_OD/Methylation data - EPIC arrays - brain classifier/", heidelberg_cnvp_bins)) |> 
+  dplyr::mutate(heidelberg_cnvp_bins = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", heidelberg_cnvp_bins)) |> 
   dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$","\\1", heidelberg_cnvp_bins)) |> 
   assertr::verify(!is.na(sentrix_id))|> 
   assertr::verify(!duplicated(sentrix_id)) |> 
@@ -396,7 +397,7 @@ glass_od.metadata.idats <- glass_od.metadata.idats |>
     return(.)
   })()
 
-rm(tmp, v)
+rm(tmp)
 
 
 
@@ -432,15 +433,13 @@ rm(tmp)
 
 
 
-## rs_gender ----
-
-
-
-
+## Heidelberg 12.8 rs_gender ----
+stopifnot(FALSE) # gebruik de 11b4 - deze geeft altijd NA
 
 tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "*.mix_gender.csv", recursive = TRUE) |> 
   data.frame(heidelberg_rs_gender_report = _) |> 
   dplyr::mutate(heidelberg_rs_gender_report = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", heidelberg_rs_gender_report)) |>
+  assertr::verify(file.exists(heidelberg_rs_gender_report)) |> 
   dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", heidelberg_rs_gender_report)) |> 
   assertr::verify(!is.na(sentrix_id))|> 
   assertr::verify(!duplicated(sentrix_id)) |> 
@@ -448,15 +447,21 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   dplyr::rowwise() |> 
   dplyr::mutate(tmp = parse_mnp_RsGender_csv(heidelberg_rs_gender_report, "rs_gender_")) |>
   dplyr::ungroup() |> 
-  tidyr::unnest(tmp)
+  tidyr::unnest(tmp) |> 
+  dplyr::mutate(heidelberg_rs_gender_report = NULL) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 222)
+    return(.)
+  })()
+  
 
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
-rm(tmp, z)
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(rs_gender_predicted))
+rm(tmp)
 
-stopifnot(!is.na(glass_od.metadata.idats$heidelberg_rs_gender_report))
-glass_od.metadata.idats$heidelberg_rs_gender_report <- NULL # already parsed
 
 
 ## QC PCA ----

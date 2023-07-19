@@ -79,16 +79,16 @@ tmp <- c(
     assertthat::assert_that(nrow(.) == 75)
     return(.)
   })() |> 
-  assertr::verify(!is.na(predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
-  assertr::verify(!is.na(predictBrain_v12.8_cal_A_IDH_LG)) |>
-  assertr::verify(!is.na(predictBrain_v12.8_cal_A_IDH_HG)) |>
-  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(predictBrain_v12.8_cal_A_IDH_HG / predictBrain_v12.8_cal_A_IDH_LG)) 
+  assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
+  assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_A_IDH_LG)) |>
+  assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_A_IDH_HG)) |>
+  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(mnp_predictBrain_v12.8_cal_A_IDH_HG / mnp_predictBrain_v12.8_cal_A_IDH_LG)) 
 
 
 
 gsam.metadata.idats <- gsam.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(predictBrain_v12.8_cal_class)) |> 
+  assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_class)) |> 
   assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr)) |> 
   (function(.) {
     print(dim(.))
