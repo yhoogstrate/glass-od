@@ -155,11 +155,58 @@ glass_od.metadata.idats <- glass_od.metadata.idats |>
 
 
 
+## Heidelberg 11b4[+12.5] reportBrain files ----
+#' needed to correlate LGC
+
+
+
+tmp <- c(list.files(
+  path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", pattern = "*_scores_cal.csv", recursive = TRUE)
+) |>
+  data.frame(filename = _) |>
+  dplyr::mutate(mnp_predictBrain_filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", filename)) |>
+  dplyr::mutate(mnp_predictBrain_version = gsub("^.+predictBrain_([^_\\/]+)[_/].+$","\\1", filename)) |>
+  dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", filename)) |>
+  dplyr::mutate(filename = NULL) |> 
+  tidyr::pivot_wider(id_cols = sentrix_id,
+                     names_from = mnp_predictBrain_version, 
+                     values_from = c(mnp_predictBrain_filename), 
+                     names_prefix = "mnp_predictBrain_") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 222)
+    return(.)
+  })() |> 
+  dplyr::rename(`mnp_predictBrain_v12.5_filename` = `mnp_predictBrain_v12.5`) |> 
+  dplyr::rename(`mnp_predictBrain_v2.0.1_filename` = `mnp_predictBrain_v2.0.1`) |> 
+  assertr::verify(!is.na(sentrix_id))|> 
+  assertr::verify(!duplicated(sentrix_id)) |>
+  assertr::verify(file.exists(`mnp_predictBrain_v12.5_filename`)) |>
+  assertr::verify(file.exists(`mnp_predictBrain_v2.0.1_filename`)) |>
+  assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
+  dplyr::rowwise() |> 
+  dplyr::mutate(`tmp_v2.0.1` = parse_reportBrain_csv(`mnp_predictBrain_v2.0.1_filename`, paste0("mnp_predictBrain_v2.0.1_"))) |>
+  dplyr::mutate(tmp_v12.5 = parse_reportBrain_csv(`mnp_predictBrain_v12.5_filename`, paste0("mnp_predictBrain_v12.5_"))) |>
+  dplyr::ungroup() |> 
+  tidyr::unnest(`tmp_v2.0.1`) |> 
+  tidyr::unnest(tmp_v12.5) |> 
+  assertr::verify(!is.na(mnp_predictBrain_v2.0.1_cal_O_IDH)) |> 
+  assertr::verify(!is.na(mnp_predictBrain_v2.0.1_cal_A_IDH)) |> 
+  assertr::verify(!is.na(mnp_predictBrain_v2.0.1_cal_A_IDH_HG)) |> 
+  assertr::verify(!is.na(mnp_predictBrain_v12.5_cal_O_IDH))  |> 
+  assertr::verify(!is.na(mnp_predictBrain_v12.5_cal_A_IDH_LG))  |> 
+  assertr::verify(!is.na(mnp_predictBrain_v12.5_cal_A_IDH_HG)) |>  
+  assertr::verify(!is.na(mnp_predictBrain_v12.5_cal_OLIGOSARC_IDH))
+
+
+
+
+
 
 ## Heidelberg 12.8 reportBrain files ----
 
-tmp <- c(
-  list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "*_scores_cal.csv", recursive = TRUE)
+tmp <- c(list.files(
+  path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "*_scores_cal.csv", recursive = TRUE)
 ) |>
   data.frame(filename = _) |>
   dplyr::mutate(mnp_predictBrain_filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", filename)) |>
@@ -169,7 +216,7 @@ tmp <- c(
   assertr::verify(!duplicated(sentrix_id)) |>  # only one version per sentrix_id 
   assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_reportBrain_csv(mnp_predictBrain_filename, paste0("predictBrain_", mnp_predictBrain_version, "_"))) |>
+  dplyr::mutate(tmp = parse_reportBrain_csv(mnp_predictBrain_filename, paste0("mnp_predictBrain_", mnp_predictBrain_version, "_"))) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
   (function(.) {
@@ -249,7 +296,7 @@ rm(tmp)
 
 
 
-### bins file ----
+## Heidelberg 12.8 CNVP bins files ----
 
 
 tmp <- list.files(path = "data/GLASS_OD/Methylation data - EPIC arrays - brain classifier/", pattern = "*.bins.igv", recursive = TRUE) |> 
@@ -272,7 +319,7 @@ glass_od.metadata.idats <- glass_od.metadata.idats |>
 rm(tmp)
 
 
-### ongene scores ----
+## Heidelberg 12.8 CNVP ongene scores ----
 
 
 v <- function(fn, prefix) {
