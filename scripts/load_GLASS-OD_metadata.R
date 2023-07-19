@@ -370,31 +370,20 @@ rm(tmp)
 ## Heidelberg 12.8 CNVP ongene scores ----
 
 
-v <- function(fn, prefix) {
-  a <- read.csv(fn,header=T, sep="\t", stringsAsFactors = F) |> 
-    dplyr::select(name, value) |> 
-    tibble::column_to_rownames('name') |> 
-    dplyr::rename(cnv_score = value) |> 
-    t() |> 
-    as.data.frame(stringsAsFactors = F) |> 
-    dplyr::rename_with( ~ paste0(prefix, .x))
-  
-  return(a)
-}
-
-
 tmp <- c(
-  list.files(path = "data/GLASS_OD/Methylation data - EPIC arrays - brain classifier/", pattern = "*.detail.txt", recursive = TRUE)
+  list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "*.detail.txt", recursive = TRUE)
 ) |>
   data.frame(filename = _) |>
-  dplyr::mutate(filename = paste0("data/GLASS_OD/Methylation data - EPIC arrays - brain classifier/", filename)) |>
+  dplyr::mutate(filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", filename)) |>
+  assertr::verify(file.exists(filename)) |> 
   dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", filename)) |>
-  dplyr::rowwise() |> 
-  dplyr::mutate(tmp = v(filename, "heidelberg_cnvp_")) |>
-  tidyr::unnest(tmp) |> 
   assertr::verify(!is.na(sentrix_id))|> 
   assertr::verify(!duplicated(sentrix_id)) |> 
   assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
+  dplyr::rowwise() |> 
+  dplyr::mutate(tmp = parse_CNVPoncogeneScores_csv (filename, "heidelberg_cnvp_")) |>
+  dplyr::ungroup() |> 
+  tidyr::unnest(tmp) |> 
   dplyr::mutate(filename = NULL)
 
 
@@ -416,50 +405,30 @@ rm(tmp, v)
 
 ## predictMGMT ----
 
-
-y <- function(fn, prefix) {
-
-  a <- read.csv(fn,header=T) |> 
-    dplyr::mutate(X=NULL, Status = NULL) |>  # also returns status if it is inconfident 
-    dplyr::mutate(status = dplyr::case_when(
-      Estimated < Cutoff & CI_Lower < Cutoff & CI_Upper < Cutoff ~ "unmethylated",
-      Estimated > Cutoff & CI_Lower > Cutoff & CI_Upper > Cutoff ~ "methylated",
-      T ~ as.character(NA)
-    )) |> 
-    dplyr::rename_with( ~ paste0(prefix, .x)) 
-  
-  return(a)
-}
-
-
-
-tmp <- list.files(path = "data/GLASS_OD/Methylation data - EPIC arrays - brain classifier/", pattern = "_mgmt.csv", recursive = TRUE) |> 
+tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "_mgmt.csv", recursive = TRUE) |> 
   data.frame(heidelberg_mgmt_report = _) |> 
-  dplyr::mutate(heidelberg_mgmt_report = paste0("data/GLASS_OD/Methylation data - EPIC arrays - brain classifier/", heidelberg_mgmt_report)) |>
-  dplyr::mutate(basename = gsub("^.+/([^/]+)$", "\\1", heidelberg_mgmt_report)) |>
+  dplyr::mutate(heidelberg_mgmt_report = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", heidelberg_mgmt_report)) |>
+  assertr::verify(file.exists(heidelberg_mgmt_report)) |> 
   dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", heidelberg_mgmt_report)) |>
-  dplyr::select(-basename) |> 
-  dplyr::rowwise() |> 
-  dplyr::mutate(tmp = y(heidelberg_mgmt_report, "mgmt_")) |>
-  dplyr::ungroup() |> 
-  tidyr::unnest(tmp) |> 
   assertr::verify(!is.na(sentrix_id))|> 
   assertr::verify(!duplicated(sentrix_id)) |> 
-  assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id)
-
-
-glass_od.metadata.idats <- glass_od.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(heidelberg_mgmt_report)) |> 
+  assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
+  dplyr::rowwise() |> 
+  dplyr::mutate(tmp = parse_predictMGMT_csv(heidelberg_mgmt_report, "mnp_MGMT_")) |>
+  dplyr::ungroup() |> 
+  tidyr::unnest(tmp) |> 
+  dplyr::mutate(heidelberg_mgmt_report = NULL) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 222)
     return(.)
-  })() |> 
-  dplyr::mutate(heidelberg_mgmt_report = NULL)
-rm(tmp, y)
+  })()
 
 
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(mnp_MGMT_Estimated))
+rm(tmp)
 
 
 
