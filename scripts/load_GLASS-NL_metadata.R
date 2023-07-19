@@ -145,7 +145,7 @@ tmp <- list.files(path = "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_
   data.frame(mnpQC_FrozenFFPEstatus_table = _) |> 
   dplyr::mutate(mnpQC_FrozenFFPEstatus_table = paste0("data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/", mnpQC_FrozenFFPEstatus_table)) |>
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_mnpFrozenFFPEstatus_table(mnpQC_FrozenFFPEstatus_table, "mnpQC_")) |>
+  dplyr::mutate(tmp = parse_mnp_FrozenFFPEstatus_table(mnpQC_FrozenFFPEstatus_table, "mnpQC_")) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
   assertr::verify(!is.na(sentrix_id))|> 

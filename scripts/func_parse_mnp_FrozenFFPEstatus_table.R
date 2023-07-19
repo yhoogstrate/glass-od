@@ -1,8 +1,8 @@
 #!/usr/bin/env R
 
 
-parse_mnpFrozenFFPEstatus_table <- function(fn, prefix) {
-  #fn = tmp$mnpFrozenFFPEstatus_table[1]
+parse_mnp_FrozenFFPEstatus_table <- function(fn, prefix) {
+  #fn = tmp$mnp_FrozenFFPEstatus_table[1]
   
   out <- read.table(fn) |> 
     dplyr::rename(predicted_array_type = V2) |> 
