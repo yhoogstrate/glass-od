@@ -10,11 +10,9 @@ if(!exists('glass_od.metadata.idats')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
 
-
 if(!exists('glass_nl.metadata.idats')) {
   source('scripts/load_GLASS-NL_metadata.R')
 }
-
 
 if(!exists('gsam.metadata.idats')) {
   source('scripts/load_G-SAM_metadata.R')

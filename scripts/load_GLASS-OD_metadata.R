@@ -4,6 +4,8 @@
 
 
 source('scripts/load_functions.R')
+
+
 metadata.db.con <- DBI::dbConnect(RSQLite::SQLite(), "../glass-od-clinical-database/glass-od-clinical-database.db")
 
 
@@ -105,7 +107,6 @@ glass_od.metadata.idats <- list.files(path = "data/GLASS_OD/DNA Methylation - EP
 
 
 
-
 ## b. load all idat metadata from access ----
 
 
@@ -143,15 +144,13 @@ rm(glass_od.metadata.array_samples)
 
 
 
-## add percentage detP probes ----
+## Percentage detP probes ----
 
 # from: scripts/analysis_percentage_detP_probes.R
 
-tmp <- read.table("output/tables/percentage_detP_probes.txt") |> 
-  assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id)
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  dplyr::left_join(read.table("output/tables/percentage_detP_probes.txt"), by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(percentage.detP.signi))
 
 
