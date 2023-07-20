@@ -93,6 +93,16 @@ glass_nl.metadata.idats <- glass_nl.metadata.idats |>
 rm(tmp)
 
 
+## Percentage detP probes ----
+
+# from: scripts/analysis_percentage_detP_probes.R
+
+
+glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
+  dplyr::left_join(read.table("output/tables/percentage_detP_probes.txt"), by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(percentage.detP.signi))
+
+
 
 ## Heidelberg 12.8 reportBrain files ----
 
@@ -145,15 +155,16 @@ rm(tmp)
 
 
 tmp <- list.files(path = "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/",  pattern = "_ffpe_frozen.txt", recursive = TRUE) |> 
-  data.frame(mnpQC_FrozenFFPEstatus_table = _) |> 
-  dplyr::mutate(mnpQC_FrozenFFPEstatus_table = paste0("data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/", mnpQC_FrozenFFPEstatus_table)) |>
+  data.frame(mnp_QC_FrozenFFPEstatus_table = _) |> 
+  dplyr::mutate(mnp_QC_FrozenFFPEstatus_table = paste0("data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/", mnp_QC_FrozenFFPEstatus_table)) |>
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_mnp_FrozenFFPEstatus_table(mnpQC_FrozenFFPEstatus_table, "mnpQC_")) |>
+  dplyr::mutate(tmp = parse_mnp_FrozenFFPEstatus_table(mnp_QC_FrozenFFPEstatus_table, "mnp_QC_")) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
   assertr::verify(!is.na(sentrix_id))|> 
   assertr::verify(!duplicated(sentrix_id)) |> 
   assertr::verify(sentrix_id %in% glass_nl.metadata.idats$sentrix_id) |> 
+  dplyr::mutate(mnp_QC_FrozenFFPEstatus_table = NULL) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 214)
@@ -164,15 +175,15 @@ tmp <- list.files(path = "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_
 
 glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  #assertr::verify(!is.na(mnpQC_predicted_array_type)) |> 
-  #assertr::verify(!is.na(mnpQC_predicted_sample_type)) |> 
+  #assertr::verify(!is.na(mnp_QC_predicted_array_type)) |> 
+  #assertr::verify(!is.na(mnp_QC_predicted_sample_type)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 235)
     return(.)
   })() |> 
   (function(.) {
-    assertthat::assert_that(sum(!is.na(.$mnpQC_predicted_array_type)) == 214)
+    assertthat::assert_that(sum(!is.na(.$mnp_QC_predicted_array_type)) == 214)
     return(.)
   })() 
 
