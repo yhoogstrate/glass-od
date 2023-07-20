@@ -30,7 +30,7 @@ gsam.metadata.idats <-  list.files(path = "data/G-SAM/DNA Methylation - EPIC arr
   })()
 
 
-## link sample names
+## link sample names ----
 
 
 tmp <- read.csv("data/G-SAM/DNA Methylation - EPIC arrays/MET2022-350-014/MET2022-350-014_IdH.csv", skip=8) |> 
@@ -54,6 +54,16 @@ gsam.metadata.idats <- gsam.metadata.idats |>
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(Sample_Name))
 rm(tmp)
+
+
+## Percentage detP probes ----
+
+# from: scripts/analysis_percentage_detP_probes.R
+
+
+gsam.metadata.idats <- gsam.metadata.idats |> 
+  dplyr::left_join(read.table("output/tables/percentage_detP_probes.txt"), by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(percentage.detP.signi))
 
 
 
@@ -104,15 +114,16 @@ rm(tmp)
 
 
 tmp <- list.files(path = "data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/",  pattern = "_ffpe_frozen.txt", recursive = TRUE) |> 
-  data.frame(mnpQC_FrozenFFPEstatus_table = _) |> 
-  dplyr::mutate(mnpQC_FrozenFFPEstatus_table = paste0("data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", mnpQC_FrozenFFPEstatus_table)) |>
+  data.frame(mnp_QC_FrozenFFPEstatus_table = _) |> 
+  dplyr::mutate(mnp_QC_FrozenFFPEstatus_table = paste0("data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", mnp_QC_FrozenFFPEstatus_table)) |>
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_mnp_FrozenFFPEstatus_table(mnpQC_FrozenFFPEstatus_table, "mnpQC_")) |>
+  dplyr::mutate(tmp = parse_mnp_FrozenFFPEstatus_table(mnp_QC_FrozenFFPEstatus_table, "mnp_QC_")) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
   assertr::verify(!is.na(sentrix_id))|> 
   assertr::verify(!duplicated(sentrix_id)) |> 
   assertr::verify(sentrix_id %in% gsam.metadata.idats$sentrix_id) |> 
+  dplyr::mutate(mnp_QC_FrozenFFPEstatus_table = NULL) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 75)
@@ -120,11 +131,10 @@ tmp <- list.files(path = "data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS cla
   })()
 
 
-
 gsam.metadata.idats <- gsam.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(mnpQC_predicted_array_type)) |> 
-  assertr::verify(!is.na(mnpQC_predicted_sample_type)) |> 
+  assertr::verify(!is.na(mnp_QC_predicted_array_type)) |> 
+  assertr::verify(!is.na(mnp_QC_predicted_sample_type)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 75)

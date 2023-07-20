@@ -123,7 +123,7 @@ tmp <- c(
   tidyr::unnest(tmp) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 214)
+    assertthat::assert_that(nrow(.) == 235)
     return(.)
   })() |> 
   assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
@@ -135,17 +135,13 @@ tmp <- c(
 
 glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  #assertr::verify(!is.na(predictBrain_v12.8_cal_class)) |> 
-  #assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr)) |> 
+  assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_class)) |> 
+  assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 235)
     return(.)
-  })() |> 
-  (function(.) {
-    assertthat::assert_that(sum(!is.na(.$A_IDH_HG__A_IDH_LG_lr)) == 214)
-    return(.)
-  })() 
+  })()
 
 rm(tmp)
 
@@ -167,7 +163,7 @@ tmp <- list.files(path = "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_
   dplyr::mutate(mnp_QC_FrozenFFPEstatus_table = NULL) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 214)
+    assertthat::assert_that(nrow(.) == 235)
     return(.)
   })()
 
@@ -175,15 +171,11 @@ tmp <- list.files(path = "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_
 
 glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  #assertr::verify(!is.na(mnp_QC_predicted_array_type)) |> 
-  #assertr::verify(!is.na(mnp_QC_predicted_sample_type)) |> 
+  assertr::verify(!is.na(mnp_QC_predicted_array_type)) |> 
+  assertr::verify(!is.na(mnp_QC_predicted_sample_type)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 235)
-    return(.)
-  })() |> 
-  (function(.) {
-    assertthat::assert_that(sum(!is.na(.$mnp_QC_predicted_array_type)) == 214)
     return(.)
   })() 
 
@@ -195,15 +187,13 @@ rm(tmp)
 
 tmp <- query_mnp_12.8_CNVP_segment_csv(
   "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/",
-  214, # 235 to become
-  glass_nl.metadata.idats$sentrix_id)
-
+  235, glass_nl.metadata.idats$sentrix_id)
 
 
 glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
-  #assertr::verify(!is.na(heidelberg_cnvp_segments)) 
-  #assertr::verify(!is.na(heidelberg_cnvp_version)) 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(heidelberg_cnvp_segments))  |> 
+  assertr::verify(!is.na(heidelberg_cnvp_version))
 rm(tmp)
 
 

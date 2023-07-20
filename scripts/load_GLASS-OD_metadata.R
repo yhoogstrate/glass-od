@@ -248,6 +248,33 @@ glass_od.metadata.idats <- glass_od.metadata.idats |>
 rm(tmp)
 
 
+## Heidelberg 11b4[+12.5] rs_gender ----
+
+tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", pattern = "*.mix_gender.csv", recursive = TRUE) |> 
+  data.frame(heidelberg_rs_gender_report = _) |> 
+  dplyr::mutate(heidelberg_rs_gender_report = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", heidelberg_rs_gender_report)) |>
+  assertr::verify(file.exists(heidelberg_rs_gender_report)) |> 
+  dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", heidelberg_rs_gender_report)) |> 
+  assertr::verify(!is.na(sentrix_id))|> 
+  assertr::verify(!duplicated(sentrix_id)) |> 
+  assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |>
+  dplyr::rowwise() |> 
+  dplyr::mutate(tmp = parse_mnp_RsGender_csv(heidelberg_rs_gender_report, "mnp_rsGender_11b4_")) |>
+  dplyr::ungroup() |> 
+  tidyr::unnest(tmp) |> 
+  dplyr::mutate(heidelberg_rs_gender_report = NULL) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 222)
+    return(.)
+  })()
+
+
+
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(mnp_rsGender_11b4_predicted))
+rm(tmp)
 
 
 
@@ -434,7 +461,6 @@ rm(tmp)
 
 
 ## Heidelberg 12.8 rs_gender ----
-stopifnot(FALSE) # gebruik de 11b4 - deze geeft altijd NA
 
 tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "*.mix_gender.csv", recursive = TRUE) |> 
   data.frame(heidelberg_rs_gender_report = _) |> 
@@ -445,7 +471,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   assertr::verify(!duplicated(sentrix_id)) |> 
   assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |>
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_mnp_RsGender_csv(heidelberg_rs_gender_report, "rs_gender_")) |>
+  dplyr::mutate(tmp = parse_mnp_RsGender_csv(heidelberg_rs_gender_report, "mnp_rsGender_12.8_")) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
   dplyr::mutate(heidelberg_rs_gender_report = NULL) |> 
@@ -459,7 +485,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(rs_gender_predicted))
+  assertr::verify(!is.na(`mnp_rsGender_12.8_chrYintensity`))
 rm(tmp)
 
 

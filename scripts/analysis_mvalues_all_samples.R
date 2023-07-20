@@ -17,70 +17,65 @@ if(!exists('youri_gg_theme')) {
 }
 
 
-
 if(!exists('glass_od.metadata.idats')) {
-  source('scripts/load_metadata.R')
+  source('scripts/load_GLASS-OD_metadata.R')
+}
+
+if(!exists('glass_nl.metadata.idats')) {
+  source('scripts/load_GLASS-NL_metadata.R')
+}
+
+if(!exists('gsam.metadata.idats')) {
+  source('scripts/load_G-SAM_metadata.R')
 }
 
 
 source('scripts/load_functions.R')
 
 
+# metadata ----
 
-# GLASS-NL ----
 
-
-targets.glass_nl <- glass_nl.metadata.resections |> 
+metadata.glass_od <- glass_od.metadata.idats |> 
   dplyr::filter(!is.na(sentrix_id)) |> 
-  dplyr::select(sentrix_id) |> 
+  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (214))
+    assertthat::assert_that(nrow(.) == (222))
     return(.)
   })()
 
 
-idats.glass_nl <-  list.files(path = "data/GLASS_NL/Methylation/Methylation Array Data/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |>
-  data.frame(filename = _) |>
-  dplyr::mutate(filename = paste0("data/GLASS_NL/Methylation/Methylation Array Data/", filename)) |> 
+metadata.glass_nl <- glass_nl.metadata.idats |> 
+  dplyr::filter(!is.na(sentrix_id)) |> 
+  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (658))
+    assertthat::assert_that(nrow(.) == (235))
     return(.)
-  })() |>
-  assertr::verify(file.exists(filename)) |>
-  dplyr::mutate(sentrix_id = gsub("^.+/([^/]+)_(Grn|Red)\\.idat$", "\\1", filename)) |>
-  dplyr::mutate(channel = gsub("^.+_(Grn|Red)\\.idat$", "\\1", filename)) |>
-  tidyr::pivot_wider(id_cols = sentrix_id, names_from = channel, values_from = c(filename)) |>
-  dplyr::rename(channel_green = Grn) |>
-  dplyr::rename(channel_red = Red)
+  })()
 
 
-targets.glass_nl <- targets.glass_nl |> 
-  dplyr::left_join(idats.glass_nl, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(channel_green)) |> 
-  assertr::verify(!is.na(channel_red)) |> 
+metadata.gsam <- gsam.metadata.idats |> 
+  dplyr::filter(!is.na(sentrix_id)) |> 
+  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (214))
+    assertthat::assert_that(nrow(.) == (75))
     return(.)
   })()
 
 
 
-# GLASS-OD ----
 
 
-targets.glass_od <- glass_od.metadata.idats |> 
-  filter_GLASS_OD_idats(163) |> 
-  dplyr::select(sentrix_id, channel_green, channel_red)
 
-
-# combine ----
+# integrate & make m-values ----
 
 targets <- rbind(
-  targets.glass_od |> dplyr::mutate(dataset = "GLASS-OD"),
-  targets.glass_nl |> dplyr::mutate(dataset = "GLASS-NL")
+  metadata.glass_od |> dplyr::mutate(dataset = "GLASS-OD"),
+  metadata.glass_nl |> dplyr::mutate(dataset = "GLASS-NL"),
+  metadata.gsam |> dplyr::mutate(dataset = "G-SAM")
   ) |> 
   dplyr::mutate(Basename = gsub("_(Grn|Red).idat$","",channel_green)) |> 
   dplyr::mutate(channel_green = NULL, channel_red = NULL) |> 
@@ -98,7 +93,7 @@ rm(RGSet)
 gc()
 
 
-### m-values ----
+### m-values for all samples ----
 
 
 mvalue <- minfi::ratioConvert(proc, what = "M")
@@ -160,11 +155,12 @@ rm(detP, proc)
 gc()
 
 
-saveRDS(mvalue, "cache/mvalues.combi.Rds")
-saveRDS(mvalue.mask, "cache/mvalues.combi.detP_mask.Rds")
+saveRDS(mvalue, "cache/mvalues.all_samples.Rds")
+saveRDS(mvalue.mask, "cache/mvalues.all_samples.detP_mask.Rds")
 
 rm(mvalue, mvalue.mask)
 gc()
+
 
 
 
