@@ -198,3 +198,17 @@ rm(tmp)
 
 
 
+
+## QC PCA outlier ----
+
+
+tmp <- readRDS("cache/unsupervised_qc_outliers_all.Rds")
+
+glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(qc.pca.comp1)) |> 
+  assertr::verify(!is.na(qc.pca.detP.outlier))
+
+rm(tmp)
+
+

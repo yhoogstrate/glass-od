@@ -9,8 +9,8 @@ filter_GLASS_OD_idats <- function(metadata, nrow.check = 0) {
     
     dplyr::filter(study_name == "GLASS-OD") |> # oligosarcoma's from CATNON excl
     
-    assertr::verify(!is.na(qc.pca.outlier)) |> 
-    dplyr::filter(qc.pca.outlier == F) |> 
+    assertr::verify(!is.na(qc.pca.detP.outlier)) |> 
+    dplyr::filter(qc.pca.detP.outlier == F) |> 
     
     assertr::verify(!duplicated(resection_id)) |> 
     

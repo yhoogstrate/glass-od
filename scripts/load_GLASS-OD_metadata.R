@@ -409,7 +409,7 @@ tmp <- c(
   assertr::verify(!duplicated(sentrix_id)) |> 
   assertr::verify(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_mnp_CNVPoncogeneScores_csv (filename, "heidelberg_cnvp_")) |>
+  dplyr::mutate(tmp = parse_mnp_CNVPoncogeneScores_csv (filename, "mnp_CNVP_12.8_")) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
   dplyr::mutate(filename = NULL)
@@ -417,7 +417,7 @@ tmp <- c(
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(`heidelberg_cnvp_CDKN2A/B`)) |> 
+  assertr::verify(!is.na(`mnp_CNVP_12.8_CDKN2A/B`)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 222)
@@ -490,17 +490,17 @@ rm(tmp)
 
 
 
-## QC PCA ----
+## QC PCA outlier ----
 
 
+tmp <- readRDS("cache/unsupervised_qc_outliers_all.Rds")
 
-tmp <- readRDS("cache/unsupervised_qc_qc.outliers.Rds")
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(qc.pca.comp1)) |> 
+  assertr::verify(!is.na(qc.pca.detP.outlier))
 
 rm(tmp)
-
-
 
 
 

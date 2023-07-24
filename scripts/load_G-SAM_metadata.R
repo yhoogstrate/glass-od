@@ -149,11 +149,9 @@ rm(tmp)
 
 ## Heidelberg 12.8 CNVP segment files ----
 
-
 tmp <- query_mnp_12.8_CNVP_segment_csv(
   "data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/",
-  75,
-  gsam.metadata.idats$sentrix_id)
+  75, gsam.metadata.idats$sentrix_id)
 
 
 
@@ -164,6 +162,18 @@ gsam.metadata.idats <- gsam.metadata.idats |>
 rm(tmp)
 
 
+
+## QC PCA outlier ----
+
+
+tmp <- readRDS("cache/unsupervised_qc_outliers_all.Rds")
+
+gsam.metadata.idats <- gsam.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(qc.pca.comp1)) |> 
+  assertr::verify(!is.na(qc.pca.detP.outlier))
+
+rm(tmp)
 
 
 
