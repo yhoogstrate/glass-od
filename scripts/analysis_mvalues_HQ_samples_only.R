@@ -1,5 +1,5 @@
 #!/usr/bin/env R
-
+#' combined reading and normalization of GLASS-NL and GLASS-OD data
 
 # load data ----
 
@@ -17,29 +17,75 @@ if(!exists('youri_gg_theme')) {
 }
 
 
-
 if(!exists('glass_od.metadata.idats')) {
-  source('scripts/load_metadata.R')
+  source('scripts/load_GLASS-OD_metadata.R')
+}
+
+if(!exists('glass_nl.metadata.idats')) {
+  source('scripts/load_GLASS-NL_metadata.R')
+}
+
+if(!exists('gsam.metadata.idats')) {
+  source('scripts/load_G-SAM_metadata.R')
 }
 
 
-# GLASS-OD ----
-
-## load all samples, qc and corr w/ qc stats ----
+source('scripts/load_functions.R')
 
 
-targets <- glass_od.metadata.idats |> 
-  dplyr::filter(is.na(reason_excluded_patient)) |> 
-  dplyr::filter(is.na(reason_excluded_resection)) |> 
-  dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
-  #dplyr::filter(is.na(reason_excluded_array_sample)) # those are typically the replicates
-  assertr::verify(!duplicated(resection_id)) |> 
-  assertr::verify(sentrix_id != "204808700074_R04C01") |>  # 0003-R3-repA
-  dplyr::rename(Sample_Name = resection_isolation_id) |>
-  dplyr::mutate(Array = gsub("^.+_","",sentrix_id)) |> 
-  dplyr::rename(Slide = methylation_array_chip_id) |> 
-  dplyr::mutate(Basename = gsub("_Grn.idat$","", channel_green)) |> 
-  dplyr::select(Sample_Name, sentrix_id, Array,Slide, Basename)
+# metadata ----
+
+
+metadata.glass_od <- glass_od.metadata.idats |> 
+  dplyr::filter(!is.na(sentrix_id)) |> 
+  filter_GLASS_OD_idats(163) |> 
+  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (163))
+    return(.)
+  })()
+
+
+metadata.glass_nl <- glass_nl.metadata.idats |> 
+  dplyr::filter(!is.na(sentrix_id)) |> 
+  dplyr::filter(qc.pca.detP.outlier == F) |> 
+  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (218))
+    return(.)
+  })()
+
+
+metadata.gsam <- gsam.metadata.idats |> 
+  dplyr::filter(!is.na(sentrix_id)) |> 
+  dplyr::filter(qc.pca.detP.outlier == F) |> 
+  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (75))
+    return(.)
+  })()
+
+
+
+
+
+
+# integrate & make m-values ----
+
+targets <- rbind(
+  metadata.glass_od |> dplyr::mutate(dataset = "GLASS-OD"),
+  metadata.glass_nl |> dplyr::mutate(dataset = "GLASS-NL"),
+  metadata.gsam |> dplyr::mutate(dataset = "G-SAM")
+) |> 
+  dplyr::mutate(Basename = gsub("_(Grn|Red).idat$","",channel_green)) |> 
+  dplyr::mutate(channel_green = NULL, channel_red = NULL) |> 
+  dplyr::mutate(Sample_Name = paste0(dataset,"_",sentrix_id)) |>
+  dplyr::mutate(Array = gsub("^.+_","",sentrix_id)) |>
+  dplyr::mutate(Slide = gsub("^([0-9]+)_.+$","\\1",sentrix_id))
+
 
 RGSet <- minfi::read.metharray.exp(targets = targets, force = T) #red/green channel together
 
@@ -50,7 +96,7 @@ rm(RGSet)
 gc()
 
 
-### m-values ----
+### m-values for all samples ----
 
 
 mvalue <- minfi::ratioConvert(proc, what = "M")
@@ -112,11 +158,12 @@ rm(detP, proc)
 gc()
 
 
-saveRDS(mvalue, "cache/mvalues.Rds")
-saveRDS(mvalue.mask, "cache/mvalues_detP_mask.Rds")
+saveRDS(mvalue, "cache/mvalues.HQ_samples.Rds")
+saveRDS(mvalue.mask, "cache/mvalues.HQ_samples.detP_mask.Rds")
 
 rm(mvalue, mvalue.mask)
 gc()
+
 
 
 
