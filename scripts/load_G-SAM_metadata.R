@@ -176,4 +176,23 @@ gsam.metadata.idats <- gsam.metadata.idats |>
 rm(tmp)
 
 
+## Median methylation levels ----
+
+
+tmp <- readRDS("cache/analysis_median_methylation.Rds")
+
+gsam.metadata.idats <- gsam.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(
+    (qc.pca.detP.outlier == F & !is.na(median.overall.methylation)) |
+      (qc.pca.detP.outlier == T & is.na(median.overall.methylation))
+  ) |>
+  assertr::verify(
+    (qc.pca.detP.outlier == F & !is.na(median.glass_nl_supervised.methylation)) |
+      (qc.pca.detP.outlier == T & is.na(median.glass_nl_supervised.methylation))
+  )
+
+rm(tmp)
+
+
 

@@ -503,8 +503,29 @@ glass_od.metadata.idats <- glass_od.metadata.idats |>
 rm(tmp)
 
 
+## Median methylation levels ----
 
-# add tumor purity calls? ----
+
+tmp <- readRDS("cache/analysis_median_methylation.Rds")
+
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(
+    (qc.pca.detP.outlier == F & !is.na(median.overall.methylation)) |
+      (qc.pca.detP.outlier == T & is.na(median.overall.methylation))
+  ) |>
+  assertr::verify(
+    (qc.pca.detP.outlier == F & !is.na(median.glass_nl_supervised.methylation)) |
+      (qc.pca.detP.outlier == T & is.na(median.glass_nl_supervised.methylation))
+  )
+
+rm(tmp)
+
+
+
+
+
+## bin-based tumor purity calls ----
 
 
 tmp <- readRDS("cache/analysis_tumor_purity_EPIC_bin-based.Rds")
