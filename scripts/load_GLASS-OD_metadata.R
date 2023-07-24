@@ -232,7 +232,15 @@ tmp <- c(list.files(
   assertr::verify(!is.na(mnp_predictBrain_v12.5_cal_OLIGOSARC_IDH)) |> 
   
   dplyr::mutate(A_IDH_HG__A_IDH_lr = log(mnp_predictBrain_v2.0.1_cal_A_IDH_HG / mnp_predictBrain_v2.0.1_cal_A_IDH)) |> 
-  assertr::verify(!is.na(A_IDH_HG__A_IDH_lr))
+  assertr::verify(!is.na(A_IDH_HG__A_IDH_lr)) |> 
+  
+  dplyr::mutate(A_IDH_HG__A_IDH_lr_neat = log(
+    
+    (mnp_predictBrain_v2.0.1_cal_A_IDH_HG / (1-mnp_predictBrain_v2.0.1_cal_A_IDH_HG))
+    / 
+      (mnp_predictBrain_v2.0.1_cal_A_IDH / (1-mnp_predictBrain_v2.0.1_cal_A_IDH))
+    
+  )) 
 
 
 
@@ -302,7 +310,12 @@ tmp <- c(list.files(
   assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
   assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_A_IDH_LG)) |>
   assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_A_IDH_HG)) |>
-  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(mnp_predictBrain_v12.8_cal_A_IDH_HG / mnp_predictBrain_v12.8_cal_A_IDH_LG)) 
+  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(mnp_predictBrain_v12.8_cal_A_IDH_HG / mnp_predictBrain_v12.8_cal_A_IDH_LG))  |>
+  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr_neat = log(
+    (mnp_predictBrain_v12.8_cal_A_IDH_HG / (1-mnp_predictBrain_v12.8_cal_A_IDH_HG))
+    / 
+    (mnp_predictBrain_v12.8_cal_A_IDH_LG / (1-mnp_predictBrain_v12.8_cal_A_IDH_LG))
+    )) 
 
 
 
@@ -509,19 +522,37 @@ rm(tmp)
 tmp <- readRDS("cache/analysis_median_methylation.Rds")
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(
-    (qc.pca.detP.outlier == F & !is.na(median.overall.methylation)) |
-      (qc.pca.detP.outlier == T & is.na(median.overall.methylation))
-  ) |>
-  assertr::verify(
-    (qc.pca.detP.outlier == F & !is.na(median.glass_nl_supervised.methylation)) |
-      (qc.pca.detP.outlier == T & is.na(median.glass_nl_supervised.methylation))
-  )
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+
+glass_od.metadata.idats |> 
+  filter_GLASS_OD_idats(163) |> 
+  assertr::verify(!is.na(median.overall.methylation)) |> 
+  assertr::verify(!is.na(median.glass_nl_supervised.methylation))
+
 
 rm(tmp)
 
 
+
+#plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr, glass_od.metadata.idats$median.glass_nl_supervised.methylation, xlim=c(-8,16)) 
+#plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr_neat, glass_od.metadata.idats$median.glass_nl_supervised.methylation, xlim=c(-8,16))
+
+#plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr, glass_od.metadata.idats$median.overall.methylation, xlim=c(-8,16))
+#plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr_neat, glass_od.metadata.idats$median.overall.methylation, xlim=c(-8,16))
+
+# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr, glass_od.metadata.idats$median.glass_nl_supervised.methylation)
+# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr, glass_od.metadata.idats$median.overall.methylation)
+
+# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_lr, glass_od.metadata.idats$median.glass_nl_supervised.methylation)
+# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_lr, glass_od.metadata.idats$median.overall.methylation)
+
+
+
+# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr, glass_od.metadata.idats$median.glass_nl_supervised.methylation)
+# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr, glass_od.metadata.idats$median.overall.methylation)
+
+# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_lr, glass_od.metadata.idats$median.glass_nl_supervised.methylation)
+# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_lr, glass_od.metadata.idats$median.overall.methylation)
 
 
 
@@ -533,6 +564,21 @@ glass_od.metadata.idats <- glass_od.metadata.idats |>
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
 
 rm(tmp)
+
+
+## A_IDH_HG__A_IDH_LG_lr__lasso_fit ----
+
+
+tmp <- readRDS(file="cache/GLASS-OD__A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds")
+
+
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'),suffix=c('',''))
+
+
+stopifnot(glass_od.metadata.idats |>
+  dplyr::filter(!is.na(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
+  nrow() == 163)
 
 
 # cleanup db connection ----

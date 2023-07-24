@@ -327,39 +327,16 @@ saveRDS(p, file="cache/GLASS-OD__A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds")
 
 
 plt <- glass_od.metadata.idats |> 
-  dplyr::left_join(p, by=c('sentrix_id'='sentrix_id'),suffix=c('','')) |> 
-  dplyr::left_join(plt.pca, by=c('sentrix_id'='sentrix_id'),suffix=c('','')) |> 
-  
-  dplyr::mutate(label = paste0(as.character(plt$resection_id),""))
+  dplyr::left_join(p, by=c('sentrix_id'='sentrix_id'),suffix=c('',''))
 
 
 
-ggplot(plt, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=resection_tumor_grade)) + 
+ggplot(plt, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit,y=A_IDH_HG__A_IDH_LG_lr, col=as.factor(resection_tumor_grade))) +
+  geom_point()
+
+ggplot(plt, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit,y=mnp_predictBrain_v2.0.1_cal_A_IDH_HG, col=as.factor(resection_tumor_grade))) +
   geom_point()
 
 
-#ggplot(plt, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=PC3, col=as.factor(predictBrain_12.5_cal_class), label=label)) + 
-ggplot(plt, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=PC3, col=qc.pca.outlier, label=label)) + 
-  geom_point() +
-  labs(y = "Generic PCA / PC3 in all Oligo samples")
-  #ggrepel::geom_text_repel(col="blue", size=2.5 , segment.size=0.35, show.legend  = FALSE) 
-
-
-ggplot(plt |>  dplyr::filter(qc.pca.outlier == F), aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=PC3, col=as.factor(predictBrain_12.5_cal_class), label=label)) + 
-  ggpubr::stat_cor(method = "spearman", aes(label = ..r.label..), col="1") +
-  geom_point() +
-  labs(y = "Generic PCA / PC3 in all Oligo samples") + 
-  theme_bw()
-
-
-ggplot(plt |>  dplyr::filter(qc.pca.outlier == F), aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=PC3, col=as.factor(resection_tumor_grade))) + 
-  ggpubr::stat_cor(method = "spearman", aes(label = ..r.label..), col="1") +
-  geom_point() +
-  labs(y = "Generic PCA / PC3 in all Oligo samples") + 
-  theme_bw()
-
-
-ggplot(plt, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=PC4)) + 
-  geom_point()
 
 
