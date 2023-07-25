@@ -230,17 +230,9 @@ tmp <- c(list.files(
   assertr::verify(!is.na(mnp_predictBrain_v12.5_cal_A_IDH_LG))  |> 
   assertr::verify(!is.na(mnp_predictBrain_v12.5_cal_A_IDH_HG)) |>  
   assertr::verify(!is.na(mnp_predictBrain_v12.5_cal_OLIGOSARC_IDH)) |> 
-  
   dplyr::mutate(A_IDH_HG__A_IDH_lr = log(mnp_predictBrain_v2.0.1_cal_A_IDH_HG / mnp_predictBrain_v2.0.1_cal_A_IDH)) |> 
   assertr::verify(!is.na(A_IDH_HG__A_IDH_lr)) |> 
-  
-  dplyr::mutate(A_IDH_HG__A_IDH_lr_neat = log(
-    
-    (mnp_predictBrain_v2.0.1_cal_A_IDH_HG / (1-mnp_predictBrain_v2.0.1_cal_A_IDH_HG))
-    / 
-      (mnp_predictBrain_v2.0.1_cal_A_IDH / (1-mnp_predictBrain_v2.0.1_cal_A_IDH))
-    
-  )) 
+  dplyr::mutate(A_IDH_HG__A_IDH_lr_neat = log( (mnp_predictBrain_v2.0.1_cal_A_IDH_HG / (1-mnp_predictBrain_v2.0.1_cal_A_IDH_HG)) /  (mnp_predictBrain_v2.0.1_cal_A_IDH / (1-mnp_predictBrain_v2.0.1_cal_A_IDH)) )) 
 
 
 
@@ -310,12 +302,15 @@ tmp <- c(list.files(
   assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
   assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_A_IDH_LG)) |>
   assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_A_IDH_HG)) |>
+  
   dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(mnp_predictBrain_v12.8_cal_A_IDH_HG / mnp_predictBrain_v12.8_cal_A_IDH_LG))  |>
-  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr_neat = log(
-    (mnp_predictBrain_v12.8_cal_A_IDH_HG / (1-mnp_predictBrain_v12.8_cal_A_IDH_HG))
-    / 
-    (mnp_predictBrain_v12.8_cal_A_IDH_LG / (1-mnp_predictBrain_v12.8_cal_A_IDH_LG))
-    )) 
+  assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr)) |> 
+
+  dplyr::mutate(A_IDH_HG__O_IDH_lr = log(mnp_predictBrain_v12.8_cal_A_IDH_HG / mnp_predictBrain_v12.8_cal_O_IDH))  |>
+  assertr::verify(!is.na(A_IDH_HG__O_IDH_lr)) |> 
+  
+  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr_neat = log((mnp_predictBrain_v12.8_cal_A_IDH_HG / (1-mnp_predictBrain_v12.8_cal_A_IDH_HG)) /  (mnp_predictBrain_v12.8_cal_A_IDH_LG / (1-mnp_predictBrain_v12.8_cal_A_IDH_LG)) ))  |> 
+  assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr_neat))
 
 
 
@@ -406,6 +401,18 @@ glass_od.metadata.idats <- glass_od.metadata.idats |>
     return(.)
   })()
 rm(tmp)
+
+
+
+## Heidelberg 12.8 bin-based tumor purity calls ----
+
+
+tmp <- readRDS("cache/analysis_tumor_purity_EPIC_bin-based.Rds")
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+
+rm(tmp)
+
 
 
 ## Heidelberg 12.8 CNVP ongene scores ----
@@ -516,6 +523,8 @@ glass_od.metadata.idats <- glass_od.metadata.idats |>
 rm(tmp)
 
 
+## ++ below: re-build because mvalue normalisation ++ ----
+
 ## Median methylation levels ----
 
 
@@ -524,7 +533,7 @@ tmp <- readRDS("cache/analysis_median_methylation.Rds")
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
 
-glass_od.metadata.idats |> 
+tmp <- glass_od.metadata.idats |> 
   filter_GLASS_OD_idats(163) |> 
   assertr::verify(!is.na(median.overall.methylation)) |> 
   assertr::verify(!is.na(median.glass_nl_supervised.methylation))
@@ -555,15 +564,6 @@ rm(tmp)
 # plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_lr, glass_od.metadata.idats$median.overall.methylation)
 
 
-
-## bin-based tumor purity calls ----
-
-
-tmp <- readRDS("cache/analysis_tumor_purity_EPIC_bin-based.Rds")
-glass_od.metadata.idats <- glass_od.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
-
-rm(tmp)
 
 
 ## A_IDH_HG__A_IDH_LG_lr__lasso_fit ----

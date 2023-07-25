@@ -129,7 +129,12 @@ tmp <- c(
   assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
   assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_A_IDH_LG)) |>
   assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_A_IDH_HG)) |>
-  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(mnp_predictBrain_v12.8_cal_A_IDH_HG / mnp_predictBrain_v12.8_cal_A_IDH_LG)) 
+  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(mnp_predictBrain_v12.8_cal_A_IDH_HG / mnp_predictBrain_v12.8_cal_A_IDH_LG)) |> 
+  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr_neat = log(
+    (mnp_predictBrain_v12.8_cal_A_IDH_HG / (1-mnp_predictBrain_v12.8_cal_A_IDH_HG))
+    / 
+      (mnp_predictBrain_v12.8_cal_A_IDH_LG / (1-mnp_predictBrain_v12.8_cal_A_IDH_LG))
+  ))
 
 
 

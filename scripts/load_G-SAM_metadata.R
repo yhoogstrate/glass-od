@@ -27,7 +27,8 @@ gsam.metadata.idats <-  list.files(path = "data/G-SAM/DNA Methylation - EPIC arr
     print(dim(.))
     assertthat::assert_that(nrow(.) == 75)
     return(.)
-  })()
+  })() 
+
 
 
 ## link sample names ----
@@ -46,7 +47,12 @@ tmp <- read.csv("data/G-SAM/DNA Methylation - EPIC arrays/MET2022-350-014/MET202
     assertthat::assert_that(nrow(.) == nrow(gsam.metadata.idats)) # == 75
     return(.)
   })() |> 
-  assertr::verify(sentrix_id %in% gsam.metadata.idats$sentrix_id)
+  assertr::verify(sentrix_id %in% gsam.metadata.idats$sentrix_id) |> 
+  dplyr::mutate(resection = paste0("R",gsub("GSAM_...(.)_.+$","\\1",Sample_Name))) |> 
+  dplyr::mutate(patient = gsub("GSAM_(...)._.+$","\\1", Sample_Name)) |> 
+  dplyr::mutate(IDH = patient %in% c("BAW","CAV","CBG","CDF","DAB","EAF","EBD","ECB","FAD","FAL","JAB","JAD","JAF","KAC")) # IDH mut according to "data/gsam/output/tables/dna/idh_mutations.txt" - EAF also by MNP brain Classifier
+
+
 
 
 

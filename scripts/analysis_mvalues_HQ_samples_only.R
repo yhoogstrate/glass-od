@@ -12,9 +12,9 @@ library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19) # BiocManager::install("I
 
 
 
-if(!exists('youri_gg_theme')) {
-  source('scripts/youri_gg_theme.R')
-}
+source('scripts/youri_gg_theme.R')
+source('scripts/load_functions.R')
+
 
 
 if(!exists('glass_od.metadata.idats')) {
@@ -30,44 +30,23 @@ if(!exists('gsam.metadata.idats')) {
 }
 
 
-source('scripts/load_functions.R')
-
 
 # metadata ----
 
 
 metadata.glass_od <- glass_od.metadata.idats |> 
-  dplyr::filter(!is.na(sentrix_id)) |> 
   filter_GLASS_OD_idats(163) |> 
-  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (163))
-    return(.)
-  })()
+  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type)
 
 
 metadata.glass_nl <- glass_nl.metadata.idats |> 
-  dplyr::filter(!is.na(sentrix_id)) |> 
-  dplyr::filter(qc.pca.detP.outlier == F) |> 
-  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (218))
-    return(.)
-  })()
+  filter_GLASS_NL_idats(218) |> 
+  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type)
 
 
 metadata.gsam <- gsam.metadata.idats |> 
-  dplyr::filter(!is.na(sentrix_id)) |> 
-  dplyr::filter(qc.pca.detP.outlier == F) |> 
-  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (75))
-    return(.)
-  })()
-
+  filter_GSAM_idats(73) |> 
+  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type)
 
 
 
@@ -152,7 +131,8 @@ stopifnot(sum(is.na(mvalue.mask)) > 0)
 
 stopifnot(targets$sentrix_id == colnames(mvalue))
 
-# cleanup 
+
+# export & cleanup ----
 
 rm(detP, proc)
 gc()

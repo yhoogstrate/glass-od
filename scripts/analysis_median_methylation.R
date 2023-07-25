@@ -11,7 +11,7 @@ if(!exists('data.mvalues.hq_samples')) {
 data <- data.mvalues.hq_samples |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (456))
+    assertthat::assert_that(ncol(.) == (456-2))
     return(.)
   })()
 rm(data.mvalues.hq_samples)
@@ -104,43 +104,53 @@ saveRDS(export, file="cache/analysis_median_methylation.Rds")
 
 
 # sandbox test plot ----
-
-source('scripts/load_GLASS-OD_metadata.R')
-source('scripts/load_GLASS-NL_metadata.R')
-source('scripts/load_G-SAM_metadata.R')
-
-
-plt <- readRDS('cache/analysis_median_methylation.Rds') |>
-  dplyr::mutate(dataset = dplyr::case_when(
-    sentrix_id %in% glass_od.metadata.idats$sentrix_id ~ "GLASS-OD",
-    sentrix_id %in% glass_nl.metadata.idats$sentrix_id ~ "GLASS-NL",
-    sentrix_id %in% gsam.metadata.idats$sentrix_id ~ "G-SAM",
-    T ~ "error"
-  )) 
-
-
-
-ggplot(plt, aes(x=median.overall.methylation, y=median.glass_nl_supervised.methylation, col=dataset)) +
-  geom_point()
-
-
-
-
-plt.glnl <- readRDS('cache/analysis_median_methylation.Rds') |>
-  dplyr::mutate(dataset = dplyr::case_when(
-    sentrix_id %in% glass_od.metadata.idats$sentrix_id ~ "GLASS-OD",
-    sentrix_id %in% glass_nl.metadata.idats$sentrix_id ~ "GLASS-NL",
-    sentrix_id %in% gsam.metadata.idats$sentrix_id ~ "G-SAM",
-    T ~ "error"
-  )) |> 
-  #dplyr::filter(dataset == "GLASS-NL") |> 
-  dplyr::left_join(
-    glass_nl.metadata.idats |>
-      dplyr::select(sentrix_id, Sample_Type, mnp_predictBrain_v12.8_cal_class, WHO_Classification2021),
-    by=c('sentrix_id'='sentrix_id'),suffix=c('','')
-  )
-
-ggplot(plt.glnl, aes(x=median.overall.methylation, y=median.glass_nl_supervised.methylation, col=dataset)) +
-  geom_point()
-
-
+# 
+# if(!exists('glass_od.metadata.idats')) {
+#   source('scripts/load_GLASS-OD_metadata.R')
+# }
+# 
+# if(!exists('glass_nl.metadata.idats')) {
+#   source('scripts/load_GLASS-NL_metadata.R')
+# }
+# 
+# if(!exists('gsam.metadata.idats')) {
+#   source('scripts/load_G-SAM_metadata.R')
+# }
+# 
+# 
+# 
+# 
+# plt <- readRDS('cache/analysis_median_methylation.Rds') |>
+#   dplyr::mutate(dataset = dplyr::case_when(
+#     sentrix_id %in% glass_od.metadata.idats$sentrix_id ~ "GLASS-OD",
+#     sentrix_id %in% glass_nl.metadata.idats$sentrix_id ~ "GLASS-NL",
+#     sentrix_id %in% gsam.metadata.idats$sentrix_id ~ "G-SAM",
+#     T ~ "error"
+#   )) 
+# 
+# 
+# 
+# ggplot(plt, aes(x=median.overall.methylation, y=median.glass_nl_supervised.methylation, col=dataset)) +
+#   geom_point()
+# 
+# 
+# 
+# 
+# plt.glnl <- readRDS('cache/analysis_median_methylation.Rds') |>
+#   dplyr::mutate(dataset = dplyr::case_when(
+#     sentrix_id %in% glass_od.metadata.idats$sentrix_id ~ "GLASS-OD",
+#     sentrix_id %in% glass_nl.metadata.idats$sentrix_id ~ "GLASS-NL",
+#     sentrix_id %in% gsam.metadata.idats$sentrix_id ~ "G-SAM",
+#     T ~ "error"
+#   )) |> 
+#   #dplyr::filter(dataset == "GLASS-NL") |> 
+#   dplyr::left_join(
+#     glass_nl.metadata.idats |>
+#       dplyr::select(sentrix_id, Sample_Type, mnp_predictBrain_v12.8_cal_class, WHO_Classification2021),
+#     by=c('sentrix_id'='sentrix_id'),suffix=c('','')
+#   )
+# 
+# ggplot(plt.glnl, aes(x=median.overall.methylation, y=median.glass_nl_supervised.methylation, col=dataset)) +
+#   geom_point()
+# 
+# 
