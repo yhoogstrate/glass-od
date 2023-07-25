@@ -528,40 +528,23 @@ rm(tmp)
 ## Median methylation levels ----
 
 
-tmp <- readRDS("cache/analysis_median_methylation.Rds")
+tmp <- readRDS("cache/analysis_median_methylation.Rds") |> 
+  assertr::verify(!is.na(median.overall.methylation)) |> 
+  assertr::verify(!is.na(median.glass_nl_supervised.methylation)) |> 
+  dplyr::filter(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 163) # only HQ samples
+    return(.)
+  })()
+
+
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
 
-tmp <- glass_od.metadata.idats |> 
-  filter_GLASS_OD_idats(163) |> 
-  assertr::verify(!is.na(median.overall.methylation)) |> 
-  assertr::verify(!is.na(median.glass_nl_supervised.methylation))
-
 
 rm(tmp)
-
-
-
-#plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr, glass_od.metadata.idats$median.glass_nl_supervised.methylation, xlim=c(-8,16)) 
-#plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr_neat, glass_od.metadata.idats$median.glass_nl_supervised.methylation, xlim=c(-8,16))
-
-#plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr, glass_od.metadata.idats$median.overall.methylation, xlim=c(-8,16))
-#plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr_neat, glass_od.metadata.idats$median.overall.methylation, xlim=c(-8,16))
-
-# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr, glass_od.metadata.idats$median.glass_nl_supervised.methylation)
-# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr, glass_od.metadata.idats$median.overall.methylation)
-
-# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_lr, glass_od.metadata.idats$median.glass_nl_supervised.methylation)
-# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_lr, glass_od.metadata.idats$median.overall.methylation)
-
-
-
-# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr, glass_od.metadata.idats$median.glass_nl_supervised.methylation)
-# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_LG_lr, glass_od.metadata.idats$median.overall.methylation)
-
-# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_lr, glass_od.metadata.idats$median.glass_nl_supervised.methylation)
-# plot(glass_od.metadata.idats$A_IDH_HG__A_IDH_lr, glass_od.metadata.idats$median.overall.methylation)
 
 
 
@@ -569,7 +552,7 @@ rm(tmp)
 ## A_IDH_HG__A_IDH_LG_lr__lasso_fit ----
 
 
-tmp <- readRDS(file="cache/GLASS-OD__A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |> 
+tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |> 
   dplyr::filter(!is.na(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
   dplyr::filter(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
   (function(.) {
@@ -580,7 +563,7 @@ tmp <- readRDS(file="cache/GLASS-OD__A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |>
 
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'),suffix=c('',''))
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
 
 
 

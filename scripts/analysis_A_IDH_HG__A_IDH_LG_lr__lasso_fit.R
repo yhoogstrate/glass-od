@@ -43,8 +43,7 @@ data.good.probes <- data.mvalues.mask.hq_samples |>
 
 
 metadata.glass_nl <- glass_nl.metadata.idats |> 
-  dplyr::filter(!qc.pca.detP.outlier) |> 
-  assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr)) |> 
+  filter_GLASS_NL_idats(218) |> 
   dplyr::mutate(i = 1:dplyr::n()) |> 
   dplyr::mutate(slice = i %% 10, i = NULL)
 
@@ -76,6 +75,22 @@ data.glass_od <- data.mvalues.hq_samples |>
 
 
 
+
+metadata.gsam <- gsam.metadata.idats |> 
+  filter_GSAM_idats(73)
+
+
+data.gsam <- data.mvalues.hq_samples |>
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.good.probes$probe_id) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata.gsam$sentrix_id) |> 
+  (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
+  dplyr::arrange(mad) |> 
+  dplyr::mutate(mad = NULL)
+
+
+
 ## add PCA to metadata ----
 
 
@@ -93,14 +108,6 @@ data.glass_nl.pca <- data.glass_nl.pca.obj |>
 
 
 
-# make linear model to predict A_IDH ~ A_IDH_HG
-
-
-
-
-
-
-
 
 # https://www.statology.org/lasso-regression-in-r/
 
@@ -113,7 +120,7 @@ data.glass_nl.pca <- data.glass_nl.pca.obj |>
 ## train parameters ----
 
 set.seed(123456)
-cv_model_probe_based <- glmnet::cv.glmnet(t(data.glass_nl |>  dplyr::select(metadata.glass_nl$sentrix_id)),
+cv_model_probe_based <- glmnet::cv.glmnet(t(data.glass_nl |> dplyr::select(metadata.glass_nl$sentrix_id)),
                                           metadata.glass_nl$A_IDH_HG__A_IDH_LG_lr, alpha = 1, relax=F)
 plot(cv_model_probe_based) 
 
@@ -290,11 +297,14 @@ saveRDS(lm.full.pca_based, file="cache/LGC_predictor_PCA_based_lm.Rds")
 
 
 
-# apply to OD samples ----
+# apply to GLASS-OD & G-SAM ----
 
+
+rm(p)
 
 classifier <- readRDS("cache/LGC_predictor_probe_based_lm.Rds")
-data <- data.glass_od |> 
+
+data.1 <- data.glass_od |> 
   tibble::rownames_to_column('probeID') |> 
   dplyr::filter(probeID %in% rownames(classifier$beta)) |> 
   tibble::column_to_rownames('probeID') |> 
@@ -302,6 +312,19 @@ data <- data.glass_od |>
   as.data.frame() |> 
   dplyr::select(readRDS("cache/LGC_predictor_probe_based_ordered_probes.Rds")) |> 
   as.matrix()
+
+data.2 <- data.gsam |> 
+  tibble::rownames_to_column('probeID') |> 
+  dplyr::filter(probeID %in% rownames(classifier$beta)) |> 
+  tibble::column_to_rownames('probeID') |> 
+  t() |>
+  as.data.frame() |> 
+  dplyr::select(readRDS("cache/LGC_predictor_probe_based_ordered_probes.Rds")) |> 
+  as.matrix()
+
+
+data <- rbind(data.1, data.2)
+
 
 
 stopifnot(rownames(classifier$beta) == colnames(data))
@@ -314,28 +337,10 @@ p <- predict(classifier, data) |>
   tibble::rownames_to_column('sentrix_id')
 
 
-## export ----
+
+saveRDS(p, file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds")
 
 
-saveRDS(p, file="cache/GLASS-OD__A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds")
-
-
-
-
-## sandbox ----
-
-
-
-plt <- glass_od.metadata.idats |> 
-  dplyr::left_join(p, by=c('sentrix_id'='sentrix_id'),suffix=c('',''))
-
-
-
-ggplot(plt, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit,y=A_IDH_HG__A_IDH_LG_lr, col=as.factor(resection_tumor_grade))) +
-  geom_point()
-
-ggplot(plt, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit,y=mnp_predictBrain_v2.0.1_cal_A_IDH_HG, col=as.factor(resection_tumor_grade))) +
-  geom_point()
 
 
 
