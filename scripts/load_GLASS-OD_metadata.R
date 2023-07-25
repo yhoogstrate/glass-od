@@ -569,16 +569,20 @@ rm(tmp)
 ## A_IDH_HG__A_IDH_LG_lr__lasso_fit ----
 
 
-tmp <- readRDS(file="cache/GLASS-OD__A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds")
+tmp <- readRDS(file="cache/GLASS-OD__A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |> 
+  dplyr::filter(!is.na(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
+  dplyr::filter(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 163)
+    return(.)
+  })()
 
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'),suffix=c('',''))
 
 
-stopifnot(glass_od.metadata.idats |>
-  dplyr::filter(!is.na(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
-  nrow() == 163)
 
 
 # cleanup db connection ----

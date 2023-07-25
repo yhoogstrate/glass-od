@@ -134,7 +134,7 @@ stopifnot(targets$sentrix_id == colnames(mvalue))
 
 # export & cleanup ----
 
-rm(detP, proc)
+rm(targets, detP, proc)
 gc()
 
 

@@ -14,12 +14,15 @@ data <- data.mvalues.hq_samples |>
     assertthat::assert_that(ncol(.) == (456-2))
     return(.)
   })()
-rm(data.mvalues.hq_samples)
-
 data.mask <- data.mvalues.mask.hq_samples
+
+
+stopifnot(nrow(data) == nrow(data.mask))
+stopifnot(ncol(data) == ncol(data.mask))
+
+
+rm(data.mvalues.hq_samples)
 rm(data.mvalues.mask.hq_samples)
-
-
 
 
 gc()
@@ -34,7 +37,7 @@ rs <- data.mask |>
   dplyr::filter(n_na == 0) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (694289))
+    assertthat::assert_that(nrow(.) == (694299))
     return(.)
   })() |> 
   tibble::rownames_to_column('probe_id')
@@ -46,7 +49,7 @@ data <- data |>
   tibble::column_to_rownames('probe_id') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (694289))
+    assertthat::assert_that(nrow(.) == (694299))
     return(.)
   })()
 
@@ -101,6 +104,10 @@ export <- median.overall.meth |>
 
 saveRDS(export, file="cache/analysis_median_methylation.Rds")
 
+
+
+rm(data, export, targets)
+gc()
 
 
 # sandbox test plot ----

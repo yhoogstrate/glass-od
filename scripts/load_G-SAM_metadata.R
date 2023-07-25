@@ -185,18 +185,21 @@ rm(tmp)
 ## Median methylation levels ----
 
 
-tmp <- readRDS("cache/analysis_median_methylation.Rds")
+tmp <- readRDS("cache/analysis_median_methylation.Rds") |> 
+  assertr::verify(!is.na(median.overall.methylation)) |> 
+  assertr::verify(!is.na(median.glass_nl_supervised.methylation)) |> 
+  dplyr::filter(sentrix_id %in% gsam.metadata.idats$sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 73) # only HQ samples
+    return(.)
+  })()
+
+
 
 gsam.metadata.idats <- gsam.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(
-    (qc.pca.detP.outlier == F & !is.na(median.overall.methylation)) |
-      (qc.pca.detP.outlier == T & is.na(median.overall.methylation))
-  ) |>
-  assertr::verify(
-    (qc.pca.detP.outlier == F & !is.na(median.glass_nl_supervised.methylation)) |
-      (qc.pca.detP.outlier == T & is.na(median.glass_nl_supervised.methylation))
-  )
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+
 
 rm(tmp)
 
