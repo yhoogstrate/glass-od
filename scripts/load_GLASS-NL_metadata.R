@@ -31,15 +31,13 @@ glass_nl.metadata.idats <-  list.files(path = "data/GLASS_NL/Methylation/Methyla
 ## study identifier: Sample_Name & resection metadata ----
 
 
-# tmp <- read.csv('data/GLASS_NL/Methylation/Metadata/Datasheet4.csv') # former file
-
 tmp <- read.csv("data/GLASS_NL/Metadata/Samples/Master Datasheet_ALL METHODS_27012023.csv") |>
   dplyr::select( Surgery_ID, GLASS_ID,  Sample_Name, Sample_Sex, Sample_Type, Resectie, Sample_ID, Recurrent_Select.Meth, Matched_Pair.Meth) |> 
   dplyr::rename(sentrix_id = Sample_ID) |> 
   dplyr::filter(!is.na(sentrix_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (235)) # no idea how there can be 658 idats in here?
+    assertthat::assert_that(nrow(.) == (235)) 
     return(.)
   })()
 
@@ -49,19 +47,13 @@ glass_nl.metadata.idats <- glass_nl.metadata.idats |>
   dplyr::filter(!is.na(Sample_Name)) |>  # exclude hundreds present in directory but absent in metadata
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (235)) # no idea how there can be 658 idats in here?
+    assertthat::assert_that(nrow(.) == (235)) 
     return(.)
   })()
 
 
 rm(tmp)
 
-
-
-
-## Type IDH-mut & CN stata (CDK etc.) ----
-#tmp <- read.csv("data/GLASS_NL/Metadata/(Epi)genetic_data/(Epi)genetic data_GLASS-NL_01092021.csv") |> 
-#  dplyr::mutate(X=NULL)
 
 
 
@@ -75,7 +67,7 @@ tmp <- read.csv("data/GLASS_NL/Metadata/Samples/WHOclassification_03052022.csv")
   dplyr::filter(Surgery_ID %in% glass_nl.metadata.idats$Surgery_ID) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (235)) # no idea how there can be 658 idats in here?
+    assertthat::assert_that(nrow(.) == (235)) 
     return(.)
   })()
 
@@ -85,7 +77,7 @@ glass_nl.metadata.idats <- glass_nl.metadata.idats |>
   dplyr::left_join(tmp, by=c('Surgery_ID'='Surgery_ID'), suffix=c('','')) |>
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (235)) # no idea how there can be 658 idats in here?
+    assertthat::assert_that(nrow(.) == (235)) 
     return(.)
   })()
 
@@ -94,8 +86,7 @@ rm(tmp)
 
 
 ## Percentage detP probes ----
-
-# from: scripts/analysis_percentage_detP_probes.R
+#' from: scripts/analysis_percentage_detP_probes.R
 
 
 glass_nl.metadata.idats <- glass_nl.metadata.idats |> 

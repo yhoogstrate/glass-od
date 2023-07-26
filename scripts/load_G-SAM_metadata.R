@@ -62,6 +62,46 @@ gsam.metadata.idats <- gsam.metadata.idats |>
 rm(tmp)
 
 
+
+
+
+## Add survival data ----
+
+
+tmp <- read.csv('data/G-SAM/administratie/GSAM_combined_clinical_molecular.csv',stringsAsFactors=F) |> 
+  dplyr::rename(patient = studyID) |> 
+  dplyr::arrange(patient) |> 
+  dplyr::mutate(initialMGMT = NULL) |> 
+  dplyr::mutate(gender = ifelse(patient %in% c('AAT', 'AAM', 'AZH', 'HAI', 'FAG'),"Male",gender)) |>  # there's a number of samples of which the gender does not fit with the omics data - omics data determined genders are the corrected ones
+  dplyr::mutate(gender = as.factor(gender)) |> 
+  dplyr::mutate(survival.events = dplyr::case_when(
+    status == "Deceased" ~ 1,
+    status == "Censored" ~ 0,
+    T ~ as.numeric(NA))) |> 
+  dplyr::rename(os.event = survival.events) |> 
+  dplyr::mutate(survival.months = survivalDays / 365.0 * 12.0) |> 
+  dplyr::select(patient, gender, 
+                status, os.event,
+                survivalDays, 
+                progressionFreeDays,
+                survivalFromSecondSurgeryDays
+                ) |> 
+  dplyr::filter(patient %in% gsam.metadata.idats$patient) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == length(unique(gsam.metadata.idats$patient)))
+    return(.)
+  })()
+
+
+gsam.metadata.idats <- gsam.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('patient'='patient'), suffix=c('',''))
+rm(tmp)
+
+
+
+
+
 ## Percentage detP probes ----
 
 # from: scripts/analysis_percentage_detP_probes.R

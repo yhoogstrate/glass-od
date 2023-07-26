@@ -29,23 +29,10 @@ gc()
 
 
 
-rs <- data.mask |> 
-  is.na() |> 
-  rowSums() |> 
-  as.data.frame() |> 
-  dplyr::rename(n_na = 1) |> 
-  dplyr::filter(n_na == 0) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (694299))
-    return(.)
-  })() |> 
-  tibble::rownames_to_column('probe_id')
-
 
 data <- data |> 
   tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% rs$probe_id) |> 
+  dplyr::filter(probe_id %in% data.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
   (function(.) {
     print(dim(.))
@@ -53,7 +40,8 @@ data <- data |>
     return(.)
   })()
 
-rm(rs, data.mask)
+rm(data.mask)
+gc()
 
 
 # median meth all probes ----
