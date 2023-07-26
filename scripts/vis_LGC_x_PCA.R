@@ -13,20 +13,6 @@ if(!exists('data.mvalues.hq_samples')) {
 }
 
 
-good_probes <- data.mvalues.mask.hq_samples |> 
-  is.na() |> 
-  rowSums() |> 
-  as.data.frame() |> 
-  dplyr::rename(n_na = 1) |> 
-  dplyr::filter(n_na == 0) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (694289))
-    return(.)
-  })() |> 
-  tibble::rownames_to_column('probe_id') |> 
-  dplyr::pull(probe_id)
-
 
 
 # GLASS-OD / OD ----
@@ -38,17 +24,18 @@ metadata <- glass_od.metadata.idats |>
 
 data <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% good_probes) |> 
+  dplyr::filter(probe_id %in% data.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
   dplyr::select(metadata$sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (694289))
+    assertthat::assert_that(nrow(.) == (694299))
     return(.)
   })() |> 
   (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
   dplyr::arrange(mad) |> 
   dplyr::mutate(mad = NULL)
+
 
 
 ## PCA ----
@@ -81,43 +68,41 @@ plt.split <- rbind(
     dplyr::mutate(facet = "MNP CNS Classifier 12.8"),
   
   plt |> 
-    dplyr::mutate(col = ifelse(isolation_person_name == "USA / Duke", "Batch [US]", "Batch [others]")) |> 
+    dplyr::mutate(col = ifelse(isolation_person_name == "USA / Duke", "Batch [US]", "Batch [EU]")) |> 
     dplyr::mutate(facet = "Batch")
 )
 
 
 ggplot(plt.split, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-PC2, col=col)) + 
   facet_grid(cols = vars(facet), scales = "free", space="free") +
-  ggpubr::stat_cor(method = "spearman", aes(label = ..r.label..), col="1", cor.coef.name ="rho") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
   geom_point() +
   theme_bw() + 
   scale_color_manual(values=c(
-    "Grade 2"="blue","O_IDH"="blue",    "Batch [others]"="darkgreen",
+    "Grade 2"="blue","O_IDH"="blue",    "Batch [EU]"="darkgreen",
     "OLIGOSARC_IDH" = "orange",
     "NA" = "gray",
     "other" = "purple",
     "Grade 3"="red","A_IDH_HG"="red",     "Batch [US]"="brown"
   ))
-  # "Grade 2", "Grade 3", "O_IDH", "A_IDH_HG", "other", "OLIGOSARC_IDH", 
-  #"Batch [others]" "Batch [US]"
 
 
 
 ggplot(plt, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-median.overall.methylation)) + 
-  ggpubr::stat_cor(method = "spearman", aes(label = ..r.label..), col="1", cor.coef.name ="rho") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
   geom_point() +
   theme_bw() 
 
 
 
 ggplot(plt, aes(x=PC2, y=median.overall.methylation, col=isolation_person_name)) + 
-  ggpubr::stat_cor(method = "spearman", aes(label = ..r.label..), cor.coef.name ="rho") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), cor.coef.name ="rho") +
   geom_point() +
   theme_bw() 
 
 
 ggplot(plt, aes(x=PC2, y=median.glass_nl_supervised.methylation, col=isolation_person_name)) + 
-  ggpubr::stat_cor(method = "spearman", aes(label = ..r.label..), col="1", cor.coef.name ="rho") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
   geom_point() +
   theme_bw() 
 
@@ -392,12 +377,12 @@ metadata <- gsam.metadata.idats |>
 
 data <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% good_probes) |> 
+  dplyr::filter(probe_id %in% data.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
   dplyr::select(metadata$sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (694289))
+    assertthat::assert_that(nrow(.) == (694299))
     return(.)
   })() |> 
   (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
@@ -452,7 +437,73 @@ ggplot(plt.logit, aes(x = A_IDH_HG__A_IDH_LG_lr, y=`resection__rec`, col= mnp_pr
   annotate("text", x = 2.5, y = 0.5, label = paste0("p = ",format.pval(pval))) + 
   theme(legend.position = 'bottom') + 
   scale_y_continuous(breaks = c(0,1)) + 
-  labs(col="mnp v12.8")
+  labs(col="mnp v12.8", y = "Resection (0 primary, 1 recurrent)")
+
+
+
+## survival ----
+### R1 ----
+
+
+ggplot(
+  metadata |> 
+    dplyr::filter(resection == "R1"),
+  aes(y= survivalDays , x=A_IDH_HG__A_IDH_LG_lr, shape=status)) + 
+  geom_point()
+
+
+
+### R2 ----
+
+#plot(sort(stats$A_IDH_HG__A_IDH_LG_lr__lasso_fit)) + abline(h=4.65)
+
+
+stats <-  metadata |> 
+  dplyr::filter(resection == "R2") |> 
+  dplyr::mutate(A_IDH_HG__A_IDH_LG__cut = cut(A_IDH_HG__A_IDH_LG_lr__lasso_fit, breaks=2)) |> 
+  dplyr::mutate(LR_status_median = ifelse(A_IDH_HG__A_IDH_LG_lr__lasso_fit > 6.1, "LR high", "LR low")) |> 
+  dplyr::mutate(LR_status_L1 = ifelse(A_IDH_HG__A_IDH_LG_lr__lasso_fit > 4.7, "LR high", "LR low")) |> 
+  dplyr::mutate(LR_status_L2 = ifelse(A_IDH_HG__A_IDH_LG_lr__lasso_fit > 4.1, "LR high", "LR low"))
+
+
+ggplot(stats, aes(y= survivalFromSecondSurgeryDays , x=A_IDH_HG__A_IDH_LG_lr, shape=status)) + 
+  geom_point()
+
+
+surv_object <- survival::Surv(time = stats$survivalFromSecondSurgeryDays, event=stats$os.event)
+#surv_object <- survival::Surv(time = stats$survivalDays, event=stats$os.event)
+
+
+fit1 <- survival::survfit(surv_object ~  A_IDH_HG__A_IDH_LG__cut , data = stats)
+print(survminer::surv_pvalue(fit1)$pval)
+
+survminer::ggsurvplot(fit1, data = stats, pval = TRUE, risk.table=T, tables.y.text = FALSE,
+                      xlab="Survival from recurrence")
+
+
+fit2 <- survival::survfit(surv_object ~  LR_status_median , data = stats)
+print(survminer::surv_pvalue(fit2)$pval)
+
+survminer::ggsurvplot(fit2, data = stats, pval = TRUE, risk.table=T, tables.y.text = FALSE,
+                      xlab="Survival from recurrence")
+
+fit3 <- survival::survfit(surv_object ~  LR_status_L1 , data = stats)
+print(survminer::surv_pvalue(fit3)$pval)
+
+survminer::ggsurvplot(fit3, data = stats, pval = TRUE, risk.table=T, tables.y.text = FALSE,
+                      xlab="Survival from recurrence")
+
+fit4 <- survival::survfit(surv_object ~  LR_status_L2 , data = stats)
+print(survminer::surv_pvalue(fit4)$pval)
+
+survminer::ggsurvplot(fit4, data = stats, pval = TRUE, risk.table=T, tables.y.text = FALSE,
+                      xlab="Survival from recurrence")
+
+
+
+
+fit_l <- survival::coxph(surv_object ~  A_IDH_HG__A_IDH_LG_lr__lasso_fit , data = stats)
+summary(fit_l)
 
 
 
