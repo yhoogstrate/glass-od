@@ -61,7 +61,6 @@ median.overall.meth <- data |>
 # median meth GLASS-NL probes ----
 
 
-
 median.glass_nl.meth <- data |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% (read.csv('data/GLASS_NL/Metadata/(Epi)genetic_data/ProbeSelection_IvR_FDR 1e-9 Delta 1_06072022.csv') |> dplyr::pull(Probe_ID))) |> 
@@ -79,8 +78,6 @@ median.glass_nl.meth <- data |>
 
 # clean-up ----
 
-
-#rm(data)
 
 
 # merge & export ----

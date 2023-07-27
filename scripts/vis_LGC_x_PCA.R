@@ -22,37 +22,12 @@ metadata <- glass_od.metadata.idats |>
   filter_GLASS_OD_idats(163)
 
 
-data <- data.mvalues.hq_samples |> 
-  tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% data.good_probes) |> 
-  tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata$sentrix_id) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (694299))
-    return(.)
-  })() |> 
-  (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
-  dplyr::arrange(mad) |> 
-  dplyr::mutate(mad = NULL)
-
 
 
 ## PCA ----
 
 
-data.all.pca.obj.data <- data |> 
-  #dplyr::slice_head(n=250000) |> 
-  t() |> 
-  prcomp() |> 
-  purrr::pluck('x') |> 
-  as.data.frame(stringsAsFactors=F) |> 
-  #dplyr::select(paste0("PC",1:40)) |> 
-  tibble::rownames_to_column('sentrix_id')
-
-
-plt <- metadata |> 
-  dplyr::left_join(data.all.pca.obj.data, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+plt <- metadata
 
 
 plt.split <- rbind(
@@ -595,5 +570,35 @@ ggplot(plt, aes(x=A_IDH_HG__A_IDH_LG_lr, y=PC1)) +
 # prcomp
 
 
+# plot(plt$PC2, plt$median.overall.methylation)
+# plot(plt$PC2, plt$A_IDH_HG__A_IDH_LG_lr)
+# plot(plt$PC2, plt$A_IDH_HG__A_IDH_LG_lr__lasso_fit)
+# plot(plt$median.overall.methylation, plt$A_IDH_HG__A_IDH_LG_lr__lasso_fit)
+# plt$A_IDH_HG__O_IDH_lr, plt$A_IDH_HG__A_IDH_LG_lr)
 
 
+# c <- plt |>
+#   dplyr::mutate(mnp_predictBrain_v12.8_cal_A_IDH_HG = -log(mnp_predictBrain_v12.8_cal_A_IDH_HG)) |> 
+#   dplyr::select(
+#   PC2,
+#   A_IDH_HG__A_IDH_LG_lr,
+#   A_IDH_HG__A_IDH_LG_lr__lasso_fit,
+#   A_IDH_HGoligsarc__O_IDH_lr,
+#   median.overall.methylation,
+#   median.glass_nl_supervised.methylation,
+#   A_IDH_HG__O_IDH_lr
+#   #mnp_predictBrain_v12.8_cal_A_IDH_HG
+# ) |> 
+#   as.matrix()
+# 
+# 
+corrplot::corrplot(abs(cor(c, method="spearman")), order="hclust")
+corrplot::corrplot(abs(cor(c, method="kendall")), order="hclust")
+# 
+# 
+# plot(plt$A_IDH_HGoligsarc__O_IDH_lr, plt$PC2)
+# plot(plt$A_IDH_HG__O_IDH_lr, plt$PC2)
+# 
+# plot(plt$A_IDH_HGoligsarc__O_IDH_lr, plt$PC2)
+# plot(plt$PC2)
+# 
