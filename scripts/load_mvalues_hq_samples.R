@@ -12,7 +12,7 @@ stopifnot(rownames(data.mvalues.hq_samples) == rownames(data.mvalues.mask.hq_sam
 
 
 
-data.good_probes <- data.mvalues.mask.hq_samples |> 
+data.mvalues.good_probes <- data.mvalues.mask.hq_samples |> 
   is.na() |> 
   rowSums() |> 
   as.data.frame() |> 

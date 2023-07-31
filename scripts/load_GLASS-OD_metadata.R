@@ -309,6 +309,9 @@ tmp <- c(list.files(
   dplyr::mutate(A_IDH_HG__O_IDH_lr = log(mnp_predictBrain_v12.8_cal_A_IDH_HG / mnp_predictBrain_v12.8_cal_O_IDH))  |>
   assertr::verify(!is.na(A_IDH_HG__O_IDH_lr)) |> 
   
+  dplyr::mutate(A_IDH_HGoligsarc__O_IDH_lr = log((mnp_predictBrain_v12.8_cal_A_IDH_HG + mnp_predictBrain_v12.8_cal_OLIGOSARC_IDH) / mnp_predictBrain_v12.8_cal_O_IDH))  |>
+  assertr::verify(!is.na(A_IDH_HGoligsarc__O_IDH_lr)) |> 
+  
   dplyr::mutate(A_IDH_HG__A_IDH_LG_lr_neat = log((mnp_predictBrain_v12.8_cal_A_IDH_HG / (1-mnp_predictBrain_v12.8_cal_A_IDH_HG)) /  (mnp_predictBrain_v12.8_cal_A_IDH_LG / (1-mnp_predictBrain_v12.8_cal_A_IDH_LG)) ))  |> 
   assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr_neat))
 
@@ -553,13 +556,38 @@ rm(tmp)
 
 
 tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |> 
-  dplyr::filter(!is.na(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
+  assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
   dplyr::filter(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 163)
     return(.)
   })()
+
+
+glass_od.metadata.idats <- glass_od.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+
+
+
+## unsupervised PCA ----
+
+
+tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds") |> 
+  assertr::verify(!is.na(PC1)) |> 
+  assertr::verify(!is.na(PC2)) |> 
+  assertr::verify(!is.na(PC3)) |> 
+  assertr::verify(!is.na(PC4)) |> 
+  assertr::verify(!is.na(PC5)) |> 
+  assertr::verify(!is.na(PC163)) |> 
+  dplyr::filter(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 163)
+    return(.)
+  })()
+
+
 
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
