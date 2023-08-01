@@ -145,13 +145,22 @@ rm(glass_od.metadata.array_samples)
 
 
 ## Percentage detP probes ----
+#' from: scripts/analysis_percentage_detP_probes.R & scripts/analysis_unsupervised_qc.R
 
-# from: scripts/analysis_percentage_detP_probes.R
+
+tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |> 
+  assertr::verify(!is.na(qc.pca.comp1)) |> 
+  assertr::verify(!is.na(qc.pca.detP.outlier)) |> 
+  assertr::verify(glass_od.metadata.idats$sentrix_id %in% sentrix_id)
 
 
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
-  dplyr::left_join(read.table("output/tables/percentage_detP_probes.txt"), by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(percentage.detP.signi))
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(qc.pca.comp1)) |> 
+  assertr::verify(!is.na(qc.pca.detP.outlier))
+
+rm(tmp)
+
 
 
 ## Heidelberg 11b4[+12.5] QC full ----

@@ -87,12 +87,21 @@ rm(tmp)
 
 
 ## Percentage detP probes ----
-#' from: scripts/analysis_percentage_detP_probes.R
+#' from: scripts/analysis_percentage_detP_probes.R & scripts/analysis_unsupervised_qc.R
+
+
+tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |> 
+  assertr::verify(!is.na(qc.pca.comp1)) |> 
+  assertr::verify(!is.na(qc.pca.detP.outlier)) |> 
+  assertr::verify(glass_nl.metadata.idats$sentrix_id %in% sentrix_id)
 
 
 glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
-  dplyr::left_join(read.table("output/tables/percentage_detP_probes.txt"), by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(percentage.detP.signi))
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(qc.pca.comp1)) |> 
+  assertr::verify(!is.na(qc.pca.detP.outlier))
+
+rm(tmp)
 
 
 
@@ -227,6 +236,22 @@ glass_nl.metadata.idats <- glass_nl.metadata.idats |>
 
 rm(tmp)
 
+
+## A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV ----
+
+
+tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV.Rds") |> 
+  assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV)) |> 
+  dplyr::filter(sentrix_id %in% glass_nl.metadata.idats$sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 218)
+    return(.)
+  })()
+
+
+glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
 
 
 
