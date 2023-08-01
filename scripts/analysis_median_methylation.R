@@ -32,7 +32,7 @@ gc()
 
 data <- data |> 
   tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% data.good_probes) |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
   (function(.) {
     print(dim(.))
