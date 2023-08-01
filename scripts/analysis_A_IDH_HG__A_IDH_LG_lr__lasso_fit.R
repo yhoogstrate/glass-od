@@ -119,6 +119,7 @@ data.glass_nl.pca <- data.glass_nl.pca.obj |>
 
 ## train parameters ----
 
+
 set.seed(123456)
 cv_model_probe_based <- glmnet::cv.glmnet(t(data.glass_nl |> dplyr::select(metadata.glass_nl$sentrix_id)),
                                           metadata.glass_nl$A_IDH_HG__A_IDH_LG_lr, alpha = 1, relax=F)
@@ -177,6 +178,15 @@ ggplot(out.probe_based, aes(
   theme(legend.position = 'bottom')
 
 
+### export 10xCV data points ----
+
+
+tmp <- out.probe_based |> 
+  dplyr::rename(A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV = LGC.lasso.probe_based) |> 
+  dplyr::select(sentrix_id, A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV)
+
+saveRDS(tmp, file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV.Rds")
+
 
 
 ## build model on full data ----
@@ -187,6 +197,9 @@ lm.full.probe_based <- glmnet::glmnet(data.glass_nl |>
                                       t(),
                                     metadata.glass_nl$A_IDH_HG__A_IDH_LG_lr,
                                     alpha = 1, lambda = cv_model_probe_based$lambda.min)
+
+
+### export final AC-trained classifier ----
 
 
 saveRDS(rownames(data.glass_nl), file="cache/LGC_predictor_probe_based_ordered_probes.Rds")
