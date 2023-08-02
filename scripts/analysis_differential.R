@@ -17,9 +17,7 @@ if(!exists('data.mvalues.hq_samples')) {
 }
 
 
-
-# GLASS-OD primary - last recurrence ----
-
+## GLASS-OD ----
 
 
 if(!exists('glass_od.metadata.idats')) {
@@ -27,10 +25,8 @@ if(!exists('glass_od.metadata.idats')) {
 }
 
 
+# analyses: GLASS-OD primary - last recurrence ----
 ## data: example ----
-
-
-
 
 metadata.example <- data.frame(pid = (1:100) %% 50) |> 
   dplyr::arrange(pid) |> 
@@ -157,7 +153,7 @@ data.example <- data.frame(
   as.data.frame()
 
 
-#### test: indeed p.values and not f-test ----
+### test: indeed p.values and not f-test ----
 
 
 design.example <- model.matrix(~pat + condition, data=metadata.example)
@@ -245,7 +241,8 @@ stats.p.p1 <- limma::topTable(fit.p.p1,
                 n=nrow(data.p),
                 coef="factor(pr.status)recurrence",
                 sort.by = "none",
-                adjust.method="fdr")
+                adjust.method="fdr") |> 
+  tibble::column_to_rownames('probe_id') 
 
 
 rm(design.p.p1, fit.p.p1)
@@ -271,7 +268,8 @@ stats.p.p1shuf <- limma::topTable(fit.p.p1shuf,
                                   n=nrow(data.p),
                                   coef="factor(pr.status)recurrence",
                                   sort.by = "none",
-                                  adjust.method="fdr")
+                                  adjust.method="fdr") |> 
+  tibble::column_to_rownames('probe_id') 
 
 
 rm(design.p.p1shuf, fit.p.p1shuf)
@@ -291,7 +289,8 @@ stats.p.b1 <- limma::topTable(fit.p.b1,
                               n=nrow(data.p),
                               coef="factor(pr.status)recurrence",
                               sort.by = "none",
-                              adjust.method="fdr")
+                              adjust.method="fdr") |> 
+  tibble::column_to_rownames('probe_id') 
 
 
 rm(design.p.b1, fit.p.b1)
@@ -318,7 +317,8 @@ stats.p.rmb.u <- limma::topTable(fit.p.rmb.u,
                    n=nrow(data.p),
                    coef="factor(pr.status)recurrence",
                    sort.by = "none",
-                   adjust.method="fdr")
+                   adjust.method="fdr") |> 
+  tibble::column_to_rownames('probe_id') 
 
 
 rm(dn.p, design.p.rmb.u, fit.p.rmb.u)
@@ -336,7 +336,8 @@ stats.p.u <- limma::topTable(fit.p.u,
                n=nrow(data.p),
                coef="factor(pr.status)recurrence",
                sort.by = "none",
-               adjust.method="fdr")
+               adjust.method="fdr") |> 
+  tibble::column_to_rownames('probe_id') 
 
 rm(design.p.u, fit.p.u)
 
@@ -380,7 +381,8 @@ stats.pp.p1 <- limma::topTable(fit.pp.p1,
                                n=nrow(data.pp),
                                coef="factor(pr.status)recurrence",
                                sort.by = "none",
-                               adjust.method="fdr")
+                               adjust.method="fdr") |> 
+  tibble::column_to_rownames('probe_id') 
 
 rm(design.pp.p1, fit.pp.p1)
 
@@ -405,7 +407,8 @@ stats.pp.rmb.u <- limma::topTable(fit.pp.rmb.u,
                                   n=nrow(data.pp),
                                   coef="factor(pr.status)recurrence",
                                   sort.by = "none",
-                                  adjust.method="fdr")
+                                  adjust.method="fdr") |> 
+  tibble::column_to_rownames('probe_id') 
 
 rm(dn.pp, design.pp.rmb.u, fit.pp.rmb.u)
 
@@ -420,7 +423,8 @@ stats.pp.u <- limma::topTable(fit.pp.u,
                               n=nrow(data.pp),
                               coef="factor(pr.status)recurrence",
                               sort.by = "none",
-                              adjust.method="fdr")
+                              adjust.method="fdr") |> 
+  tibble::column_to_rownames('probe_id') 
 
 rm(design.pp.u, fit.pp.u)
 
@@ -595,6 +599,155 @@ ggplot(subset(plt, chr == "chr2"), aes(x=pos / 1000000,y=delta1, col=chr)) +
   youri_gg_theme +
   labs(x=NULL) + 
   xlim(170,180)
+
+
+# analyses: GLASS-OD g2 - g3 ----
+#' @todo ASK what to do if first resection is G3 while last is G2 !!!
+
+## data: partially paired ----
+
+metadata.pp <- glass_od.metadata.idats |> 
+  filter_GLASS_OD_idats(163) |> 
+  filter_first_G2_and_last_G3(105) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"remainder")))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2","Grade3"))
+
+
+
+data.pp <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata.pp$sentrix_id) |> 
+  (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
+  dplyr::arrange(mad) |>
+  dplyr::mutate(mad = NULL)
+
+
+
+
+### test: pat + condition  ----
+
+
+design.g23 <- model.matrix(~factor(patient) + factor(gr.status), data=metadata.pp)
+fit.gr <- limma::lmFit(data.pp, design.g23)
+fit.gr <- limma::eBayes(fit.gr, trend=T)
+stats.gr <- limma::topTable(fit.gr,
+                            n=nrow(data.pp),
+                            coef="factor(gr.status)Grade3",
+                            sort.by = "none",
+                            adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.g23, fit.gr)
+
+
+sum(stats.gr$P.Value < 0.01)
+sum(stats.gr$adj.P.Val < 0.01)
+
+
+plot(sort(stats.gr$P.Value),type="l")
+
+
+# analyses: GLASS-OD AcCGAP ----
+## data: partially paired ----
+
+metadata.pp <- glass_od.metadata.idats |> 
+  filter_GLASS_OD_idats(163) |> 
+  assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
+  assertr::verify(is.numeric(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
+  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr__lasso_fit = scale(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"remainder"))))
+
+
+
+data.pp <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata.pp$sentrix_id) |> 
+  (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
+  dplyr::arrange(mad) |>
+  dplyr::mutate(mad = NULL)
+
+
+
+
+### test: pat + condition  ----
+
+
+design.lgc <- model.matrix(~factor(patient) + as.numeric(A_IDH_HG__A_IDH_LG_lr__lasso_fit), data=metadata.pp)
+fit.lgc <- limma::lmFit(data.pp, design.lgc)
+fit.lgc <- limma::eBayes(fit.lgc, trend=T)
+stats.lgc <- limma::topTable(fit.lgc,
+                            n=nrow(data.pp),
+                            coef="as.numeric(A_IDH_HG__A_IDH_LG_lr__lasso_fit)",
+                            sort.by = "none",
+                            adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.lgc, fit.lgc)
+
+
+sum(stats.lgc$P.Value < 0.01)
+sum(stats.lgc$adj.P.Val < 0.01)
+
+plot(sort(stats.lgc$P.Value),type="l")
+
+
+# plot: g2-g3 x lgc ----
+
+
+
+plt <- stats.gr |> 
+  dplyr::left_join(stats.lgc,by=c('probe_id'='probe_id'),suffx=c('.gr','.lgc'))
+
+
+plot(sort(stats.lgc$P.Value),type="l")
+
+
+## powerplot ----
+#' take intersect, then order
+
+
+plt.pre <- stats.gr |> 
+  dplyr::left_join(stats.lgc,by=c('probe_id'='probe_id'),suffix=c('.gr','.lgc')) |> 
+  dplyr::mutate(col = ifelse(
+    probe_id %in% (data.mvalues.probes |> dplyr::filter(catnon_embryionic_development) |>  dplyr::pull(probe_id)),
+    "embrionic development", "other"
+  ))
+
+plt <- data.frame(
+  p.gr = plt.pre |> dplyr::arrange(P.Value.gr) |> dplyr::pull(P.Value.gr),
+  p.lgc = plt.pre |> dplyr::arrange(P.Value.lgc) |> dplyr::pull(P.Value.lgc)
+) |> 
+  dplyr::mutate(x = 1:dplyr::n()) |> 
+  dplyr::mutate(delta = p.gr - p.lgc)
+
+
+#plot(plt$x, plt$delta, type="l")
+plot(plt$x, plt$p.gr, type="l")
+lines(plt$x, plt$p.lgc)
+
+
+plot(plt.pre$logFC.gr, plt.pre$logFC.lgc, pch=19,cex=0.1)
+abline(h=0, col="red")
+abline(v=0, col="red")
+
+
+ggplot(plt.pre, aes(x=logFC.lgc, y=-log(P.Value.lgc), col=col)) + 
+  geom_point(data = plt.pre |> dplyr::filter(col =="other"), pch=19, cex=0.1, alpha=0.1) + 
+  geom_point(data = plt.pre |> dplyr::filter(col !="other"), pch=19, cex=0.5,alpha=0.8) +
+  geom_vline(xintercept=0, col="red", lty=2, lwd=0.5) +
+  geom_hline(yintercept=0, col="red", lty=2, lwd=0.5) +
+  theme_bw()
 
 
 

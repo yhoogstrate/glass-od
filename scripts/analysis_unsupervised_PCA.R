@@ -65,5 +65,41 @@ rm(data, metadata, data.pca.glass_od)
 
 
 
+# GLASS-OD + GLASS-NL combined ----
+
+
+
+metadata <- rbind(
+  glass_od.metadata.idats |> filter_GLASS_OD_idats(163) |> dplyr::select(sentrix_id),
+  glass_nl.metadata.idats |> filter_GLASS_NL_idats(218) |> dplyr::select(sentrix_id)
+)
+
+
+data <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata$sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (694299))
+    return(.)
+  })()
+
+
+
+data.pca.glass_od_nl <- data |> 
+  t() |> 
+  prcomp()
+
+data.pca.glass_od_nl.x <- data.pca.glass_od_nl |> 
+  purrr::pluck('x') |> 
+  as.data.frame(stringsAsFactors=F) |> 
+  tibble::rownames_to_column('sentrix_id')
+
+
+saveRDS(data.pca.glass_od_nl.x, "cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined.Rds")
+
+
 
 

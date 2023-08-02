@@ -24,88 +24,72 @@ if(!exists('glass_nl.data.mvalues') | !exists('glass_od.data.mvalues')) {
 metadata.glass_od <- glass_od.metadata.idats |> 
   filter_GLASS_OD_idats(163) 
 
-metadata.glass_nl <- glass_nl.metadata.resections |> 
-  dplyr::filter(!is.na(sentrix_id))
+metadata.glass_nl <- glass_nl.metadata.idats |> 
+  filter_GLASS_NL_idats(218)
 
 
 metadata.combi <- data.frame(sentrix_id = c(metadata.glass_od$sentrix_id, metadata.glass_nl$sentrix_id)) |> 
   dplyr::left_join(metadata.glass_od |> 
                      dplyr::select(sentrix_id,
                                    resection_tumor_grade,
-                                   predictBrain_12.5_cal_class,
-                                   rs_gender_predicted,
+                                   
+                                   mnp_predictBrain_v12.5_cal_class,
+                                   mnp_predictBrain_v12.8_cal_class,
+                                   mnp_predictBrain_v2.0.1_cal_class,
+                                   
+                                   mnp_rsGender_11b4_predicted,
+                                   mnp_rsGender_12.8_predicted,
+                                   
                                    resection_number,
                                    resection_id,
                                    patient_id,
                                    methylation_bins_1p19q_purity,
-                                   qc.pca.comp1,
+                                   
                                    isolation_person_name
                                    ),
                    by=c('sentrix_id' = 'sentrix_id')) |> 
   dplyr::left_join(metadata.glass_nl |> 
-                     dplyr::select(sentrix_id, Sample_Type, Sample_Name, methylation.sub.diagnosis, Sample_Sex) , by=c('sentrix_id'='sentrix_id')) |> 
-  dplyr::mutate(dataset = ifelse(is.na(methylation.sub.diagnosis),"GLASS-OD","GLASS-NL")) |> 
-  dplyr::mutate(grade = ifelse(is.na(methylation.sub.diagnosis),resection_tumor_grade,methylation.sub.diagnosis)) |> 
-  dplyr::mutate(sex = ifelse(!is.na(Sample_Sex),Sample_Sex,rs_gender_predicted),
-                Sample_Sex = NULL,
-                rs_gender_predicted = NULL)
+                     dplyr::select(sentrix_id, 
+                                   Sample_Type, 
+                                   Sample_Name, 
+                                   Sample_Sex,
+                                   
+                                   #mnp_predictBrain_v12.5_cal_class,
+                                   mnp_predictBrain_v12.8_cal_class
+                                   #mnp_predictBrain_v2.0.1_cal_class
+                                   
+                                   ) , by=c('sentrix_id'='sentrix_id'), suffix=c('_od','_nl')) 
 
 rm(metadata.glass_nl, metadata.glass_od)
 gc()
 
 
+tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined.Rds") |> 
+  assertr::verify(metadata$sentrix_id %in% sentrix_id)
 
+metadata <- metadata |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
 
-data.combi <- readRDS("cache/mvalues.combi.Rds") |> 
-  dplyr::select(metadata.combi$sentrix_id)
-
-data.combi.mask <- readRDS("cache/mvalues.combi.detP_mask.Rds") |> 
-  dplyr::select(metadata.combi$sentrix_id)
-
-
-detP <- rowSums(is.na(data.combi.mask))
-
-print(sum(detP > 0))
-print(sum(detP == 0))
-
-detP <- detP [ detP > 0]
-
-print(sum(detP > 0))
-print(sum(detP == 0))
-
-plot(c(0,sort(detP)))
+rm(tmp)
 
 
 
 
-data.combi <- data.combi |> 
-  tibble::rownames_to_column('probeID') |> 
-  dplyr::filter(probeID %in% names(detP) == F ) |>  # when you take the high quality samples, only ~30k probes are excluded, if you include all samples, ~20% of all probes are removed, so first QC samples then probes
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) >= 667533)
-    return(.)
-  })() |> 
-  tibble::column_to_rownames('probeID')
+# 
+# 
+# plt.split <- rbind(plt |> dplyr::mutate(facet = "dataset", col=dataset)
+#                    ,
+#                    plt |> dplyr::mutate(facet = "grade", col=grade)
+#                    ,
+#                    plt |> dplyr::mutate(facet = "batch", col=batch)
+#                    )
+# 
+# ggplot(plt.split, aes(x=PC4, y=PC3, col=col)) +
+#   facet_grid(cols = vars(facet)) +
+#   geom_point() +
+#   theme_bw()
+# 
 
-
-
-rm(detP)
-
-
-
-
-
-
-
-
-stopifnot(sum(is.na(data.combi)) == 0)
-
-
-## PCA ----
-
-pc <- prcomp(t(data.combi))
-dim(pc$x)
 
 
 

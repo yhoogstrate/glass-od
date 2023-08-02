@@ -103,8 +103,21 @@ rm(tmp)
 
 
 ## Percentage detP probes ----
-#' from: scripts/analysis_percentage_detP_probes.R & scripts/analysis_unsupervised_qc.R
+#' from: scripts/analysis_percentage_detP_probes.R
 
+tmp <- read.table("output/tables/percentage_detP_probes.txt") |> 
+  assertr::verify(!is.na(percentage.detP.signi) & is.numeric(percentage.detP.signi)) |> 
+  assertr::verify(gsam.metadata.idats$sentrix_id %in% sentrix_id)
+
+gsam.metadata.idats <- gsam.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(percentage.detP.signi)) 
+
+rm(tmp)
+
+
+
+#' from: scripts/analysis_unsupervised_qc.R
 
 tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |> 
   assertr::verify(!is.na(qc.pca.comp1)) |> 
