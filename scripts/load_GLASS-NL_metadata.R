@@ -232,6 +232,30 @@ glass_nl.metadata.idats <- glass_nl.metadata.idats |>
 rm(tmp)
 
 
+## RF purity calls ----
+
+
+tmp <- read.table("data/GLASS_NL/Methylation/Analysis/RFpurity/purities_RFpurity.txt") |> 
+  dplyr::mutate(sentrix_id = gsub("^.+/([0-9]{10,}_R[0-9]+C[0-9]+).+\\.idat$","\\1",fn)) |> 
+  dplyr::select(sentrix_id, absolute,  estimate) |> 
+  assertr::verify(!is.na(sentrix_id)) |> 
+  assertr::verify(!duplicated(sentrix_id)) |> 
+  assertr::verify(glass_nl.metadata.idats$sentrix_id %in% sentrix_id) |> 
+  dplyr::rename(RFpurity.absolute = absolute) |> 
+  dplyr::rename(RFpurity.estimate = estimate)
+
+
+glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(RFpurity.absolute)) |> 
+  assertr::verify(!is.na(RFpurity.estimate))
+
+rm(tmp)
+
+
+
+## ++ below: re-build because mvalue normalisation ++ ----
+
 ## Median methylation levels ----
 
 
