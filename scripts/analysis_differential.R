@@ -25,6 +25,12 @@ if(!exists('glass_od.metadata.idats')) {
 }
 
 
+if(!exists('glass_nl.metadata.idats')) {
+  source('scripts/load_GLASS-NL_metadata.R')
+}
+
+
+
 # analyses: GLASS-OD primary - last recurrence ----
 ## data: example ----
 
@@ -750,5 +756,26 @@ ggplot(plt.pre, aes(x=logFC.lgc, y=-log(P.Value.lgc), col=col)) +
   theme_bw()
 
 
+
+# analyses: GLASS-OD + GLASS-NL LG/HG ----
+#' multi-dataset mixed model to find changes specific to
+#' OD
+#' AC
+#' general grading
+## test: pat + overall_HG + HG_AC + HG_OD ----
+
+
+a <- glass_od.metadata.idats |> 
+  filter_GLASS_OD_idats(163) |> 
+  filter_first_G2_and_last_G3(105)
+
+b <- glass_nl.metadata.idats |> 
+  filter_GLASS_NL_idats(218) |> 
+  filter_first_G2_and_last_G3(105)
+
+
+metadata <- rbind(
+  
+)
 
 

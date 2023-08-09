@@ -5,6 +5,7 @@ filter_GLASS_NL_idats <- function(metadata, nrow.check = 0) {
     dplyr::filter(!is.na(sentrix_id)) |> 
     assertr::verify(!is.na(qc.pca.detP.outlier)) |> 
     dplyr::filter(qc.pca.detP.outlier == F) |> 
+    #dplyr::filter(qc.pca.pc3purity.outlier == F) |> 
     assertr::verify(!duplicated(sentrix_id))
   
   
@@ -19,4 +20,5 @@ filter_GLASS_NL_idats <- function(metadata, nrow.check = 0) {
   
   return (out)
 }
+
 

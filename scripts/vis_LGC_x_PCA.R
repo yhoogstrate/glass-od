@@ -8,11 +8,13 @@ if(!exists('glass_od.metadata.idats')) {
 }
 
 
-if(!exists('data.mvalues.hq_samples')) {
-  source('scripts/load_mvalues_hq_samples.R')
-}
+# if(!exists('data.mvalues.hq_samples')) {
+#   source('scripts/load_mvalues_hq_samples.R')
+# }
 
 
+
+library(ggplot2)
 
 
 # GLASS-OD / OD ----
@@ -33,24 +35,29 @@ plt <- metadata
 plt.split <- rbind(
   plt |>
     dplyr::mutate(col = as.factor(paste0("Grade ",resection_tumor_grade))) |> 
-    dplyr::mutate(facet = "Histological grade")
+    dplyr::mutate(facet = "Histological grade") |> 
+    dplyr::mutate(stat = '1')
   ,
   plt |> 
     dplyr::mutate(col = ifelse(mnp_predictBrain_v2.0.1_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", mnp_predictBrain_v2.0.1_cal_class)) |> 
-    dplyr::mutate(facet = "MNP CNS Classifier 114b/2.0.1")  ,
+    dplyr::mutate(facet = "MNP CNS Classifier 114b/2.0.1")  |> 
+    dplyr::mutate(stat = '1')
+  ,
   plt |> 
     dplyr::mutate(col = ifelse(mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", mnp_predictBrain_v12.8_cal_class)) |> 
-    dplyr::mutate(facet = "MNP CNS Classifier 12.8"),
-  
+    dplyr::mutate(facet = "MNP CNS Classifier 12.8")  |> 
+    dplyr::mutate(stat = '1')
+  ,
   plt |> 
     dplyr::mutate(col = ifelse(isolation_person_name == "USA / Duke", "Batch [US]", "Batch [EU]")) |> 
-    dplyr::mutate(facet = "Batch")
+    dplyr::mutate(facet = "Batch")  |> 
+    dplyr::mutate(stat = col)
 )
 
 
 ggplot(plt.split, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-PC2, col=col)) + 
   facet_grid(cols = vars(facet), scales = "free", space="free") +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  cor.coef.name ="rho") +
   geom_point() +
   theme_bw() + 
   scale_color_manual(values=c(
@@ -357,7 +364,7 @@ data <- data.mvalues.hq_samples |>
   dplyr::select(metadata$sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (694299))
+    assertthat::assert_that(nrow(.) == (695840))
     return(.)
   })() |> 
   (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my

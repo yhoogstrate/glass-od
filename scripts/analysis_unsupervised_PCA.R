@@ -3,19 +3,24 @@
 # load data ----
 
 
+if(!exists('data.mvalues.hq_samples')) {
+  source('scripts/load_mvalues_hq_samples.R')
+}
+
+
+
 if(!exists('glass_od.metadata.idats')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
-
 
 if(!exists('glass_nl.metadata.idats')) {
   source('scripts/load_GLASS-NL_metadata.R')
 }
 
-
-if(!exists('data.mvalues.hq_samples')) {
-  source('scripts/load_mvalues_hq_samples.R')
+if(!exists('gsam.metadata.idats')) {
+  source('scripts/load_GSAM_metadata.R')
 }
+
 
 
 
@@ -108,7 +113,7 @@ rm(data, metadata, data.pca.glass_nl)
 # G-SAM ----
 
 
-# GLASS-OD + GLASS-NL combined ----
+# GLASS-[OD+NL] combi ----
 
 
 
@@ -144,5 +149,47 @@ data.pca.glass_od_nl.x <- data.pca.glass_od_nl |>
 saveRDS(data.pca.glass_od_nl.x, "cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined.Rds")
 
 
+
+# GLASS-[OD+NL] combi excl 1P/19Q ----
+
+
+
+
+
+metadata <- rbind(
+  glass_od.metadata.idats |> filter_GLASS_OD_idats(163) |> dplyr::select(sentrix_id),
+  glass_nl.metadata.idats |> filter_GLASS_NL_idats(218) |> dplyr::select(sentrix_id)
+)
+
+
+data <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% (
+    data.mvalues.probes |> 
+      dplyr::filter(good_probe) |> 
+      dplyr::filter((is_1P | is_19Q) == F) |> 
+      dplyr::pull(probe_id)
+  )) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata$sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (639635))
+    return(.)
+  })()
+
+
+
+data.pca.glass_od_nl_excl1P19Q <- data |> 
+  t() |> 
+  prcomp()
+
+data.pca.glass_od_nl_excl1P19Q.x <- data.pca.glass_od_nl_excl1P19Q |> 
+  purrr::pluck('x') |> 
+  as.data.frame(stringsAsFactors=F) |> 
+  tibble::rownames_to_column('sentrix_id')
+
+
+saveRDS(data.pca.glass_od_nl_excl1P19Q.x, "cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined_no_1P19Q.Rds")
 
 

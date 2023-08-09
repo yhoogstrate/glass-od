@@ -158,11 +158,37 @@ saveRDS(out, file="cache/unsupervised_qc_outliers_all.Rds")
 # GLASS-NL low purity ----
 
 plt <- glass_nl.metadata.idats |> 
-  filter_GLASS_NL_idats(218) |> 
+  filter_GLASS_NL_idats(202) |> 
   dplyr::left_join(
     readRDS("cache/analysis_unsupervised_PCA_GLASS-NL_x.Rds"),
     by=c('sentrix_id'='sentrix_id'),
     suffix=c('','')
-  )
+  ) |> 
+  dplyr::mutate(label = dplyr::case_when(
+    mnp_predictBrain_v12.8_cal_class == "CTRL_CBM" ~ "CTRL_...",
+    mnp_predictBrain_v12.8_cal_class == "CTRL_CORPCAL" ~ "CTRL_...",
+    mnp_predictBrain_v12.8_cal_class == "CTRL_HEMI" ~ "CTRL_...",
+    mnp_predictBrain_v12.8_cal_class == "CTRL_HYPOTHAL" ~ "CTRL_...",
+    mnp_predictBrain_v12.8_cal_class == "CTRL_REACTIVE" ~ "CTRL_...",
+    T ~ mnp_predictBrain_v12.8_cal_class
+  )) |> 
+  dplyr::mutate(odd = ifelse(PC3 > 275 | RFpurity.absolute < 0.5,"yes","no")) |> 
+  dplyr::mutate(cnv_profile = dplyr::case_when(
+    Sample_Name %in% c("007_R3","007_R4","010_R2","018_R1","020_R3","029_R2","035_R2","039_R2","105_R2","128_R2","129_R2","135_R1","136_R1","141_R2","207_R1") ~ "poor",
+    Sample_Name %in% c("103_R2","160_R1","178_R2") ~ "borderline",
+    Sample_Name %in% c("025_R3","034_R2","126_R2","129_R3","206_R2","216_R3","122_R1") ~ "sufficient",
+    T ~ "not checked"
+  ))
 
+
+
+ggplot(plt, aes(x=PC3, y=RFpurity.absolute, col=cnv_profile, label=Sample_Name)) +
+  ggrepel::geom_text_repel(data = subset(plt, odd == "yes"),col="black",size=3,alpha=0.6,nudge_y = 0.005) +
+  geom_point() +
+  geom_vline(xintercept=300)
+
+
+
+c = cor(plt |>  dplyr::select(RFpurity.estimate, RFpurity.absolute, mnp_predictBrain_v12.8_cal_CTRL_HEMI, paste0("PC",1:15)) |> as.matrix(), method="spearman")
+corrplot::corrplot(c)
 

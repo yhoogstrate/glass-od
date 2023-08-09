@@ -60,6 +60,7 @@ glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resectio
   dplyr::filter(patient_id %in% glass_od.metadata.patients$patient_id) |> 
   dplyr::filter(is.na(reason_excluded_resection)) |> 
   assertr::verify(patient_id %in% c('26','63','27', '56', '76', '93', '96', '97', '98', '85') == F) |> # hard coded non-codels
+  dplyr::mutate(patient_id = as.factor(patient_id)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 200)
@@ -615,6 +616,36 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds") |>
 glass_od.metadata.idats <- glass_od.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
 
+
+## unsupervised PCA [GLASS-OD + GLASS-NL combi] ----
+
+# tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined.Rds") |> 
+#   dplyr::rename_with(~ gsub("^PC","PC.GLASS_OD_NL_combined.",.x), .cols = matches("^PC[0-9]", perl = T)) |> 
+#   dplyr::filter(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |> 
+#   (function(.) {
+#     print(dim(.))
+#     assertthat::assert_that(nrow(.) == 163)
+#     return(.)
+#   })()
+# 
+# 
+# glass_od.metadata.idats <- glass_od.metadata.idats |> 
+#   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+# rm(tmp)
+
+tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined_no_1P19Q.Rds") |>
+  dplyr::rename_with(~ gsub("^PC","PC.GLASS_OD_NL_combined_excl_1P19Q.",.x), .cols = matches("^PC[0-9]", perl = T)) |>
+  dplyr::filter(sentrix_id %in% glass_od.metadata.idats$sentrix_id) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 163)
+    return(.)
+  })()
+
+
+glass_od.metadata.idats <- glass_od.metadata.idats |>
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+rm(tmp)
 
 
 

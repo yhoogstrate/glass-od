@@ -9,7 +9,13 @@ source('scripts/load_functions.R')
 # all hq ----
 
 
-data.mvalues.hq_samples <- readRDS("cache/mvalues.HQ_samples.Rds") 
+data.mvalues.hq_samples <- readRDS("cache/mvalues.HQ_samples.Rds") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(ncol(.) == (163+218+73))
+    return(.)
+  })()
+
 data.mvalues.mask.hq_samples <- readRDS("cache/mvalues.HQ_samples.detP_mask.Rds")
 
 stopifnot(colnames(data.mvalues.hq_samples) == colnames(data.mvalues.mask.hq_samples))
@@ -32,11 +38,16 @@ data.mvalues.probes <- data.mvalues.mask.hq_samples |>
 tmp <- read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |> 
   dplyr::rename(probe_id = probeID) |> 
   assertr::verify(data.mvalues.probes$probe_id %in% probe_id) |> 
-  assertr::verify(!duplicated(probe_id))
+  assertr::verify(!duplicated(probe_id)) |> 
+  dplyr::mutate(pos = round((CpG_beg + CpG_end )/2)) |> 
+  dplyr::mutate(is_1P = CpG_chrm == 'chr1' & pos < 130 * 1000000) |> # rough margin
+  dplyr::mutate(is_19Q = CpG_chrm == 'chr19' & pos > 23.5 * 1000000 ) # rough margin
 
 
 data.mvalues.probes <- data.mvalues.probes |> 
-  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
+  assertr::verify(MASK_general == F)
+
 
 rm(tmp)
 
@@ -60,8 +71,9 @@ data.mvalues.probes <- data.mvalues.probes |>
     return(.)
   })()
 
-
 rm(tmp)
+
+
 
 ## filter for good probes ----
 
@@ -73,7 +85,9 @@ data.mvalues.good_probes <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == (694299))
     return(.)
   })() |> 
+  assertr::verify(MASK_general == F) |> 
   dplyr::pull(probe_id)
+
 
 
 

@@ -40,7 +40,8 @@ tmp <- read.csv("data/GLASS_NL/Metadata/Samples/Master Datasheet_ALL METHODS_270
     print(dim(.))
     assertthat::assert_that(nrow(.) == (235)) 
     return(.)
-  })()
+  })() |> 
+  dplyr::mutate(patient_id = as.factor(gsub("^.+_[0]*([0-9]+)$", "\\1", GLASS_ID)))
 
 
 glass_nl.metadata.idats <- glass_nl.metadata.idats |>
@@ -232,6 +233,7 @@ glass_nl.metadata.idats <- glass_nl.metadata.idats |>
 rm(tmp)
 
 
+
 ## RF purity calls ----
 
 
@@ -253,6 +255,27 @@ glass_nl.metadata.idats <- glass_nl.metadata.idats |>
 rm(tmp)
 
 
+
+
+## QC Purity PCA outlier ----
+#' PCA was performed on only 218 HQ arrays
+#' these outliers in PC3 (val >300) were CONTR_ and sometimes difficultly classifiable
+
+# PC3_low_purity_samples <- c("203175700013_R08C01", "203189480016_R03C01", "203189480016_R05C01", "203986510092_R04C01", "203986510125_R04C01", "203989100024_R08C01",
+#                             "203989100035_R02C01", "203989100096_R03C01", "203989100096_R05C01", "203989100142_R02C01", "203991400003_R01C01", "203991400003_R06C01",
+#                             "204073520032_R07C01", "204073570005_R02C01", "203519500055_R03C01", "203519500055_R05C01")
+# 
+# glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
+#   dplyr::mutate(qc.pca.pc3purity.outlier = sentrix_id %in% PC3_low_purity_samples) |> 
+#   (function(.) {
+#     print(dim(.))
+#     assertthat::assert_that(nrow(.) == 235)
+#     return(.)
+#   })()
+# 
+# rm(PC3_low_purity_samples)
+# 
+# 
 
 ## ++ below: re-build because mvalue normalisation ++ ----
 
@@ -290,6 +313,62 @@ tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV.Rds"
 
 glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+
+
+## unsupervised PCA ----
+
+
+tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-NL_x.Rds") |> 
+  assertr::verify(!is.na(PC1)) |> 
+  assertr::verify(!is.na(PC2)) |> 
+  assertr::verify(!is.na(PC3)) |> 
+  assertr::verify(!is.na(PC4)) |> 
+  assertr::verify(!is.na(PC5)) |> 
+  assertr::verify(!is.na(PC218)) |> 
+  dplyr::filter(sentrix_id %in% glass_nl.metadata.idats$sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 218)
+    return(.)
+  })()
+
+
+glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+
+
+
+
+## unsupervised PCA [GLASS-OD + GLASS-NL combi] ----
+
+
+# tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined.Rds") |> 
+#   dplyr::rename_with(~ gsub("^PC","PC.GLASS_OD_NL_combined.",.x), .cols = matches("^PC[0-9]", perl = T)) |> 
+#   dplyr::filter(sentrix_id %in% glass_nl.metadata.idats$sentrix_id) |> 
+#   (function(.) {
+#     print(dim(.))
+#     assertthat::assert_that(nrow(.) == 218)
+#     return(.)
+#   })()
+# 
+# 
+# glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
+#   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+# rm(tmp)
+
+tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined_no_1P19Q.Rds") |>
+  dplyr::rename_with(~ gsub("^PC","PC.GLASS_OD_NL_combined_excl_1P19Q.",.x), .cols = matches("^PC[0-9]", perl = T)) |>
+  dplyr::filter(sentrix_id %in% glass_nl.metadata.idats$sentrix_id) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 218)
+    return(.)
+  })()
+
+
+glass_nl.metadata.idats <- glass_nl.metadata.idats |>
+  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+rm(tmp)
 
 
 
