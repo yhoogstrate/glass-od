@@ -7,8 +7,6 @@
 library(ggplot2)
 library(minfi)
 source('scripts/youri_gg_theme.R')
-
-
 source('scripts/load_functions.R')
 
 
@@ -16,8 +14,6 @@ if(!exists('data.mvalues.hq_samples')) {
   source('scripts/load_mvalues_hq_samples.R')
 }
 
-
-## GLASS-OD ----
 
 
 if(!exists('glass_od.metadata.idats')) {
@@ -762,20 +758,293 @@ ggplot(plt.pre, aes(x=logFC.lgc, y=-log(P.Value.lgc), col=col)) +
 #' OD
 #' AC
 #' general grading
-## test: pat + overall_HG + HG_AC + HG_OD ----
+## test: pat + HG_AC + HG_OD + overall_HG ----
 
 
-a <- glass_od.metadata.idats |> 
-  filter_GLASS_OD_idats(163) |> 
-  filter_first_G2_and_last_G3(105)
+metadata.od <- glass_od.metadata.idats |> 
+    filter_GLASS_OD_idats(163) |> 
+    filter_first_G2_and_last_G3(105) |> 
+    dplyr::select(sentrix_id, resection_id, patient_id, LG_HG_status, A_IDH_HG__A_IDH_LG_lr__lasso_fit) |>  # has to be WHO since OD has no methylation based split
+    dplyr::rename(sample_id = resection_id) |> 
+    dplyr::mutate(dataset = "GLASS-OD") |> 
+    dplyr::mutate(LG_HG_status = factor(LG_HG_status, levels=c("LG","HG")))
+metadata.ac <- glass_nl.metadata.idats |> 
+      filter_GLASS_NL_idats(218) |> 
+      filter_first_G2_and_last_G3(130) |> 
+      dplyr::select(sentrix_id, Sample_Name, patient_id, LG_HG_status, A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV) |>  # has to be WHO since OD has no methylation based split
+      dplyr::rename(sample_id = Sample_Name) |> 
+      dplyr::rename(`A_IDH_HG__A_IDH_LG_lr__lasso_fit` = `A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV`) |> 
+      dplyr::mutate(dataset = "GLASS-NL") |> 
+      dplyr::mutate(LG_HG_status = factor(LG_HG_status, levels=c("LG","HG")))
 
-b <- glass_nl.metadata.idats |> 
-  filter_GLASS_NL_idats(218) |> 
-  filter_first_G2_and_last_G3(105)
+data.od <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata.od$sentrix_id)
+
+data.ac <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata.ac$sentrix_id)
 
 
-metadata <- rbind(
-  
-)
+design.od <- model.matrix(~factor(patient_id) + factor(LG_HG_status), data=metadata.od)
+design.ac <- model.matrix(~factor(patient_id) + factor(LG_HG_status), data=metadata.ac)
+
+fit.od <- limma::eBayes(limma::lmFit(data.od, design.od),trend=T)
+fit.ac <- limma::eBayes(limma::lmFit(data.ac, design.ac),trend=T)
+
+stats.od <- limma::topTable(fit.od,
+                              n=nrow(data.od),
+                              coef="factor(LG_HG_status)HG",
+                              sort.by = "none", 
+                              adjust.method="fdr") |>
+  tibble::rownames_to_column('probe_id')
+stats.ac <- limma::topTable(fit.ac,
+                              n=nrow(data.ac),
+                              coef="factor(LG_HG_status)HG",
+                              sort.by = "none",
+                              adjust.method="fdr") |>
+  tibble::rownames_to_column('probe_id')
+
+
+stopifnot(stats.od$probe_id == stats.ac$probe_id)
+
+plt <- stats.od |> 
+  dplyr::left_join(stats.ac, by=c('probe_id'='probe_id'),suffix=c('.od','.ac')) |> 
+  dplyr::mutate(col1 = probe_id %in% (stats.b.hg_od |> dplyr::filter(adj.P.Val < 0.01) |> dplyr::pull(probe_id)))|> 
+  dplyr::mutate(col2 = probe_id %in% (stats.b.hg_ac |> dplyr::filter(adj.P.Val < 0.01) |> dplyr::pull(probe_id)))
+
+
+plt <- plt |> 
+  dplyr::mutate(col3 = probe_id %in% (stats.b.hg_ac$probe_id[stats.b.hg_ac$adj.P.Val < 0.01]))
+
+ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=col1)) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  geom_point(pch=19, alpha=0.15,cex=0.02) +
+  theme_bw()
+
+
+ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=col2)) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  geom_point(pch=19, alpha=0.15,cex=0.02) +
+  theme_bw()
+
+
+ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=col3)) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  geom_point(data=subset(plt, col3==F),pch=19, alpha=0.15,cex=0.02) +
+  geom_point(data=subset(plt, col3==T),pch=19, alpha=0.65,cex=0.05) +
+  theme_bw()
+
+
+ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=col2)) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  geom_point(data=subset(plt, col2==F),pch=19, alpha=0.15,cex=0.02) +
+  geom_point(data=subset(plt, col2==T),pch=19, alpha=0.65,cex=0.05) +
+  theme_bw()
+
+
+
+
+### subtests HG_AC specific ----
+
+
+metadata <- rbind( metadata.od , metadata.ac) |> 
+  dplyr::mutate(HG_OD = factor(ifelse(dataset == 'GLASS-OD' & LG_HG_status == "HG","HG_OD","non_HG_OD"),levels=c('non_HG_OD','HG_OD'))) |> 
+  dplyr::mutate(HG_AC = factor(ifelse(dataset == 'GLASS-NL' & LG_HG_status == "HG","HG_AC","non_HG_AC"),levels=c('non_HG_AC','HG_AC'))) |> 
+  dplyr::mutate(HG_stat = factor(dplyr::case_when(
+    HG_OD == "HG_OD" ~ "HG_OD",
+    HG_AC == "HG_AC" ~ "HG_AC",
+    T ~ "LG"
+  ), levels=c("LG","HG_AC","HG_OD")))
+
+data <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata$sentrix_id)
+
+
+#### A HG_AC -1 - HG_OD 1 ----
+
+# HG_stat of HG_OD + HG_AC maakt niet veel uit
+#model.matrix(~HG_OD + HG_AC, data=metadata) |> head()
+#model.matrix(~HG_stat, data=metadata) |> head()
+
+
+design <- model.matrix(~factor(patient_id) + factor(HG_OD) + factor(HG_AC), data=metadata)
+fit <- limma::eBayes(limma::lmFit(data, design),trend=T)
+
+#limma::makeContrasts(HG_OD - HG_AC - LG, levels=colnames(design))
+contrast <- limma::makeContrasts(HG_statHG_OD - HG_statHG_AC - HG_statLG, levels=colnames(design))
+fit2 <- limma::eBayes( limma::contrasts.fit( fit, contrast ) )
+# 
+# HG_statHG_OD - HG_statHG_AC
+f = rownames(fit2$p.value)[fit2$p.value < 0.01]
+
+
+#### B HG_AC 1 & HG_OD 1 ----
+
+# HG_stat of HG_OD + HG_AC maakt niet veel uit
+#model.matrix(~HG_OD + HG_AC, data=metadata) |> head()
+#model.matrix(~HG_stat, data=metadata) |> head()
+
+
+design <- model.matrix(~factor(patient_id) + factor(dataset) + factor(LG_HG_status), data=metadata)
+fit <- limma::eBayes(limma::lmFit(data, design),trend=T)
+stats.hg <- limma::topTable(fit,
+                                 n=nrow(data),
+                                 coef="factor(LG_HG_status)HG",
+                                 sort.by = "none",
+                                 adjust.method="fdr") |>
+  tibble::rownames_to_column('probe_id')
+
+
+
+design <- model.matrix(~factor(patient_id) + factor(HG_OD) + factor(HG_AC), data=metadata)
+fit <- limma::eBayes(limma::lmFit(data, design),trend=T)
+stats.a.hg_ac <- limma::topTable(fit,
+                                 n=nrow(data),
+                                 coef="factor(HG_AC)HG_AC",
+                                 sort.by = "none",
+                                 adjust.method="fdr") |>
+  tibble::rownames_to_column('probe_id')
+stats.a.hg_od <- limma::topTable(fit,
+                                 n=nrow(data),
+                                 coef="factor(HG_OD)HG_OD",
+                                 sort.by = "none",
+                                 adjust.method="fdr") |>
+  tibble::rownames_to_column('probe_id')
+
+
+
+design <- model.matrix(~factor(patient_id) + factor(LG_HG_status) + factor(HG_AC), data=metadata)
+fit <- limma::eBayes(limma::lmFit(data, design),trend=T)
+stats.b.hg_ac <- limma::topTable(fit,
+                                 n=nrow(data),
+                                 coef="factor(HG_AC)HG_AC",
+                                 sort.by = "none",
+                                 adjust.method="fdr") |>
+  tibble::rownames_to_column('probe_id')
+#plot(plt$t.ac, stats.b.hg_ac$t, pch=19,cex=0.01)
+
+
+design <- model.matrix(~factor(patient_id) + factor(LG_HG_status) + factor(HG_OD), data=metadata)
+fit <- limma::eBayes(limma::lmFit(data, design),trend=T)
+stats.b.hg_od <- limma::topTable(fit,
+                            n=nrow(data),
+                            coef="factor(HG_OD)HG_OD",
+                            sort.by = "none",
+                            adjust.method="fdr") |>
+  tibble::rownames_to_column('probe_id')
+#plot(plt$t.ac, stats.b.hg_ac$t, pch=19,cex=0.01)
+#plot(plt$t.od, stats.b.hg_od$t, pch=19,cex=0.01)
+
+
+design <- model.matrix(~factor(patient_id) + factor(HG_AC), data=metadata)
+fit <- limma::eBayes(limma::lmFit(data, design),trend=T)
+stats.c.hg_ac <- limma::topTable(fit,
+                                 n=nrow(data),
+                                 coef="factor(HG_AC)HG_AC",
+                                 sort.by = "none",
+                                 adjust.method="fdr") |>
+  tibble::rownames_to_column('probe_id')
+
+
+design <- model.matrix(~factor(patient_id) + factor(HG_OD), data=metadata)
+fit <- limma::eBayes(limma::lmFit(data, design),trend=T)
+stats.c.hg_od <- limma::topTable(fit,
+                                 n=nrow(data),
+                                 coef="factor(HG_OD)HG_OD",
+                                 sort.by = "none",
+                                 adjust.method="fdr") |>
+  tibble::rownames_to_column('probe_id')
+
+
+
+plt <- stats.hg |>  dplyr::rename_with(~ paste0(.x, ".hg")) |>
+  dplyr::left_join(
+    stats.a.hg_ac |> dplyr::rename_with(~ paste0(.x, ".a.hg_ac")),
+    by = c("probe_id.hg" = "probe_id.a.hg_ac")
+  ) |>
+  dplyr::left_join(
+    stats.a.hg_od |> dplyr::rename_with(~ paste0(.x, ".a.hg_od")),
+    by = c("probe_id.hg" = "probe_id.a.hg_od")
+  ) |>
+  dplyr::left_join(
+    stats.b.hg_ac |> dplyr::rename_with(~ paste0(.x, ".b.hg_ac")),
+    by = c("probe_id.hg" = "probe_id.b.hg_ac")
+  ) |>
+  dplyr::left_join(
+    stats.b.hg_od |> dplyr::rename_with(~ paste0(.x, ".b.hg_od")),
+    by = c("probe_id.hg" = "probe_id.b.hg_od")
+  ) |>
+  dplyr::left_join(
+    stats.c.hg_ac |> dplyr::rename_with(~ paste0(.x, ".c.hg_ac")),
+    by = c("probe_id.hg" = "probe_id.c.hg_ac")
+  ) |>
+  dplyr::left_join(
+    stats.c.hg_od |> dplyr::rename_with(~ paste0(.x, ".c.hg_od")),
+    by = c("probe_id.hg" = "probe_id.c.hg_od")
+  )
+
+
+c = plt |>
+  dplyr::select(probe_id.hg, starts_with("t.")) |> 
+  tibble::column_to_rownames('probe_id.hg') |> 
+  as.matrix() |> 
+  cor()
+
+corrplot::corrplot(c, order="hclust")
+
+
+sum(stats.hg$adj.P.Val < 0.01)
+
+sum(stats.a.hg_od$adj.P.Val < 0.01)
+sum(stats.a.hg_ac$adj.P.Val < 0.01)
+plot(stats.a.hg_od$t, stats.a.hg_ac$t, pch=19,cex=0.01)
+
+sum(stats.b.hg_od$adj.P.Val < 0.01)
+sum(stats.b.hg_ac$adj.P.Val < 0.01)
+plot(stats.b.hg_od$t, stats.b.hg_ac$t, pch=19,cex=0.01)
+
+sum(stats.c.hg_od$adj.P.Val < 0.01)
+sum(stats.c.hg_ac$adj.P.Val < 0.01)
+plot(stats.c.hg_od$t, stats.c.hg_ac$t, pch=19,cex=0.01)
+
+
+plt <- plt |> 
+  dplyr::mutate(col1 = ifelse(adj.P.Val.a.hg_ac < 0.01, "signi AC", "AC-n")) |> 
+  dplyr::mutate(col2 = ifelse(adj.P.Val.a.hg_od < 0.01, "signi OD", "OD-n")) |> 
+  #dplyr::mutate(col1 = ifelse(P.Value.c.hg_ac < 0.01, "signi AC-only", "AC-n")) |> 
+  #dplyr::mutate(col2 = ifelse(P.Value.c.hg_od < 0.01, "signi OD-only", "OD-n")) |> 
+  dplyr::mutate(col3 = ifelse(adj.P.Val.b.hg_ac < 0.01, "signi AC-only", "AC-n")) |> 
+  dplyr::mutate(col4 = ifelse(adj.P.Val.b.hg_od < 0.01, "signi OD-only", "OD-n")) |> 
+  dplyr::mutate(col5 = paste0(col1, " - ", col2, " - ", col3, " - ", col4))
+
+
+ggplot(plt, aes(x=t.a.hg_ac, y=t.a.hg_od, col=col5)) +
+  geom_point(pch=19,cex=0.01,alpha=0.5) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  xlim(-12,12) +
+  ylim(-12,12) +
+  theme_bw()
+
+ggplot(plt, aes(x=t.b.hg_ac, y=t.b.hg_od, col=col5)) +
+  geom_point(pch=19,cex=0.01,alpha=0.5) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  xlim(-12,12) +
+  ylim(-12,12) +
+  theme_bw()
+
+ggplot(plt, aes(x=t.c.hg_ac, y=t.c.hg_od, col=col5)) +
+  geom_point(pch=19,cex=0.01,alpha=0.5) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  xlim(-12,12) +
+  ylim(-12,12) +
+  theme_bw()
 
 

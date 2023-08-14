@@ -36,7 +36,7 @@ data <- data |>
   tibble::column_to_rownames('probe_id') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (694299))
+    assertthat::assert_that(nrow(.) == (695840))
     return(.)
   })()
 

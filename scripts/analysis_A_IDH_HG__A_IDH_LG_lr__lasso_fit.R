@@ -31,15 +31,17 @@ if(!exists('gsam.metadata.idats')) {
 
 
 
-data.good.probes <- data.mvalues.mask.hq_samples |>
-  is.na() |>
-  rowSums() |>
-  as.data.frame() |>
-  dplyr::rename(n_na = 1) |> 
-  dplyr::filter(n_na == 0) |> 
-  tibble::rownames_to_column('probe_id')
+metadata.glass_od <- glass_od.metadata.idats |> 
+  filter_GLASS_OD_idats(163)
 
-
+data.glass_od <- data.mvalues.hq_samples |>
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata.glass_od$sentrix_id)
+  #(function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
+  #dplyr::arrange(mad) |> 
+  #dplyr::mutate(mad = NULL)
 
 
 metadata.glass_nl <- glass_nl.metadata.idats |> 
@@ -47,53 +49,32 @@ metadata.glass_nl <- glass_nl.metadata.idats |>
   dplyr::mutate(i = 1:dplyr::n()) |> 
   dplyr::mutate(slice = i %% 10, i = NULL)
 
-
 data.glass_nl <- data.mvalues.hq_samples |>
   tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% data.good.probes$probe_id) |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.glass_nl$sentrix_id) |> 
-  (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
-  dplyr::arrange(mad) |> 
-  dplyr::mutate(mad = NULL)
-
-
-
-
-metadata.glass_od <- glass_od.metadata.idats |> 
-  filter_GLASS_OD_idats(163)
-
-
-data.glass_od <- data.mvalues.hq_samples |>
-  tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% data.good.probes$probe_id) |> 
-  tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.glass_od$sentrix_id) |> 
-  (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
-  dplyr::arrange(mad) |> 
-  dplyr::mutate(mad = NULL)
-
+  dplyr::select(metadata.glass_nl$sentrix_id)
+  #(function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
+  #dplyr::arrange(mad) |> 
+  #dplyr::mutate(mad = NULL)
 
 
 
 metadata.gsam <- gsam.metadata.idats |> 
   filter_GSAM_idats(73)
 
-
 data.gsam <- data.mvalues.hq_samples |>
   tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% data.good.probes$probe_id) |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.gsam$sentrix_id) |> 
-  (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
-  dplyr::arrange(mad) |> 
-  dplyr::mutate(mad = NULL)
+  dplyr::select(metadata.gsam$sentrix_id)
+  #(function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)))() |> # this synthax, oh my
+  #dplyr::arrange(mad) |> 
+  #dplyr::mutate(mad = NULL)
 
 
 
 ## add PCA to metadata ----
-
-
 
 
 data.glass_nl.pca.obj <- data.glass_nl |> 
@@ -106,24 +87,20 @@ data.glass_nl.pca <- data.glass_nl.pca.obj |>
 
 
 
-
-
-
-# https://www.statology.org/lasso-regression-in-r/
-
-
-
-
 # model 1: purely on m-values ----
+#' https://www.statology.org/lasso-regression-in-r/
 #' PCA based works a little better and considerably faster
 
 ## train parameters ----
 
 
 set.seed(123456)
-cv_model_probe_based <- glmnet::cv.glmnet(t(data.glass_nl |> dplyr::select(metadata.glass_nl$sentrix_id)),
-                                          metadata.glass_nl$A_IDH_HG__A_IDH_LG_lr, alpha = 1, relax=F)
-plot(cv_model_probe_based) 
+cv_model_probe_based <- glmnet::cv.glmnet(
+  data.glass_nl |>
+    dplyr::select(metadata.glass_nl$sentrix_id) |> 
+    t(),
+  metadata.glass_nl$A_IDH_HG__A_IDH_LG_lr, alpha = 1, relax=F)
+plot(cv_model_probe_based)
 
 
 
@@ -143,7 +120,8 @@ for(cv in 0:9) {
       t(),
     metadata.train$A_IDH_HG__A_IDH_LG_lr,
     alpha = 1, # 1 = lasso; 0 = ridge
-    lambda = cv_model_probe_based$lambda.min)
+    lambda = 0.01 # cv_model_probe_based$lambda.min
+    )
   
   
   metadata.test$LGC.lasso.probe_based <- predict(lm.probe_based, data.glass_nl |>
@@ -172,10 +150,11 @@ ggplot(out.probe_based, aes(
   #label=sentrix_id
 )) +
   geom_point(size=1.5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = ..r.label..), col="1") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1") +
   labs(subtitle = "Linear probe-based classifier predicting log(IDH_HG / IDH[_LG]) ratio [10x CV]")+
   theme_bw() +
   theme(legend.position = 'bottom')
+
 
 
 ### export 10xCV data points ----
@@ -274,7 +253,7 @@ ggplot(out.pca_based, aes(
     #label=sentrix_id
   )) +
     geom_point(size=1.5) +
-    ggpubr::stat_cor(method = "spearman", aes(label = ..r.label..), col="1") +
+    ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1") +
     labs(subtitle = "Linear PCA-based classifier predicting log(IDH_HG / IDH[_LG]) ratio [10x CV]")+
     theme_bw() +
     theme(legend.position = 'bottom')
@@ -313,8 +292,6 @@ saveRDS(lm.full.pca_based, file="cache/LGC_predictor_PCA_based_lm.Rds")
 # apply to GLASS-OD & G-SAM ----
 
 
-rm(p)
-
 classifier <- readRDS("cache/LGC_predictor_probe_based_lm.Rds")
 
 data.1 <- data.glass_od |> 
@@ -336,6 +313,7 @@ data.2 <- data.gsam |>
   as.matrix()
 
 
+stopifnot(colnames(data.1) == colnames(data.2))
 data <- rbind(data.1, data.2)
 
 
@@ -350,9 +328,9 @@ p <- predict(classifier, data) |>
   tibble::rownames_to_column('sentrix_id')
 
 
-
 saveRDS(p, file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds")
 
+rm(p)
 
 
 
