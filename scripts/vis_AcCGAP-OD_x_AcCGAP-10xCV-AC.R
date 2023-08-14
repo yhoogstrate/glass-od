@@ -36,7 +36,7 @@ plt <- rbind(
       dataset = "GLASS-OD"
     ),
   glass_nl.metadata.idats |>
-    filter_GLASS_NL_idats(218) |>
+    filter_GLASS_NL_idats(202) |>
     dplyr::select(
       sentrix_id,
       A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV,
