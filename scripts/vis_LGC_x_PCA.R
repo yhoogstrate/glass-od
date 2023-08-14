@@ -57,34 +57,36 @@ plt.split <- rbind(
 
 ggplot(plt.split, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-PC2, col=col)) + 
   facet_grid(cols = vars(facet), scales = "free", space="free") +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  cor.coef.name ="rho") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  cor.coef.name ="rho", show_guide = FALSE) +
   geom_point() +
-  theme_bw() + 
+  theme_classic() + 
+  theme(axis.line = element_line(linewidth=0.35), strip.background = element_rect(size=0.7))+
   scale_color_manual(values=c(
     "Grade 2"="blue","O_IDH"="blue",    "Batch [EU]"="darkgreen",
     "OLIGOSARC_IDH" = "orange",
     "NA" = "gray",
     "other" = "purple",
     "Grade 3"="red","A_IDH_HG"="red",     "Batch [US]"="brown"
-  ))
+  )) +
+  theme(legend.position = 'bottom')
 
 
 
 ggplot(plt, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-median.overall.methylation)) + 
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", show_guide = FALSE) +
   geom_point() +
   theme_bw() 
 
 
 
 ggplot(plt, aes(x=PC2, y=median.overall.methylation, col=isolation_person_name)) + 
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), cor.coef.name ="rho") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), cor.coef.name ="rho", show_guide = FALSE) +
   geom_point() +
   theme_bw() 
 
 
 ggplot(plt, aes(x=PC2, y=median.glass_nl_supervised.methylation, col=isolation_person_name)) + 
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", show_guide = FALSE) +
   geom_point() +
   theme_bw() 
 
@@ -95,7 +97,7 @@ ggplot(plt, aes(x=PC2, y=median.glass_nl_supervised.methylation, col=isolation_p
 
 
 stats <- metadata |> 
-  dplyr::left_join(data.all.pca.obj.data, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  #dplyr::left_join(data.all.pca.obj.data, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
   dplyr::filter(resection_tumor_grade %in% c(2,3)) |> 
   dplyr::mutate(resection_tumor_grade__hg = ifelse(resection_tumor_grade == 3, 1 , 0)) |> 
   dplyr::mutate(batch_us = ifelse(isolation_person_name == "USA / Duke", 1, 0))  |> 
@@ -154,19 +156,27 @@ plt.logit <- rbind(
     dplyr::mutate(mnp_predictBrain_v12.8_cal_class = "") |> 
     dplyr::mutate(type = "fit")
 ) |> 
-  dplyr::mutate(`resection tumor grade` = resection_tumor_grade__hg + 2)
+  dplyr::mutate(`resection tumor grade` = resection_tumor_grade__hg + 2) |> 
+  dplyr::mutate(xmin=A_IDH_HG__A_IDH_LG_lr__lasso_fit - 0.0185,
+                xmax=A_IDH_HG__A_IDH_LG_lr__lasso_fit + 0.0185,
+                ymin=`resection tumor grade` - 0.06,
+                ymax=`resection tumor grade` + 0.06)
 
 
-p1 <- ggplot(plt.logit, aes(x = A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=`resection tumor grade`, col= mnp_predictBrain_v12.8_cal_class)) +
-  geom_point(data = plt.logit |> dplyr::filter(type == "data"),pch="|",size=5) +
-  geom_line(data = plt.logit |> dplyr::filter(type == "fit"), col="darkgreen") +
-  theme_bw() + 
+
+p1 <- ggplot(plt.logit, aes(x = A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=`resection tumor grade`)) +
+  #geom_point(data = plt.logit |> dplyr::filter(type == "data"),aes(fill=`mnp_predictBrain_v12.8_cal_class`), pch="|",size=5) +
+  geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
+  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin-0.02,xmax=xmax+0.02,ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
+  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`mnp_predictBrain_v12.8_cal_class`)) +
+  theme_classic() + 
+  theme(axis.line = element_line(linewidth=0.35))+
   annotate("text", x = 7.5, y = 2.5, label = paste0("p = ",format.pval(pval))) + 
   theme(legend.position = 'bottom') + 
   scale_y_continuous(breaks = c(2,3)) + 
-  labs(col="mnp v12.8")
-
-
+  labs(col="mnp v12.8") +
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(2, 3), oob = scales::squish)
+p1
 
 
 ### logistic PC2 ----
@@ -195,6 +205,7 @@ Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="
 #plot((resection_tumor_grade__hg) ~ PC2inv, data=stats)
 #lines((resection_tumor_grade__hg) ~ PC2inv, Predicted_data, lwd=2, col="darkgreen")
 
+scale=100
 plt.logit <- rbind(
   stats |> 
     dplyr::select( resection_tumor_grade__hg, PC2inv, mnp_predictBrain_v12.8_cal_class) |> 
@@ -203,18 +214,27 @@ plt.logit <- rbind(
     dplyr::mutate(mnp_predictBrain_v12.8_cal_class = "") |> 
     dplyr::mutate(type = "fit")
 ) |> 
-  dplyr::mutate(`resection tumor grade` = resection_tumor_grade__hg + 2)
+  dplyr::mutate(`resection tumor grade` = resection_tumor_grade__hg + 2) |> 
+  dplyr::mutate(xmin=PC2inv - (0.0185*scale),
+                xmax=PC2inv + (0.0185*scale),
+                ymin=`resection tumor grade` - 0.06,
+                ymax=`resection tumor grade` + 0.06)
 
 
-p2 <- ggplot(plt.logit, aes(x = PC2inv, y=`resection tumor grade`, col= mnp_predictBrain_v12.8_cal_class)) +
-  geom_point(data = plt.logit |> dplyr::filter(type == "data"),pch="|",size=5) +
-  geom_line(data = plt.logit |> dplyr::filter(type == "fit"), col="darkgreen") +
-  theme_bw() + 
+p2 <- ggplot(plt.logit, aes(x = PC2inv, y=`resection tumor grade`)) + # col= mnp_predictBrain_v12.8_cal_class
+  #geom_point(data = plt.logit |> dplyr::filter(type == "data"),pch="|",size=5) +
+  #geom_line(data = plt.logit |> dplyr::filter(type == "fit"), col="darkgreen") +
+  geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
+  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin-(0.02*scale),xmax=xmax+(0.02*scale),ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
+  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`mnp_predictBrain_v12.8_cal_class`)) +
+  theme_classic() + 
+  theme(axis.line = element_line(linewidth=0.35))+
   annotate("text", x = 750, y = 2.5, label = paste0("p = ",format.pval(pval))) + 
   theme(legend.position = 'bottom') + 
   scale_y_continuous(breaks = c(2,3)) + 
-  labs(col="mnp v12.8")
-
+  labs(col="mnp v12.8") +
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(2, 3), oob = scales::squish)
+p2
 
 
 ### logistic median.overall.methylation ----
@@ -238,6 +258,8 @@ Predicted_data <- data.frame(median.overall.methylation=seq(min(stats$median.ove
 Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
 
 
+
+scale=0.16
 plt.logit <- rbind(
   stats |> 
     dplyr::select(resection_tumor_grade__hg, median.overall.methylation, mnp_predictBrain_v12.8_cal_class) |> 
@@ -248,17 +270,27 @@ plt.logit <- rbind(
     dplyr::mutate(mnp_predictBrain_v12.8_cal_class = "") |> 
     dplyr::mutate(type = "fit")
 ) |> 
-  dplyr::mutate(`resection tumor grade` = resection_tumor_grade__hg + 2)
+  dplyr::mutate(`resection tumor grade` = resection_tumor_grade__hg + 2) |> 
+  dplyr::mutate(xmin=median.overall.methylation - (0.0185*scale),
+                xmax=median.overall.methylation + (0.0185*scale),
+                ymin=`resection tumor grade` - 0.06,
+                ymax=`resection tumor grade` + 0.06)
 
 
-p3 <- ggplot(plt.logit, aes(x = median.overall.methylation, y=`resection tumor grade`, col= mnp_predictBrain_v12.8_cal_class)) +
-  geom_point(data = plt.logit |> dplyr::filter(type == "data"),pch="|",size=5) +
-  geom_line(data = plt.logit |> dplyr::filter(type == "fit"), col="darkgreen") +
-  theme_bw() + 
+p3 <- ggplot(plt.logit, aes(x = median.overall.methylation, y=`resection tumor grade`)) + # , col= mnp_predictBrain_v12.8_cal_class
+  #geom_point(data = plt.logit |> dplyr::filter(type == "data"),pch="|",size=5) +
+  #geom_line(data = plt.logit |> dplyr::filter(type == "fit"), col="darkgreen") +
+  geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
+  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin-(0.02*scale),xmax=xmax+(0.02*scale),ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
+  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`mnp_predictBrain_v12.8_cal_class`)) +
+  theme_classic() + 
+  theme(axis.line = element_line(linewidth=0.35))+
   annotate("text", x = 2.5, y = 2.5, label = paste0("p = ",format.pval(pval))) + 
   theme(legend.position = 'bottom') + 
   scale_y_continuous(breaks = c(2,3)) + 
-  labs(col="mnp v12.8")
+  labs(col="mnp v12.8") +
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(2, 3), oob = scales::squish)
+p3
 
 
 
@@ -286,6 +318,7 @@ Predicted_data <- data.frame(median.glass_nl_supervised.methylation=seq(min(stat
 Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
 
 
+scale=0.26
 plt.logit <- rbind(
   stats |> 
     dplyr::select(resection_tumor_grade__hg, median.glass_nl_supervised.methylation, mnp_predictBrain_v12.8_cal_class) |> 
@@ -296,20 +329,32 @@ plt.logit <- rbind(
     dplyr::mutate(mnp_predictBrain_v12.8_cal_class = "") |> 
     dplyr::mutate(type = "fit")
 ) |> 
-  dplyr::mutate(`resection tumor grade` = resection_tumor_grade__hg + 2)
+  dplyr::mutate(`resection tumor grade` = resection_tumor_grade__hg + 2) |> 
+  dplyr::mutate(xmin=median.glass_nl_supervised.methylation - (0.0185*scale),
+                xmax=median.glass_nl_supervised.methylation + (0.0185*scale),
+                ymin=`resection tumor grade` - 0.06,
+                ymax=`resection tumor grade` + 0.06)
 
 
-p4 <- ggplot(plt.logit, aes(x = median.glass_nl_supervised.methylation, y=`resection tumor grade`, col= mnp_predictBrain_v12.8_cal_class)) +
-  geom_point(data = plt.logit |> dplyr::filter(type == "data"),pch="|",size=5) +
-  geom_line(data = plt.logit |> dplyr::filter(type == "fit"), col="darkgreen") +
-  theme_bw() + 
+p4 <- ggplot(plt.logit, aes(x = median.glass_nl_supervised.methylation, y=`resection tumor grade`)) +
+  #geom_point(data = plt.logit |> dplyr::filter(type == "data"),pch="|",size=5) +
+  #geom_line(data = plt.logit |> dplyr::filter(type == "fit"), col="darkgreen") +
+  geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
+  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin-(0.02*scale),xmax=xmax+(0.02*scale),ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
+  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`mnp_predictBrain_v12.8_cal_class`)) +
+  theme_classic() + 
+  theme(axis.line = element_line(linewidth=0.35))+
   annotate("text", x = 2.5, y = 2.5, label = paste0("p = ",format.pval(pval))) + 
   theme(legend.position = 'bottom') + 
   scale_y_continuous(breaks = c(2,3)) + 
-  labs(col="mnp v12.8")
+  labs(col="mnp v12.8") +
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(2, 3), oob = scales::squish)
+p4
 
 
 
+
+library(patchwork)
 p1 + p2 + p3 + p4
 
 
