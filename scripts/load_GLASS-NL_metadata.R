@@ -35,6 +35,7 @@ glass_nl.metadata.idats <-  list.files(path = "data/GLASS_NL/Methylation/Methyla
 tmp <- read.csv("data/GLASS_NL/Metadata/Samples/Master Datasheet_ALL METHODS_27012023.csv") |>
   dplyr::select( Surgery_ID, GLASS_ID,  Sample_Name, Sample_Sex, Sample_Type, Resectie, Sample_ID, Recurrent_Select.Meth, Matched_Pair.Meth) |> 
   dplyr::rename(sentrix_id = Sample_ID) |> 
+  dplyr::rename(resection_number = Resectie) |> 
   dplyr::filter(!is.na(sentrix_id)) |> 
   (function(.) {
     print(dim(.))
