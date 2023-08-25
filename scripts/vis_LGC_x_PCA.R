@@ -3,7 +3,7 @@
 # load ----
 
 
-if(!exists('glass_od.metadata.idats')) {
+if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
 
@@ -20,7 +20,7 @@ library(ggplot2)
 # GLASS-OD / OD ----
 
 
-metadata <- glass_od.metadata.idats |> 
+metadata <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(163)
 
 
@@ -397,7 +397,7 @@ summary(model3)
 
 
 
-metadata <- gsam.metadata.idats |> 
+metadata <- gsam.metadata.array_samples |> 
   filter_GSAM_idats(73) |> 
   dplyr::mutate(resection__rec = ifelse(resection == "R1",0,1))
 
@@ -538,7 +538,7 @@ summary(fit_l)
 # GLASS-NL / AC ----
 
 
-metadata <- glass_nl.metadata.idats |> 
+metadata <- glass_nl.metadata.array_samples |> 
   dplyr::filter(!qc.pca.detP.outlier) |>
   (function(.) {
     print(dim(.))

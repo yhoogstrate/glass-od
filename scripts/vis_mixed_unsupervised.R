@@ -1,30 +1,28 @@
 #!/usr/bin/env R
 
-# load data ----
+# load libs ----
 
 
 library(ggplot2)
+library(patchwork)
 
 
-if(!exists('glass_nl.metadata.resections') | !exists('glass_od.metadata.resections')) {
-  source('scripts/load_metadata.R')
+# load (meta)data ----
+
+
+if(!exists('glass_od.metadata.array_samples')) {
+  source('scripts/load_GLASS-OD_metadata.R')
+}
+
+if(!exists('glass_nl.metadata.array_samples')) {
+  source('scripts/load_GLASS-NL_metadata.R')
 }
 
 
-if(!exists('glass_nl.data.mvalues') | !exists('glass_od.data.mvalues')) {
-  source('scripts/load_mvalues.R')
-}
-
-
-
-
-# merge ODG + AC with all HQ-probes ----
-
-
-metadata.glass_od <- glass_od.metadata.idats |> 
+metadata.glass_od <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(163) 
 
-metadata.glass_nl <- glass_nl.metadata.idats |> 
+metadata.glass_nl <- glass_nl.metadata.array_samples |> 
   filter_GLASS_NL_idats(218)
 
 
@@ -34,7 +32,6 @@ metadata.combi <- data.frame(sentrix_id = c(metadata.glass_od$sentrix_id, metada
                                    resection_tumor_grade,
                                    
                                    mnp_predictBrain_v12.5_cal_class,
-                                   mnp_predictBrain_v12.8_cal_class,
                                    mnp_predictBrain_v2.0.1_cal_class,
                                    
                                    mnp_rsGender_11b4_predicted,
@@ -45,8 +42,10 @@ metadata.combi <- data.frame(sentrix_id = c(metadata.glass_od$sentrix_id, metada
                                    patient_id,
                                    methylation_bins_1p19q_purity,
                                    
-                                   isolation_person_name
-                                   ),
+                                   isolation_person_name,
+                     ) |> 
+                     dplyr::rename(batch = isolation_person_name) |> 
+                     dplyr::mutate(dataset = "GLASS-OD"),
                    by=c('sentrix_id' = 'sentrix_id')) |> 
   dplyr::left_join(metadata.glass_nl |> 
                      dplyr::select(sentrix_id, 
@@ -55,41 +54,106 @@ metadata.combi <- data.frame(sentrix_id = c(metadata.glass_od$sentrix_id, metada
                                    Sample_Sex,
                                    
                                    #mnp_predictBrain_v12.5_cal_class,
-                                   mnp_predictBrain_v12.8_cal_class
                                    #mnp_predictBrain_v2.0.1_cal_class
                                    
-                                   ) , by=c('sentrix_id'='sentrix_id'), suffix=c('_od','_nl')) 
+                                   WHO_Classification2021
+                     ) |> 
+                     dplyr::mutate(dataset = "GLASS-NL")
+                   , by=c('sentrix_id'='sentrix_id'), suffix=c('_od','_nl'))  |> 
+  dplyr::mutate(dataset = ifelse(is.na(dataset_od), dataset_nl, dataset_od), dataset_nl = NULL, dataset_od = NULL) |> 
+  dplyr::mutate(tumor_grade = dplyr::case_when(
+    resection_tumor_grade == 3 ~ 3,
+    resection_tumor_grade == 2 ~ 2,
+    WHO_Classification2021 == "Astrocytoma, IDH-mutant, WHO grade 4" ~ 4,
+    WHO_Classification2021 == "Astrocytoma, IDH-mutant, WHO grade 3" ~ 3,
+    WHO_Classification2021 == "Astrocytoma, IDH-mutant, WHO grade 2" ~ 2,
+    T ~ as.numeric(NA)
+  ),WHO_Classification2021 = NULL, resection_tumor_grade = NULL) |> 
+  dplyr::mutate(tumor_grade_h_l = dplyr::case_when(
+    tumor_grade == 4 ~ "high grade",
+    tumor_grade == 3 & dataset =="GLASS-OD" ~ "high grade",
+    tumor_grade == 3 & dataset =="GLASS-NL" ~ "low grade",
+    tumor_grade == 2 ~ "low grade",
+    T ~ as.character(NA)
+  )) |> 
+  dplyr::mutate(batch_us = dplyr::case_when(
+    is.na(batch) ~ "GLASS-NL [EU]",
+    batch == "USA / Duke" ~ "GLASS-OD [batch US]",
+    T ~ "GLASS-OD [batch EU]"
+  )) |> 
+  dplyr::left_join(
+    rbind(
+      metadata.glass_od |> 
+        dplyr::select("sentrix_id", "mnp_predictBrain_v12.8_cal_class", starts_with("PC.GLASS_OD_NL_combined_excl_1P19Q."))
+      #dplyr::select("sentrix_id", "mnp_predictBrain_v12.8_cal_class", starts_with("PC.GLASS_OD_NL_combined."))
+      ,
+      metadata.glass_nl |> 
+        dplyr::select("sentrix_id", "mnp_predictBrain_v12.8_cal_class", starts_with("PC.GLASS_OD_NL_combined_excl_1P19Q."))
+      #dplyr::select("sentrix_id", "mnp_predictBrain_v12.8_cal_class", starts_with("PC.GLASS_OD_NL_combined."))
+    )
+    ,
+    by=c('sentrix_id'='sentrix_id'), suffix=c('','')
+  )
 
 rm(metadata.glass_nl, metadata.glass_od)
 gc()
 
 
-tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined.Rds") |> 
-  assertr::verify(metadata$sentrix_id %in% sentrix_id)
 
-metadata <- metadata |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+# ODG + AC with all HQ-probes ----
+### PCA itself ----
 
-rm(tmp)
+plt.split <- rbind(metadata.combi |> dplyr::mutate(facet = "dataset", col=dataset),
+                   metadata.combi |> dplyr::mutate(facet = "grade", col=tumor_grade_h_l),
+                   metadata.combi |> dplyr::mutate(facet = "batch", col=batch_us))
+
+plt.split <- rbind(
+                   metadata.combi |> dplyr::mutate(facet = "dataset", col=dataset),
+                   #metadata.combi |> dplyr::mutate(facet = "grade", col=tumor_grade_h_l),
+                   metadata.combi |> dplyr::mutate(facet = "mnp brain classifier", col=mnp_predictBrain_v12.8_cal_class)
+                   #metadata.combi |> dplyr::mutate(facet = "batch", col=batch_us)
+                   )
+
+
+ggplot(plt.split, aes(x= PC.GLASS_OD_NL_combined.4, y= PC.GLASS_OD_NL_combined.3, col=col)) +
+  facet_grid(cols = vars(facet)) +
+  geom_point() +
+  theme_bw()
 
 
 
+plt <- metadata.combi |> 
+  dplyr::mutate(col.grading = dplyr::case_when(
+    dataset == "GLASS-OD" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") ~ "OD [HG - A_IDH_HG & OLIGOSARC]",
+    dataset == "GLASS-OD" & (mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") == F) ~ "OD [LG ~ other]",
+    
+    dataset == "GLASS-NL" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") ~ "AC [HG - A_IDH_HG]",
+    dataset == "GLASS-NL" & (mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == F) ~ "AC [LG ~ other]"
+  )) |> 
+  dplyr::mutate(col.grading = dplyr::case_when(
+    dataset == "GLASS-OD" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") ~ "HG",
+    dataset == "GLASS-NL" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") ~ "HG",
+    T ~ "LG"
+  ))
 
-# 
-# 
-# plt.split <- rbind(plt |> dplyr::mutate(facet = "dataset", col=dataset)
-#                    ,
-#                    plt |> dplyr::mutate(facet = "grade", col=grade)
-#                    ,
-#                    plt |> dplyr::mutate(facet = "batch", col=batch)
-#                    )
-# 
-# ggplot(plt.split, aes(x=PC4, y=PC3, col=col)) +
-#   facet_grid(cols = vars(facet)) +
-#   geom_point() +
-#   theme_bw()
-# 
 
+
+p1 <- ggplot(plt, aes(x=PC.GLASS_OD_NL_combined.3, y=PC.GLASS_OD_NL_combined.4, col=batch_us, label=resection_id)) +
+  geom_point(size=2.5) +
+  geom_point(size=3.2, col="black",fill=NA, pch=21, alpha=0.75) +
+  theme_bw()+ 
+  theme(  legend.position = "bottom")
+
+p2 <- ggplot(plt, aes(x=PC.GLASS_OD_NL_combined.3, y=PC.GLASS_OD_NL_combined.4, col=dataset, alpha=col.grading, label=resection_id)) +
+  geom_point(size=2.5) +
+  geom_point(data = subset(plt, col.grading == "HG"), size=3.2, col="black",fill=NA, pch=21) +
+  scale_alpha_manual(values=c('HG'=1.0, 'LG'=0.45)) +
+  #scale_color_manual(values=c('HG'='black', 'LG'='white')) +
+  theme_bw() + 
+  theme(  legend.position = "bottom")
+
+
+p1 + p2
 
 
 
@@ -256,8 +320,12 @@ plt$UMAP2 = NULL
 rm(um, umd)
 
 
+dat <- metadata.combi |>
+  dplyr::select(`sentrix_id`, starts_with("PC.GLASS_OD_NL_combined.")) |> 
+  tibble::column_to_rownames('sentrix_id') |> 
+  t()
 
-um <- M3C::umap(t(pc$x[,relevant_components]), seed=round(runif(1) * 10000))
+um <- M3C::umap(dat, seed=round(runif(1) * 10000))
 
 umd <- um$data |> 
   as.data.frame() |> 
@@ -266,23 +334,54 @@ umd <- um$data |>
   tibble::rownames_to_column('sentrix_id')
 
 
-plt <- plt |> 
+plt <- metadata.combi |> 
   dplyr::left_join(umd, by=c('sentrix_id'='sentrix_id'),suffix=c('','')) |> 
   dplyr::mutate(puritygroups= cut(methylation_bins_1p19q_purity, breaks=4))
 
 
-ggplot(plt, aes(x=UMAP1, y=UMAP2, col=dataset_x, label=resection_id)) +
+plt <- plt |> 
+  dplyr::mutate(col.grading = dplyr::case_when(
+    dataset == "GLASS-OD" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") ~ "OD [HG - A_IDH_HG & OLIGOSARC]",
+    dataset == "GLASS-OD" & (mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") == F) ~ "OD [LG ~ other]",
+    
+    dataset == "GLASS-NL" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") ~ "AC [HG - A_IDH_HG]",
+    dataset == "GLASS-NL" & (mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == F) ~ "AC [LG ~ other]"
+  ))
+
+
+
+ggplot(plt, aes(x=UMAP1, y=UMAP2, col=batch_us, label=resection_id)) +
   geom_point() +
-  #geom_text(size=3, col="black") +
+  #geom_text(data = subset(plt, batch_us == "GLASS-OD [batch EU]") , size=3, col="black") +
   theme_bw()
+
+
+
+
+p1 <- ggplot(plt, aes(x=UMAP1, y=UMAP2, col=batch_us, label=resection_id)) +
+  geom_point() +
+  #geom_text(data = subset(plt, batch_us == "GLASS-OD [batch EU]") , size=3, col="black") +
+  theme_bw()
+
+p2 <- ggplot(plt, aes(x=UMAP1, y=UMAP2, col=col.grading, label=resection_id)) +
+  geom_point() +
+  #geom_text(data = subset(plt, batch_us == "GLASS-OD [batch EU]") , size=3, col="black") +
+  theme_bw()
+
 
 
 
 ### tSNE over PCA ----
 
 
-ts <- M3C::tsne(t(pc$x[,relevant_components]),perplex=10)#1 and 2 are purity and quality
-rownames(ts$data) <- rownames(pc$x)
+
+dat <- metadata.combi |>
+  dplyr::select(`sentrix_id`, starts_with("PC.GLASS_OD_NL_combined.")) |> 
+  tibble::column_to_rownames('sentrix_id') |> 
+  t()
+
+ts <- M3C::tsne(dat,perplex=10)#1 and 2 are purity and quality
+rownames(ts$data) <- colnames(dat)
 
 tsd <- ts$data |> 
   as.data.frame() |> 
@@ -292,15 +391,34 @@ tsd <- ts$data |>
 
 
 plt <- plt |> 
-  dplyr::left_join(tsd, by=c('sentrix_id'='sentrix_id'),suffix=c('',''))
+  dplyr::left_join(tsd, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
 
+plt <- plt |> 
+  dplyr::mutate(iso = tSNE1 < 0 & tSNE2 < 15 & dataset == "GLASS-OD")
 
-ggplot(plt |> dplyr::mutate(resection_number = as.factor(resection_number)), 
-       aes(x=tSNE1, y=tSNE2, col=dataset_x, group=patient_id)) +
+ggplot(plt, 
+       aes(x=tSNE1, y=tSNE2, col=batch_us, group=patient_id, label=resection_id)) +
   geom_point() +
-  #geom_line(data = plt |> dplyr::filter(dataset == "GLASS-OD")) +
+  geom_text(data = subset(plt, batch_us == "GLASS-OD [batch EU]") , size=3, col="black") +
   theme_bw()
 
+
+#sentrix_id resection_id
+#1  201496850071_R02C01      0068-R2 - rare isoatie?
+
+#2  203989100149_R04C01      0017-R2
+#3  203989100149_R08C01      0018-R3
+
+#4  204073520033_R02C01      0021-R1
+#5  204073520033_R03C01      0021-R2
+
+#6  204073520033_R04C01      0022-R1
+#7  204073520033_R05C01      0022-R2
+
+#8  204088040075_R07C01      0023-R2
+#9  206116800035_R07C01      0029-R2
+#10 206137490041_R04C01      0038-R2
+#11 206137490041_R06C01      0037-R2
 
 
 ## raw UMAP ----
@@ -329,67 +447,232 @@ recursiveCorPlot::recursiveCorPlot(
 )
 
 
-# merge ODG + AC with all HQ-probes not 1P / 19Q ----
+## ROC linear classifier ----
+#' 10xCV predict OD of AC  ----
+#' https://www.projectpro.io/recipes/plot-auc-roc-curve-r
+#' https://machinelearningmastery.com/linear-classification-in-r/
+
+# install.packages("caTools")    # For Logistic regression 
+# install.packages('pROC')       # For ROC curve to evaluate model 
+# install.packages('VGAM')
+install.packages('cvAUC')
+# https://stackoverflow.com/questions/41533811/roc-curve-in-linear-discriminant-analysis-with-r
+library(caTools)
+library(pROC)
+library(VGAM)
+library(MASS)
+library(ROCR)
+library(cvAUC)
+
+data <- metadata.combi |> 
+  dplyr::select(sentrix_id, dataset, paste0("PC.GLASS_OD_NL_combined.",1:50))  |>  # avoid curse of dimension
+  dplyr::mutate(dataset = as.factor(dataset)) |> 
+  dplyr::mutate(i = 1:dplyr::n()) |> 
+  dplyr::mutate(slice = (i %% 10) + 1) |> 
+  dplyr::mutate(i = NULL) |> 
+  tibble::column_to_rownames('sentrix_id')
 
 
-probes.1P19Q <- read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |>
-  dplyr::filter(MASK_general == F) |> 
-  dplyr::mutate(pos = round((CpG_beg + CpG_end )/2)) |> 
-  dplyr::mutate(is_1P = CpG_chrm == 'chr1' & pos < 130 * 1000000) |> # rough margin
-  dplyr::mutate(is_19Q = CpG_chrm == 'chr19' & pos > 23.5 * 1000000 ) |> # rough margin
-  dplyr::filter(is_1P | is_19Q)
 
 
-data.combi.non1P19Q <- data.combi |> 
-  tibble::rownames_to_column('probeID') |> 
-  dplyr::filter(probeID %in% probes.1P19Q$probeID == F) |> 
-  tibble::column_to_rownames('probeID')
+train <- subset(data, split == "TRUE") 
+test <- subset(data, split == "FALSE") 
 
+# fit.glm.gaus = glm(dataset ~ .,train , family="gaussian")     # we use the glm()-general linear model to create an instance of model
+# fit.vglm <- vglm(dataset ~ ., family=multinomial, data=train)
+
+fit.lda <- lda(dataset ~ ., data=train)
+summary(fit.lda)
+predictions.lda <- predict(fit.lda, test |> dplyr::select(paste0("PC.GLASS_OD_NL_combined.",1:50)))$class
+table(predictions.lda, test$dataset)
+
+
+pred <- predict(fit.lda, test |> dplyr::select(paste0("PC.GLASS_OD_NL_combined.",1:50)), type="response")
+test_roc = roc(test$dataset ~ pred, plot = TRUE, print.auc = TRUE)
+
+
+predd <- prediction(pred$posterior[,2], test$dataset) 
+perf <- performance(predd,"tpr","fpr")
+plot(perf,colorize=TRUE)
+roc(test$dataset, pred$posterior[,2],plot=TRUE, legacy.axes = TRUE, 
+    percent =TRUE, xlab="False Positive Percentage", ylab="True Positive Percentage")
+
+
+
+# https://search.r-project.org/CRAN/refmans/cvAUC/html/cvAUC.html
+
+fits <- c()
+predicts <- c()
+predictions <- c()
+performances <- c()
+tests <- c()
+for(sslice in 1:10) {
+  train <- data |> 
+    dplyr::filter(slice != sslice) |> 
+    dplyr::mutate(slice = NULL)
+  
+  test <- data |> 
+    dplyr::filter(slice == sslice) |> 
+    dplyr::mutate(slice = NULL)
+  
+  f.fit <- lda(dataset ~ ., data=train)
+  p.predict <- predict(f.fit, test |> dplyr::select(paste0("PC.GLASS_OD_NL_combined.",1:50)))
+  p.prediction <- prediction(p.predict$posterior[,2], test$dataset) 
+  p.performance <- performance(p.prediction,"tpr","fpr")
+  
+  
+  fits <- c(fits, f.fit)
+  predicts <- c(predicts, list(p.predict))
+  predictions <- c(predictions, p.prediction)
+  performances <- c(performances, p.performance)
+  tests <- c(tests, list(test))
+}
+
+
+q <- data.frame(
+  predicted = c(
+    predicts[[1]]$class,
+    predicts[[2]]$class,
+    predicts[[3]]$class,
+    predicts[[4]]$class,
+    predicts[[5]]$class,
+    predicts[[6]]$class,
+    predicts[[7]]$class,
+    predicts[[8]]$class,
+    predicts[[9]]$class,
+    predicts[[10]]$class
+  ),
+  label = c(
+    tests[[1]]$dataset,
+    tests[[2]]$dataset,
+    tests[[3]]$dataset,
+    tests[[4]]$dataset,
+    tests[[5]]$dataset,
+    tests[[6]]$dataset,
+    tests[[7]]$dataset,
+    tests[[8]]$dataset,
+    tests[[9]]$dataset,
+    tests[[10]]$dataset
+    
+  ),
+  name = c(
+    rownames(tests[[1]]),
+    rownames(tests[[2]]),
+    rownames(tests[[3]]),
+    rownames(tests[[4]]),
+    rownames(tests[[5]]),
+    rownames(tests[[6]]),
+    rownames(tests[[7]]),
+    rownames(tests[[8]]),
+    rownames(tests[[9]]),
+    rownames(tests[[10]])
+  )
+)
+# 203989100149_R08C01 = 0018-R3
+# q |> dplyr::filter(predicted!=label)
+
+# p <- list(
+#   predictions = list(
+#     '1' = predicts[[1]]$posterior[,2],
+#     '2' = predicts[[2]]$posterior[,2],
+#     '3' = predicts[[3]]$posterior[,2],
+#     '4' = predicts[[4]]$posterior[,2],
+#     '5' = predicts[[5]]$posterior[,2],
+#     '6' = predicts[[6]]$posterior[,2],
+#     '7' = predicts[[7]]$posterior[,2],
+#     '8' = predicts[[8]]$posterior[,2],
+#     '9' = predicts[[9]]$posterior[,2],
+#     '10' = predicts[[10]]$posterior[,2]
+#   ),
+#   labels = list(
+#     '1' = tests[[1]]$dataset,
+#     '2' = tests[[2]]$dataset,
+#     '3' = tests[[3]]$dataset,
+#     '4' = tests[[4]]$dataset,
+#     '5' = tests[[5]]$dataset,
+#     '6' = tests[[6]]$dataset,
+#     '7' = tests[[7]]$dataset,
+#     '8' = tests[[8]]$dataset,
+#     '9' = tests[[9]]$dataset,
+#     '10' = tests[[10]]$dataset
+#   )
+# )
+
+p <- list(
+  predictions = list(
+    '1' = c(
+          predicts[[1]]$posterior[,2],
+          predicts[[2]]$posterior[,2],
+          predicts[[3]]$posterior[,2],
+          predicts[[4]]$posterior[,2],
+          predicts[[5]]$posterior[,2],
+          predicts[[6]]$posterior[,2],
+          predicts[[7]]$posterior[,2],
+          predicts[[8]]$posterior[,2],
+          predicts[[9]]$posterior[,2],
+          predicts[[10]]$posterior[,2]
+    )
+  ),
+  labels = list(
+    '1' = c(
+          tests[[1]]$dataset,
+          tests[[2]]$dataset,
+          tests[[3]]$dataset,
+          tests[[4]]$dataset,
+          tests[[5]]$dataset,
+          tests[[6]]$dataset,
+          tests[[7]]$dataset,
+          tests[[8]]$dataset,
+          tests[[9]]$dataset,
+          tests[[10]]$dataset
+      )
+  )
+)
+
+
+
+rocobj <- roc(p$labels$`1`, p$predictions$`1`)
+auc <- round(auc(p$labels$`1`, p$predictions$`1`),5)
+
+ggroc(rocobj, colour = 'red', size = 1) +
+  ggtitle(paste0('ROC Curve ', '(AUC = ', auc, ') - astrocytoma vs. oligodendroglioma')) +
+  theme_bw()+ 
+  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), color="grey", linetype="dashed")
+
+
+
+
+
+# ODG + AC with all HQ-probes not 1P / 19Q ----
+## init plt ----
 
 
 plt <- metadata.combi |> 
-  dplyr::mutate(dataset_x = ifelse(dataset == "GLASS-OD" & predictBrain_12.5_cal_class == "A_IDH_HG","GLASS-OD [misclass A_IDH_HG]", dataset)) |> 
-  dplyr::mutate(puritygroups= cut(methylation_bins_1p19q_purity, breaks=4))
-
-
+  dplyr::mutate(col.grading1 = dplyr::case_when(
+    dataset == "GLASS-OD" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") ~ "HG",
+    dataset == "GLASS-NL" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") ~ "HG",
+    T ~ "LG"
+  )) |> 
+  dplyr::mutate(col.grading2 = dplyr::case_when(
+    dataset == "GLASS-OD" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") ~ "OD [HG - A_IDH_HG & OLIGOSARC]",
+    dataset == "GLASS-OD" & (mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") == F) ~ "OD [LG ~ other]",
+    
+    dataset == "GLASS-NL" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") ~ "AC [HG - A_IDH_HG]",
+    dataset == "GLASS-NL" & (mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == F) ~ "AC [LG ~ other]"
+  ))
 
 
 
 ## PCA ----
 
-pc.non1P19Q <- prcomp(t(data.combi.non1P19Q))
-dim(pc.non1P19Q$x)
+
+plt <- glass_od.metadata.array_samples
 
 
-relevant_components <-   (1:50) |> purrr::discard(function( xx ){ 
-  return (xx %in% c(1,5,7,8) == T)  # grading is relevant , purity is not,
-}  )
-
-
-
-plt <- plt |> 
-  dplyr::left_join(
-    pc.non1P19Q |> purrr::pluck('x') |> as.data.frame() |> tibble::rownames_to_column('sentrix_id'),
-    by=c('sentrix_id' = 'sentrix_id')
-  )
-
-
-# PC2 = purity
-ggplot(plt, aes(x=PC1, y=PC2, col=puritygroups)) +
-  geom_point() +
-  theme_bw()
-
-# PC4 = tumor grade 1p/19q?
-ggplot(plt, aes(x=PC1, y=PC4, col=resection_tumor_grade)) +
-  geom_point() +
-  theme_bw()
-
-
-# grade = 4
-for(ppc in paste0("PC",1:50)) {
+for(ppc in paste0("PC",1:10)) {
   w = wilcox.test(
-    plt |> dplyr::filter(resection_tumor_grade == "2") |> dplyr::pull(paste0(ppc)),
-    plt |> dplyr::filter(resection_tumor_grade == "3") |> dplyr::pull(paste0(ppc))
+    plt |> dplyr::filter(isolation_person_name == "USA / Duke") |> dplyr::pull(paste0(ppc)),
+    plt |> dplyr::filter(isolation_person_name != "USA / Duke") |> dplyr::pull(paste0(ppc))
   )
   
   print(paste0(ppc, " -- ",w$p.value))
@@ -397,11 +680,54 @@ for(ppc in paste0("PC",1:50)) {
 
 
 
-# find sex pc's: PC7 , PC8
-for(ppc in paste0("PC",1:50)) {
+
+p1 <- ggplot(plt, aes(x=PC1, y=PC2, col=isolation_person_name == "USA / Duke")) +
+  geom_point() +
+  theme_classic() +
+  labs(col = "USA sample") +
+  theme(legend.position = "bottom")
+
+p2 <- ggplot(plt, aes(x=PC1, y=PC4, col=isolation_person_name == "USA / Duke")) +
+  geom_point() +
+  theme_classic() +
+  labs(col = "USA sample") +
+  theme(legend.position = "bottom")
+
+p3 <- ggplot(plt, aes(x=PC2, y=PC4, col=isolation_person_name == "USA / Duke")) +
+  geom_point() +
+  theme_classic() +
+  labs(col = "USA sample") +
+  theme(legend.position = "bottom")
+
+p1 + p2 + p3
+
+
+
+
+p1 <- ggplot(plt, aes(x=PC.GLASS_OD_NL_combined_excl_1P19Q.3, y=PC.GLASS_OD_NL_combined_excl_1P19Q.4, col=batch_us, label=resection_id)) +
+  geom_point(size=2.5) +
+  geom_point(size=3.2, col="black",fill=NA, pch=21, alpha=0.75) +
+  theme_bw()+ 
+  theme(legend.position = "bottom")
+
+p2 <- ggplot(plt, aes(x=PC.GLASS_OD_NL_combined_excl_1P19Q.3, y=PC.GLASS_OD_NL_combined_excl_1P19Q.4, col=dataset, alpha=col.grading1, label=resection_id)) +
+  geom_point(size=2.5) +
+  geom_point(data = subset(plt, col.grading1 == "HG"), size=3.2, col="black",fill=NA, pch=21) +
+  scale_alpha_manual(values=c('HG'=1.0, 'LG'=0.45)) +
+  #scale_color_manual(values=c('HG'='black', 'LG'='white')) +
+  theme_bw() + 
+  theme(  legend.position = "bottom")
+
+
+p1 + p2
+
+
+
+# find dataset best segregating components (PC3 and PC4 usually)
+for(ppc in paste0("PC.GLASS_OD_NL_combined_excl_1P19Q.",1:50)) {
   w = wilcox.test(
-    plt |> dplyr::filter(sex == "F") |> dplyr::pull(paste0(ppc)),
-    plt |> dplyr::filter(sex == "M") |> dplyr::pull(paste0(ppc))
+    plt |> dplyr::filter(dataset == "GLASS-NL") |> dplyr::pull(paste0(ppc)),
+    plt |> dplyr::filter(dataset == "GLASS-OD") |> dplyr::pull(paste0(ppc))
   )
   
   print(paste0(ppc, " -- ",w$p.value))
@@ -409,19 +735,16 @@ for(ppc in paste0("PC",1:50)) {
 
 
 
-### UMAP over PCA ----
+
+## UMAP over 1st 50 PCA ----
 
 
-
-plt$UMAP1 = NULL
-plt$UMAP2 = NULL
-rm(um, umd)
-
-
-
-um <- M3C::umap(t(pc.non1P19Q$x[,relevant_components[1:25]]), seed=round(runif(1) * 10000))
-
-umd <- um$data |> 
+dat <- metadata.combi |>
+  dplyr::select(`sentrix_id`, starts_with("PC.GLASS_OD_NL_combined_excl_1P19Q.")) |> 
+  tibble::column_to_rownames('sentrix_id') |> 
+  t() |> 
+  M3C::umap(seed=round(runif(1) * 10000)) |> 
+  purrr::pluck('data') |> 
   as.data.frame() |> 
   dplyr::rename(UMAP1 = 1) |> 
   dplyr::rename(UMAP2 = 2) |> 
@@ -429,134 +752,157 @@ umd <- um$data |>
 
 
 plt <- plt |> 
-  dplyr::left_join(umd, by=c('sentrix_id'='sentrix_id'),suffix=c('','')) 
-
-
-ggplot(plt, aes(x=UMAP1, y=UMAP2, col=dataset_x, label=resection_id)) +
-  geom_point() +
-  #geom_text(size=3, col="black") +
-  theme_bw()
-
-
-### tSNE over PCA ----
-
-
-ts <- M3C::tsne(t(pc.non1P19Q$x[,relevant_components[1:25]]),perplex=10)#1 and 2 are purity and quality
-rownames(ts$data) <- rownames(pc.non1P19Q$x)
-
-tsd <- ts$data |> 
-  as.data.frame() |> 
-  dplyr::rename(tSNE1 = 1) |> 
-  dplyr::rename(tSNE2 = 2) |> 
-  tibble::rownames_to_column('sentrix_id')
-
-
-plt <- plt |> 
-  dplyr::left_join(tsd, by=c('sentrix_id'='sentrix_id'),suffix=c('',''))
-
-
-ggplot(plt |> dplyr::mutate(resection_number = as.factor(resection_number)), 
-       aes(x=tSNE1, y=tSNE2, col=dataset_x, group=patient_id)) +
-  geom_point() +
-  #geom_vline(xintercept=15, col="red") +
-  #geom_line(data = plt |> dplyr::filter(dataset == "GLASS-OD"), col="gray",lwd=0.6) +
-  theme_bw()
+  dplyr::left_join(dat, by=c('sentrix_id'='sentrix_id'),suffix=c('',''))
 
 
 
 
+p1 <- ggplot(plt, aes(x=UMAP1, y=UMAP2, col=batch_us, label=resection_id)) +
+  geom_point(size=2.5) +
+  geom_point(size=3.2, col="black",fill=NA, pch=21, alpha=0.75) +
+  theme_bw()+ 
+  theme(  legend.position = "bottom")
 
-recursiveCorPlot::recursiveCorPlot(
-  as.data.frame(pc.non1P19Q$x[,relevant_components[1:25]]),
-  metadata.combi |> tibble::column_to_rownames('sentrix_id') |>  dplyr::select(dataset, predictBrain_12.5_cal_class) |> 
-    dplyr::mutate(`GLASS-OD` = dataset == "GLASS-OD" & grepl("USA",plt$isolation_person_name) == F) |> 
-    dplyr::mutate(`GLASS-OD [USA]` = dataset == "GLASS-OD" & grepl("USA",plt$isolation_person_name) == T) |> 
-    dplyr::mutate(`GLASS-NL` = dataset == "GLASS-NL") |>
-    dplyr::mutate(`GLASS-OD [misclass A_IDH_HG]` = 
-                    (dataset == "GLASS-OD" & 
-                       `predictBrain_12.5_cal_class` == "A_IDH_HG")) |> 
-    dplyr::mutate(dataset = NULL, predictBrain_12.5_cal_class = NULL)
-  ,
-  9,
-  11
-)
+p2 <- ggplot(plt, aes(x=UMAP1, y=UMAP2, col=dataset, alpha=col.grading1, label=resection_id)) +
+  geom_point(size=2.5) +
+  geom_point(data = subset(plt, col.grading1 == "HG"), size=3.2, col="black",fill=NA, pch=21) +
+  scale_alpha_manual(values=c('HG'=1.0, 'LG'=0.45)) +
+  #scale_color_manual(values=c('HG'='black', 'LG'='white')) +
+  theme_bw() + 
+  theme(  legend.position = "bottom")
 
 
-
-### different codel clusters ----
-#' does not seem perfectly patient specific, but quite much
-
-gA <- c(
-  "201496850071_R02C01","203293640061_R08C01","205828590003_R02C01","203986510092_R01C01","203989100149_R04C01",
-  "203989100149_R05C01","203989100149_R06C01","203989100149_R07C01","203989100149_R08C01","203990170017_R01C01",
-  "204073520033_R02C01","204073520033_R03C01","204073520033_R04C01","204073520033_R05C01","204088040040_R02C01",
-  "204088040075_R07C01","204798720018_R03C01","204787070003_R01C01","204787070003_R02C01","204787070003_R03C01",
-  "204787070003_R04C01","204787070003_R05C01","204787070003_R06C01","204787070003_R08C01","204787070018_R01C01",
-  "204787070018_R02C01","204787070018_R03C01","204787070018_R04C01","204787070018_R07C01","204808700073_R02C01",
-  "204808700073_R03C01","204808700073_R04C01","204808700073_R05C01","204808700073_R06C01","204808700073_R08C01",
-  "204808700074_R01C01","204808700074_R02C01","204808700074_R03C01","204808700074_R05C01","206467010147_R05C01",
-  "206467010147_R07C01","206522890026_R02C01","206116800026_R01C01","206116800026_R02C01","206116800026_R03C01",
-  "206116800026_R04C01","206116800026_R06C01","206116800026_R08C01","206116800035_R02C01","206116800035_R03C01",
-  "206116800035_R04C01","206116800035_R05C01","206116800035_R06C01","206116800035_R07C01","206116800035_R08C01",
-  "206116800056_R01C01","206116800056_R03C01","206116800056_R05C01","206116800056_R06C01","206116800056_R07C01",
-  "206116800056_R08C01","206116800060_R01C01","206116800060_R02C01","206116800060_R03C01","206116800060_R04C01",
-  "206116800060_R05C01","206116800060_R07C01","206116800060_R08C01","206116800140_R01C01","206116800140_R03C01",
-  "206116800140_R04C01","206116800140_R05C01","206116800140_R06C01","206116800140_R07C01","206116800140_R08C01",
-  "206119350032_R06C01","206119350032_R07C01","206119350032_R08C01","206119350033_R02C01","206119350033_R08C01",
-  "206119350042_R01C01","206119350042_R02C01","206119350042_R05C01","206119350042_R07C01","206119350042_R08C01",
-  "206137490041_R01C01","206137490041_R03C01","206137490041_R04C01","206137490041_R05C01","206137490041_R06C01",
-  "206137490041_R07C01","206137490041_R08C01","206137490053_R01C01","206137490053_R06C01","206137490053_R07C01",
-  "206137490053_R08C01","206137490057_R02C01","206137490057_R03C01","206137490057_R06C01","206137490057_R07C01",
-  "206137490057_R08C01","206137490109_R01C01","206137490109_R02C01","206137490109_R04C01","206137490109_R05C01",
-  "206137490109_R06C01","206137490109_R08C01","206467010068_R01C01","206467010068_R04C01","206467010068_R07C01",
-  "206467010068_R08C01"
-)
-
-gB <- c(
-  "205832320037_R07C01","206238130171_R03C01","204808700073_R01C01","206467010069_R01C01","206467010069_R04C01",
-  "206467010069_R05C01","206467010069_R06C01","206467010069_R07C01","206467010069_R08C01","206467010089_R01C01",
-  "206467010089_R04C01","206467010089_R05C01","206467010089_R06C01","206467010089_R07C01","206467010089_R08C01",
-  "206467010147_R01C01","206467010147_R04C01","206467010180_R01C01","206467010180_R02C01","206467010180_R03C01",
-  "206467010180_R04C01","206467010180_R05C01","206467010180_R06C01","206467010180_R07C01","206467010180_R08C01",
-  "206522890026_R07C01","206522890026_R08C01","206522890076_R01C01","206522890076_R02C01","206522890076_R06C01",
-  "206522890076_R07C01","206522890076_R08C01","206522890079_R01C01","206522890079_R02C01","206522890079_R03C01",
-  "206522890079_R04C01","206522890079_R05C01","206522890079_R06C01","206522890079_R07C01","206522890079_R08C01",
-  "206522890089_R01C01","206522890089_R02C01","206522890089_R03C01","206522890089_R04C01","206522890089_R05C01",
-  "206522890089_R06C01","206522890089_R07C01","206522890089_R08C01","206119350042_R06C01","206467110176_R04C01",
-  "206467110176_R05C01","206467110176_R06C01"
-)
+p1 + p2
 
 
-for(ppc in paste0("PC",1:50)) {
-  w = wilcox.test(
-    plt |> dplyr::filter(sentrix_id %in% gA) |> dplyr::pull(paste0(ppc)),
-    plt |> dplyr::filter(sentrix_id %in% gB) |> dplyr::pull(paste0(ppc))
-  )
+
+## LDA ----
+#' 10xCV predict OD of AC  ----
+#' https://www.projectpro.io/recipes/plot-auc-roc-curve-r
+#' https://machinelearningmastery.com/linear-classification-in-r/
+
+# install.packages("caTools")    # For Logistic regression 
+# install.packages('pROC')       # For ROC curve to evaluate model 
+# install.packages('VGAM')
+# install.packages('cvAUC')
+# https://stackoverflow.com/questions/41533811/roc-curve-in-linear-discriminant-analysis-with-r
+library(caTools)
+library(pROC)
+library(VGAM)
+library(MASS)
+library(ROCR)
+library(cvAUC)
+
+
+lda.data <- metadata.combi |> 
+  dplyr::select(sentrix_id, dataset, paste0("PC.GLASS_OD_NL_combined_excl_1P19Q.",1:50))  |>  # avoid curse of dimension
+  dplyr::mutate(dataset = as.factor(dataset)) |> 
+  dplyr::mutate(i = 1:dplyr::n()) |> 
+  dplyr::mutate(slice = (i %% 10) + 1) |> 
+  dplyr::mutate(i = NULL) |> 
+  tibble::column_to_rownames('sentrix_id')
+
+
+#train <- subset(data, split == "TRUE") 
+#test <- subset(data, split == "FALSE") 
+
+# fit.glm.gaus = glm(dataset ~ .,train , family="gaussian")     # we use the glm()-general linear model to create an instance of model
+# fit.vglm <- vglm(dataset ~ ., family=multinomial, data=train)
+
+# fit.lda <- lda(dataset ~ ., data=train)
+# summary(fit.lda)
+# predictions.lda <- predict(fit.lda, test |> dplyr::select(paste0("PC.GLASS_OD_NL_combined.",1:50)))$class
+# table(predictions.lda, test$dataset)
+# 
+# 
+# pred <- predict(fit.lda, test |> dplyr::select(paste0("PC.GLASS_OD_NL_combined.",1:50)), type="response")
+# test_roc = roc(test$dataset ~ pred, plot = TRUE, print.auc = TRUE)
+# 
+# 
+# predd <- prediction(pred$posterior[,2], test$dataset) 
+# perf <- performance(predd,"tpr","fpr")
+# plot(perf,colorize=TRUE)
+# roc(test$dataset, pred$posterior[,2],plot=TRUE, legacy.axes = TRUE, 
+#     percent =TRUE, xlab="False Positive Percentage", ylab="True Positive Percentage")
+
+
+
+# https://search.r-project.org/CRAN/refmans/cvAUC/html/cvAUC.html
+
+lda.labels <- c()
+lda.classes <- c()
+lda.posterior <- data.frame()
+for(sslice in 1:10) {
+  lda.train <- lda.data |> 
+    dplyr::filter(slice != sslice) |> 
+    dplyr::mutate(slice = NULL)
   
-  print(paste0(ppc, " -- ",w$p.value))
+  lda.test <- lda.data |> 
+    dplyr::filter(slice == sslice) |> 
+    dplyr::mutate(slice = NULL)
+  
+  lda.predict <- predict(MASS::lda(dataset ~ ., data=lda.train), lda.test |>  dplyr::mutate(slice = NULL) )
+  
+  lda.labels <- c(lda.labels, lda.test$dataset)
+  lda.classes <- c(lda.classes, lda.predict$class)
+  lda.posterior <- rbind(lda.posterior, lda.predict$posterior)
+
 }
 
+table(lda.classes , lda.labels)
+
+
 
 plt <- plt |> 
-  dplyr::mutate(gGLOD = dplyr::case_when(
-    sentrix_id %in% gA ~ "gA",
-    sentrix_id %in% gB ~ "gB",
-    T ~ as.character(NA),
-  )) |> 
-  dplyr::mutate(gGLOD = as.factor(gGLOD))
+  dplyr::left_join(
+    lda.posterior |>
+      dplyr::rename_with( ~ paste0("lda.posterior.", .x)) |> 
+      tibble::rownames_to_column('sentrix_id')
+    , by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
 
 
-#' "PC1 -- 4.56532945081721e-15"
-#' "PC2 -- 1.61787568692805e-17"
-#' "PC3 -- 3.09760839505662e-16"
-#' "PC5 -- 7.17639737347061e-24"
-#' "PC7 -- 1.72055518902603e-08"
-#' "PC10 -- 7.07185312968851e-06"
-#' "PC11 -- 4.85890868287798e-08"
-#' "PC25 -- 5.52534544987418e-05"
 
-ggplot(plt |> dplyr::filter(dataset == "GLASS-OD"), aes(x=PC3, y=PC5, col=gsub("_.+","",isolation_person_name)))  +
-  geom_point()
+
+
+### ROC + AUC ----
+
+
+#rocobj <- pROC::roc(lda.labels, lda.posterior$`GLASS-OD`)
+#auc <- round(pROC::auc(lda.labels, lda.posterior$`GLASS-NL`),5)
+
+rocobj <- pROC::roc(lda.labels, lda.classes)
+auc <- round(pROC::auc(lda.labels, lda.classes),4)
+
+pROC::ggroc(rocobj, colour = 'red', size = 1) +
+  ggtitle(paste0('ROC Curve ', '(AUC = ', auc, ') - astrocytoma vs. oligodendroglioma')) +
+  theme_bw()+ 
+  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), color="grey", linetype="dashed")
+
+
+### diff confidence/probabilities HG vs LG ----
+
+
+plt.p <- rbind(
+  plt |>
+    dplyr::filter(dataset == "GLASS-NL") |> 
+    dplyr::mutate(lda.posterior = `lda.posterior.GLASS-OD`)
+  ,
+  plt |>
+    dplyr::filter(dataset == "GLASS-OD") |> 
+    dplyr::mutate(lda.posterior = `lda.posterior.GLASS-NL`)
+) |> 
+  dplyr::mutate(classification_status = ifelse(lda.posterior < 0.5, "match", "misclassification"))
+
+
+ggplot(plt.p, aes(x=col.grading1, y=-log(lda.posterior), col=classification_status)) +
+  facet_grid(cols = vars(dataset)) +
+  ggbeeswarm::geom_quasirandom() +
+  ggpubr::stat_compare_means(label.x.npc=0.4, method = "wilcox.test", show_guide  = FALSE) +
+  theme_bw() + 
+  labs(y = "-log( LDA posterior probability )") +
+  geom_hline(yintercept = -log(0.5), col="red", lwd=0.5,lty=2) +
+  scale_color_manual(values=c('match'='black', 'misclassification' = 'red')) + 
+  theme(  legend.position = "bottom")
 
 
 

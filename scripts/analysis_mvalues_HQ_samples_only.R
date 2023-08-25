@@ -17,15 +17,15 @@ source('scripts/load_functions.R')
 
 
 
-if(!exists('glass_od.metadata.idats')) {
+if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
 
-if(!exists('glass_nl.metadata.idats')) {
+if(!exists('glass_nl.metadata.array_samples')) {
   source('scripts/load_GLASS-NL_metadata.R')
 }
 
-if(!exists('gsam.metadata.idats')) {
+if(!exists('gsam.metadata.array_samples')) {
   source('scripts/load_G-SAM_metadata.R')
 }
 
@@ -34,17 +34,17 @@ if(!exists('gsam.metadata.idats')) {
 # metadata ----
 
 
-metadata.glass_od <- glass_od.metadata.idats |> 
+metadata.glass_od <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(163) |> 
   dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type)
 
 
-metadata.glass_nl <- glass_nl.metadata.idats |> 
+metadata.glass_nl <- glass_nl.metadata.array_samples |> 
   filter_GLASS_NL_idats(218) |> 
   dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type)
 
 
-metadata.gsam <- gsam.metadata.idats |> 
+metadata.gsam <- gsam.metadata.array_samples |> 
   filter_GSAM_idats(73) |> 
   dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env R
 
 
-plt <- glass_od.metadata.idats |> 
+plt <- glass_od.metadata.array_samples |> 
   dplyr::filter(is.na(reason_excluded_array_sample)) |> 
   dplyr::filter(is.na(reason_excluded_patient)) |> 
   dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 

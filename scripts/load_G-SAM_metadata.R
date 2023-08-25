@@ -8,7 +8,7 @@ source('scripts/load_functions.R')
 
 ## get idats ----
 
-gsam.metadata.idats <-  list.files(path = "data/G-SAM/DNA Methylation - EPIC arrays/", pattern = "_(Grn|Red).idat$", recursive = T) |>
+gsam.metadata.array_samples <-  list.files(path = "data/G-SAM/DNA Methylation - EPIC arrays/", pattern = "_(Grn|Red).idat$", recursive = T) |>
   data.frame(filename = _) |>
   dplyr::mutate(filename = paste0("data/G-SAM/DNA Methylation - EPIC arrays/", filename)) |> 
   (function(.) {
@@ -27,7 +27,8 @@ gsam.metadata.idats <-  list.files(path = "data/G-SAM/DNA Methylation - EPIC arr
     print(dim(.))
     assertthat::assert_that(nrow(.) == 75)
     return(.)
-  })() 
+  })()  |> 
+  dplyr::rename_with( ~ paste0("array_", .x)) 
 
 
 
@@ -37,17 +38,17 @@ gsam.metadata.idats <-  list.files(path = "data/G-SAM/DNA Methylation - EPIC arr
 tmp <- read.csv("data/G-SAM/DNA Methylation - EPIC arrays/MET2022-350-014/MET2022-350-014_IdH.csv", skip=8) |> 
   dplyr::filter(!is.na(Sentrix_ID)) |> 
   assertr::verify(grepl("^[0-9]{12}_[A-Z][0-9]{2}[A-Z][0-9]{2}$", Column2)) |> 
-  dplyr::rename(sentrix_id = Column2) |> 
+  dplyr::rename(array_sentrix_id = Column2) |> 
   dplyr::mutate(study = gsub("^(....).+$","\\1",Sample_Name)) |> 
   dplyr::filter(study %in% c("MINT","GLSO") == F) |> 
   assertr::verify(study == "GSAM") |> 
-  dplyr::select(sentrix_id, Sample_Name) |> 
+  dplyr::select(array_sentrix_id, Sample_Name) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == nrow(gsam.metadata.idats)) # == 75
+    assertthat::assert_that(nrow(.) == nrow(gsam.metadata.array_samples)) # == 75
     return(.)
   })() |> 
-  assertr::verify(sentrix_id %in% gsam.metadata.idats$sentrix_id) |> 
+  assertr::verify(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |> 
   dplyr::mutate(resection = paste0("R",gsub("GSAM_...(.)_.+$","\\1",Sample_Name))) |> 
   dplyr::mutate(patient = gsub("GSAM_(...)._.+$","\\1", Sample_Name)) |> 
   dplyr::mutate(IDH = patient %in% c("BAW","CAV","CBG","CDF","DAB","EAF","EBD","ECB","FAD","FAL","JAB","JAD","JAF","KAC")) # IDH mut according to "data/gsam/output/tables/dna/idh_mutations.txt" - EAF also by MNP brain Classifier
@@ -56,8 +57,8 @@ tmp <- read.csv("data/G-SAM/DNA Methylation - EPIC arrays/MET2022-350-014/MET202
 
 
 
-gsam.metadata.idats <- gsam.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(Sample_Name))
 rm(tmp)
 
@@ -86,15 +87,16 @@ tmp <- read.csv('data/G-SAM/administratie/GSAM_combined_clinical_molecular.csv',
                 progressionFreeDays,
                 survivalFromSecondSurgeryDays
                 ) |> 
-  dplyr::filter(patient %in% gsam.metadata.idats$patient) |> 
+  dplyr::filter(patient %in% gsam.metadata.array_samples$patient) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == length(unique(gsam.metadata.idats$patient)))
+    assertthat::assert_that(nrow(.) == length(unique(gsam.metadata.array_samples$patient)))
     return(.)
-  })()
+  })() |> 
+  dplyr::rename_with( ~ paste0("patient_", .x), .cols=!matches("^patient$",perl = T))
 
 
-gsam.metadata.idats <- gsam.metadata.idats |> 
+gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('patient'='patient'), suffix=c('',''))
 rm(tmp)
 
@@ -107,9 +109,9 @@ rm(tmp)
 
 tmp <- read.table("output/tables/percentage_detP_probes.txt") |> 
   assertr::verify(!is.na(percentage.detP.signi) & is.numeric(percentage.detP.signi)) |> 
-  assertr::verify(gsam.metadata.idats$sentrix_id %in% sentrix_id)
+  assertr::verify(gsam.metadata.array_samples$sentrix_id %in% sentrix_id)
 
-gsam.metadata.idats <- gsam.metadata.idats |> 
+gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(percentage.detP.signi)) 
 
@@ -122,10 +124,10 @@ rm(tmp)
 tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |> 
   assertr::verify(!is.na(qc.pca.comp1)) |> 
   assertr::verify(!is.na(qc.pca.detP.outlier)) |> 
-  assertr::verify(gsam.metadata.idats$sentrix_id %in% sentrix_id)
+  assertr::verify(gsam.metadata.array_samples$sentrix_id %in% sentrix_id)
 
 
-gsam.metadata.idats <- gsam.metadata.idats |> 
+gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(qc.pca.comp1)) |> 
   assertr::verify(!is.na(qc.pca.detP.outlier))
@@ -146,7 +148,7 @@ tmp <- c(
   dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", filename)) |>
   assertr::verify(!is.na(sentrix_id))|> 
   assertr::verify(!duplicated(sentrix_id)) |>  # only one version per sentrix_id desired
-  assertr::verify(sentrix_id %in% gsam.metadata.idats$sentrix_id) |> 
+  assertr::verify(sentrix_id %in% gsam.metadata.array_samples$sentrix_id) |> 
   dplyr::rowwise() |> 
   dplyr::mutate(tmp = parse_mnp_reportBrain_csv(mnp_predictBrain_filename, paste0("mnp_predictBrain_", mnp_predictBrain_version, "_"))) |>
   dplyr::ungroup() |> 
@@ -163,7 +165,7 @@ tmp <- c(
 
 
 
-gsam.metadata.idats <- gsam.metadata.idats |> 
+gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_class)) |> 
   assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr)) |> 
@@ -189,7 +191,7 @@ tmp <- list.files(path = "data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS cla
   tidyr::unnest(tmp) |> 
   assertr::verify(!is.na(sentrix_id))|> 
   assertr::verify(!duplicated(sentrix_id)) |> 
-  assertr::verify(sentrix_id %in% gsam.metadata.idats$sentrix_id) |> 
+  assertr::verify(sentrix_id %in% gsam.metadata.array_samples$sentrix_id) |> 
   dplyr::mutate(mnp_QC_FrozenFFPEstatus_table = NULL) |> 
   (function(.) {
     print(dim(.))
@@ -198,7 +200,7 @@ tmp <- list.files(path = "data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS cla
   })()
 
 
-gsam.metadata.idats <- gsam.metadata.idats |> 
+gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(mnp_QC_predicted_array_type)) |> 
   assertr::verify(!is.na(mnp_QC_predicted_sample_type)) |> 
@@ -218,11 +220,11 @@ rm(tmp)
 
 tmp <- query_mnp_12.8_CNVP_segment_csv(
   "data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/",
-  75, gsam.metadata.idats$sentrix_id)
+  75, gsam.metadata.array_samples$sentrix_id)
 
 
 
-gsam.metadata.idats <- gsam.metadata.idats |> 
+gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(heidelberg_cnvp_segments)) |> 
   assertr::verify(!is.na(heidelberg_cnvp_version)) 
@@ -235,7 +237,7 @@ rm(tmp)
 
 tmp <- readRDS("cache/unsupervised_qc_outliers_all.Rds")
 
-gsam.metadata.idats <- gsam.metadata.idats |> 
+gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(qc.pca.comp1)) |> 
   assertr::verify(!is.na(qc.pca.detP.outlier))
@@ -252,7 +254,7 @@ rm(tmp)
 tmp <- readRDS("cache/analysis_median_methylation.Rds") |> 
   assertr::verify(!is.na(median.overall.methylation)) |> 
   assertr::verify(!is.na(median.glass_nl_supervised.methylation)) |> 
-  dplyr::filter(sentrix_id %in% gsam.metadata.idats$sentrix_id) |> 
+  dplyr::filter(sentrix_id %in% gsam.metadata.array_samples$sentrix_id) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 73) # only HQ samples
@@ -261,7 +263,7 @@ tmp <- readRDS("cache/analysis_median_methylation.Rds") |>
 
 
 
-gsam.metadata.idats <- gsam.metadata.idats |> 
+gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
 
 
@@ -274,7 +276,7 @@ rm(tmp)
 
 tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |> 
   dplyr::filter(!is.na(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
-  dplyr::filter(sentrix_id %in% gsam.metadata.idats$sentrix_id) |> 
+  dplyr::filter(sentrix_id %in% gsam.metadata.array_samples$sentrix_id) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 73)
@@ -282,7 +284,7 @@ tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |>
   })()
 
 
-gsam.metadata.idats <- gsam.metadata.idats |> 
+gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
 
 

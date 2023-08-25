@@ -6,16 +6,20 @@
 source('scripts/load_functions.R')
 
 
-if(!exists('glass_od.metadata.idats')) {
+if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
 
-if(!exists('glass_nl.metadata.idats')) {
+if(!exists('glass_nl.metadata.array_samples')) {
   source('scripts/load_GLASS-NL_metadata.R')
 }
 
-if(!exists('gsam.metadata.idats')) {
+if(!exists('gsam.metadata.array_samples')) {
   source('scripts/load_G-SAM_metadata.R')
+}
+
+if(!exists('tcga_laml.metadata.array_samples')) {
+  source('scripts/load_TCGA-LAML_metadata.R')
 }
 
 
@@ -29,17 +33,18 @@ if(!exists('gsam.metadata.idats')) {
 
 #' do this for ALL possible samples - QC etc. is based on this
 tmp <- rbind(
-  glass_od.metadata.idats |> dplyr::select(sentrix_id, channel_green),
-  glass_nl.metadata.idats |> dplyr::select(sentrix_id, channel_green),
-  gsam.metadata.idats |> dplyr::select(sentrix_id, channel_green)
+  glass_od.metadata.array_samples |> dplyr::select(array_sentrix_id, array_channel_green),
+  glass_nl.metadata.array_samples |> dplyr::select(array_sentrix_id, array_channel_green),
+  gsam.metadata.array_samples |> dplyr::select(array_sentrix_id, array_channel_green),
+  tcga_laml.metadata.array_samples |> dplyr::filter(array_type == "450k") |> dplyr::select(array_sentrix_id, array_channel_green)
   ) |> 
-  dplyr::mutate(sentrix_path = gsub("_Grn.idat$","",channel_green)) |> 
-  dplyr::mutate(channel_green = NULL) |> 
-  dplyr::mutate(percentage.detP.signi = unlist(pbapply::pblapply(sentrix_path, calc_ratio_detP)))
+  dplyr::mutate(array_sentrix_path = gsub("_Grn.idat$","", array_channel_green)) |> 
+  dplyr::mutate(array_channel_green = NULL) |> 
+  dplyr::mutate(array_percentage.detP.signi = unlist(pbapply::pblapply(array_sentrix_path, calc_ratio_detP)))
 
 
 
-write.table(tmp |> dplyr::mutate(sentrix_path = NULL), file="output/tables/percentage_detP_probes.txt")
+write.table(tmp |> dplyr::mutate(array_sentrix_path = NULL), file="output/tables/percentage_detP_probes.txt")
 
 
 

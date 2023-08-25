@@ -4,26 +4,26 @@
 # load data ----
 
 
-if(!exists('glass_od.metadata.idats')) {
+if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
 
 
-if(!exists('glass_nl.metadata.idats')) {
+if(!exists('glass_nl.metadata.array_samples')) {
   source('scripts/load_GLASS-NL_metadata.R')
 }
 
 
 
 # including this may have some odd biological implications
-# if(!exists('gsam.metadata.idats')) {
+# if(!exists('gsam.metadata.array_samples')) {
 #   source('scripts/load_G-SAM_metadata.R')
 # }
 
 # plot ----
 
 plt <- rbind(
-  glass_od.metadata.idats |>
+  glass_od.metadata.array_samples |>
     filter_GLASS_OD_idats(163) |>
     dplyr::select(
       sentrix_id,
@@ -35,7 +35,7 @@ plt <- rbind(
       type = "predictions by full AcCGAP model",
       dataset = "GLASS-OD"
     ),
-  glass_nl.metadata.idats |>
+  glass_nl.metadata.array_samples |>
     filter_GLASS_NL_idats(202) |>
     dplyr::select(
       sentrix_id,

@@ -12,15 +12,15 @@ if(!exists('youri_gg_theme')) {
 }
 
 
-if(!exists('glass_od.metadata.idats')) {
+if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
 
-if(!exists('glass_nl.metadata.idats')) {
+if(!exists('glass_nl.metadata.array_samples')) {
   source('scripts/load_GLASS-NL_metadata.R')
 }
 
-if(!exists('gsam.metadata.idats')) {
+if(!exists('gsam.metadata.array_samples')) {
   source('scripts/load_G-SAM_metadata.R')
 }
 
@@ -33,16 +33,16 @@ source('scripts/load_functions.R')
 
 
 metadata <- rbind(
-  glass_od.metadata.idats |> 
+  glass_od.metadata.array_samples |> 
     dplyr::select(sentrix_id, percentage.detP.signi, mnp_QC_predicted_sample_type, qc.pca.comp1, qc.pca.outlier) |> 
     dplyr::mutate(dataset = "GLASS-OD") # & CATNON sample -> codels & oligosarcoma's
   ,
-  glass_nl.metadata.idats |> 
+  glass_nl.metadata.array_samples |> 
     dplyr::select(sentrix_id, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
     dplyr::mutate(qc.pca.comp1 = NA, qc.pca.outlier = NA) |> 
     dplyr::mutate(dataset = "GLASS-NL") # astro's
   ,
-  gsam.metadata.idats |> 
+  gsam.metadata.array_samples |> 
     dplyr::select(sentrix_id, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
     dplyr::mutate(qc.pca.comp1 = NA, qc.pca.outlier = NA) |> 
     dplyr::mutate(dataset = "G-SAM")
@@ -157,7 +157,7 @@ saveRDS(out, file="cache/unsupervised_qc_outliers_all.Rds")
 
 # GLASS-NL low purity ----
 
-plt <- glass_nl.metadata.idats |> 
+plt <- glass_nl.metadata.array_samples |> 
   filter_GLASS_NL_idats(202) |> 
   dplyr::left_join(
     readRDS("cache/analysis_unsupervised_PCA_GLASS-NL_x.Rds"),

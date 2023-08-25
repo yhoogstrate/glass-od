@@ -9,7 +9,7 @@ source('scripts/load_chrom_sizes.R')
 # type 1: segment based ----
 
 estimate_1p19q_purity_segment_based <- function(fn) {
-  #fn = glass_od.metadata.idats$heidelberg_cnvp_segments[1]
+  #fn = glass_od.metadata.array_samples$heidelberg_cnvp_segments[1]
   
   segs <- read.delim(fn) |> 
     dplyr::rename(seg.median.l2fc = seg.median) |> 
@@ -236,7 +236,7 @@ fun <- function(fn) {
 
 df <- do.call(
   rbind,
-  pbapply::pblapply(glass_od.metadata.idats |> 
+  pbapply::pblapply(glass_od.metadata.array_samples |> 
                       dplyr::filter(is.na(reason_excluded_array_sample)) |> 
                       dplyr::filter(is.na(reason_excluded_patient)) |> 
                       dplyr::filter(is.na(reason_excluded_resection)) |> 
@@ -284,7 +284,7 @@ glass_od.data.1p_19q_purity_most_informative_bins <- readRDS("cache/1p_19q_purit
 
 
 estimate_1p19q_purity_bin_based <- function(fn) {
-  #fn <- glass_od.metadata.idats$heidelberg_cnvp_bins[1]
+  #fn <- glass_od.metadata.array_samples$heidelberg_cnvp_bins[1]
   
   sentrix <- gsub("^.+\\/([0-9]+_R[0-9]+C[0-9]+)\\.bins\\.igv$","\\1", fn)
   
@@ -310,7 +310,7 @@ estimate_1p19q_purity_bin_based <- function(fn) {
 
 purities.bin <- do.call(
 rbind,
-pbapply::pblapply(glass_od.metadata.idats |> 
+pbapply::pblapply(glass_od.metadata.array_samples |> 
          dplyr::filter(is.na(reason_excluded_patient)) |> 
          dplyr::filter(is.na(reason_excluded_resection)) |> 
          dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 

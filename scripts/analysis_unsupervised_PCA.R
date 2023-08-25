@@ -9,15 +9,15 @@ if(!exists('data.mvalues.hq_samples')) {
 
 
 
-if(!exists('glass_od.metadata.idats')) {
+if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
 
-if(!exists('glass_nl.metadata.idats')) {
+if(!exists('glass_nl.metadata.array_samples')) {
   source('scripts/load_GLASS-NL_metadata.R')
 }
 
-if(!exists('gsam.metadata.idats')) {
+if(!exists('gsam.metadata.array_samples')) {
   source('scripts/load_GSAM_metadata.R')
 }
 
@@ -27,7 +27,7 @@ if(!exists('gsam.metadata.idats')) {
 # GLASS-OD ----
 
 
-metadata <- glass_od.metadata.idats |> 
+metadata <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(163)
 
 
@@ -74,7 +74,7 @@ rm(data, metadata, data.pca.glass_od)
 # GLASS-NL ----
 
 
-metadata <- glass_nl.metadata.idats |>
+metadata <- glass_nl.metadata.array_samples |>
   filter_GLASS_NL_idats(218) |> 
   dplyr::select(sentrix_id)
 
@@ -118,8 +118,8 @@ rm(data, metadata, data.pca.glass_nl)
 
 
 metadata <- rbind(
-  glass_od.metadata.idats |> filter_GLASS_OD_idats(163) |> dplyr::select(sentrix_id),
-  glass_nl.metadata.idats |> filter_GLASS_NL_idats(218) |> dplyr::select(sentrix_id)
+  glass_od.metadata.array_samples |> filter_GLASS_OD_idats(163) |> dplyr::select(sentrix_id),
+  glass_nl.metadata.array_samples |> filter_GLASS_NL_idats(218) |> dplyr::select(sentrix_id)
 )
 
 
@@ -157,8 +157,8 @@ saveRDS(data.pca.glass_od_nl.x, "cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-
 
 
 metadata <- rbind(
-  glass_od.metadata.idats |> filter_GLASS_OD_idats(163) |> dplyr::select(sentrix_id),
-  glass_nl.metadata.idats |> filter_GLASS_NL_idats(218) |> dplyr::select(sentrix_id)
+  glass_od.metadata.array_samples |> filter_GLASS_OD_idats(163) |> dplyr::select(sentrix_id),
+  glass_nl.metadata.array_samples |> filter_GLASS_NL_idats(218) |> dplyr::select(sentrix_id)
 )
 
 

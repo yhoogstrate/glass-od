@@ -97,15 +97,15 @@ gc()
 
 # sandbox test plot ----
 # 
-# if(!exists('glass_od.metadata.idats')) {
+# if(!exists('glass_od.metadata.array_samples')) {
 #   source('scripts/load_GLASS-OD_metadata.R')
 # }
 # 
-# if(!exists('glass_nl.metadata.idats')) {
+# if(!exists('glass_nl.metadata.array_samples')) {
 #   source('scripts/load_GLASS-NL_metadata.R')
 # }
 # 
-# if(!exists('gsam.metadata.idats')) {
+# if(!exists('gsam.metadata.array_samples')) {
 #   source('scripts/load_G-SAM_metadata.R')
 # }
 # 
@@ -114,9 +114,9 @@ gc()
 # 
 # plt <- readRDS('cache/analysis_median_methylation.Rds') |>
 #   dplyr::mutate(dataset = dplyr::case_when(
-#     sentrix_id %in% glass_od.metadata.idats$sentrix_id ~ "GLASS-OD",
-#     sentrix_id %in% glass_nl.metadata.idats$sentrix_id ~ "GLASS-NL",
-#     sentrix_id %in% gsam.metadata.idats$sentrix_id ~ "G-SAM",
+#     sentrix_id %in% glass_od.metadata.array_samples$sentrix_id ~ "GLASS-OD",
+#     sentrix_id %in% glass_nl.metadata.array_samples$sentrix_id ~ "GLASS-NL",
+#     sentrix_id %in% gsam.metadata.array_samples$sentrix_id ~ "G-SAM",
 #     T ~ "error"
 #   )) 
 # 
@@ -130,14 +130,14 @@ gc()
 # 
 # plt.glnl <- readRDS('cache/analysis_median_methylation.Rds') |>
 #   dplyr::mutate(dataset = dplyr::case_when(
-#     sentrix_id %in% glass_od.metadata.idats$sentrix_id ~ "GLASS-OD",
-#     sentrix_id %in% glass_nl.metadata.idats$sentrix_id ~ "GLASS-NL",
-#     sentrix_id %in% gsam.metadata.idats$sentrix_id ~ "G-SAM",
+#     sentrix_id %in% glass_od.metadata.array_samples$sentrix_id ~ "GLASS-OD",
+#     sentrix_id %in% glass_nl.metadata.array_samples$sentrix_id ~ "GLASS-NL",
+#     sentrix_id %in% gsam.metadata.array_samples$sentrix_id ~ "G-SAM",
 #     T ~ "error"
 #   )) |> 
 #   #dplyr::filter(dataset == "GLASS-NL") |> 
 #   dplyr::left_join(
-#     glass_nl.metadata.idats |>
+#     glass_nl.metadata.array_samples |>
 #       dplyr::select(sentrix_id, Sample_Type, mnp_predictBrain_v12.8_cal_class, WHO_Classification2021),
 #     by=c('sentrix_id'='sentrix_id'),suffix=c('','')
 #   )

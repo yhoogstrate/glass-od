@@ -13,7 +13,7 @@ if(!exists('youri_gg_theme')) {
 
 
 
-if(!exists('glass_od.metadata.idats')) {
+if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_metadata.R')
 }
 
@@ -29,7 +29,7 @@ if(!exists('glass_od.data.mvalues')) {
 # load all samples, qc and corr w/ qc stats ----
 
 
-metadata <- glass_od.metadata.idats |> 
+metadata <- glass_od.metadata.array_samples |> 
   dplyr::filter(is.na(reason_excluded_patient)) |> 
   dplyr::filter(is.na(reason_excluded_resection)) |> 
   dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 

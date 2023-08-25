@@ -16,12 +16,12 @@ if(!exists('data.mvalues.hq_samples')) {
 
 
 
-if(!exists('glass_od.metadata.idats')) {
+if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
 
 
-if(!exists('glass_nl.metadata.idats')) {
+if(!exists('glass_nl.metadata.array_samples')) {
   source('scripts/load_GLASS-NL_metadata.R')
 }
 
@@ -188,7 +188,7 @@ plot(coef$conditionc2, -log(pval$conditionc2))
 ## data: paired ----
 
 
-metadata.p <- glass_od.metadata.idats |> 
+metadata.p <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(163) |> 
   filter_primaries_and_last_recurrences(136) |> 
   
@@ -348,7 +348,7 @@ rm(design.p.u, fit.p.u)
 
 ## data: partially paired ----
 
-metadata.pp <- glass_od.metadata.idats |> 
+metadata.pp <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(163) |> 
   filter_primaries_and_last_recurrences(136) |> 
   
@@ -608,7 +608,7 @@ ggplot(subset(plt, chr == "chr2"), aes(x=pos / 1000000,y=delta1, col=chr)) +
 
 ## data: partially paired ----
 
-metadata.pp <- glass_od.metadata.idats |> 
+metadata.pp <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(163) |> 
   filter_first_G2_and_last_G3(105) |> 
   dplyr::group_by(patient_id) |> 
@@ -658,7 +658,7 @@ plot(sort(stats.gr$P.Value),type="l")
 # analyses: GLASS-OD AcCGAP ----
 ## data: partially paired ----
 
-metadata.pp <- glass_od.metadata.idats |> 
+metadata.pp <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(163) |> 
   assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
   assertr::verify(is.numeric(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
@@ -758,17 +758,17 @@ ggplot(plt.pre, aes(x=logFC.lgc, y=-log(P.Value.lgc), col=col)) +
 #' OD
 #' AC
 #' general grading
-## test: pat + HG_AC + HG_OD + overall_HG ----
+## test pat + HG_AC + HG_OD + overall_HG ----
 
 
-metadata.od <- glass_od.metadata.idats |> 
+metadata.od <- glass_od.metadata.array_samples |> 
     filter_GLASS_OD_idats(163) |> 
     filter_first_G2_and_last_G3(105) |> 
     dplyr::select(sentrix_id, resection_id, patient_id, LG_HG_status, A_IDH_HG__A_IDH_LG_lr__lasso_fit) |>  # has to be WHO since OD has no methylation based split
     dplyr::rename(sample_id = resection_id) |> 
     dplyr::mutate(dataset = "GLASS-OD") |> 
     dplyr::mutate(LG_HG_status = factor(LG_HG_status, levels=c("LG","HG")))
-metadata.ac <- glass_nl.metadata.idats |> 
+metadata.ac <- glass_nl.metadata.array_samples |> 
       filter_GLASS_NL_idats(218) |> 
       filter_first_G2_and_last_G3(130) |> 
       dplyr::select(sentrix_id, Sample_Name, patient_id, LG_HG_status, A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV) |>  # has to be WHO since OD has no methylation based split
@@ -845,6 +845,40 @@ ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=col2)) +
   geom_point(data=subset(plt, col2==F),pch=19, alpha=0.15,cex=0.02) +
   geom_point(data=subset(plt, col2==T),pch=19, alpha=0.65,cex=0.05) +
   theme_bw()
+
+
+# x alzheimer quick test ----
+
+plt <- stats.od |> 
+  dplyr::left_join(data.probes.alzheimer, by=c('probe_id'='probe_id'),suffix=c('',''))
+
+# ggplot(plt, aes(x=logFC, y=-adj.P.Val, col=is.na(FDR.p.value))) +
+#   geom_point(data = subset(plt, is.na(FDR.p.value)),pch=19,cex=0.01) +
+#   geom_point(data = subset(plt, !is.na(FDR.p.value)),pch=19,cex=0.15)
+
+ggplot(plt, aes(x=Beta..difference, y=logFC, col=is.na(FDR.p.value), label=label)) +
+  geom_point(data = subset(plt, is.na(FDR.p.value)),pch=19,cex=0.01) +
+  geom_point(data = subset(plt, !is.na(FDR.p.value)),pch=19,cex=0.35)
+#ggrepel::geom_text_repel(col="black",size=3)
+
+
+
+plt <- stats.ac |> 
+  dplyr::left_join(data.probes.alzheimer, by=c('probe_id'='probe_id'),suffix=c('',''))
+
+
+# ggplot(plt, aes(x=logFC, y=-adj.P.Val, col=is.na(FDR.p.value))) +
+#   geom_point(data = subset(plt, is.na(FDR.p.value)),pch=19,cex=0.01) +
+#   geom_point(data = subset(plt, !is.na(FDR.p.value)),pch=19,cex=0.15)
+
+
+# yes - concordance
+ggplot(plt, aes(x=Beta..difference, y=logFC, col=is.na(FDR.p.value), label=label)) +
+  geom_point(data = subset(plt, is.na(FDR.p.value)),pch=19,cex=0.01) +
+  geom_point(data = subset(plt, !is.na(FDR.p.value)),pch=19,cex=0.35)
+#ggrepel::geom_text_repel(col="black",size=3)
+
+
 
 
 

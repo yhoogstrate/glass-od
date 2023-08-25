@@ -1,7 +1,7 @@
 #!/usr/bin/env
 
 
-if(!exists('glass_od.metadata.idats')) {
+if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_metadata.R')
 }
 
@@ -16,7 +16,7 @@ library(patchwork)
 cnv_plot <- function(cur_sentrix_id) {
   #cur_sentrix_id <- "204808700074_R05C01"
   
-  cur_idat <- glass_od.metadata.idats |> 
+  cur_idat <- glass_od.metadata.array_samples |> 
     dplyr::filter(`sentrix_id` == cur_sentrix_id)
   
   bins <- read.delim(cur_idat$heidelberg_cnvp_bins)
@@ -90,7 +90,7 @@ cnv_plot <- function(cur_sentrix_id) {
   
   
   
-  plt <- glass_od.metadata.idats |> 
+  plt <- glass_od.metadata.array_samples |> 
     dplyr::filter(is.na(reason_excluded_patient)) |> 
     dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
     dplyr::filter(is.na(reason_excluded_resection)) |> 
@@ -113,7 +113,7 @@ cnv_plot <- function(cur_sentrix_id) {
     coord_cartesian(ylim = c(0, 0.8))
   
   
-  plt <- glass_od.metadata.idats |> 
+  plt <- glass_od.metadata.array_samples |> 
     dplyr::filter(is.na(reason_excluded_patient)) |> 
     dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
     dplyr::filter(is.na(reason_excluded_resection)) |> 
@@ -144,7 +144,7 @@ cnv_plot <- function(cur_sentrix_id) {
 }
 
 
-pbapply::pblapply(glass_od.metadata.idats |> 
+pbapply::pblapply(glass_od.metadata.array_samples |> 
                     dplyr::filter(is.na(reason_excluded_patient)) |> 
                     dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
                     dplyr::filter(is.na(reason_excluded_resection)) |> 
@@ -152,7 +152,7 @@ pbapply::pblapply(glass_od.metadata.idats |>
                     dplyr::pull(sentrix_id), cnv_plot)
 
 
-a = glass_od.metadata.idats |> 
+a = glass_od.metadata.array_samples |> 
   dplyr::filter(is.na(reason_excluded_patient)) |> 
   dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
   dplyr::filter(is.na(reason_excluded_resection)) 
@@ -163,7 +163,7 @@ a = glass_od.metadata.idats |>
 tpc.estimate = data.frame()
 for(bc in  glass_od.metadata.idat |> dplyr::filter(!is.na(heidelberg_CNV_segments)) |> dplyr::pull(Sentrix_ID) ) {
   
-  seg <- glass_od.metadata.idats |> 
+  seg <- glass_od.metadata.array_samples |> 
     dplyr::filter(`sentrix_id` == sentrix_id)
   
   

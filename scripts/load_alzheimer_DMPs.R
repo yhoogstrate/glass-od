@@ -10,6 +10,8 @@ data.probes.alzheimer <- read.delim("data/Alzheimer-DMPs-10.1186_s13148-019-0672
   assertr::verify(is.numeric(pos) & pos > 0) |> 
   assertr::verify(is.numeric(Beta..difference) & abs(Beta..difference) >= 0 & abs(Beta..difference) <= 1)  |> 
   assertr::verify(is.numeric(FDR.p.value) & FDR.p.value >= 0 & FDR.p.value <= 0.05) |> 
+  dplyr::mutate(label = paste0(GeneID1,";",GeneID2)) |> 
   tibble::tibble()
+
 
 

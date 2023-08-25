@@ -17,21 +17,21 @@ if(!exists('data.mvalues.hq_samples')) {
 ## metadata ----
 
 
-if(!exists('glass_od.metadata.idats')) {
+if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
 
-if(!exists('glass_nl.metadata.idats')) {
+if(!exists('glass_nl.metadata.array_samples')) {
   source('scripts/load_GLASS-NL_metadata.R')
 }
 
-if(!exists('gsam.metadata.idats')) {
+if(!exists('gsam.metadata.array_samples')) {
   source('scripts/load_G-SAM_metadata.R')
 }
 
 
 
-metadata.glass_od <- glass_od.metadata.idats |> 
+metadata.glass_od <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(163)
 
 data.glass_od <- data.mvalues.hq_samples |>
@@ -44,7 +44,7 @@ data.glass_od <- data.mvalues.hq_samples |>
   #dplyr::mutate(mad = NULL)
 
 
-metadata.glass_nl <- glass_nl.metadata.idats |> 
+metadata.glass_nl <- glass_nl.metadata.array_samples |> 
   filter_GLASS_NL_idats(218) |> 
   dplyr::mutate(i = 1:dplyr::n()) |> 
   dplyr::mutate(slice = i %% 10, i = NULL)
@@ -60,7 +60,7 @@ data.glass_nl <- data.mvalues.hq_samples |>
 
 
 
-metadata.gsam <- gsam.metadata.idats |> 
+metadata.gsam <- gsam.metadata.array_samples |> 
   filter_GSAM_idats(73)
 
 data.gsam <- data.mvalues.hq_samples |>

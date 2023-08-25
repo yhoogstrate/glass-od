@@ -17,15 +17,15 @@ if(!exists('youri_gg_theme')) {
 }
 
 
-if(!exists('glass_od.metadata.idats')) {
+if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
 
-if(!exists('glass_nl.metadata.idats')) {
+if(!exists('glass_nl.metadata.array_samples')) {
   source('scripts/load_GLASS-NL_metadata.R')
 }
 
-if(!exists('gsam.metadata.idats')) {
+if(!exists('gsam.metadata.array_samples')) {
   source('scripts/load_G-SAM_metadata.R')
 }
 
@@ -36,7 +36,7 @@ source('scripts/load_functions.R')
 # metadata ----
 
 
-metadata.glass_od <- glass_od.metadata.idats |> 
+metadata.glass_od <- glass_od.metadata.array_samples |> 
   dplyr::filter(!is.na(sentrix_id)) |> 
   dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
   (function(.) {
@@ -46,7 +46,7 @@ metadata.glass_od <- glass_od.metadata.idats |>
   })()
 
 
-metadata.glass_nl <- glass_nl.metadata.idats |> 
+metadata.glass_nl <- glass_nl.metadata.array_samples |> 
   dplyr::filter(!is.na(sentrix_id)) |> 
   dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
   (function(.) {
@@ -56,7 +56,7 @@ metadata.glass_nl <- glass_nl.metadata.idats |>
   })()
 
 
-metadata.gsam <- gsam.metadata.idats |> 
+metadata.gsam <- gsam.metadata.array_samples |> 
   dplyr::filter(!is.na(sentrix_id)) |> 
   dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
   (function(.) {

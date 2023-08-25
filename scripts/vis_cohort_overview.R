@@ -12,7 +12,7 @@ if(!exists('youri_gg_theme')) {
 }
 
 
-if(!exists('glass_od.metadata.idats')) {
+if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
 
@@ -26,10 +26,10 @@ source('scripts/load_functions.R')
 
 plt <-
   rbind(
-    glass_od.metadata.idats |> 
+    glass_od.metadata.array_samples |> 
       filter_GLASS_OD_idats(163) 
     ,
-  glass_od.metadata.idats |> 
+  glass_od.metadata.array_samples |> 
     dplyr::filter(study_name != "GLASS-OD")
   ) |> 
   dplyr::mutate(patient_id = as.factor(patient_id)) |> 

@@ -9,7 +9,7 @@ source('scripts/load_functions.R')
 ## idats ----
 
 
-glass_nl.metadata.idats <-  list.files(path = "data/GLASS_NL/Methylation/Methylation Array Data/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |>
+glass_nl.metadata.array_samples <-  list.files(path = "data/GLASS_NL/Methylation/Methylation Array Data/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |>
   data.frame(filename = _) |>
   dplyr::mutate(filename = paste0("data/GLASS_NL/Methylation/Methylation Array Data/", filename)) |> 
   (function(.) {
@@ -25,7 +25,8 @@ glass_nl.metadata.idats <-  list.files(path = "data/GLASS_NL/Methylation/Methyla
   dplyr::rename(channel_red = Red) |> 
   assertr::verify(!is.na(sentrix_id)) |> 
   assertr::verify(!is.na(channel_green)) |> 
-  assertr::verify(!is.na(channel_red))
+  assertr::verify(!is.na(channel_red)) |> 
+  dplyr::rename_with( ~ paste0("array_", .x)) 
 
 
 
@@ -34,9 +35,9 @@ glass_nl.metadata.idats <-  list.files(path = "data/GLASS_NL/Methylation/Methyla
 
 tmp <- read.csv("data/GLASS_NL/Metadata/Samples/Master Datasheet_ALL METHODS_27012023.csv") |>
   dplyr::select( Surgery_ID, GLASS_ID,  Sample_Name, Sample_Sex, Sample_Type, Resectie, Sample_ID, Recurrent_Select.Meth, Matched_Pair.Meth) |> 
-  dplyr::rename(sentrix_id = Sample_ID) |> 
+  dplyr::rename(array_sentrix_id = Sample_ID) |> 
   dplyr::rename(resection_number = Resectie) |> 
-  dplyr::filter(!is.na(sentrix_id)) |> 
+  dplyr::filter(!is.na(array_sentrix_id)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == (235)) 
@@ -45,8 +46,8 @@ tmp <- read.csv("data/GLASS_NL/Metadata/Samples/Master Datasheet_ALL METHODS_270
   dplyr::mutate(patient_id = as.factor(gsub("^.+_[0]*([0-9]+)$", "\\1", GLASS_ID)))
 
 
-glass_nl.metadata.idats <- glass_nl.metadata.idats |>
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |>
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |>
   dplyr::filter(!is.na(Sample_Name)) |>  # exclude hundreds present in directory but absent in metadata
   (function(.) {
     print(dim(.))
@@ -67,7 +68,7 @@ tmp <- read.csv("data/GLASS_NL/Metadata/Samples/WHOclassification_03052022.csv")
   dplyr::select(Surgery_ID, WHO_Classification2021) |> # join on Surgery_ID
   dplyr::mutate(WHO_Classification2021 = ifelse(WHO_Classification2021 == "Therapy Effects", as.character(NA), WHO_Classification2021)) |> 
   assertr::verify(!is.na(Surgery_ID)) |> 
-  dplyr::filter(Surgery_ID %in% glass_nl.metadata.idats$Surgery_ID) |> 
+  dplyr::filter(Surgery_ID %in% glass_nl.metadata.array_samples$Surgery_ID) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == (235)) 
@@ -76,7 +77,7 @@ tmp <- read.csv("data/GLASS_NL/Metadata/Samples/WHOclassification_03052022.csv")
 
 
 
-glass_nl.metadata.idats <- glass_nl.metadata.idats |>
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
   dplyr::left_join(tmp, by=c('Surgery_ID'='Surgery_ID'), suffix=c('','')) |>
   (function(.) {
     print(dim(.))
@@ -93,10 +94,10 @@ rm(tmp)
 
 tmp <- read.table("output/tables/percentage_detP_probes.txt") |> 
   assertr::verify(!is.na(percentage.detP.signi) & is.numeric(percentage.detP.signi)) |> 
-  assertr::verify(glass_nl.metadata.idats$sentrix_id %in% sentrix_id)
+  assertr::verify(glass_nl.metadata.array_samples$array_sentrix_id %in% sentrix_id)
 
-glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(percentage.detP.signi)) 
 
 rm(tmp)
@@ -108,11 +109,11 @@ rm(tmp)
 tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |> 
   assertr::verify(!is.na(qc.pca.comp1)) |> 
   assertr::verify(!is.na(qc.pca.detP.outlier)) |> 
-  assertr::verify(glass_nl.metadata.idats$sentrix_id %in% sentrix_id)
+  assertr::verify(glass_nl.metadata.array_samples$array_sentrix_id %in% sentrix_id)
 
 
-glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(qc.pca.comp1)) |> 
   assertr::verify(!is.na(qc.pca.detP.outlier))
 
@@ -133,7 +134,7 @@ tmp <- c(
   dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", filename)) |>
   assertr::verify(!is.na(sentrix_id))|> 
   assertr::verify(!duplicated(sentrix_id)) |>  # only one version per sentrix_id desired
-  assertr::verify(sentrix_id %in% glass_nl.metadata.idats$sentrix_id) |> 
+  assertr::verify(sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
   dplyr::rowwise() |> 
   dplyr::mutate(tmp = parse_mnp_reportBrain_csv(mnp_predictBrain_filename, paste0("mnp_predictBrain_", mnp_predictBrain_version, "_"))) |>
   dplyr::ungroup() |> 
@@ -155,8 +156,8 @@ tmp <- c(
 
 
 
-glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_class)) |> 
   assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr)) |> 
   (function(.) {
@@ -181,7 +182,7 @@ tmp <- list.files(path = "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_
   tidyr::unnest(tmp) |> 
   assertr::verify(!is.na(sentrix_id))|> 
   assertr::verify(!duplicated(sentrix_id)) |> 
-  assertr::verify(sentrix_id %in% glass_nl.metadata.idats$sentrix_id) |> 
+  assertr::verify(sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
   dplyr::mutate(mnp_QC_FrozenFFPEstatus_table = NULL) |> 
   (function(.) {
     print(dim(.))
@@ -191,8 +192,8 @@ tmp <- list.files(path = "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_
 
 
 
-glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(mnp_QC_predicted_array_type)) |> 
   assertr::verify(!is.na(mnp_QC_predicted_sample_type)) |> 
   (function(.) {
@@ -209,11 +210,11 @@ rm(tmp)
 
 tmp <- query_mnp_12.8_CNVP_segment_csv(
   "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/",
-  235, glass_nl.metadata.idats$sentrix_id)
+  235, glass_nl.metadata.array_samples$array_sentrix_id)
 
 
-glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(heidelberg_cnvp_segments))  |> 
   assertr::verify(!is.na(heidelberg_cnvp_version))
 rm(tmp)
@@ -226,8 +227,8 @@ rm(tmp)
 
 tmp <- readRDS("cache/unsupervised_qc_outliers_all.Rds")
 
-glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(qc.pca.comp1)) |> 
   assertr::verify(!is.na(qc.pca.detP.outlier))
 
@@ -243,13 +244,13 @@ tmp <- read.table("data/GLASS_NL/Methylation/Analysis/RFpurity/purities_RFpurity
   dplyr::select(sentrix_id, absolute,  estimate) |> 
   assertr::verify(!is.na(sentrix_id)) |> 
   assertr::verify(!duplicated(sentrix_id)) |> 
-  assertr::verify(glass_nl.metadata.idats$sentrix_id %in% sentrix_id) |> 
+  assertr::verify(glass_nl.metadata.array_samples$array_sentrix_id %in% sentrix_id) |> 
   dplyr::rename(RFpurity.absolute = absolute) |> 
   dplyr::rename(RFpurity.estimate = estimate)
 
 
-glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(RFpurity.absolute)) |> 
   assertr::verify(!is.na(RFpurity.estimate))
 
@@ -266,7 +267,7 @@ rm(tmp)
 #                             "203989100035_R02C01", "203989100096_R03C01", "203989100096_R05C01", "203989100142_R02C01", "203991400003_R01C01", "203991400003_R06C01",
 #                             "204073520032_R07C01", "204073570005_R02C01", "203519500055_R03C01", "203519500055_R05C01")
 # 
-# glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
+# glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
 #   dplyr::mutate(qc.pca.pc3purity.outlier = sentrix_id %in% PC3_low_purity_samples) |> 
 #   (function(.) {
 #     print(dim(.))
@@ -285,8 +286,8 @@ rm(tmp)
 
 tmp <- readRDS("cache/analysis_median_methylation.Rds")
 
-glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(
     (qc.pca.detP.outlier == F & !is.na(median.overall.methylation)) |
     (qc.pca.detP.outlier == T & is.na(median.overall.methylation))
@@ -304,7 +305,7 @@ rm(tmp)
 
 tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV.Rds") |> 
   assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV)) |> 
-  dplyr::filter(sentrix_id %in% glass_nl.metadata.idats$sentrix_id) |> 
+  dplyr::filter(sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 218)
@@ -312,8 +313,8 @@ tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV.Rds"
   })()
 
 
-glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('',''))
 
 
 ## unsupervised PCA ----
@@ -326,7 +327,7 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-NL_x.Rds") |>
   assertr::verify(!is.na(PC4)) |> 
   assertr::verify(!is.na(PC5)) |> 
   assertr::verify(!is.na(PC218)) |> 
-  dplyr::filter(sentrix_id %in% glass_nl.metadata.idats$sentrix_id) |> 
+  dplyr::filter(sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 218)
@@ -334,8 +335,8 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-NL_x.Rds") |>
   })()
 
 
-glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('',''))
 
 
 
@@ -345,7 +346,7 @@ glass_nl.metadata.idats <- glass_nl.metadata.idats |>
 
 # tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined.Rds") |> 
 #   dplyr::rename_with(~ gsub("^PC","PC.GLASS_OD_NL_combined.",.x), .cols = matches("^PC[0-9]", perl = T)) |> 
-#   dplyr::filter(sentrix_id %in% glass_nl.metadata.idats$sentrix_id) |> 
+#   dplyr::filter(sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
 #   (function(.) {
 #     print(dim(.))
 #     assertthat::assert_that(nrow(.) == 218)
@@ -353,13 +354,13 @@ glass_nl.metadata.idats <- glass_nl.metadata.idats |>
 #   })()
 # 
 # 
-# glass_nl.metadata.idats <- glass_nl.metadata.idats |> 
-#   dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+# glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+#   dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('',''))
 # rm(tmp)
 
 tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined_no_1P19Q.Rds") |>
   dplyr::rename_with(~ gsub("^PC","PC.GLASS_OD_NL_combined_excl_1P19Q.",.x), .cols = matches("^PC[0-9]", perl = T)) |>
-  dplyr::filter(sentrix_id %in% glass_nl.metadata.idats$sentrix_id) |>
+  dplyr::filter(sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |>
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 218)
@@ -367,8 +368,8 @@ tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined_no_1P
   })()
 
 
-glass_nl.metadata.idats <- glass_nl.metadata.idats |>
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('',''))
 rm(tmp)
 
 
