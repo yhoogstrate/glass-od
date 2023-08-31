@@ -92,13 +92,15 @@ rm(tmp)
 ## Percentage detP probes ----
 #' from: scripts/analysis_percentage_detP_probes.R
 
+
 tmp <- read.table("output/tables/percentage_detP_probes.txt") |> 
-  assertr::verify(!is.na(percentage.detP.signi) & is.numeric(percentage.detP.signi)) |> 
-  assertr::verify(glass_nl.metadata.array_samples$array_sentrix_id %in% sentrix_id)
+  assertr::verify(!is.na(array_percentage.detP.signi) & is.numeric(array_percentage.detP.signi)) |> 
+  assertr::verify(glass_nl.metadata.array_samples$array_sentrix_id %in% array_sentrix_id)
+
 
 glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(percentage.detP.signi)) 
+  assertr::verify(!is.na(array_percentage.detP.signi)) 
 
 rm(tmp)
 

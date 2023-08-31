@@ -36,7 +36,12 @@ glass_od.metadata.patients <- DBI::dbReadTable(metadata.db.con, 'view_patients')
     
     "IDH2 R172K",
     "IDH2 R172M"
-  )))
+  ))) |> 
+  dplyr::mutate(patient_suspected_noncodel = dplyr::case_when(
+    patient_suspected_noncodel == "true" ~ TRUE,
+    patient_suspected_noncodel == "false" ~ FALSE,
+    TRUE ~ as.logical(NA)
+  ))
 
 
 patients_without_array_samples <- DBI::dbReadTable(metadata.db.con, 'view_check_patients_without_array_samples')
@@ -47,13 +52,13 @@ glass_od.metadata.patients <- glass_od.metadata.patients |>
   dplyr::filter(patient_id %in% patients_without_array_samples$patient_id == F) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 101)
+    assertthat::assert_that(nrow(.) ==  91 + 10) # + 10x astro
     return(.)
   })() |> 
   dplyr::filter(is.na(patient_reason_excluded)) |> # 7 non(-canonical) codels
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 91)
+    assertthat::assert_that(nrow(.) == 91 + 10) # + 10x astro
     return(.)
   })()
 
@@ -69,16 +74,22 @@ rm(patients_without_array_samples)
 glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resections') |> 
   dplyr::filter(patient_id %in% glass_od.metadata.patients$patient_id) |> 
   dplyr::filter(is.na(resection_reason_excluded)) |> 
-  assertr::verify(patient_id %in% c('0026','0063','0027', '0056', '0076', '0093', '0096', '0097', '0098', '0085') == F) |> # hard coded non-codels
+  dplyr::mutate(patient_suspected_noncodel = dplyr::case_when(
+    patient_suspected_noncodel == "true" ~ TRUE,
+    patient_suspected_noncodel == "false" ~ FALSE,
+    TRUE ~ as.logical(NA)
+  )) |> 
+  assertr::verify((patient_id %in% c('0026','0063','0027', '0056', '0076', '0093', '0096', '0097', '0098', '0085') & patient_suspected_noncodel == T) | (patient_suspected_noncodel == F)) |> 
   dplyr::mutate(patient_id = as.factor(patient_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 202)
+    assertthat::assert_that(nrow(.) == 202 + 21) # + 22 x astro
     return(.)
   })() |> 
   assertr::verify(is.numeric(resection_number)) |> 
   assertr::verify(is.na(resection_tumor_grade) | resection_tumor_grade %in% c(2,3)) |> 
   assertr::verify(is.na(resection_date) | grepl("^[0-9]{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}$", resection_date))
+
 
 
 
@@ -122,7 +133,12 @@ glass_od.metadata.array_samples <- list.files(path = "data/GLASS_OD/DNA Methylat
 ## b. load all idat metadata from access ----
 
 
-tmp <- DBI::dbReadTable(metadata.db.con, 'view_array_samples')
+tmp <- DBI::dbReadTable(metadata.db.con, 'view_array_samples') |> 
+  dplyr::mutate(patient_suspected_noncodel = dplyr::case_when(
+    patient_suspected_noncodel == "true" ~ TRUE,
+    patient_suspected_noncodel == "false" ~ FALSE,
+    TRUE ~ as.logical(NA)
+  ))
 
 stopifnot(length(setdiff(glass_od.metadata.array_samples$array_sentrix_id, tmp$array_sentrix_id)) == 0)
 stopifnot(length(setdiff(tmp$array_sentrix_id, glass_od.metadata.array_samples$array_sentrix_id)) == 0)
@@ -152,9 +168,8 @@ rm(tmp)
 #' from: scripts/analysis_percentage_detP_probes.R
 
 tmp <- read.table("output/tables/percentage_detP_probes.txt") |> 
-  assertr::verify(!is.na(percentage.detP.signi) & is.numeric(percentage.detP.signi)) |> 
-  dplyr::rename(array_sentrix_id = sentrix_id) |> 
-  dplyr::rename(array_percentage.detP.signi = percentage.detP.signi) |> 
+  assertr::verify(!is.na(array_percentage.detP.signi) & is.numeric(array_percentage.detP.signi)) |> 
+  dplyr::rename(array_sentrix_id = array_sentrix_id) |> 
   assertr::verify(glass_od.metadata.array_samples$array_sentrix_id %in% array_sentrix_id)
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
