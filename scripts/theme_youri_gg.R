@@ -1,6 +1,6 @@
 #!/usr/bin/env R
 
-youri_gg_theme <- theme(
+theme_youri_gg <- theme(
   text = element_text(family = 'Helvetica'),
   axis.text.x = element_text(angle = 45, hjust = 1),
   legend.position = 'bottom',
