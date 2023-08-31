@@ -1,20 +1,26 @@
 #!/usr/bin/env/R
 
-filter_GLASS_OD_idats <- function(metadata, nrow.check = 0) {
+filter_GLASS_OD_idats <- function(metadata, nrow.check = 0, exclude.suspected.noncodels = T) {
   out <- metadata |> 
-    dplyr::filter(is.na(reason_excluded_patient)) |> 
-    dplyr::filter(is.na(reason_excluded_resection)) |> 
-    dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
-    dplyr::filter(is.na(reason_excluded_array_sample)) |> # formally there are a few replicates that are o.k. but of which the other is better
-    
-    dplyr::filter(study_name == "GLASS-OD") |> # oligosarcoma's from CATNON excl
-    
-    assertr::verify(!is.na(qc.pca.detP.outlier)) |> 
-    dplyr::filter(qc.pca.detP.outlier == F) |> 
-    
+    dplyr::filter(is.na(patient_reason_excluded)) |> 
+    dplyr::filter(is.na(resection_reason_excluded)) |> 
+    dplyr::filter(is.na(isolation_reason_excluded)) |> 
+    dplyr::filter(is.na(array_reason_excluded)) |> # formally there are a few replicates that are o.k. but of which the other is better
+    dplyr::filter(patient_study_name == "GLASS-OD") |> # oligosarcoma's from CATNON excl
+    assertr::verify(!is.na(array_qc.pca.detP.outlier)) |> 
+    dplyr::filter(array_qc.pca.detP.outlier == F) |> 
     assertr::verify(!duplicated(resection_id)) |> 
+    assertr::verify(array_sentrix_id != "204808700074_R04C01")
+  
+  if(exclude.suspected.noncodels == T) {
+    print(dim(out))
     
-    assertr::verify(sentrix_id != "204808700074_R04C01")
+    out <- out |> 
+      dplyr::filter(patient_suspected_noncodel == F)
+    
+    print(dim(out))
+  }
+  
   
   if(nrow.check > 0) {
     out <- out |> 
@@ -27,4 +33,5 @@ filter_GLASS_OD_idats <- function(metadata, nrow.check = 0) {
   
   return (out)
 }
+
 
