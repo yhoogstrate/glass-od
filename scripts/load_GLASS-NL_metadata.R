@@ -108,16 +108,18 @@ rm(tmp)
 
 #' from: scripts/analysis_unsupervised_qc.R
 
+
 tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |> 
-  assertr::verify(!is.na(qc.pca.comp1)) |> 
-  assertr::verify(!is.na(qc.pca.detP.outlier)) |> 
-  assertr::verify(glass_nl.metadata.array_samples$array_sentrix_id %in% sentrix_id)
+  dplyr::rename_with( ~ paste0("array_", .x)) |> 
+  assertr::verify(!is.na(array_qc.pca.comp1)) |> 
+  assertr::verify(!is.na(array_qc.pca.detP.outlier)) |> 
+  assertr::verify(glass_nl.metadata.array_samples$array_sentrix_id %in% array_sentrix_id)
 
 
 glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(qc.pca.comp1)) |> 
-  assertr::verify(!is.na(qc.pca.detP.outlier))
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(array_qc.pca.comp1)) |> 
+  assertr::verify(!is.na(array_qc.pca.detP.outlier))
 
 rm(tmp)
 
@@ -130,38 +132,37 @@ rm(tmp)
 tmp <- c(
   list.files(path = "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/",
              pattern = "*_scores_cal.csv", recursive = TRUE)) |>
-  data.frame(filename = _) |>
-  dplyr::mutate(mnp_predictBrain_filename = paste0("data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/", filename)) |>
-  dplyr::mutate(mnp_predictBrain_version = gsub("^.+predictBrain_([^_\\/]+)[_/].+$","\\1", filename)) |>
-  dplyr::mutate(sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", filename)) |>
-  assertr::verify(!is.na(sentrix_id))|> 
-  assertr::verify(!duplicated(sentrix_id)) |>  # only one version per sentrix_id desired
-  assertr::verify(sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
+  data.frame(array_mnp_predictBrain_v12.8_filename = _) |>
+  dplyr::mutate(array_mnp_predictBrain_v12.8_filename = paste0("data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/", array_mnp_predictBrain_v12.8_filename)) |>
+  dplyr::mutate(array_mnp_predictBrain_v12.8_version = gsub("^.+predictBrain_([^_\\/]+)[_/].+$","\\1", array_mnp_predictBrain_v12.8_filename)) |> 
+  assertr::verify(array_mnp_predictBrain_v12.8_version == "v12.8") |> 
+  dplyr::mutate(array_mnp_predictBrain_v12.8_version = NULL) |> 
+  dplyr::mutate(array_sentrix_id = gsub("^.+/([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", array_mnp_predictBrain_v12.8_filename)) |>
+  assertr::verify(!is.na(array_sentrix_id))|> 
+  assertr::verify(!duplicated(array_sentrix_id)) |>  # only one version per sentrix_id desired
+  assertr::verify(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_mnp_reportBrain_csv(mnp_predictBrain_filename, paste0("mnp_predictBrain_", mnp_predictBrain_version, "_"))) |>
+  dplyr::mutate(tmp = parse_mnp_reportBrain_csv(array_mnp_predictBrain_v12.8_filename, paste0("array_mnp_predictBrain_v12.8_"))) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
+  dplyr::mutate(array_mnp_predictBrain_v12.8_filename = NULL) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 235)
     return(.)
   })() |> 
-  assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
-  assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_A_IDH_LG)) |>
-  assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_A_IDH_HG)) |>
-  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr = log(mnp_predictBrain_v12.8_cal_A_IDH_HG / mnp_predictBrain_v12.8_cal_A_IDH_LG)) |> 
-  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr_neat = log(
-    (mnp_predictBrain_v12.8_cal_A_IDH_HG / (1-mnp_predictBrain_v12.8_cal_A_IDH_HG))
-    / 
-      (mnp_predictBrain_v12.8_cal_A_IDH_LG / (1-mnp_predictBrain_v12.8_cal_A_IDH_LG))
-  ))
+  assertr::verify(!is.na(array_mnp_predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
+  assertr::verify(!is.na(array_mnp_predictBrain_v12.8_cal_A_IDH_LG)) |>
+  assertr::verify(!is.na(array_mnp_predictBrain_v12.8_cal_A_IDH_HG)) |>
+  dplyr::mutate(array_A_IDH_HG__A_IDH_LG_lr_v12.8 = log(array_mnp_predictBrain_v12.8_cal_A_IDH_HG / array_mnp_predictBrain_v12.8_cal_A_IDH_LG))
+  #dplyr::mutate(A_IDH_HG__A_IDH_LG_lr_neat = log(    (mnp_predictBrain_v12.8_cal_A_IDH_HG / (1-mnp_predictBrain_v12.8_cal_A_IDH_HG))    /     (mnp_predictBrain_v12.8_cal_A_IDH_LG / (1-mnp_predictBrain_v12.8_cal_A_IDH_LG))   ))
 
 
 
 glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(mnp_predictBrain_v12.8_cal_class)) |> 
-  assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr)) |> 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(array_mnp_predictBrain_v12.8_cal_class)) |> 
+  assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr_v12.8)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 235)
@@ -176,16 +177,16 @@ rm(tmp)
 
 
 tmp <- list.files(path = "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/",  pattern = "_ffpe_frozen.txt", recursive = TRUE) |> 
-  data.frame(mnp_QC_FrozenFFPEstatus_table = _) |> 
-  dplyr::mutate(mnp_QC_FrozenFFPEstatus_table = paste0("data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/", mnp_QC_FrozenFFPEstatus_table)) |>
+  data.frame(array_mnp_QC_v12.8_FrozenFFPEstatus_table = _) |> 
+  dplyr::mutate(array_mnp_QC_v12.8_FrozenFFPEstatus_table = paste0("data/GLASS_NL/Methylation/Heidelberg/brain_classifier_v12.8_sample_report__v1.1__131/", array_mnp_QC_v12.8_FrozenFFPEstatus_table)) |>
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_mnp_FrozenFFPEstatus_table(mnp_QC_FrozenFFPEstatus_table, "mnp_QC_")) |>
+  dplyr::mutate(tmp = parse_mnp_FrozenFFPEstatus_table(array_mnp_QC_v12.8_FrozenFFPEstatus_table, "array_mnp_QC_v12.8_")) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
-  assertr::verify(!is.na(sentrix_id))|> 
-  assertr::verify(!duplicated(sentrix_id)) |> 
-  assertr::verify(sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
-  dplyr::mutate(mnp_QC_FrozenFFPEstatus_table = NULL) |> 
+  dplyr::mutate(array_mnp_QC_v12.8_FrozenFFPEstatus_table = NULL) |> 
+  assertr::verify(!is.na(array_sentrix_id)) |> 
+  assertr::verify(!duplicated(array_sentrix_id)) |> 
+  assertr::verify(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 235)
@@ -195,9 +196,9 @@ tmp <- list.files(path = "data/GLASS_NL/Methylation/Heidelberg/brain_classifier_
 
 
 glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(mnp_QC_predicted_array_type)) |> 
-  assertr::verify(!is.na(mnp_QC_predicted_sample_type)) |> 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(array_mnp_QC_v12.8_predicted_array_type)) |> 
+  assertr::verify(!is.na(array_mnp_QC_v12.8_predicted_sample_type)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 235)

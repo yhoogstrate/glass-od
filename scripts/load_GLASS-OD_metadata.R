@@ -381,17 +381,18 @@ rm(tmp)
 ## Heidelberg 12.8 Frozen ~ FFPE status ----
 
 tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/",  pattern = "_ffpe_frozen.txt", recursive = TRUE) |> 
-  data.frame(array_mnp_QC_FrozenFFPEstatus_table = _) |> 
-  dplyr::mutate(array_mnp_QC_FrozenFFPEstatus_table = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", array_mnp_QC_FrozenFFPEstatus_table)) |>
+  
+  data.frame(array_mnp_QC_v12.8_FrozenFFPEstatus_table = _) |> 
+  dplyr::mutate(array_mnp_QC_v12.8_FrozenFFPEstatus_table = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", array_mnp_QC_v12.8_FrozenFFPEstatus_table)) |>
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = parse_mnp_FrozenFFPEstatus_table(array_mnp_QC_FrozenFFPEstatus_table, "array_mnp_QC_")) |>
+  dplyr::mutate(tmp = parse_mnp_FrozenFFPEstatus_table(array_mnp_QC_v12.8_FrozenFFPEstatus_table, "array_mnp_QC_v12.8_")) |>
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
-  dplyr::rename(array_sentrix_id = sentrix_id) |> 
+  dplyr::mutate(array_mnp_QC_v12.8_FrozenFFPEstatus_table = NULL) |> 
+  
   assertr::verify(!is.na(array_sentrix_id)) |> 
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
-  dplyr::mutate(array_mnp_QC_FrozenFFPEstatus_table = NULL) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 222)
@@ -401,8 +402,8 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(array_mnp_QC_predicted_array_type)) |> 
-  assertr::verify(!is.na(array_mnp_QC_predicted_sample_type)) |> 
+  assertr::verify(!is.na(array_mnp_QC_v12.8_predicted_array_type)) |> 
+  assertr::verify(!is.na(array_mnp_QC_v12.8_predicted_sample_type)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 222)
