@@ -4,6 +4,10 @@
 # load data ----
 
 
+source('scripts/load_functions.R')
+source('scripts/load_themes.R')
+
+
 if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
@@ -20,39 +24,87 @@ if(!exists('glass_nl.metadata.array_samples')) {
 #   source('scripts/load_G-SAM_metadata.R')
 # }
 
-# plot ----
+
+# plot LASSO 10xFC training ----
+
+
+cv_model_probe_based <- readRDS("cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__probe_based__train_paramters.Rds")
+
+plot(cv_model_probe_based)
+# @todo export & ggplot
+
+
+
+plt <- data.frame(
+  lambda = cv_model_probe_based$lambda,
+  cvm = cv_model_probe_based$cvm,
+  cvlo = cv_model_probe_based$cvlo,
+  cvup = cv_model_probe_based$cvup,
+  nzero = cv_model_probe_based$nzero
+) |> 
+  dplyr::mutate(i = 1:dplyr::n()) |> 
+  dplyr::mutate(show_label = i %in% c(1,10,20,30,40,50,60,70,80,90,100))
+
+
+ggplot(plt, aes(x=log(lambda), y=cvm, label=nzero)) +
+  geom_ribbon(aes(ymin=cvlo, ymax=cvup),alpha=0.1) +
+  geom_vline(xintercept=log(cv_model_probe_based$lambda.min), col="gray40", lty=2, lwd=theme_cellpress_lwd) +
+  geom_vline(xintercept=log(cv_model_probe_based$lambda.1se), col="gray40", lty=2, lwd=theme_cellpress_lwd) +
+  geom_point(cex=0.4, col="red") +
+  geom_text(data=subset(plt, show_label == T),y=50, size=theme_cellpress_size) +
+  scale_y_continuous(limits = c(0, 50)) +
+  labs(x = expression(Log(lambda)), y="Mean-Squared Error") +
+  theme_cellpress
+
+
+ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_training.pdf", width=8.5/3, height=2.5)
+
+
+
+# plot training vs predicted scatter ----
+
+# plot training (AC) vs predicted (OLI) ----
 
 plt <- rbind(
   glass_od.metadata.array_samples |>
     filter_GLASS_OD_idats(163) |>
     dplyr::select(
-      sentrix_id,
-      A_IDH_HG__A_IDH_LG_lr__lasso_fit,
-      mnp_predictBrain_v12.8_cal_class
+      array_sentrix_id,
+      array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
+      array_mnp_predictBrain_v12.8_cal_class
     ) |>
-    dplyr::rename(AcCGAP_score = A_IDH_HG__A_IDH_LG_lr__lasso_fit) |>
+    dplyr::rename(AcCGAP_score = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |>
     dplyr::mutate(
-      type = "predictions by full AcCGAP model",
+      type = "full AcCGAP model",
       dataset = "GLASS-OD"
     ),
   glass_nl.metadata.array_samples |>
-    filter_GLASS_NL_idats(202) |>
+    filter_GLASS_NL_idats(218) |>
     dplyr::select(
-      sentrix_id,
-      A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV,
-      mnp_predictBrain_v12.8_cal_class
+      array_sentrix_id,
+      `array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV_v12.8`,
+      array_mnp_predictBrain_v12.8_cal_class
     ) |>
-    dplyr::rename(AcCGAP_score = A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV) |>
+    dplyr::rename(AcCGAP_score = `array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV_v12.8`) |>
     dplyr::mutate(
-      type = "predictions by 10xCV AcCGAP model",
+      type = "10xCV AcCGAP model",
       dataset = "GLASS-NL"
-    )
-)
+    ) 
+)|> 
+  dplyr::mutate(class = paste0(dataset, ":\n", type))
 
 
-ggplot(plt, aes(x=dataset, y=AcCGAP_score, col=type)) +
-  ggbeeswarm::geom_quasirandom() +
-  ggpubr::stat_compare_means(label.x.npc=0.4) +
-  theme_bw()
+ggplot(plt, aes(x=class, y=AcCGAP_score, fill=class, col=class)) +
+  ggbeeswarm::geom_quasirandom(pch=21, show_guide = FALSE) +
+  ggpubr::stat_compare_means(label.x.npc=0.4, size=theme_cellpress_size, show_guide = FALSE) +
+  labs(col="", fill="",x = "", y="AcCGAP score") +
+  scale_fill_manual(values = c('GLASS-NL:\n10xCV AcCGAP model'='lightblue',
+                                'GLASS-OD:\nfull AcCGAP model'='lightgreen')) +
+  scale_color_manual(values = c('GLASS-NL:\n10xCV AcCGAP model'='darkblue',
+                                'GLASS-OD:\nfull AcCGAP model'='darkgreen')) +
+  theme_cellpress
+
+
+ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_AC_OLI_wilcox.pdf", width=8.5/3, height=2.3)
 
 

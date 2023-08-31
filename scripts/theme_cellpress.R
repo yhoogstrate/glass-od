@@ -30,6 +30,8 @@ theme_cellpress <- theme_bw() +
   axis.text =     element_text(size = 7, family = "Arial", face = "plain"),
   axis.title.x =  element_text(size = 7, family = "Arial", face = "plain"),
   axis.title.y =  element_text(size = 7, family = "Arial", face = "plain"),
+  axis.line =     element_line(linewidth = 0.3),
+  axis.ticks =    element_line(linewidth = 0.3),
   
   strip.text =    element_text(size = 7, family = "Arial", face = "plain", margin=margin(1,1,1,1)),
   strip.text.x =  element_text(size = 7, family = "Arial", face = "plain", margin=margin(1,1,1,1)),
@@ -48,6 +50,8 @@ theme_cellpress <- theme_bw() +
   panel.grid.major.y = element_blank(),
   panel.grid.minor.y = element_blank(),
   panel.spacing =      unit(0.1, "lines"), # facet_grid margin
+  panel.border =       element_blank(), # no sqaure, but two lines instead (axis.line)
+  
   
   legend.position = 'bottom',
   legend.margin=margin(t=-2),
@@ -56,7 +60,8 @@ theme_cellpress <- theme_bw() +
 
 extrafont::loadfonts()
 
-
-
+theme_cellpress_lwd <- 0.25 # pt?
+theme_cellpress_size <- 7 * (3.88 / 11) # ~2.47
+theme_cellpress_segmentsize = 0.5 / 2.14
 
 
