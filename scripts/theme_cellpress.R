@@ -24,14 +24,21 @@
 # extrafonts::loadfonts()
 # sort(extrafont::fonts())
 
+
+
+theme_cellpress_lwd <- 0.5 / 2.14 # pt?
+theme_cellpress_size <- 7 * (3.88 / 11) # ~2.47
+
+
+
 theme_cellpress <- theme_bw() +
   theme(
   text =          element_text(size = 7, family = "Arial", face = "plain"),
   axis.text =     element_text(size = 7, family = "Arial", face = "plain"),
   axis.title.x =  element_text(size = 7, family = "Arial", face = "plain"),
   axis.title.y =  element_text(size = 7, family = "Arial", face = "plain"),
-  axis.line =     element_line(linewidth = 0.3),
-  axis.ticks =    element_line(linewidth = 0.3),
+  axis.line =     element_line(linewidth = theme_cellpress_lwd),
+  axis.ticks =    element_line(linewidth = theme_cellpress_lwd),
   
   strip.text =    element_text(size = 7, family = "Arial", face = "plain", margin=margin(1,1,1,1)),
   strip.text.x =  element_text(size = 7, family = "Arial", face = "plain", margin=margin(1,1,1,1)),
@@ -40,10 +47,17 @@ theme_cellpress <- theme_bw() +
 
   legend.title =  element_text(size = 7, family = "Arial", face = "plain"),
   legend.text =   element_text(size = 7, family = "Arial", face = "plain"),
-
+  
+  legend.position = 'bottom',
+  legend.margin   = margin(t=-2),
+  legend.key.size = unit(0.2, 'lines'),
+  legend.background = element_blank(),
+  legend.box.background = element_blank(),
+  
   plot.title =    element_text(size = 7, family = "Arial", face = "plain"), # `title` covers both title and subtitle
   plot.subtitle = element_text(size = 7, family = "Arial", face = "italic"),
   plot.caption =  element_text(size = 7, family = "Arial", face = "italic"),
+  plot.background = element_blank(),
 
   panel.grid.major.x = element_blank(),
   panel.grid.minor.x = element_blank(),
@@ -51,17 +65,19 @@ theme_cellpress <- theme_bw() +
   panel.grid.minor.y = element_blank(),
   panel.spacing =      unit(0.1, "lines"), # facet_grid margin
   panel.border =       element_blank(), # no sqaure, but two lines instead (axis.line)
+  panel.background = element_blank()
   
   
-  legend.position = 'bottom',
-  legend.margin=margin(t=-2),
-  legend.key.size = unit(0.2, 'lines')
+
 )
 
-extrafont::loadfonts()
 
-theme_cellpress_lwd <- 0.25 # pt?
-theme_cellpress_size <- 7 * (3.88 / 11) # ~2.47
-theme_cellpress_segmentsize = 0.5 / 2.14
+theme_cellpress_with_facet <- theme_cellpress +
+  theme(
+    #axis.ticks = element_blank(),
+        panel.border = element_rect(size=theme_cellpress_lwd, fill=NA)
+        )
+
+extrafont::loadfonts()
 
 
