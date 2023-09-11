@@ -138,7 +138,12 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'view_array_samples') |>
     patient_suspected_noncodel == "true" ~ TRUE,
     patient_suspected_noncodel == "false" ~ FALSE,
     TRUE ~ as.logical(NA)
-  ))
+  )) |> 
+  dplyr::mutate(patient_diagnosis_date = as.Date(patient_diagnosis_date, format = "%d %b %Y")) |> 
+  dplyr::mutate(resection_date = as.Date(resection_date, format = "%d %b %Y")) |> 
+  assertr::verify(is.na(patient_diagnosis_date) | is.na(resection_date) | patient_diagnosis_date <= resection_date)
+
+
 
 stopifnot(length(setdiff(glass_od.metadata.array_samples$array_sentrix_id, tmp$array_sentrix_id)) == 0)
 stopifnot(length(setdiff(tmp$array_sentrix_id, glass_od.metadata.array_samples$array_sentrix_id)) == 0)
@@ -334,6 +339,7 @@ tmp <- c(list.files(
   dplyr::mutate(array_mnp_predictBrain_filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", tmp_filename)) |>
   dplyr::mutate(array_mnp_predictBrain_version = gsub("^.+predictBrain_([^_\\/]+)[_/].+$","\\1", tmp_filename)) |>
   dplyr::mutate(array_sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", tmp_filename)) |>
+  dplyr::mutate(tmp_filename = NULL) |> 
   assertr::verify(!is.na(array_sentrix_id))|> 
   assertr::verify(!duplicated(array_sentrix_id)) |>  # only one version per sentrix_id 
   assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
@@ -350,15 +356,14 @@ tmp <- c(list.files(
   assertr::verify(!is.na(array_mnp_predictBrain_v12.8_cal_A_IDH_LG)) |>
   assertr::verify(!is.na(array_mnp_predictBrain_v12.8_cal_A_IDH_HG)) |>
   
-  dplyr::mutate(array_A_IDH_HG__A_IDH_LG_lr = log(array_mnp_predictBrain_v12.8_cal_A_IDH_HG / array_mnp_predictBrain_v12.8_cal_A_IDH_LG))  |>
-  assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr)) |> 
+  dplyr::mutate(array_A_IDH_HG__A_IDH_LG_lr_v12.8 = log(array_mnp_predictBrain_v12.8_cal_A_IDH_HG / array_mnp_predictBrain_v12.8_cal_A_IDH_LG))  |>
+  assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr_v12.8))
 
-  dplyr::mutate(array_A_IDH_HG__O_IDH_lr = log(array_mnp_predictBrain_v12.8_cal_A_IDH_HG / array_mnp_predictBrain_v12.8_cal_O_IDH))  |>
-  assertr::verify(!is.na(array_A_IDH_HG__O_IDH_lr)) |> 
-  
-  dplyr::mutate(array_A_IDH_HGoligsarc__O_IDH_lr = log((array_mnp_predictBrain_v12.8_cal_A_IDH_HG + array_mnp_predictBrain_v12.8_cal_OLIGOSARC_IDH) / array_mnp_predictBrain_v12.8_cal_O_IDH))  |>
-  assertr::verify(!is.na(array_A_IDH_HGoligsarc__O_IDH_lr))
-  
+
+  #dplyr::mutate(array_A_IDH_HG__O_IDH_lr = log(array_mnp_predictBrain_v12.8_cal_A_IDH_HG / array_mnp_predictBrain_v12.8_cal_O_IDH))  |>
+  #assertr::verify(!is.na(array_A_IDH_HG__O_IDH_lr)) |> 
+  #dplyr::mutate(array_A_IDH_HGoligsarc__O_IDH_lr = log((array_mnp_predictBrain_v12.8_cal_A_IDH_HG + array_mnp_predictBrain_v12.8_cal_OLIGOSARC_IDH) / array_mnp_predictBrain_v12.8_cal_O_IDH))  |>
+  #assertr::verify(!is.na(array_A_IDH_HGoligsarc__O_IDH_lr))
   # dplyr::mutate(A_IDH_HG__A_IDH_LG_lr_neat = log((mnp_predictBrain_v12.8_cal_A_IDH_HG / (1-mnp_predictBrain_v12.8_cal_A_IDH_HG)) /  (mnp_predictBrain_v12.8_cal_A_IDH_LG / (1-mnp_predictBrain_v12.8_cal_A_IDH_LG)) ))  |> 
   # assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr_neat))
 
@@ -367,7 +372,7 @@ tmp <- c(list.files(
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(array_mnp_predictBrain_v12.8_cal_class)) |> 
-  assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr)) |> 
+  assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr_v12.8)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 222)
@@ -416,14 +421,19 @@ rm(tmp)
 
 ## Heidelberg 12.8 CNVP segment files ----
 
-tmp <- query_mnp_12.8_CNVP_segment_csv("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", 222, glass_od.metadata.array_samples$array_sentrix_id) |> 
-  dplyr::rename_with( ~ paste0("array_", .x))
+
+tmp <- query_mnp_12.8_CNVP_segment_csv(
+  "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", 
+  222, 
+  glass_od.metadata.array_samples$array_sentrix_id,
+  "array_mnp_CNVP_v12.8_v5.2_"
+  )
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(array_heidelberg_cnvp_segments)) |> 
-  assertr::verify(!is.na(array_heidelberg_cnvp_version)) |> 
+  assertr::verify(!is.na(array_mnp_CNVP_v12.8_v5.2_CNVP_segments))  |> 
+  assertr::verify(!is.na(array_mnp_CNVP_v12.8_v5.2_CNVP_version)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 222)
