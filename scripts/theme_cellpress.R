@@ -24,7 +24,7 @@
 # extrafonts::loadfonts()
 # sort(extrafont::fonts())
 
-
+# pts to mm: 0.3527777778
 
 theme_cellpress_lwd <- 0.5 / 2.14 # pt?
 theme_cellpress_size <- 7 * (3.88 / 11) # ~2.47
@@ -75,7 +75,7 @@ theme_cellpress <- theme_bw() +
 theme_cellpress_with_facet <- theme_cellpress +
   theme(
     #axis.ticks = element_blank(),
-        panel.border = element_rect(size=theme_cellpress_lwd, fill=NA)
+        panel.border = element_rect(linewidth=theme_cellpress_lwd, fill=NA)
         )
 
 extrafont::loadfonts()
