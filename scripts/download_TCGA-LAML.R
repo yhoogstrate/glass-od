@@ -66,7 +66,25 @@ GDCdownload(query = query)
 # match.file.cases <- getResults(query,cols = c("cases","file_name"))
 # match.file.cases$project <- "TCGA-LGG"
 
-# load ----
+
+query <- TCGAbiolinks::GDCquery(
+  project = "TCGA-LAML",
+  legacy = F,
+  data.category = "Clinical"
+)
+
+
+
+
+TCGAbiolinks::GDCdownload(query = query)
+
+
+
+
+
+
+
+
 
 
 
