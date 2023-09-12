@@ -12,9 +12,12 @@ library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19) # BiocManager::install("I
 
 
 
-source('scripts/youri_gg_theme.R')
 source('scripts/load_functions.R')
 
+
+if(!exists('metadata.cg_probes.epic')) {
+  source('scripts/load_probe_annotations.R')
+}
 
 
 if(!exists('glass_od.metadata.array_samples')) {
@@ -36,17 +39,17 @@ if(!exists('gsam.metadata.array_samples')) {
 
 metadata.glass_od <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(163) |> 
-  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type)
+  dplyr::select(array_sentrix_id, array_channel_green, array_percentage.detP.signi, array_mnp_QC_v12.8_predicted_sample_type)
 
 
 metadata.glass_nl <- glass_nl.metadata.array_samples |> 
   filter_GLASS_NL_idats(218) |> 
-  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type)
+  dplyr::select(array_sentrix_id, array_channel_green, array_percentage.detP.signi, array_mnp_QC_v12.8_predicted_sample_type)
 
 
 metadata.gsam <- gsam.metadata.array_samples |> 
   filter_GSAM_idats(73) |> 
-  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type)
+  dplyr::select(array_sentrix_id, array_channel_green, array_percentage.detP.signi, array_mnp_QC_v12.8_predicted_sample_type)
 
 
 
@@ -59,11 +62,11 @@ targets <- rbind(
   metadata.glass_nl |> dplyr::mutate(dataset = "GLASS-NL"),
   metadata.gsam |> dplyr::mutate(dataset = "G-SAM")
 ) |> 
-  dplyr::mutate(Basename = gsub("_(Grn|Red).idat$","",channel_green)) |> 
-  dplyr::mutate(channel_green = NULL, channel_red = NULL) |> 
-  dplyr::mutate(Sample_Name = paste0(dataset,"_",sentrix_id)) |>
-  dplyr::mutate(Array = gsub("^.+_","",sentrix_id)) |>
-  dplyr::mutate(Slide = gsub("^([0-9]+)_.+$","\\1",sentrix_id))
+  dplyr::mutate(Basename = gsub("_(Grn|Red).idat$","", array_channel_green)) |> 
+  dplyr::mutate(array_channel_green = NULL, array_channel_red = NULL) |> 
+  dplyr::mutate(Sample_Name = paste0(dataset, "_", array_sentrix_id)) |>
+  dplyr::mutate(Array = gsub("^.+_","", array_sentrix_id)) |>
+  dplyr::mutate(Slide = gsub("^([0-9]+)_.+$","\\1", array_sentrix_id))
 
 
 RGSet <- minfi::read.metharray.exp(targets = targets, force = T) #red/green channel together
@@ -75,73 +78,125 @@ rm(RGSet)
 gc()
 
 
-### m-values for all samples ----
+### mask ----
 
 
-mvalue <- minfi::ratioConvert(proc, what = "M")
+masked.value <- ifelse(detP > 0.01 , NA, 1) |> 
+  data.table::as.data.table(keep.rownames = "probe_id") |> 
+  dplyr::filter(probe_id %in% (
+    metadata.cg_probes.epic |> 
+      dplyr::filter(MASK_general == F) |> 
+      dplyr::pull(probe_id)
+  )) |> 
+  tibble::column_to_rownames('probe_id')  |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 760405)
+    assertthat::assert_that(ncol(.) == 454)
+    return(.)
+  })()
 
-stopifnot(rownames(mvalue) == rownames(detP))
-stopifnot(colnames(mvalue) == colnames(detP))
+stopifnot(sum(is.na(masked.value)) > 0)
 
 
-mvalue <-  mvalue |> 
+
+
+### m-values ----
+
+
+mvalue <- minfi::ratioConvert(proc, what = "M") |> 
   assays() |> 
   purrr::pluck('listData') |> 
-  purrr::pluck("M")
-
-
-stopifnot(dim(mvalue) == dim(detP))
-
-
-#mvalue.mask <- mvalue |> 
-#  magrittr::multiply_by(ifelse(detP > 0.01 , NA, 1))
-
-mvalue.mask <- ifelse(detP > 0.01 , NA, 1) |> 
-  data.table::as.data.table(keep.rownames = "probeID") |> 
-  dplyr::filter(probeID %in% (
-    read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |> 
+  purrr::pluck("M") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 865859)
+    assertthat::assert_that(ncol(.) == 454)
+    return(.)
+  })() |> 
+  data.table::as.data.table(keep.rownames = "probe_id") |> 
+  dplyr::filter(probe_id %in% (
+    metadata.cg_probes.epic |> 
       dplyr::filter(MASK_general == F) |> 
-      dplyr::pull(probeID)
+      dplyr::pull(probe_id)
   )) |> 
-  tibble::column_to_rownames('probeID')
-
-dim(mvalue.mask)
-
-
-mvalue <- mvalue |> 
-  data.table::as.data.table(keep.rownames = "probeID") |> 
-  dplyr::filter(probeID %in% (
-    read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |> 
-      dplyr::filter(MASK_general == F) |> 
-      dplyr::pull(probeID)
-  )) |> 
-  tibble::column_to_rownames('probeID')
-
-dim(mvalue)
-
-
-
-
-
+  tibble::column_to_rownames('probe_id') |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 760405)
+    return(.)
+  })()
 
 
 stopifnot(sum(is.na(mvalue)) == 0)
-stopifnot(sum(is.na(mvalue.mask)) > 0)
+stopifnot(targets$array_sentrix_id == colnames(mvalue))
 
 
-stopifnot(targets$sentrix_id == colnames(mvalue))
+saveRDS(mvalue, "cache/mvalues.HQ_samples.Rds")
+
+
+rm(mvalue)
+gc()
+
+
+
+
+
+### beta.values ----
+
+
+beta.value <- minfi::ratioConvert(proc, what = "beta") |> 
+  assays() |> 
+  purrr::pluck('listData') |> 
+  purrr::pluck("Beta") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 865859)
+    assertthat::assert_that(ncol(.) == 454)
+    return(.)
+  })() |> 
+  data.table::as.data.table(keep.rownames = "probe_id") |> 
+  dplyr::filter(probe_id %in% (
+    metadata.cg_probes.epic |> 
+      dplyr::filter(MASK_general == F) |> 
+      dplyr::pull(probe_id)
+  )) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 760405)
+    return(.)
+  })()
+
+
+stopifnot(sum(is.na(beta.value)) == 0)
+stopifnot(targets$array_sentrix_id == colnames(beta.value))
+
+
+saveRDS(beta.value, "cache/beta.values.HQ_samples.Rds")
+
+
+rm(beta.value)
+gc()
+
+
 
 
 # export & cleanup ----
+
+
+
 
 rm(targets, detP, proc)
 gc()
 
 
-saveRDS(mvalue, "cache/mvalues.HQ_samples.Rds")
-saveRDS(mvalue.mask, "cache/mvalues.HQ_samples.detP_mask.Rds")
 
-rm(mvalue, mvalue.mask)
+saveRDS(masked.value, "cache/detP_masked_values.HQ_samples.Rds")
+
+
+
+rm(masked.value)
 gc()
 
 

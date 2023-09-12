@@ -15,7 +15,7 @@ if(!exists('metadata.cg_probes.epic')) {
 # all hq ----
 
 
-data.mvalues.hq_samples <- readRDS("cache/detP_masked_values.HQ_samples.Rds") |> 
+data.beta.values.hq_samples <- readRDS("cache/detP_masked_values.HQ_samples.Rds") |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == (163+218+73))
@@ -23,7 +23,7 @@ data.mvalues.hq_samples <- readRDS("cache/detP_masked_values.HQ_samples.Rds") |>
     return(.)
   })()
 
-data.mvalues.mask.hq_samples <- readRDS("cache/detP_masked_values.HQ_samples.Rds") |> 
+data.beta.values.mask.hq_samples <- readRDS("cache/detP_masked_values.HQ_samples.Rds") |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == (163+218+73))
@@ -31,14 +31,14 @@ data.mvalues.mask.hq_samples <- readRDS("cache/detP_masked_values.HQ_samples.Rds
     return(.)
   })()
 
-stopifnot(colnames(data.mvalues.hq_samples) == colnames(data.mvalues.mask.hq_samples))
-stopifnot(rownames(data.mvalues.hq_samples) == rownames(data.mvalues.mask.hq_samples))
+stopifnot(colnames(data.beta.values.hq_samples) == colnames(data.beta.values.mask.hq_samples))
+stopifnot(rownames(data.beta.values.hq_samples) == rownames(data.beta.values.mask.hq_samples))
 
 
 ## probe table - mask / detP counts ----
 
 
-data.mvalues.probes <- data.mvalues.mask.hq_samples |> 
+data.beta.values.probes <- data.beta.values.mask.hq_samples |> 
   is.na() |> 
   rowSums() |> 
   as.data.frame() |> 
@@ -50,7 +50,7 @@ data.mvalues.probes <- data.mvalues.mask.hq_samples |>
 ## probe table - probe annotation ----
 
 
-data.mvalues.probes <- data.mvalues.probes |> 
+data.beta.values.probes <- data.beta.values.probes |> 
   dplyr::left_join(metadata.cg_probes.epic, by=c('probe_id'='probe_id'), suffix=c('','')) |>  # + annotation of ALL probes
   assertr::verify(MASK_general == F)
 
@@ -58,7 +58,7 @@ data.mvalues.probes <- data.mvalues.probes |>
 ## filter for good probes ----
 
 
-data.mvalues.good_probes <- data.mvalues.probes |> 
+data.beta.values.good_probes <- data.beta.values.probes |> 
   dplyr::filter(detP_good_probe) |> 
   (function(.) {
     print(dim(.))
