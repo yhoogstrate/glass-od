@@ -2,19 +2,14 @@
 
 # load ----
 
+source('scripts/load_functions.R')
+source('scripts/load_themes.R')
+
+library(ggplot2)
 
 if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
-
-
-# if(!exists('data.mvalues.hq_samples')) {
-#   source('scripts/load_mvalues_hq_samples.R')
-# }
-
-
-
-library(ggplot2)
 
 
 # GLASS-OD / OD ----
@@ -22,7 +17,6 @@ library(ggplot2)
 
 metadata <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(163)
-
 
 
 
@@ -36,17 +30,22 @@ plt.split <- rbind(
   plt |>
     dplyr::mutate(col = as.factor(paste0("Grade ",resection_tumor_grade))) |> 
     dplyr::mutate(facet = "Histological grade") |> 
-    dplyr::mutate(stat = '1')
+    dplyr::mutate(stat = 'NA')
   ,
   plt |> 
-    dplyr::mutate(col = ifelse(mnp_predictBrain_v2.0.1_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", mnp_predictBrain_v2.0.1_cal_class)) |> 
+    dplyr::mutate(col = ifelse(array_mnp_predictBrain_v2.0.1_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", array_mnp_predictBrain_v2.0.1_cal_class)) |> 
     dplyr::mutate(facet = "MNP CNS Classifier 114b/2.0.1")  |> 
-    dplyr::mutate(stat = '1')
+    dplyr::mutate(stat = 'NA')
+  # ,
+  # plt |> 
+  #   dplyr::mutate(col = ifelse(array_mnp_predictBrain_v12.5_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", array_mnp_predictBrain_v12.8_cal_class)) |> 
+  #   dplyr::mutate(facet = "MNP CNS Classifier 12.5")  |> 
+  #   dplyr::mutate(stat = 'NA')
   ,
   plt |> 
-    dplyr::mutate(col = ifelse(mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", mnp_predictBrain_v12.8_cal_class)) |> 
+    dplyr::mutate(col = ifelse(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", array_mnp_predictBrain_v12.8_cal_class)) |> 
     dplyr::mutate(facet = "MNP CNS Classifier 12.8")  |> 
-    dplyr::mutate(stat = '1')
+    dplyr::mutate(stat = 'NA')
   ,
   plt |> 
     dplyr::mutate(col = ifelse(isolation_person_name == "USA / Duke", "Batch [US]", "Batch [EU]")) |> 
@@ -55,20 +54,25 @@ plt.split <- rbind(
 )
 
 
-ggplot(plt.split, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-PC2, col=col)) + 
-  facet_grid(cols = vars(facet), scales = "free", space="free") +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  cor.coef.name ="rho", show_guide = FALSE) +
-  geom_point() +
-  theme_classic() + 
-  theme(axis.line = element_line(linewidth=0.35), strip.background = element_rect(size=0.7))+
+
+
+ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-array_PC2, col=col)) + 
+  #facet_grid(cols = vars(facet), scales = "free", space="free") +
+  facet_wrap(~facet, scales="free",ncol=5) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show_guide = FALSE) +
+  geom_point(size=0.8) +
+  theme_cellpress +
   scale_color_manual(values=c(
     "Grade 2"="blue","O_IDH"="blue",    "Batch [EU]"="darkgreen",
     "OLIGOSARC_IDH" = "orange",
-    "NA" = "gray",
+    "NA" = "gray40",
     "other" = "purple",
     "Grade 3"="red","A_IDH_HG"="red",     "Batch [US]"="brown"
   )) +
-  theme(legend.position = 'bottom')
+  labs(x="AcCGAP",y = "-PC2", col="")
+
+
+ggsave("output/figures/vis_LGC_x_PCA__scatter_A.pdf",width=8.5 * 0.95 * (571/516), height = 2.72)
 
 
 
@@ -89,6 +93,65 @@ ggplot(plt, aes(x=PC2, y=median.glass_nl_supervised.methylation, col=isolation_p
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", show_guide = FALSE) +
   geom_point() +
   theme_bw() 
+
+
+
+# pc loadings
+
+pc <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_prcomp.Rds")
+
+
+plot(sort(pc$rotation[,1]), type="l",col="gray")
+lines(sort(pc$rotation[,2]), type="l", col="blue")
+lines(sort(pc$rotation[,3]), type="l", col="gray")
+lines(sort(pc$rotation[,4]), type="l", col="gray")
+lines(sort(pc$rotation[,5]), type="l", col="gray")
+lines(sort(pc$rotation[,6]), type="l", col="gray")
+lines(sort(pc$rotation[,7]), type="l", col="gray")
+lines(sort(pc$rotation[,8]), type="l", col="gray")
+lines(sort(pc$rotation[,9]), type="l", col="gray")
+lines(sort(pc$rotation[,10]), type="l", col="gray")
+abline(h=0, col="red")
+
+
+n = length(pc$rotation[,1])
+
+s1 = sort(pc$rotation[,1])
+fdiv1 = s1[2:n] - s1[1:(n-1)]
+
+s2 = sort(pc$rotation[,2])
+fdiv2 = s2[2:n] - s2[1:(n-1)]
+
+s3 = sort(pc$rotation[,3])
+fdiv3 = s3[2:n] - s3[1:(n-1)]
+
+s4 = sort(pc$rotation[,4])
+fdiv4 = s4[2:n] - s4[1:(n-1)]
+
+s5 = sort(pc$rotation[,5])
+fdiv5 = s5[2:n] - s5[1:(n-1)]
+
+
+plot(sort(fdiv1, decreasing=T), type="l",col="gray",ylim=c(0,0.00001),xlim=c(0,2000))
+lines(sort(fdiv2, decreasing=T), type="l",col="blue")
+lines(sort(fdiv3, decreasing=T), type="l",col="gray")
+lines(sort(fdiv4, decreasing=T), type="l",col="gray")
+lines(sort(fdiv5, decreasing=T), type="l",col="gray")
+
+
+
+#plot(sort(-pc$rotation[,2]), type="l")
+#abline(h=0, col="red")
+
+#plot(sort(pc$rotation[,3]), type="l")
+#abline(h=0, col="red")
+
+#plot(sort(pc$rotation[,4]), type="l")
+#abline(h=0, col="red")
+
+plot(sort(pc$rotation[,5]), type="l")
+abline(h=0, col="red")
+
 
 
 

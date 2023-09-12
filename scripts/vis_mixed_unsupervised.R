@@ -26,40 +26,47 @@ metadata.glass_nl <- glass_nl.metadata.array_samples |>
   filter_GLASS_NL_idats(218)
 
 
-metadata.combi <- data.frame(sentrix_id = c(metadata.glass_od$sentrix_id, metadata.glass_nl$sentrix_id)) |> 
+metadata.combi <- data.frame(array_sentrix_id = c(metadata.glass_od$array_sentrix_id, 
+                                                  metadata.glass_nl$array_sentrix_id)) |> 
   dplyr::left_join(metadata.glass_od |> 
-                     dplyr::select(sentrix_id,
+                     dplyr::select(patient_id,
+                                   
                                    resection_tumor_grade,
-                                   
-                                   mnp_predictBrain_v12.5_cal_class,
-                                   mnp_predictBrain_v2.0.1_cal_class,
-                                   
-                                   mnp_rsGender_11b4_predicted,
-                                   mnp_rsGender_12.8_predicted,
-                                   
                                    resection_number,
                                    resection_id,
-                                   patient_id,
-                                   methylation_bins_1p19q_purity,
                                    
                                    isolation_person_name,
+                                   
+                                   array_sentrix_id,
+                                   array_methylation_bins_1p19q_purity,
+                                   array_mnp_predictBrain_v2.0.1_cal_class,
+                                   array_mnp_predictBrain_v12.5_cal_class,
+                                   array_mnp_predictBrain_v12.8_cal_class,
+
+
+                                   array_methylation_bins_1p19q_purity
                      ) |> 
                      dplyr::rename(batch = isolation_person_name) |> 
-                     dplyr::mutate(dataset = "GLASS-OD"),
-                   by=c('sentrix_id' = 'sentrix_id')) |> 
+                     dplyr::mutate(dataset = "GLASS-OD")
+                   ,
+                   by=c('array_sentrix_id' = 'array_sentrix_id')) |> 
   dplyr::left_join(metadata.glass_nl |> 
-                     dplyr::select(sentrix_id, 
+                     dplyr::select(array_sentrix_id, 
                                    Sample_Type, 
                                    Sample_Name, 
                                    Sample_Sex,
                                    
                                    #mnp_predictBrain_v12.5_cal_class,
                                    #mnp_predictBrain_v2.0.1_cal_class
+                                   array_mnp_predictBrain_v12.8_cal_class,
                                    
                                    WHO_Classification2021
                      ) |> 
                      dplyr::mutate(dataset = "GLASS-NL")
-                   , by=c('sentrix_id'='sentrix_id'), suffix=c('_od','_nl'))  |> 
+                   , by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('_od','_nl'))  |> 
+  dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = ifelse(!is.na(array_mnp_predictBrain_v12.8_cal_class_nl),array_mnp_predictBrain_v12.8_cal_class_nl,array_mnp_predictBrain_v12.8_cal_class_od),
+                array_mnp_predictBrain_v12.8_cal_class_nl = NULL,
+                array_mnp_predictBrain_v12.8_cal_class_od = NULL) |> 
   dplyr::mutate(dataset = ifelse(is.na(dataset_od), dataset_nl, dataset_od), dataset_nl = NULL, dataset_od = NULL) |> 
   dplyr::mutate(tumor_grade = dplyr::case_when(
     resection_tumor_grade == 3 ~ 3,
@@ -84,19 +91,18 @@ metadata.combi <- data.frame(sentrix_id = c(metadata.glass_od$sentrix_id, metada
   dplyr::left_join(
     rbind(
       metadata.glass_od |> 
-        dplyr::select("sentrix_id", "mnp_predictBrain_v12.8_cal_class", starts_with("PC.GLASS_OD_NL_combined_excl_1P19Q."))
-      #dplyr::select("sentrix_id", "mnp_predictBrain_v12.8_cal_class", starts_with("PC.GLASS_OD_NL_combined."))
+        dplyr::select("array_sentrix_id", "array_mnp_predictBrain_v12.8_cal_class", starts_with("array_PC.GLASS_OD_NL_combined_excl_1P19Q."))
       ,
       metadata.glass_nl |> 
-        dplyr::select("sentrix_id", "mnp_predictBrain_v12.8_cal_class", starts_with("PC.GLASS_OD_NL_combined_excl_1P19Q."))
-      #dplyr::select("sentrix_id", "mnp_predictBrain_v12.8_cal_class", starts_with("PC.GLASS_OD_NL_combined."))
+        dplyr::select("array_sentrix_id", "array_mnp_predictBrain_v12.8_cal_class", starts_with("array_PC.GLASS_OD_NL_combined_excl_1P19Q."))
     )
     ,
-    by=c('sentrix_id'='sentrix_id'), suffix=c('','')
+    by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')
   )
 
 rm(metadata.glass_nl, metadata.glass_od)
 gc()
+
 
 
 
@@ -702,6 +708,39 @@ p3 <- ggplot(plt, aes(x=PC2, y=PC4, col=isolation_person_name == "USA / Duke")) 
 p1 + p2 + p3
 
 
+### fig for export ----
+
+
+
+plt <- metadata.combi |> 
+  dplyr::mutate(col = 
+                  dplyr::case_when(
+                    dataset == "GLASS-OD" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","A_IDH","A_IDH_HG") ~ "v12.8 OD misclassified as AC",
+                    dataset == "GLASS-OD" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","A_IDH","A_IDH_HG") == F ~ "v12.8 OD",
+                    dataset == "GLASS-NL" & array_mnp_predictBrain_v12.8_cal_class %in% c("O_IDH","OLIGOSARC_IDH") ~ "v12.8 AC misclassified as OD",
+                    dataset == "GLASS-NL" & array_mnp_predictBrain_v12.8_cal_class %in% c("O_IDH","OLIGOSARC_IDH") == F ~ "v12.8 AC",
+                  )
+  )
+
+
+
+ggplot(plt, aes(x=array_PC.GLASS_OD_NL_combined_excl_1P19Q.3, y=array_PC.GLASS_OD_NL_combined_excl_1P19Q.4, col=col,
+                label=resection_id)) +
+  geom_point(data = subset(plt, grepl("misclass", col) == F),pch=16, size=1.5, alpha=0.5) +
+  geom_point(data = subset(plt, grepl("misclass", col) == T),pch=16, size=1.5, alpha=0.5) +
+  theme_cellpress + 
+  scale_color_manual(values=c('v12.8 AC'='blue',
+                              'v12.8 OD'='darkgreen',
+                              'v12.8 OD misclassified as AC'='red',
+                              'v12.8 AC misclassified as OD'='orange')) +
+  labs(col = "", x = "PC3", 
+       y = "PC4",
+       subtitle = "PCA on GLASS-NL + GLASS-OD combined, excl 1P / 19Q probes")
+
+ggsave("output/figures/vis_mixed_unsupervised_combined_no1p19_PCA.pdf", width = (8.5/3) * 0.95, height = 2.80)
+
+
+
 
 
 p1 <- ggplot(plt, aes(x=PC.GLASS_OD_NL_combined_excl_1P19Q.3, y=PC.GLASS_OD_NL_combined_excl_1P19Q.4, col=batch_us, label=resection_id)) +
@@ -795,12 +834,12 @@ library(cvAUC)
 
 
 lda.data <- metadata.combi |> 
-  dplyr::select(sentrix_id, dataset, paste0("PC.GLASS_OD_NL_combined_excl_1P19Q.",1:50))  |>  # avoid curse of dimension
+  dplyr::select(array_sentrix_id, dataset, paste0("array_PC.GLASS_OD_NL_combined_excl_1P19Q.",1:50))  |>  # avoid curse of dimension
   dplyr::mutate(dataset = as.factor(dataset)) |> 
   dplyr::mutate(i = 1:dplyr::n()) |> 
   dplyr::mutate(slice = (i %% 10) + 1) |> 
   dplyr::mutate(i = NULL) |> 
-  tibble::column_to_rownames('sentrix_id')
+  tibble::column_to_rownames('array_sentrix_id')
 
 
 #train <- subset(data, split == "TRUE") 
@@ -842,14 +881,18 @@ for(sslice in 1:10) {
     dplyr::mutate(slice = NULL)
   
   lda.predict <- predict(MASS::lda(dataset ~ ., data=lda.train), lda.test |>  dplyr::mutate(slice = NULL) )
+  ds <- lda.test$dataset
+  names(ds) <- rownames(lda.test)
   
-  lda.labels <- c(lda.labels, lda.test$dataset)
+  lda.labels <- c(lda.labels, ds)
   lda.classes <- c(lda.classes, lda.predict$class)
   lda.posterior <- rbind(lda.posterior, lda.predict$posterior)
 
 }
 
 table(lda.classes , lda.labels)
+metadata.combi |> dplyr::filter(array_sentrix_id %in% names(which(lda.classes != lda.labels))) |> 
+  dplyr::select(!contains("_PC."))
 
 
 
@@ -857,8 +900,8 @@ plt <- plt |>
   dplyr::left_join(
     lda.posterior |>
       dplyr::rename_with( ~ paste0("lda.posterior.", .x)) |> 
-      tibble::rownames_to_column('sentrix_id')
-    , by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+      tibble::rownames_to_column('array_sentrix_id')
+    , by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
 
 
 
@@ -870,16 +913,35 @@ plt <- plt |>
 #rocobj <- pROC::roc(lda.labels, lda.posterior$`GLASS-OD`)
 #auc <- round(pROC::auc(lda.labels, lda.posterior$`GLASS-NL`),5)
 
+
 rocobj <- pROC::roc(lda.labels, lda.classes)
 auc <- round(pROC::auc(lda.labels, lda.classes),4)
 
 pROC::ggroc(rocobj, colour = 'red', size = 1) +
-  ggtitle(paste0('ROC Curve ', '(AUC = ', auc, ') - astrocytoma vs. oligodendroglioma')) +
   theme_bw()+ 
-  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), color="grey", linetype="dashed")
+  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), color="grey", linetype="dashed") +
+  labs(subtitle = paste0('ROC Curve - LDA AC vs. OD ', '(AUC = ', auc, ')')) +
+  theme_bw() +
+  theme_cellpress
+
+
+ggsave("output/figures/vis_mixed_unsupervised_combined_LDA_ROC.pdf", width = (8.5/3) * 0.95, height = 2.65)
+
 
 
 ### diff confidence/probabilities HG vs LG ----
+
+
+
+plt <- metadata.combi |> 
+  dplyr::left_join(
+    lda.posterior |>
+      dplyr::rename_with( ~ paste0("lda.posterior.", .x)) |> 
+      tibble::rownames_to_column('array_sentrix_id')
+    , by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
+
+
 
 
 plt.p <- rbind(
@@ -891,20 +953,33 @@ plt.p <- rbind(
     dplyr::filter(dataset == "GLASS-OD") |> 
     dplyr::mutate(lda.posterior = `lda.posterior.GLASS-NL`)
 ) |> 
-  dplyr::mutate(classification_status = ifelse(lda.posterior < 0.5, "match", "misclassification"))
+  dplyr::mutate(classification_status = ifelse(lda.posterior < 0.5, "match", "misclassification")) |> 
+  dplyr::filter(!is.na(tumor_grade_h_l)) |> 
+  dplyr::mutate(tumor_grade_h_l = factor(tumor_grade_h_l, levels=c("low grade", "high grade"))) |> 
+  dplyr::filter(!is.na(tumor_grade_h_l))
+
+table(plt.p$dataset)
 
 
-ggplot(plt.p, aes(x=col.grading1, y=-log(lda.posterior), col=classification_status)) +
-  facet_grid(cols = vars(dataset)) +
-  ggbeeswarm::geom_quasirandom() +
-  ggpubr::stat_compare_means(label.x.npc=0.4, method = "wilcox.test", show_guide  = FALSE) +
-  theme_bw() + 
+
+
+
+
+ggplot(plt.p, aes(x=tumor_grade_h_l, y=-log(lda.posterior), col=classification_status)) +
+  geom_hline(yintercept = 0, lwd=theme_cellpress_lwd) +
+  #facet_grid(cols = vars(dataset)) +
+  facet_wrap(~dataset, scales="free") +
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
+  ggpubr::stat_compare_means(aes(group=tumor_grade_h_l), label.x.npc=0.1, method = "wilcox.test", show_guide  = FALSE,  size=theme_cellpress_size) + 
   labs(y = "-log( LDA posterior probability )") +
   geom_hline(yintercept = -log(0.5), col="red", lwd=0.5,lty=2) +
   scale_color_manual(values=c('match'='black', 'misclassification' = 'red')) + 
-  theme(  legend.position = "bottom")
+  theme_cellpress +
+  labs(x=NULL, col=NULL) +
+  ylim(0, 72) 
 
 
+ggsave("output/figures/vis_mixed_unsupervised__combined_posterior_wilcox.pdf", width=(8.5*0.95)/3, height=2.75)
 
 
 

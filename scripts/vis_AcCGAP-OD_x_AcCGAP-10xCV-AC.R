@@ -48,8 +48,8 @@ plt <- data.frame(
 
 ggplot(plt, aes(x=log(lambda), y=cvm, label=nzero)) +
   geom_ribbon(aes(ymin=cvlo, ymax=cvup),alpha=0.1) +
-  geom_vline(xintercept=log(cv_model_probe_based$lambda.min), col="gray40", lty=2, lwd=theme_cellpress_lwd) +
-  geom_vline(xintercept=log(cv_model_probe_based$lambda.1se), col="gray40", lty=2, lwd=theme_cellpress_lwd) +
+  geom_vline(xintercept=log(cv_model_probe_based$lambda.min), col="gray50", lty=2, lwd=theme_cellpress_lwd) +
+  geom_vline(xintercept=log(cv_model_probe_based$lambda.1se), col="gray50", lty=2, lwd=theme_cellpress_lwd) +
   geom_point(cex=0.4, col="red") +
   geom_text(data=subset(plt, show_label == T),y=50, size=theme_cellpress_size) +
   scale_y_continuous(limits = c(0, 50)) +
@@ -57,11 +57,49 @@ ggplot(plt, aes(x=log(lambda), y=cvm, label=nzero)) +
   theme_cellpress
 
 
-ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_training.pdf", width=8.5/3, height=2.5)
+ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_training.pdf", width=(8.5*0.95)/3, height=2.5)
 
 
 
 # plot training vs predicted scatter ----
+
+
+#"array_A_IDH_HG__A_IDH_lr"               
+#"array_A_IDH_HG__A_IDH_LG_lr_v12.8"   
+#"array_A_IDH_HG__A_IDH_LG_lr__lasso_fit"
+
+plt <- glass_nl.metadata.array_samples |>
+  filter_GLASS_NL_idats(218) |>
+  dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = ifelse(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH","A_IDH_LG","A_IDH_HG") == F, "other", array_mnp_predictBrain_v12.8_cal_class)) |> 
+  dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = ifelse(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH","A_IDH_LG"), "A_IDH [_LG]", array_mnp_predictBrain_v12.8_cal_class))
+
+
+ggplot(plt, aes(
+  y=`array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV_v12.8`,
+  x=array_A_IDH_HG__A_IDH_LG_lr_v12.8,
+  col=array_mnp_predictBrain_v12.8_cal_class,
+  fill=array_mnp_predictBrain_v12.8_cal_class
+  #label=sentrix_id
+)) +
+  geom_point(pch=21,cex=0.4) +
+  #ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", fill="1", size=theme_cellpress_size) +
+  labs(subtitle = "Linear predictor LGC [10x CV] GLASS-NL", x= "observed", y="predicted [10x CV]", col="", fill="") +
+  scale_color_manual(values = c(
+    'A_IDH [_LG]' = 'lightblue',
+    'A_IDH_HG' =  alpha('darkblue',0.6),
+    'other' = 'orange'
+  )) +
+  scale_fill_manual(values = c(
+    'A_IDH [_LG]' = 'lightblue',
+    'A_IDH_HG' = alpha('darkblue',0.6),
+    'other' = 'orange'
+  )  ) +
+  theme_cellpress
+
+
+ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_scatter_observed_predicted.pdf", width=(8.5*0.95)/3, height=2.65)
+
+
 
 # plot training (AC) vs predicted (OLI) ----
 
@@ -105,6 +143,6 @@ ggplot(plt, aes(x=class, y=AcCGAP_score, fill=class, col=class)) +
   theme_cellpress
 
 
-ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_AC_OLI_wilcox.pdf", width=8.5/3, height=2.3)
+ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_AC_OLI_wilcox.pdf", width=(8.5*0.95)/3, height=2.5)
 
 

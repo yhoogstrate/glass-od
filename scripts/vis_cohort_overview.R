@@ -59,9 +59,6 @@ p1 / p2
 # MNP brain classes ----
 
 
-plt <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(163) 
-
 
 plt <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(180, exclude.suspected.noncodels = F) |> 
@@ -83,8 +80,8 @@ plt <- glass_od.metadata.array_samples |>
   dplyr::mutate(classifier_version_txt = factor(gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version), levels=c("v2.0.1", "v12.5",  "v12.8" )))
 
 
-
-
+plt.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |> dplyr::pull("patient_suspected_noncodel") |>  table()
+plt <- plt |> dplyr::mutate(patient_suspected_noncodel = paste0(patient_suspected_noncodel, " n=",plt.counts[plt$patient_suspected_noncodel]) )
 
 
 cols = c('A_IDH [_LG]' = 'lightblue',
@@ -98,19 +95,49 @@ cols = c('A_IDH [_LG]' = 'lightblue',
          )
 
 
-ggplot(plt, aes(x = patient_id, y = resection_number, col=col, fill=col)) +
+ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
   facet_grid(cols=vars(patient_suspected_noncodel),  rows=vars(classifier_version_txt), scales = "free", space="free") +
-  geom_point(pch=22,size=1.75,alpha=0.5) +
+  geom_point(pch=15,size=1.75,alpha=0.65) +
   scale_color_manual(values=cols) +
-  scale_fill_manual(values=cols) +
   labs(x = "patient",y="resection #", col="",fill="") +
   ylim(0.5,5.5) +
-  theme_bw() +
-  theme_cellpress + 
+  theme_cellpress_with_facet +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
 
 
 ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.95, heigh = 2.5)
+
+
+
+# misclassifications more common further away from Dx & R1 -
+## no clear timing effect, but clear recurrence effect
+
+
+## p ~ r ----
+
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(163) |> 
+  dplyr::filter(!is.na(resection_date) & !is.na(patient_diagnosis_date)) |> 
+  #dplyr::select(resection_id, patient_diagnosis_date, resection_date) |> 
+  dplyr::mutate(time_after_dx = resection_date - patient_diagnosis_date) |> 
+  dplyr::filter(time_after_dx >= 0) |> 
+  dplyr::mutate(misclass = dplyr::case_when(
+    array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH","A_IDH_HG","A_IDH_LG") ~ "Yes: Astro",
+    array_mnp_predictBrain_v12.8_cal_class %in% c("O_IDH","OLIGOSARC_IDH") ~ "No: Oligo",
+    T ~ "Yes - other"
+  )) |> 
+  dplyr::mutate(stage_disease = ifelse(resection_number == 1, "primary tumours", "recurrent tumours")) |> 
+  dplyr::select(misclass, stage_disease) |> 
+  table() |> 
+  as.data.frame()
+
+
+
+ggplot(plt, aes(x=stage_disease, y = Freq, fill=misclass)) + 
+  geom_bar(stat="identity") +
+  labs(y= "frequency", x=NULL, col="Oligo misclassified") +
+  theme_cellpress
 
 
 
