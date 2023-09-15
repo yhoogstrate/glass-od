@@ -12,9 +12,10 @@ library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19) # BiocManager::install("I
 
 
 
-if(!exists('youri_gg_theme')) {
-  source('scripts/youri_gg_theme.R')
+if(!exists('metadata.cg_probes.epic')) {
+  source('scripts/load_probe_annotations.R')
 }
+
 
 
 if(!exists('glass_od.metadata.array_samples')) {
@@ -37,18 +38,18 @@ source('scripts/load_functions.R')
 
 
 metadata.glass_od <- glass_od.metadata.array_samples |> 
-  dplyr::filter(!is.na(sentrix_id)) |> 
-  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
+  dplyr::filter(!is.na(array_sentrix_id)) |> 
+  dplyr::select(array_sentrix_id, array_channel_green) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (222))
+    assertthat::assert_that(nrow(.) == (275))
     return(.)
   })()
 
 
 metadata.glass_nl <- glass_nl.metadata.array_samples |> 
-  dplyr::filter(!is.na(sentrix_id)) |> 
-  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
+  dplyr::filter(!is.na(array_sentrix_id)) |> 
+  dplyr::select(array_sentrix_id, array_channel_green) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == (235))
@@ -57,11 +58,11 @@ metadata.glass_nl <- glass_nl.metadata.array_samples |>
 
 
 metadata.gsam <- gsam.metadata.array_samples |> 
-  dplyr::filter(!is.na(sentrix_id)) |> 
-  dplyr::select(sentrix_id, channel_green, percentage.detP.signi, mnp_QC_predicted_sample_type) |> 
+  dplyr::filter(!is.na(array_sentrix_id)) |> 
+  dplyr::select(array_sentrix_id, array_channel_green) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (75))
+    assertthat::assert_that(nrow(.) == (79))
     return(.)
   })()
 
@@ -72,16 +73,17 @@ metadata.gsam <- gsam.metadata.array_samples |>
 
 # integrate & make m-values ----
 
+
 targets <- rbind(
   metadata.glass_od |> dplyr::mutate(dataset = "GLASS-OD"),
   metadata.glass_nl |> dplyr::mutate(dataset = "GLASS-NL"),
   metadata.gsam |> dplyr::mutate(dataset = "G-SAM")
   ) |> 
-  dplyr::mutate(Basename = gsub("_(Grn|Red).idat$","",channel_green)) |> 
-  dplyr::mutate(channel_green = NULL, channel_red = NULL) |> 
-  dplyr::mutate(Sample_Name = paste0(dataset,"_",sentrix_id)) |>
-  dplyr::mutate(Array = gsub("^.+_","",sentrix_id)) |>
-  dplyr::mutate(Slide = gsub("^([0-9]+)_.+$","\\1",sentrix_id))
+  dplyr::mutate(Basename = gsub("_(Grn|Red).idat$","", array_channel_green)) |> 
+  dplyr::mutate(array_channel_green = NULL) |> 
+  dplyr::mutate(Sample_Name = paste0(dataset, "_", array_sentrix_id)) |>
+  dplyr::mutate(Array = gsub("^.+_", "", array_sentrix_id)) |>
+  dplyr::mutate(Slide = gsub("^([0-9]+)_.+$","\\1", array_sentrix_id))
 
 
 RGSet <- minfi::read.metharray.exp(targets = targets, force = T) #red/green channel together
@@ -115,25 +117,26 @@ stopifnot(dim(mvalue) == dim(detP))
 #  magrittr::multiply_by(ifelse(detP > 0.01 , NA, 1))
 
 mvalue.mask <- ifelse(detP > 0.01 , NA, 1) |> 
-  data.table::as.data.table(keep.rownames = "probeID") |> 
-  dplyr::filter(probeID %in% (
-    read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |> 
+  data.table::as.data.table(keep.rownames = "probe_id") |> 
+  dplyr::filter(probe_id %in% (
+    metadata.cg_probes.epic |> 
       dplyr::filter(MASK_general == F) |> 
-      dplyr::pull(probeID)
+      dplyr::pull(probe_id)
   )) |> 
-  tibble::column_to_rownames('probeID')
+  tibble::column_to_rownames('probe_id')
+
 
 dim(mvalue.mask)
 
 
 mvalue <- mvalue |> 
-  data.table::as.data.table(keep.rownames = "probeID") |> 
-  dplyr::filter(probeID %in% (
-    read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |> 
+  data.table::as.data.table(keep.rownames = "probe_id") |> 
+  dplyr::filter(probe_id %in% (
+    metadata.cg_probes.epic |> 
       dplyr::filter(MASK_general == F) |> 
-      dplyr::pull(probeID)
+      dplyr::pull(probe_id)
   )) |> 
-  tibble::column_to_rownames('probeID')
+  tibble::column_to_rownames('probe_id')
 
 dim(mvalue)
 

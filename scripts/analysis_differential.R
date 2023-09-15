@@ -6,8 +6,10 @@
 
 library(ggplot2)
 library(minfi)
-source('scripts/youri_gg_theme.R')
+
+
 source('scripts/load_functions.R')
+source('scripts/load_themes.R')
 
 
 if(!exists('data.mvalues.hq_samples')) {

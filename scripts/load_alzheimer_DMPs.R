@@ -1,6 +1,8 @@
 #!/usr/bin/env R
 
 
+# BMC Clinical genetics 2019 ----
+
 data.probes.alzheimer <- read.delim("data/Alzheimer-DMPs-10.1186_s13148-019-0672-7-table-1.txt") |> 
   dplyr::rename(probe_id = DMPs) |> 
   dplyr::rename(chr = Chromosome) |> 
@@ -13,5 +15,10 @@ data.probes.alzheimer <- read.delim("data/Alzheimer-DMPs-10.1186_s13148-019-0672
   dplyr::mutate(label = paste0(GeneID1,";",GeneID2)) |> 
   tibble::tibble()
 
+
+# Nat Com 2022 ----
+
+# https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE203332
+# https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE197305
 
 

@@ -38,7 +38,7 @@ data.glass_od <- data.mvalues.hq_samples |>
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.glass_od$sentrix_id)
+  dplyr::select(metadata.glass_od$array_sentrix_id)
   #(function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
   #dplyr::arrange(mad) |> 
   #dplyr::mutate(mad = NULL)
@@ -53,7 +53,7 @@ data.glass_nl <- data.mvalues.hq_samples |>
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.glass_nl$sentrix_id)
+  dplyr::select(metadata.glass_nl$array_sentrix_id)
   #(function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
   #dplyr::arrange(mad) |> 
   #dplyr::mutate(mad = NULL)
@@ -97,10 +97,16 @@ data.glass_nl.pca <- data.glass_nl.pca.obj |>
 set.seed(123456)
 cv_model_probe_based <- glmnet::cv.glmnet(
   data.glass_nl |>
-    dplyr::select(metadata.glass_nl$sentrix_id) |> 
+    dplyr::select(metadata.glass_nl$array_sentrix_id) |> 
     t(),
-  metadata.glass_nl$A_IDH_HG__A_IDH_LG_lr, alpha = 1, relax=F)
+  metadata.glass_nl$array_A_IDH_HG__A_IDH_LG_lr_v12.8, alpha = 1, relax=F)
+
+saveRDS(cv_model_probe_based, file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__probe_based__train_paramters.Rds")
+
+# @todo export & ggplot
 plot(cv_model_probe_based)
+
+
 
 
 

@@ -1,5 +1,14 @@
 #!/usr/bin/env R 
 
+
+library(minfi)
+library(IlluminaHumanMethylationEPICmanifest)
+library(IlluminaHumanMethylation450kmanifest)
+data(IlluminaHumanMethylation450kmanifest) # HACK!
+#library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19) # BiocManager::install("IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
+
+
+
 # load stuff ----
 
 
@@ -44,8 +53,18 @@ tmp <- rbind(
 
 
 
+# write.table(tmp |> dplyr::mutate(array_sentrix_path = NULL), file="output/tables/percentage_detP_probes_TCGA_LAML.txt")
+# write.table(tmp |> dplyr::mutate(array_sentrix_path = NULL), file="output/tables/percentage_detP_probes.txt")
+
+# out <- rbind(
+#   read.table("output/tables/percentage_detP_probes.txt") |> 
+#     dplyr::rename_with( ~ paste0("array_", .x))
+#   ,
+#   tmp |> 
+#     dplyr::select(array_sentrix_id, array_percentage.detP.signi)
+# )
+
+
 write.table(tmp |> dplyr::mutate(array_sentrix_path = NULL), file="output/tables/percentage_detP_probes.txt")
-
-
 
 
