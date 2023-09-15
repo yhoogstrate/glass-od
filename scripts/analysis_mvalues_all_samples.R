@@ -150,7 +150,7 @@ stopifnot(sum(is.na(mvalue)) == 0)
 stopifnot(sum(is.na(mvalue.mask)) > 0)
 
 
-stopifnot(targets$sentrix_id == colnames(mvalue))
+stopifnot(targets$array_sentrix_id == colnames(mvalue))
 
 # cleanup 
 
