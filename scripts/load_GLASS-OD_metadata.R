@@ -281,14 +281,14 @@ tmp <- c(list.files(
   assertr::verify(!is.na(array_mnp_predictBrain_v12.5_cal_A_IDH_LG))  |> 
   assertr::verify(!is.na(array_mnp_predictBrain_v12.5_cal_A_IDH_HG)) |>  
   assertr::verify(!is.na(array_mnp_predictBrain_v12.5_cal_OLIGOSARC_IDH)) |> 
-  dplyr::mutate(array_A_IDH_HG__A_IDH_lr = log(array_mnp_predictBrain_v2.0.1_cal_A_IDH_HG / array_mnp_predictBrain_v2.0.1_cal_A_IDH)) |> 
-  assertr::verify(!is.na(array_A_IDH_HG__A_IDH_lr))
+  dplyr::mutate(array_A_IDH_HG__A_IDH_lr_v2.0.1 = log(array_mnp_predictBrain_v2.0.1_cal_A_IDH_HG / array_mnp_predictBrain_v2.0.1_cal_A_IDH)) |> 
+  assertr::verify(!is.na(array_A_IDH_HG__A_IDH_lr_v2.0.1))
   #dplyr::mutate(A_IDH_HG__A_IDH_lr_neat = log( (mnp_predictBrain_v2.0.1_cal_A_IDH_HG / (1-mnp_predictBrain_v2.0.1_cal_A_IDH_HG)) /  (mnp_predictBrain_v2.0.1_cal_A_IDH / (1-mnp_predictBrain_v2.0.1_cal_A_IDH)) )) 
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(array_A_IDH_HG__A_IDH_lr)) |> 
+  assertr::verify(!is.na(array_A_IDH_HG__A_IDH_lr_v2.0.1)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 222)
@@ -698,6 +698,24 @@ tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined_no_1P
     return(.)
   })()
 
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+rm(tmp)
+
+
+
+## epiTOC2 ----
+
+
+tmp <- readRDS("cache/analysis_EPITOC2.Rds") |> 
+  dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 163)
+    return(.)
+  })()
+  
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))

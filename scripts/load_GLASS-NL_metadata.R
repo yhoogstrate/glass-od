@@ -275,6 +275,43 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
 rm(tmp)
 
 
+## RNA cell-cycling signature ----
+#' let wel - deze is supervised na primary - recurrent diff
+
+
+tmp <- dplyr::inner_join(
+  read.csv("data/GLASS_NL/Metadata/Cleaned_clinical/metadata_2022/Samplesheet_GLASS_RNAseq__ALL.csv") |> 
+    dplyr::rename(rnaseq_sample_id = GS_ID) |> 
+    dplyr::select(rnaseq_sample_id, Sample_Name),
+  read.csv('data/GLASS_NL/Methylation/Metadata/Datasheet4.csv') |> 
+    dplyr::rename(array_sentrix_id = Sample_ID) |> 
+    dplyr::select(array_sentrix_id, Sample_Name),
+  by=c('Sample_Name'='Sample_Name')
+) |> 
+  dplyr::mutate(Sample_Name = NULL) |> 
+  dplyr::inner_join(
+    readRDS("cache/glass-nl_transcriptional.signatures.Rds") |> 
+      dplyr::rename(rnaseq_cell.cycling.signature = lts.up1) |>  # x-checked, up1
+      dplyr::rename(rnaseq_sample_id = genomescan.sid) |> 
+      dplyr::select(rnaseq_sample_id, rnaseq_cell.cycling.signature),
+    by=c('rnaseq_sample_id'='rnaseq_sample_id')
+  ) |> 
+  dplyr::mutate(rnaseq_sample_id = NULL)
+
+
+
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(sum(!is.na(.$rnaseq_cell.cycling.signature)) == 167)
+    return(.)
+  })()
+
+
+rm(tmp)
+
+
 
 
 ## QC Purity PCA outlier ----
@@ -296,6 +333,8 @@ rm(tmp)
 # rm(PC3_low_purity_samples)
 # 
 # 
+
+
 
 ## ++ below: re-build because mvalue normalisation ++ ----
 
@@ -403,6 +442,23 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
 rm(tmp)
 
+
+
+## epiTOC2 ----
+
+
+tmp <- readRDS("cache/analysis_EPITOC2.Rds") |> 
+  dplyr::filter(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 218)
+    return(.)
+  })()
+
+
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+rm(tmp)
 
 
 

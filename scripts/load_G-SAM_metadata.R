@@ -294,6 +294,24 @@ gsam.metadata.array_samples <- gsam.metadata.array_samples |>
 
 
 
+## epiTOC2 ----
+
+
+tmp <- readRDS("cache/analysis_EPITOC2.Rds") |> 
+  dplyr::filter(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 73)
+    return(.)
+  })()
+
+
+gsam.metadata.array_samples <- gsam.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+rm(tmp)
+
+
+
 
 
 

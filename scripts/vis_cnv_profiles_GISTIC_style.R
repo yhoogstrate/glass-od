@@ -5,7 +5,10 @@ if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
 
-source('scripts/load_chrom_sizes.R')
+
+#source('scripts/load_chrom_sizes.R')
+source('scripts/load_themes.R')
+
 
 
 library(ggplot2)
@@ -16,9 +19,9 @@ library(patchwork)
 # obtain data ----
 
 
+
 metadata.all <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(163) |> 
-  filter_primaries_and_last_recurrences(136) |> 
   dplyr::mutate(resection_tumor_hg = ifelse(resection_tumor_grade == 3, 1, 0)) # 1 or 0 for regression multiplication factor
 
 
@@ -49,14 +52,14 @@ f <- function(fn, purity) {
 
 
 data.cnv.profiles <- metadata.all |> 
-  dplyr::select(sentrix_id, heidelberg_cnvp_bins, methylation_bins_1p19q_purity) |> 
+  dplyr::select(array_sentrix_id, array_heidelberg_cnvp_bins, array_methylation_bins_1p19q_purity) |> 
   dplyr::rowwise() |> 
-  dplyr::mutate(tmp = f(heidelberg_cnvp_bins, methylation_bins_1p19q_purity)) |> 
+  dplyr::mutate(tmp = f(array_heidelberg_cnvp_bins, array_methylation_bins_1p19q_purity)) |> 
   dplyr::ungroup() |> 
   tidyr::unnest(tmp) |> 
-  dplyr::mutate(heidelberg_cnvp_bins = NULL) |> 
-  dplyr::mutate(methylation_bins_1p19q_purity = NULL) |> 
-  tibble::column_to_rownames('sentrix_id')
+  dplyr::mutate(array_heidelberg_cnvp_bins = NULL) |> 
+  dplyr::mutate(array_methylation_bins_1p19q_purity = NULL) |> 
+  tibble::column_to_rownames('array_sentrix_id')
 
 
 metadata.cnv.profiles <- data.frame(cnvp_bin = colnames(data.cnv.profiles)) |> 
@@ -75,14 +78,19 @@ data.cnv.profiles <- data.cnv.profiles |>
 
 # layer g3 ~ g2 ----
 
+
 metadata.g3.g2 <- metadata.all |> 
-  dplyr::filter(!is.na(resection_tumor_grade))
+  dplyr::filter(!is.na(resection_tumor_grade)) |> 
+  filter_first_G2_and_last_G3(109) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(patient_factor = as.factor(ifelse(dplyr::n() == 2, paste0("p",patient_id), "other"))) |> 
+  dplyr::ungroup()
 
 
 data.cnv.profiles.g3.g2 <- data.cnv.profiles |> 
   t() |> 
   as.data.frame() |> 
-  dplyr::select(metadata.g3.g2$sentrix_id) |> 
+  dplyr::select(metadata.g3.g2$array_sentrix_id) |> 
   t() |> 
   as.data.frame() 
 
@@ -90,12 +98,12 @@ data.cnv.profiles.g3.g2 <- data.cnv.profiles |>
 ## limma: resection_grade ----
 
 
-design.g3.g2 <- model.matrix(~resection_tumor_hg, data=metadata.g3.g2 |> tibble::column_to_rownames('sentrix_id'))
+design.g3.g2 <- model.matrix(~patient_factor + resection_tumor_hg, data=metadata.g3.g2 |> tibble::column_to_rownames('array_sentrix_id'))
 
 
 fit <- limma::lmFit(t(data.cnv.profiles.g3.g2), design.g3.g2)
 fit <- limma::eBayes(fit)
-stats.g3.g2 <- limma::topTable(fit, n=nrow(fit), sort="p") |> # adjust="BH"
+stats.g3.g2 <- limma::topTable(fit, n=nrow(fit), sort="p", coef="resection_tumor_hg") |> # adjust="BH"
   tibble::rownames_to_column('cnvp_bin')   |> 
   dplyr::left_join(metadata.cnv.profiles, by=('cnvp_bin'='cnvp_bin'), suffix=c('','')) 
 
@@ -106,10 +114,10 @@ stats.g3.g2 <- limma::topTable(fit, n=nrow(fit), sort="p") |> # adjust="BH"
 
 quantiles.g2 <- metadata.g3.g2 |> 
   dplyr::filter(resection_tumor_grade == 2) |> 
-  dplyr::select(sentrix_id) |> 
-  dplyr::left_join(data.cnv.profiles.g3.g2 |> tibble::rownames_to_column('sentrix_id'),
-                   by=c('sentrix_id' = 'sentrix_id'), suffix=c('','')) |> 
-  tibble::column_to_rownames('sentrix_id') |> 
+  dplyr::select(array_sentrix_id) |> 
+  dplyr::left_join(data.cnv.profiles.g3.g2 |> tibble::rownames_to_column('array_sentrix_id'),
+                   by=c('array_sentrix_id' = 'array_sentrix_id'), suffix=c('','')) |> 
+  tibble::column_to_rownames('array_sentrix_id') |> 
   pbapply::pblapply(function(x) {return(quantile(x))}) |> 
   as.data.frame() |> 
   t() |> 
@@ -120,10 +128,10 @@ quantiles.g2 <- metadata.g3.g2 |>
 
 quantiles.g3 <- metadata.g3.g2 |> 
   dplyr::filter(resection_tumor_grade == 3) |> 
-  dplyr::select(sentrix_id) |> 
-  dplyr::left_join(data.cnv.profiles.g3.g2 |> tibble::rownames_to_column('sentrix_id'),
-                   by=c('sentrix_id' = 'sentrix_id'), suffix=c('','')) |> 
-  tibble::column_to_rownames('sentrix_id') |> 
+  dplyr::select(array_sentrix_id) |> 
+  dplyr::left_join(data.cnv.profiles.g3.g2 |> tibble::rownames_to_column('array_sentrix_id'),
+                   by=c('array_sentrix_id' = 'array_sentrix_id'), suffix=c('','')) |> 
+  tibble::column_to_rownames('array_sentrix_id') |> 
   pbapply::pblapply(function(x) {return(quantile(x))}) |> 
   as.data.frame() |> 
   t() |> 
@@ -148,35 +156,37 @@ quantiles.g3.g2 <- rbind(
 
 plt <- quantiles.g3.g2 |> 
   dplyr::left_join(metadata.cnv.profiles, by=('cnvp_bin'='cnvp_bin'), suffix=c('','')) |> 
-  dplyr::mutate(grade = as.factor(paste0("Grade ",grade))) 
+  dplyr::mutate(grade = as.factor(paste0("Grade ",grade))) |> 
+  dplyr::arrange(`quantile.50%`)
 
 
 
-p1 <- ggplot(plt, aes(x=pos/1000000,y=`quantile.50%`, col=grade)) +
-  facet_grid(cols = vars(chr), scales = "free", space="free")  +
+p1 <- ggplot(plt, aes(x=pos/100000000,y=`quantile.50%`, col=grade)) +
+  geom_hline(yintercept = 0, col="gray40",lwd=theme_cellpress_lwd,lty=1, show_guide = FALSE) +
+  facet_wrap(~chr, scales="free_x", ncol=22) +
+  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
   geom_point(pch=19,cex=0.2,alpha=0.05) +
-  theme_bw() +
-  geom_smooth() +
-  coord_cartesian(ylim=c(-1.25, 1.25)) +
-  labs(x=NULL) +
-  scale_x_continuous(breaks = c(0, 50, 100, 150, 200, 250, 300)) +
-  theme(strip.background = element_blank()) +
-  theme(panel.spacing = unit(0.1, "lines"))
+  geom_smooth(se=F, method = "gam", lwd=theme_cellpress_lwd * 2.5) +
+  coord_cartesian(ylim=c(-1.15, 1.15)) +
+  labs(x=NULL, col=NULL) +
+  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  theme_cellpress + 
+  scale_color_manual(values=pallete_g2_g3)
+p1
 
 
 
 
-p2 <- ggplot(stats.g3.g2, aes(x=pos/1000000,y=logFC)) +
-  facet_grid(cols = vars(chr), scales = "free", space="free")  +
+p2 <- ggplot(stats.g3.g2, aes(x=pos/100000000,y=logFC)) +
+  facet_wrap(~chr, scales="free_x", ncol=22) +
+  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
   geom_point(pch=19,cex=0.2,alpha=0.05) +
-  theme_bw() +
-  geom_hline(yintercept = 0, col="red",lwd=0.25,lty=1) +
-  geom_smooth(se=F, lwd=0.5, col="black") +
+  geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd) +
+  geom_smooth(se=F, lwd=theme_cellpress_lwd * 2, col="black") +
   coord_cartesian(ylim=c(-0.3, 0.3)) +
   labs(x=NULL) +
-  scale_x_continuous(breaks = c(0, 50, 100, 150, 200, 250, 300)) +
-  theme(strip.background = element_blank(), strip.text = element_blank()) +
-  theme(panel.spacing = unit(0.1, "lines"))
+  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  theme_cellpress
 p2
 
 
@@ -187,43 +197,54 @@ plt <- rbind(stats.g3.g2 |> dplyr::mutate(y = -log(adj.P.Val), type="data"),
 
 
 
-p3 <- ggplot(plt, aes(x=pos/1000000,y=y, group=cnvp_bin)) +
-  facet_grid(cols = vars(chr), scales = "free", space="free")  +
-  geom_line(alpha=0.05,col="darkgreen",lwd=0.25) +
+p3 <- ggplot(plt, aes(x=pos/100000000,y=y, group=cnvp_bin)) +
+  facet_wrap(~chr, scales="free_x", ncol=22) +
+  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
+  geom_line(alpha=0.05,col=mixcol("darkgreen", "white", 0.15),lwd=theme_cellpress_lwd) +
   theme_bw() +
-  geom_smooth(data=subset(plt, type == "data"), group=1, se=F, lwd=0.5, col="black") +
-  geom_hline(yintercept = 0, col="red",lwd=0.25,lty=1) +
-  geom_hline(yintercept = -log(0.05), col="red",lwd=0.25,lty=2) +
+  geom_smooth(data=subset(plt, type == "data"), group=1, se=F, lwd=theme_cellpress_lwd * 2, col="black") +
+  geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd,lty=1) +
+  geom_hline(yintercept = -log(0.05), col="red",lwd=theme_cellpress_lwd,lty=2) +
   labs(y = "-log(Padj)")+
-  coord_cartesian(ylim=c(0, 5)) +
-  labs(x=NULL) +
-  scale_x_continuous(breaks = c(0, 50, 100, 150, 200, 250, 300)) +
-  theme(strip.background = element_blank(), strip.text = element_blank()) +
-  theme(panel.spacing = unit(0.1, "lines"))
+  coord_cartesian(ylim=c(0, 6.5)) +
+  labs(x="Chromosomal position (/ 100 MB)") +
+  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  theme_cellpress
 p3
 
 
+
 p1 / p2 / p3
+
+
+ggsave("output/figures/vis_cnv_profiles_GISTIC_style__g2_x_g3.pdf", width=11 * 0.975, height = 3.75) # removal of ticks needs to be incorp
+
+
 
 
 
 # layer A_IDH_HG__A_IDH_LG_lr__lasso_fit + PC2 ----
 
 
-metadata.LR.PC2 <- metadata.all |> 
-  dplyr::filter(!is.na(A_IDH_HG__A_IDH_LG_lr__lasso_fit) & !is.na(PC2))
+metadata.LR.PC2 <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(163) |> 
+  filter_primaries_and_last_recurrences(136) |> 
+  dplyr::mutate(resection_tumor_hg = ifelse(resection_tumor_grade == 3, 1, 0)) # 1 or 0 for regression multiplication factor
+
+  dplyr::filter(!is.na(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) & !is.na(array_PC2))
+
 
 data.cnv.profiles.LR.PC2 <- data.cnv.profiles |> 
   t() |> 
   as.data.frame() |> 
-  dplyr::select(metadata.LR.PC2$sentrix_id) |> 
+  dplyr::select(metadata.LR.PC2$array_sentrix_id) |> 
   t() |> 
   as.data.frame() 
 
 
 
-design.LR <- model.matrix(~scale(A_IDH_HG__A_IDH_LG_lr__lasso_fit), data=metadata.LR.PC2 |> tibble::column_to_rownames('sentrix_id'))
-design.PC2 <- model.matrix(~ scale(-PC2), data=metadata.LR.PC2 |> tibble::column_to_rownames('sentrix_id'))
+design.LR <- model.matrix(~scale(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit), data=metadata.LR.PC2 |> tibble::column_to_rownames('array_sentrix_id'))
+design.PC2 <- model.matrix(~scale(-array_PC2), data=metadata.LR.PC2 |> tibble::column_to_rownames('array_sentrix_id'))
 
 
 fit.LR <- limma::lmFit(t(data.cnv.profiles.LR.PC2), design.LR)
@@ -257,68 +278,107 @@ plt.LR.padj <- rbind(
 #   dplyr::mutate(minLogPadj = -log(adj.P.Val))
 
 
-p4 <- ggplot(plt.LR, aes(x=pos/1000000,y=logFC)) +
-  facet_grid(cols = vars(chr), scales = "free", space="free")  +
+p4 <- ggplot(plt.LR, aes(x=pos/100000000,y=logFC)) +
+  facet_wrap(~chr, scales="free_x", ncol=22) +
+  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
   geom_point(pch=19,cex=0.2,alpha=0.05) +
-  theme_bw() +
-  geom_hline(yintercept = 0, col="red",lwd=0.25,lty=1) +
-  geom_smooth(se=F, lwd=0.5, col="black") +
+  geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd,lty=1) +
+  geom_smooth(se=F, lwd=theme_cellpress_lwd * 2, col="black") +
   coord_cartesian(ylim=c(-0.3, 0.3)) +
   labs(x=NULL) +
-  scale_x_continuous(breaks = c(0, 50, 100, 150, 200, 250, 300)) +
-  theme(strip.background = element_blank(), strip.text = element_blank()) +
-  theme(panel.spacing = unit(0.1, "lines"))
+  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  theme_cellpress
+p4
 
-
-p5 <- ggplot(plt.LR.padj, aes(x=pos/1000000,y=minLogPadj, group=cnvp_bin)) +
-  facet_grid(cols = vars(chr), scales = "free", space="free")  +
-  geom_line(alpha=0.05, col="darkgreen",lwd=0.25) +
-  theme_bw() +
-  geom_smooth(data=subset(plt.LR.padj, type == "data"), group=1, se=F, lwd=0.5, col="black") +
-  geom_hline(yintercept = 0, col="red",lwd=0.25,lty=1) +
-  geom_hline(yintercept = -log(0.05), col="red",lwd=0.25,lty=2) +
+p5 <- ggplot(plt.LR.padj, aes(x=pos/100000000,y=minLogPadj, group=cnvp_bin)) +
+  facet_wrap(~chr, scales="free_x", ncol=22) +
+  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
+  geom_line(alpha=0.05,col=mixcol("darkgreen", "white", 0.15),lwd=theme_cellpress_lwd) +
+  geom_smooth(data=subset(plt.LR.padj, type == "data"), group=1, se=F, lwd=theme_cellpress_lwd * 2, col="black") +
+  geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd,lty=1) +
+  geom_hline(yintercept = -log(0.05), col="red",lwd=theme_cellpress_lwd,lty=2) +
   labs(y = "-log(Padj)") +
-  coord_cartesian(ylim=c(-0, 12)) +
-  labs(x=NULL) +
-  scale_x_continuous(breaks = c(0, 50, 100, 150, 200, 250, 300)) +
-  theme(strip.background = element_blank(), strip.text = element_blank()) +
-  theme(panel.spacing = unit(0.1, "lines"))
+  coord_cartesian(ylim=c(0, 6.25)) +
+  labs(x="Chromosomal position (/ 100 MB)") +
+  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  theme_cellpress
+p5
 
 
 p4 / p5
 
 
-
-
-# p2 <- ggplot(plt.PC2, aes(x=pos/1000000,y=logFC)) +
-#   facet_grid(cols = vars(chr), scales = "free", space="free")  +
-#   geom_point(pch=19,cex=0.2,alpha=0.05) +
-#   theme_bw() +
-#   geom_hline(yintercept = 0, col="red",lwd=0.25,lty=1) +
-#   geom_smooth(se=F, lwd=0.5, col="black") +
-#   coord_cartesian(ylim=c(-0.25, 0.25))
+ggsave("output/figures/vis_cnv_profiles_GISTIC_style__AcCGAP.pdf", width=11 * 0.975, height = 2.46) # removal of ticks needs to be incorp
 
 
 
-# p4 <- ggplot(plt.PC2, aes(x=pos/1000000,y=minLogPadj)) +
-#   facet_grid(cols = vars(chr), scales = "free", space="free")  +
-#   geom_point(pch=19,cex=0.2,alpha=0.05) +
-#   theme_bw() +
-#   geom_smooth(se=F, lwd=0.5, col="black") +
-#   geom_hline(yintercept = 0, col="red",lwd=0.25,lty=1) +
-#   geom_hline(yintercept = -log(0.01), col="red",lwd=0.25,lty=2) +
-#   coord_cartesian(ylim=c(-0, 12))
+
+
+
+plt.PC2 <- stats.PC2 |> 
+  dplyr::left_join(metadata.cnv.profiles, by=('cnvp_bin'='cnvp_bin'), suffix=c('',''))
+
+
+plt.PC2.padj <- stats.PC2 |> 
+  dplyr::left_join(metadata.cnv.profiles, by=('cnvp_bin'='cnvp_bin'), suffix=c('','')) |> 
+  dplyr::mutate(minLogPadj = -log(adj.P.Val))
+
+plt.PC2.padj <- rbind(
+  plt.PC2.padj |> dplyr::mutate(type = "data"),
+  plt.PC2.padj |> dplyr::mutate(type = "border", minLogPadj = 0))
+
+
+p9 <- ggplot(plt.PC2, aes(x=pos/100000000,y=logFC)) +
+  facet_wrap(~chr, scales="free_x", ncol=22) +
+  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
+  geom_point(pch=19,cex=0.2,alpha=0.05) +
+  geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd,lty=1) +
+  geom_smooth(se=F, lwd=theme_cellpress_lwd * 2, col="black") +
+  coord_cartesian(ylim=c(-0.3, 0.3)) +
+  labs(x=NULL) +
+  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  theme_cellpress
+p9
+
+
+p10 <- ggplot(plt.PC2.padj, aes(x=pos/100000000,y=minLogPadj, group=cnvp_bin)) +
+  facet_wrap(~chr, scales="free_x", ncol=22) +
+  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
+  geom_line(alpha=0.05,col=mixcol("darkgreen", "white", 0.15),lwd=theme_cellpress_lwd) +
+  geom_smooth(data=subset(plt.LR.padj, type == "data"), group=1, se=F, lwd=theme_cellpress_lwd * 2, col="black") +
+  geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd,lty=1) +
+  geom_hline(yintercept = -log(0.05), col="red",lwd=theme_cellpress_lwd,lty=2) +
+  labs(y = "-log(Padj)") +
+  coord_cartesian(ylim=c(0, 6.25)) +
+  labs(x="Chromosomal position (/ 100 MB)") +
+  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  theme_cellpress
+p10
+
+
+p9 / p10
+
+
+ggsave("output/figures/vis_cnv_profiles_GISTIC_style__PC2.pdf", width=11 * 0.975, height = 2.46) # removal of ticks needs to be incorp
+
+
 
 
 # layer parimary recurrence ----
 
+
 metadata.p.r <- metadata.all |> 
-  dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence")))
+  filter_primaries_and_last_recurrences(136) |> 
+  dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(patient_factor = as.factor(ifelse(dplyr::n() == 2, paste0("p",patient_id), "other"))) |> 
+  dplyr::ungroup()
+
 
 data.cnv.profiles.p.r <- data.cnv.profiles |> 
   t() |> 
   as.data.frame() |> 
-  dplyr::select(metadata.p.r$sentrix_id) |> 
+  dplyr::select(metadata.p.r$array_sentrix_id) |> 
   t() |> 
   as.data.frame() 
 
@@ -327,12 +387,12 @@ data.cnv.profiles.p.r <- data.cnv.profiles |>
 ## limma: resection_grade ----
 
 
-design.p.r <- model.matrix(~pr.status, data=metadata.p.r |> tibble::column_to_rownames('sentrix_id'))
+design.p.r <- model.matrix(~patient_factor + pr.status, data=metadata.p.r |> tibble::column_to_rownames('array_sentrix_id'))
 
 
 fit <- limma::lmFit(t(data.cnv.profiles.p.r), design.p.r)
 fit <- limma::eBayes(fit)
-stats.p.r <- limma::topTable(fit, n=nrow(fit), sort="p") |> # adjust="BH"
+stats.p.r <- limma::topTable(fit, n=nrow(fit), sort="p", coef="pr.statusrecurrence") |> # adjust="BH"
   tibble::rownames_to_column('cnvp_bin')  |> 
   dplyr::left_join(metadata.cnv.profiles, by=('cnvp_bin'='cnvp_bin'), suffix=c('','')) 
 
@@ -344,10 +404,10 @@ stats.p.r <- limma::topTable(fit, n=nrow(fit), sort="p") |> # adjust="BH"
 
 quantiles.p <- metadata.p.r |> 
   dplyr::filter(pr.status == "primary") |> 
-  dplyr::select(sentrix_id) |> 
-  dplyr::left_join(data.cnv.profiles.p.r |> tibble::rownames_to_column('sentrix_id'),
-                   by=c('sentrix_id' = 'sentrix_id'), suffix=c('','')) |> 
-  tibble::column_to_rownames('sentrix_id') |> 
+  dplyr::select(array_sentrix_id) |> 
+  dplyr::left_join(data.cnv.profiles.p.r |> tibble::rownames_to_column('array_sentrix_id'),
+                   by=c('array_sentrix_id' = 'array_sentrix_id'), suffix=c('','')) |> 
+  tibble::column_to_rownames('array_sentrix_id') |> 
   pbapply::pblapply(function(x) {return(quantile(x))}) |> 
   as.data.frame() |> 
   t() |> 
@@ -358,10 +418,10 @@ quantiles.p <- metadata.p.r |>
 
 quantiles.r <- metadata.p.r |> 
   dplyr::filter(pr.status == "recurrence") |> 
-  dplyr::select(sentrix_id) |> 
-  dplyr::left_join(data.cnv.profiles.p.r |> tibble::rownames_to_column('sentrix_id'),
-                   by=c('sentrix_id' = 'sentrix_id'), suffix=c('','')) |> 
-  tibble::column_to_rownames('sentrix_id') |> 
+  dplyr::select(array_sentrix_id) |> 
+  dplyr::left_join(data.cnv.profiles.p.r |> tibble::rownames_to_column('array_sentrix_id'),
+                   by=c('array_sentrix_id' = 'array_sentrix_id'), suffix=c('','')) |> 
+  tibble::column_to_rownames('array_sentrix_id') |> 
   pbapply::pblapply(function(x) {return(quantile(x))}) |> 
   as.data.frame() |> 
   t() |> 
@@ -371,8 +431,8 @@ quantiles.r <- metadata.p.r |>
 
 
 quantiles.p.r <- rbind(
-  quantiles.p |> dplyr::mutate(pr.status = "primary"),
-  quantiles.r |> dplyr::mutate(pr.status = "recurrence")
+  quantiles.p |> dplyr::mutate(pr.status = "Primary"),
+  quantiles.r |> dplyr::mutate(pr.status = "Recurrence")
 )
 
 
@@ -388,36 +448,40 @@ quantiles.p.r <- rbind(
 
 plt <- quantiles.p.r |> 
   dplyr::left_join(metadata.cnv.profiles, by=('cnvp_bin'='cnvp_bin'), suffix=c('','')) |> 
-  dplyr::mutate(pr.status = factor(pr.status, levels=c("primary","recurrence")))
+  dplyr::mutate(pr.status = factor(pr.status, levels=c("Primary","Recurrence")))
 
 
-p6 <- ggplot(plt, aes(x=pos/1000000,y=`quantile.50%`, col=pr.status)) +
-  facet_grid(cols = vars(chr), scales = "free", space="free")  +
+p6 <- ggplot(plt, aes(x=pos/100000000,y=`quantile.50%`, col=pr.status)) +
+  geom_hline(yintercept = 0, col="gray40",lwd=theme_cellpress_lwd,lty=1, show_guide = FALSE) +
+  facet_wrap(~chr, scales="free_x", ncol=22) +
+  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
   geom_point(pch=19,cex=0.2,alpha=0.05) +
-  theme_bw() +
-  geom_smooth() +
-  coord_cartesian(ylim=c(-1.25, 1.25)) +
-  labs(x=NULL) +
-  scale_x_continuous(breaks = c(0, 50, 100, 150, 200, 250, 300)) +
-  theme(strip.background = element_blank(), strip.text = element_blank()) +
-  theme(panel.spacing = unit(0.1, "lines"))
+  geom_smooth(se=F, method = "gam", lwd=theme_cellpress_lwd * 2.5) +
+  coord_cartesian(ylim=c(-1.15, 1.15)) +
+  labs(x=NULL, col=NULL) +
+  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  theme_cellpress + 
+  scale_color_manual(values=pallete_p_r)
 p6
 
 
 
 
-p7 <- ggplot(stats.p.r, aes(x=pos/1000000,y=logFC)) +
-  facet_grid(cols = vars(chr), scales = "free", space="free")  +
+
+p7 <- ggplot(stats.p.r, aes(x=pos/100000000,y=logFC)) +
+  facet_wrap(~chr, scales="free_x", ncol=22) +
+  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
   geom_point(pch=19,cex=0.2,alpha=0.05) +
-  theme_bw() +
-  geom_hline(yintercept = 0, col="red",lwd=0.25,lty=1) +
-  geom_smooth(se=F, lwd=0.5, col="black") +
+  geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd) +
+  geom_smooth(se=F, lwd=theme_cellpress_lwd * 2, col="black") +
   coord_cartesian(ylim=c(-0.3, 0.3)) +
   labs(x=NULL) +
-  scale_x_continuous(breaks = c(0, 50, 100, 150, 200, 250, 300)) +
-  theme(strip.background = element_blank(), strip.text = element_blank()) +
-  theme(panel.spacing = unit(0.1, "lines"))
+  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  theme_cellpress
 p7
+
+
+
 
 
 
@@ -427,21 +491,29 @@ plt <- rbind(stats.p.r |> dplyr::mutate(y = -log(adj.P.Val), type="data"),
 )
 
 
-p8 <- ggplot(plt, aes(x=pos/1000000,y=y, group=cnvp_bin)) +
-  facet_grid(cols = vars(chr), scales = "free", space="free")  +
-  geom_line(alpha=0.033,col="darkgreen",lwd=0.25) +
+p8 <- ggplot(plt, aes(x=pos/100000000,y=y, group=cnvp_bin)) +
+  facet_wrap(~chr, scales="free_x", ncol=22) +
+  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
+  geom_line(alpha=0.05,col=mixcol("darkgreen", "white", 0.15),lwd=theme_cellpress_lwd) +
   theme_bw() +
-  geom_smooth(data=subset(plt, type == "data"), group=1, se=F, lwd=0.5, col="black") +
-  geom_hline(yintercept = 0, col="red",lwd=0.25,lty=1) +
-  geom_hline(yintercept = -log(0.01), col="red",lwd=0.25,lty=2) +
-  labs(y = "-log(Padj)", x=NULL) +
-  scale_x_continuous(breaks = c(0, 50, 100, 150, 200, 250, 300)) +
-  theme(strip.background = element_blank(), strip.text = element_blank()) +
-  theme(panel.spacing = unit(0.1, "lines"))
+  geom_smooth(data=subset(plt, type == "data"), group=1, se=F, lwd=theme_cellpress_lwd * 2, col="black") +
+  geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd,lty=1) +
+  geom_hline(yintercept = -log(0.05), col="red",lwd=theme_cellpress_lwd,lty=2) +
+  labs(y = "-log(Padj)")+
+  coord_cartesian(ylim=c(0, 6.25)) +
+  labs(x="Chromosomal position (/ 100 MB)") +
+  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  theme_cellpress
 p8
 
 
+
 p6 / p7 / p8
+
+
+ggsave("output/figures/vis_cnv_profiles_GISTIC_style__p_x_r.pdf", width=11 * 0.975, height = 3.75) # removal of ticks needs to be incorp
+
+
 
 
 
@@ -460,9 +532,9 @@ p1 / p2 / p3 / p4 / p5 / p6 / p7 / p8
 
 
 # plt.quantiles.g3 <-  data.cnv.profiles |> 
-#   tibble::rownames_to_column('sentrix_id') |> 
-#   dplyr::filter(sentrix_id %in% (metadata |> dplyr::filter(resection_tumor_grade == 2) |> dplyr::pull(sentrix_id))) |> 
-#   tibble::column_to_rownames('sentrix_id') |> 
+#   tibble::rownames_to_column('array_sentrix_id') |> 
+#   dplyr::filter(sentrix_id %in% (metadata |> dplyr::filter(resection_tumor_grade == 2) |> dplyr::pull(array_sentrix_id))) |> 
+#   tibble::column_to_rownames('array_sentrix_id') |> 
 #   pbapply::pblapply(function(x) {return(quantile(x))}) |> 
 #   as.data.frame() |> 
 #   t() |> 
