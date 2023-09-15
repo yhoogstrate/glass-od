@@ -24,3 +24,25 @@ col3 <- grDevices::colorRampPalette(c(       "#67001F",
                                              "#053061"
                                       ))
 
+
+palette_mnp_12.8_6 <- c(
+  'A_IDH_LG' = '#f85eb6',
+  'A_IDH_HG' = '#d34394ff',
+  'O_IDH' = 'aquamarine3',
+  'OLIGOSARC_IDH' = 'aquamarine4',
+  'CTRL_CORPCAL' = '#7f8b45',
+  'GBM_RTK_I' = '#51458b'
+)
+
+
+pallete_g2_g3 <- c(
+  'Grade 2' = mixcol(col2(10)[9], "white", 0.15),
+  'Grade 3' = mixcol(col2(10)[2], "white", 0.15)
+)
+
+
+pallete_p_r <- c(
+  'Primary' = mixcol(col2(10)[9], "white", 0.15),
+  'Recurrence' = mixcol(col2(10)[2], "white", 0.15)
+)
+

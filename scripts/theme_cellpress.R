@@ -5,7 +5,7 @@
 # https://superuser.com/questions/1153990/anyone-know-how-to-install-arial-fonts-on-centos-7
 # sudo yum install curl cabextract xorg-x11-font-utils fontconfig
 # wget http://www.itzgeek.com/msttcore-fonts-2.0-3.noarch.rpm
-# rpm -Uvh msttcore-fonts-2.0-3.noarch.rpm
+# sudo rpm -Uvh msttcore-fonts-2.0-3.noarch.rpm
 #
 # 1. update remotes / Rttf2pt1:
 # install.packages('remotes')
@@ -14,11 +14,11 @@
 # 2. install and update fonts: - https://fromthebottomoftheheap.net/2013/09/09/preparing-figures-for-plos-one-with-r/
 # install.packages("extrafont")
 # library("extrafont")
-# font_import(')
 # font_import(pattern='Arial')
+# extrafont::font_import(pattern="arial.ttf", prompt=FALSE)
 #
 # 3. check if Arial exists:
-# extrafonts::loadfonts()
+# extrafont::loadfonts() 
 # sort(extrafont::fonts())
 
 # pts to mm: 0.3527777778
