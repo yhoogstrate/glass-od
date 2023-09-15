@@ -25,7 +25,7 @@ tcga_laml.metadata.array_samples <- list.files(path = "data/TCGA-LAML/DNA Methyl
   dplyr::group_by(array_sentrix_hash) |> 
   dplyr::add_count(array_sentrix_hash) |> 
   assertr::verify(n == 2) |> 
-  dplyr::mutate(n=NULL) |> 
+  dplyr::mutate(n = NULL) |> 
   dplyr::ungroup() |> 
   dplyr::mutate(array_channel = gsub("^.+_(Grn|Red)\\.idat$", "\\1", array_filename_GDC)) |> 
   dplyr::mutate(array_channel = dplyr::recode(array_channel, `Grn` = 'green', `Red`='red')) |> 
@@ -105,6 +105,63 @@ tmp <- read.table("data/TCGA-LAML/Administration/mutations.txt",header=T) |>
 tcga_laml.metadata.array_samples <- tcga_laml.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('cases.submitter_id'='cases.submitter_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(IDH))
+
+
+# add GDC / cBioportal Clinical xml ----
+
+
+
+#fn = "data/TCGA-LAML/Clinical/GDCdownload/01cba3f5-2fdb-4290-b3b6-b11f54a358aa/genome.wustl.edu_clinical.TCGA-AB-2969.xml"
+ff <- function(fn) {
+  dat <- XML::xmlToDataFrame(fn)
+  
+  split_1 <- dat[,1:9] # file related?
+  split_2 <- dat[,10:ncol(dat)] # patient related?
+  
+  stopifnot(is.na(split_1[2,]))
+  stopifnot(is.na(split_2[1,]))
+  
+  split_1 <- split_1[1,]
+  split_2 <- split_2[2,]
+  
+  merged <- cbind(split_1, split_2)
+  
+  return(merged)
+}
+
+
+
+tmp <- list.files(path = "data/TCGA-LAML/Clinical/GDCdownload/", pattern = "*.xml$", recursive = TRUE) |>
+  data.frame(patient_filename_clinical = _) |> 
+  dplyr::mutate(patient_filename_clinical = paste0("data/TCGA-LAML/Clinical/GDCdownload/", patient_filename_clinical)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (200))
+    return(.)
+  })() |> 
+  dplyr::mutate(tmp = pbapply::pblapply(patient_filename_clinical, ff)) |> 
+  tidyr::unnest(tmp) |> 
+  dplyr::mutate(tmp = NULL) |> 
+  dplyr::select(bcr_patient_barcode, vital_status, days_to_death, days_to_last_followup) |> 
+  dplyr::mutate(days_to_death = ifelse(days_to_death == "",NA, as.numeric(days_to_death))) |> 
+  dplyr::mutate(days_to_last_followup = ifelse(days_to_last_followup %in% c("", 0),NA, as.numeric(days_to_last_followup))) |> 
+  dplyr::mutate(day_to_last_event = ifelse(!is.na(days_to_death), days_to_death, days_to_last_followup)) |> 
+  dplyr::mutate(last_event_status = dplyr::case_when(
+    !is.na(days_to_death) & is.na(days_to_last_followup) ~ 1,
+    is.na(days_to_death) & !is.na(days_to_last_followup) ~ 0,
+    T ~ NA
+  ))
+rm(ff)
+
+
+stopifnot(tcga_laml.metadata.array_samples$cases.submitter_id %in% tmp$bcr_patient_barcode)
+
+
+
+tcga_laml.metadata.array_samples <- tcga_laml.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('cases.submitter_id'='bcr_patient_barcode'), suffix=c('',''))
+
+rm(tmp)
 
 
 # load data test ----
