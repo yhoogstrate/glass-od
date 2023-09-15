@@ -8,12 +8,13 @@ source('scripts/load_functions.R')
 
 ## get idats ----
 
+
 gsam.metadata.array_samples <-  list.files(path = "data/G-SAM/DNA Methylation - EPIC arrays/", pattern = "_(Grn|Red).idat$", recursive = T) |>
   data.frame(filename = _) |>
   dplyr::mutate(filename = paste0("data/G-SAM/DNA Methylation - EPIC arrays/", filename)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 182)# just freeze the number to terminate on unexpected behavior
+    assertthat::assert_that(nrow(.) == 190)# just freeze the number to terminate on unexpected behavior
     return(.)
   })() |> 
   assertr::verify(file.exists(filename)) |>
@@ -25,41 +26,58 @@ gsam.metadata.array_samples <-  list.files(path = "data/G-SAM/DNA Methylation - 
   dplyr::filter(!grepl("/MET2017-126-014/", channel_green)) |> # stored there for historical reasons - IDH-mutant loss study
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 75)
+    assertthat::assert_that(nrow(.) == 79)
     return(.)
   })()  |> 
   dplyr::rename_with( ~ paste0("array_", .x)) 
 
 
 
+
 ## link sample names ----
 
 
-tmp <- read.csv("data/G-SAM/DNA Methylation - EPIC arrays/MET2022-350-014/MET2022-350-014_IdH.csv", skip=8) |> 
-  dplyr::filter(!is.na(Sentrix_ID)) |> 
-  assertr::verify(grepl("^[0-9]{12}_[A-Z][0-9]{2}[A-Z][0-9]{2}$", Column2)) |> 
-  dplyr::rename(array_sentrix_id = Column2) |> 
-  dplyr::mutate(study = gsub("^(....).+$","\\1",Sample_Name)) |> 
-  dplyr::filter(study %in% c("MINT","GLSO") == F) |> 
-  assertr::verify(study == "GSAM") |> 
-  dplyr::select(array_sentrix_id, Sample_Name) |> 
+tmp <- rbind(
+  read.csv("data/G-SAM/DNA Methylation - EPIC arrays/EPIC2023-387-plate1/STS/EPIC2023-387-plate1.csv", skip=8) |> 
+    dplyr::filter(!is.na(Sentrix_ID)) |> 
+    dplyr::filter(grepl("^GSAM", Sample_Name)) |> 
+    dplyr::mutate(array_sentrix_id = paste0(Sentrix_ID, "_", Sentrix_Position )) |> 
+    dplyr::mutate(resection = paste0("R",gsub("GSAM_...(.)_.+$","\\1",Sample_Name))) |> 
+    dplyr::mutate(patient_id = gsub("GSAM_(...)._.+$","\\1", Sample_Name)) |> 
+    dplyr::select(array_sentrix_id, resection, patient_id) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == 4)
+      return(.)
+    })()
+,
+  read.csv("data/G-SAM/DNA Methylation - EPIC arrays/MET2022-350-014/MET2022-350-014_IdH.csv", skip=8) |> 
+    dplyr::filter(!is.na(Sentrix_ID)) |> 
+    dplyr::filter(grepl("^GSAM", Sample_Name)) |> 
+    dplyr::mutate(array_sentrix_id = paste0(Sentrix_ID, "_", Sentrix_Position )) |> 
+    dplyr::mutate(resection = paste0("R",gsub("GSAM_...(.)_.+$","\\1",Sample_Name))) |> 
+    dplyr::mutate(patient_id = gsub("GSAM_(...)._.+$","\\1", Sample_Name)) |> 
+    dplyr::select(array_sentrix_id, resection, patient_id) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == 75) # == 75
+      return(.)
+    })()
+  ) |> 
+  dplyr::mutate(IDH = patient_id %in% c("BAW","CAV","CBG","CDF","DAB","EAF","EBD","ECB","FAD","FAL","JAB","JAD","JAF","KAC")) |> # IDH mut according to "data/gsam/output/tables/dna/idh_mutations.txt" - EAF also by MNP brain Classifier
+  dplyr::mutate(resection_id = paste0(patient_id, gsub("^R","",resection))) |> 
+  assertr::verify(!duplicated(resection_id)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == nrow(gsam.metadata.array_samples)) # == 75
     return(.)
-  })() |> 
-  assertr::verify(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |> 
-  dplyr::mutate(resection = paste0("R",gsub("GSAM_...(.)_.+$","\\1",Sample_Name))) |> 
-  dplyr::mutate(patient = gsub("GSAM_(...)._.+$","\\1", Sample_Name)) |> 
-  dplyr::mutate(IDH = patient %in% c("BAW","CAV","CBG","CDF","DAB","EAF","EBD","ECB","FAD","FAL","JAB","JAD","JAF","KAC")) # IDH mut according to "data/gsam/output/tables/dna/idh_mutations.txt" - EAF also by MNP brain Classifier
-
-
+  })()
 
 
 
 gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(Sample_Name))
+  assertr::verify(!is.na(resection_id))
 rm(tmp)
 
 
@@ -70,10 +88,10 @@ rm(tmp)
 
 
 tmp <- read.csv('data/G-SAM/administratie/GSAM_combined_clinical_molecular.csv',stringsAsFactors=F) |> 
-  dplyr::rename(patient = studyID) |> 
-  dplyr::arrange(patient) |> 
+  dplyr::rename(patient_id = studyID) |> 
+  dplyr::arrange(patient_id) |> 
   dplyr::mutate(initialMGMT = NULL) |> 
-  dplyr::mutate(gender = ifelse(patient %in% c('AAT', 'AAM', 'AZH', 'HAI', 'FAG'),"Male",gender)) |>  # there's a number of samples of which the gender does not fit with the omics data - omics data determined genders are the corrected ones
+  dplyr::mutate(gender = ifelse(patient_id %in% c('AAT', 'AAM', 'AZH', 'HAI', 'FAG'),"Male",gender)) |>  # there's a number of samples of which the gender does not fit with the omics data - omics data determined genders are the corrected ones
   dplyr::mutate(gender = as.factor(gender)) |> 
   dplyr::mutate(survival.events = dplyr::case_when(
     status == "Deceased" ~ 1,
@@ -81,23 +99,24 @@ tmp <- read.csv('data/G-SAM/administratie/GSAM_combined_clinical_molecular.csv',
     T ~ as.numeric(NA))) |> 
   dplyr::rename(os.event = survival.events) |> 
   dplyr::mutate(survival.months = survivalDays / 365.0 * 12.0) |> 
-  dplyr::select(patient, gender, 
+  dplyr::select(patient_id, gender, 
                 status, os.event,
                 survivalDays, 
                 progressionFreeDays,
                 survivalFromSecondSurgeryDays
                 ) |> 
-  dplyr::filter(patient %in% gsam.metadata.array_samples$patient) |> 
+  dplyr::filter(patient_id %in% gsam.metadata.array_samples$patient_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == length(unique(gsam.metadata.array_samples$patient)))
+    assertthat::assert_that(nrow(.) == length(unique(gsam.metadata.array_samples$patient_id)))
     return(.)
   })() |> 
-  dplyr::rename_with( ~ paste0("patient_", .x), .cols=!matches("^patient$",perl = T))
+  dplyr::rename_with( ~ paste0("patient_", .x), .cols=!matches("^patient_id$",perl = T))
 
 
 gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
-  dplyr::left_join(tmp, by=c('patient'='patient'), suffix=c('',''))
+  dplyr::left_join(tmp, by=c('patient_id'='patient_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(patient_gender))
 rm(tmp)
 
 

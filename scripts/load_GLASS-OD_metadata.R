@@ -44,21 +44,23 @@ glass_od.metadata.patients <- DBI::dbReadTable(metadata.db.con, 'view_patients')
   ))
 
 
+
 patients_without_array_samples <- DBI::dbReadTable(metadata.db.con, 'view_check_patients_without_array_samples')
-stopifnot(sort(patients_without_array_samples$patient_id) == c(c("0001",
-                                                                 "0100","0101","0102","0103","0104","0107","0108","0109","0110","0111","0112","0113","0114","0115","0116","0117","0118","0119","0120","0121","0122","0123","0124","0125","0126"))) # x-checked, patients currently missing samples
+stopifnot(sort(patients_without_array_samples$patient_id) == c("0001")) # x-checked, patients currently missing samples
+
+
 
 glass_od.metadata.patients <- glass_od.metadata.patients |> 
   dplyr::filter(patient_id %in% patients_without_array_samples$patient_id == F) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) ==  91 + 10) # + 10x astro
+    assertthat::assert_that(nrow(.) ==  126) # + 10x astro
     return(.)
   })() |> 
   dplyr::filter(is.na(patient_reason_excluded)) |> # 7 non(-canonical) codels
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 91 + 10) # + 10x astro
+    assertthat::assert_that(nrow(.) == 126) # + 10x astro
     return(.)
   })()
 
@@ -83,11 +85,11 @@ glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resectio
   dplyr::mutate(patient_id = as.factor(patient_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 202 + 21) # + 22 x astro
+    assertthat::assert_that(nrow(.) == 279) # + 22 x astro
     return(.)
   })() |> 
   assertr::verify(is.numeric(resection_number)) |> 
-  assertr::verify(is.na(resection_tumor_grade) | resection_tumor_grade %in% c(2,3)) |> 
+  assertr::verify(is.na(resection_tumor_grade) | resection_tumor_grade %in% c(2, 3)) |> 
   assertr::verify(is.na(resection_date) | grepl("^[0-9]{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}$", resection_date))
 
 
@@ -102,7 +104,7 @@ glass_od.metadata.array_samples <- list.files(path = "data/GLASS_OD/DNA Methylat
   dplyr::mutate(array_filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays/", array_filename)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (414 + 28 + 2))
+    assertthat::assert_that(nrow(.) == (550))
     return(.)
   })() |> # equals in-pipe stopifnot(nrow(.) == 404)
   assertr::verify(file.exists(array_filename)) |>
@@ -113,7 +115,7 @@ glass_od.metadata.array_samples <- list.files(path = "data/GLASS_OD/DNA Methylat
   dplyr::rename(array_channel_red = Red) |>
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == ((414 + 28 + 2) / 2))
+    assertthat::assert_that(nrow(.) == ((550) / 2))
     return(.)
   })() |>
   assertr::verify(!is.na(array_channel_green)) |>
@@ -126,7 +128,20 @@ glass_od.metadata.array_samples <- list.files(path = "data/GLASS_OD/DNA Methylat
   assertr::verify(array_sentrix_id != "204808700073_R07C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
   assertr::verify(array_sentrix_id != "204808700074_R06C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
   assertr::verify(array_sentrix_id != "204808700074_R07C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
-  assertr::verify(array_sentrix_id != "204808700074_R08C01") # sample not part in GLASS-OD - removal confirmed by Iris
+  assertr::verify(array_sentrix_id != "204808700074_R08C01") |> # sample not part in GLASS-OD - removal confirmed by Iris
+
+  assertr::verify(array_sentrix_id != "207331540058_R01C01") |> # non-GLASS_OD files included in a run shared with GLASS_OD samples (MINT, G-SAM, CATNON/HOX & IDH-inhibitor)
+  assertr::verify(array_sentrix_id != "207331540058_R02C01") |> # non-GLASS_OD files included in a run shared with GLASS_OD samples (MINT, G-SAM, CATNON/HOX & IDH-inhibitor)
+  assertr::verify(array_sentrix_id != "207331540058_R03C01") |> # non-GLASS_OD files included in a run shared with GLASS_OD samples (MINT, G-SAM, CATNON/HOX & IDH-inhibitor)
+  assertr::verify(array_sentrix_id != "207331540058_R04C01") |> # non-GLASS_OD files included in a run shared with GLASS_OD samples (MINT, G-SAM, CATNON/HOX & IDH-inhibitor)
+  assertr::verify(array_sentrix_id != "207513900021_R04C01") |> # non-GLASS_OD files included in a run shared with GLASS_OD samples (MINT, G-SAM, CATNON/HOX & IDH-inhibitor)
+  assertr::verify(array_sentrix_id != "207513900021_R02C01") |> # non-GLASS_OD files included in a run shared with GLASS_OD samples (MINT, G-SAM, CATNON/HOX & IDH-inhibitor)
+  assertr::verify(array_sentrix_id != "207513900021_R03C01") |> # non-GLASS_OD files included in a run shared with GLASS_OD samples (MINT, G-SAM, CATNON/HOX & IDH-inhibitor)
+  assertr::verify(array_sentrix_id != "207331540058_R05C01") |> # non-GLASS_OD files included in a run shared with GLASS_OD samples (MINT, G-SAM, CATNON/HOX & IDH-inhibitor)
+  assertr::verify(array_sentrix_id != "207331540058_R06C01") |> # non-GLASS_OD files included in a run shared with GLASS_OD samples (MINT, G-SAM, CATNON/HOX & IDH-inhibitor)
+  assertr::verify(array_sentrix_id != "207331540058_R07C01") |> # non-GLASS_OD files included in a run shared with GLASS_OD samples (MINT, G-SAM, CATNON/HOX & IDH-inhibitor)
+  assertr::verify(array_sentrix_id != "207331540058_R08C01") # non-GLASS_OD files included in a run shared with GLASS_OD samples (MINT, G-SAM, CATNON/HOX & IDH-inhibitor)
+
 
 
 
@@ -152,13 +167,13 @@ stopifnot(length(setdiff(tmp$array_sentrix_id, glass_od.metadata.array_samples$a
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 222)
+    assertthat::assert_that(nrow(.) == 275)
     return(.)
   })() |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id' = 'array_sentrix_id'), suffix=c('','')) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 222)
+    assertthat::assert_that(nrow(.) == 275)
     return(.)
   })() |> 
   assertr::verify(!is.na(resection_id))
