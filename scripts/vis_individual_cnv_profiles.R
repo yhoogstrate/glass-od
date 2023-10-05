@@ -1,26 +1,42 @@
 #!/usr/bin/env
 
 
-if(!exists('glass_od.metadata.array_samples')) {
-  source('scripts/load_metadata.R')
-}
-
-source('scripts/load_chrom_sizes.R')
-
+library(ggplot2)
 library(patchwork)
+
+
+source("scripts/load_functions.R")
+source("scripts/load_themes.R")
+source("scripts/load_palette.R")
+
+
+if(!exists('glass_od.metadata.array_samples')) {
+  source('scripts/load_GLASS-OD_metadata.R')
+}
 
 
 # make as-much-as-possible covering CNV plot per sample ----
 
+#' @todo: detP x usv-PC2 + _reason_excl
+#' @todo: PC2 x AcCGAP
+#' @todo: thumbnail of H&E
 
 cnv_plot <- function(cur_sentrix_id) {
-  #cur_sentrix_id <- "204808700074_R05C01"
+  cur_sentrix_id <- "207331540060_R01C01"
+  print(cur_sentrix_id)
+  #cur_sentrix_id <- "201496850071_R02C01"
+  #cur_sentrix_id <- "201496850071_R02C01"
+  #a = c("201496850071_R02C01", "203293640061_R08C01", "205828590003_R02C01", "205832320037_R07C01",
+  #  "206238130171_R03C01", "207331540060_R02C01", "207331540060_R03C01",  "207331540060_R04C01")
+  #cur_sentrix_id = a[6]
   
   cur_idat <- glass_od.metadata.array_samples |> 
-    dplyr::filter(`sentrix_id` == cur_sentrix_id)
+    dplyr::filter(array_sentrix_id == cur_sentrix_id)
   
-  bins <- read.delim(cur_idat$heidelberg_cnvp_bins)
-  segments <- read.delim(cur_idat$heidelberg_cnvp_segments)
+
+  ## p1: CNV plot ----
+  bins <- read.delim(cur_idat$array_mnp_CNVP_v12.8_v5.2_CNVP_bins)
+  segments <- read.delim(cur_idat$array_mnp_CNVP_v12.8_v5.2_CNVP_segments)
   
   plt.bins <- bins |> 
     dplyr::rename(log2fc = 5) |> 
@@ -35,34 +51,34 @@ cnv_plot <- function(cur_sentrix_id) {
     dplyr::mutate(type="segment")
   
   plt <- rbind(plt.bins, plt.segments) |>
-    dplyr::mutate(group = paste0("line-",1:n())) |> 
+    dplyr::mutate(group = paste0("line-",1:dplyr::n())) |> 
     dplyr::filter(log2fc >= -1.2 & log2fc <= 1.7) |> 
     tidyr::pivot_longer(cols = c(start, end), values_to = "pos",names_to = "segment_point") |> 
     dplyr::filter(chr %in% c("chrX","chrY","chrM") == F ) |> 
     dplyr::mutate(chr = factor(chr, levels = gtools::mixedsort(unique(as.character(chr))))) |> 
     dplyr::mutate(pos = round(pos/1000000))
   
-  sel <- unique(c(cur_idat$predictBrain_12.5_cal_class, "O_IDH", "A_IDH_LG", "A_IDH_HG"))
-  pct <- cur_idat |> dplyr::select(paste0("predictBrain_12.5_cal_",sel))
+  sel <- unique(c(cur_idat$array_mnp_predictBrain_v12.8_cal_class, "O_IDH", "A_IDH_LG", "A_IDH_HG", "OLIGOSARC_IDH"))
+  pct <- cur_idat |> dplyr::select(paste0("array_mnp_predictBrain_v12.8_cal_",sel))
   class_txt <- data.frame(sel=sel, pct) |> 
-    dplyr::mutate(txt = paste0(sel, ": ",pct,"%")) |> 
+    dplyr::mutate(txt = paste0(sel, ": ",round(pct,2),"")) |> 
     dplyr::pull(txt) |> 
     stringi::stri_paste(collapse='  -  ')
   
   p1 <- ggplot(plt, aes(x = pos, y=log2fc, group=group, col=log2fc)) +
     facet_grid(cols = vars(chr), scales = "free", space="free") +
     
-    geom_hline(yintercept = 0, col="gray80", lty=2) +
-    geom_hline(yintercept = -1, col="gray80", lty=2) +
-    geom_hline(yintercept = 1.5, col="gray80", lty=2) +
-
-    geom_hline(yintercept = cur_idat$methylation_bins_1p19q_median.lfc, col="blue", lty=3) +
+    geom_vline(xintercept = 0, col="black", lwd=theme_cellpress_lwd) +
     
-    geom_line(data = plt |> dplyr::filter(type =="bin")) +
-    geom_line(data = plt |> dplyr::filter(type =="segment"), lwd=1.2, col="red") +
+    geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+    geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+    geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
 
+    geom_hline(yintercept = cur_idat$array_methylation_bins_1p19q_median.lfc, col="blue", lty=3, lwd=theme_cellpress_lwd) +
     
-    theme_bw() +
+    geom_line(data = plt |> dplyr::filter(type =="bin"), lwd=1.25) +
+    geom_line(data = plt |> dplyr::filter(type =="segment"), lwd=theme_cellpress_lwd * 2, col="red") +
+
     theme(
       axis.title = element_text(face = "bold", size = rel(1)),
       # axis.text.x = element_blank(),
@@ -77,85 +93,154 @@ cnv_plot <- function(cur_sentrix_id) {
     ) +
     labs(
       x = NULL,
-      y = paste0("CNVP ",cur_idat$heidelberg_cnvp_version," log2 ratio"),
-      caption = paste0(cur_idat$resection_id, " / ", 
-                       cur_idat$sentrix_id, "  -  ",
+      y = paste0("CNVP v12.8 log2 ratio"),
+      subtitle = paste0(cur_idat$resection_id, " / ", 
+                       cur_idat$array_sentrix_id, "  -  ",
                        class_txt , 
-                       "  -  purity: ", round(100 * cur_idat$methylation_bins_1p19q_purity,1), "%", 
+                       "  -  purity: ", round(100 * cur_idat$array_methylation_bins_1p19q_purity,1), "%", 
                        "  -  grade: ", as.character(cur_idat$resection_tumor_grade))
     ) +
+    ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", 
+                                   limits = c(-abs(cur_idat$array_methylation_bins_1p19q_median.lfc), abs(cur_idat$array_methylation_bins_1p19q_median.lfc)),
+                                   breaks= c( -abs(cur_idat$array_methylation_bins_1p19q_median.lfc) , abs(cur_idat$array_methylation_bins_1p19q_median.lfc)), oob = scales::squish) +
     scale_x_continuous(breaks = c(0, 50, 100, 150, 200, 250, 300)) +
-    coord_cartesian(ylim = c(-1.2, 1.7))
+    coord_cartesian(ylim = c(-1.2, 1.7)) +
+    theme_cellpress
+  p1
   
   
-  
-  
+  ## p2: purity x MNP class plot ----
   plt <- glass_od.metadata.array_samples |> 
-    dplyr::filter(is.na(reason_excluded_patient)) |> 
-    dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
-    dplyr::filter(is.na(reason_excluded_resection)) |> 
-    dplyr::filter(is.na(reason_excluded_array_sample)) |> 
-    dplyr::filter(!is.na(methylation_bins_1p19q_median.lfc))|> 
-    dplyr::filter(!is.na(methylation_bins_1p19q_sd))
+    dplyr::filter(!is.na(array_methylation_bins_1p19q_median.lfc))|> 
+    dplyr::filter(!is.na(array_methylation_bins_1p19q_sd))
   
-  p2 <- ggplot(plt, aes(x=methylation_bins_1p19q_purity,
-                  y=methylation_bins_1p19q_sd,
-                  col=predictBrain_12.5_cal_class,
-                  label=resection_id)
+  p2 <- ggplot(plt, aes(x=array_methylation_bins_1p19q_purity,
+                  y=array_methylation_bins_1p19q_sd,
+                  col=array_mnp_predictBrain_v12.8_cal_class,
+                  label=isolation_id)
   ) + 
-    geom_point(size=1.75) +
+    geom_vline(xintercept = 0.1, col="red",lwd=theme_cellpress_lwd,lty=2)  + 
+    geom_point(size=1) +
+    geom_point(data = subset(plt, array_sentrix_id == cur_sentrix_id), size=2.2, col="black", pch=21) +
     ggrepel::geom_text_repel(data = cur_idat, col="black",
                              nudge_x = 0.1*0.4,
-                             nudge_y = 0.05*0.4) +
-    theme_bw() +
+                             nudge_y = 0.05*1.2,
+                             size=theme_cellpress_size) +
     labs(x = "Tumor purity [1P/19Q log2Fc based]",
          y="Standard deviation purity estimator") +
-    coord_cartesian(ylim = c(0, 0.8))
+    coord_cartesian(ylim = c(0, 0.5)) +
+    labs(col="v12.8 class") +
+    theme_cellpress
+  p2
+
   
   
+  ## p3: QC plot ----
   plt <- glass_od.metadata.array_samples |> 
-    dplyr::filter(is.na(reason_excluded_patient)) |> 
-    dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
-    dplyr::filter(is.na(reason_excluded_resection)) |> 
-    dplyr::filter(is.na(reason_excluded_array_sample)) |> 
-    dplyr::filter(!is.na(qc.pca.comp1)) |> 
-    dplyr::filter(!is.na(percentage.detP.signi))
-    
-  p3 <- ggplot(plt, aes(x=qc.pca.comp1,
-                  y=log2(percentage.detP.signi + 1),
-                  col=predictBrain_12.5_cal_class,
-                  label=resection_id,
-                  shape = percentage.detP.signi >= 5)
-  ) + 
-    geom_point(size=1.75) +
-    ggrepel::geom_text_repel(data = cur_idat, col="black",
-                             nudge_x = 25,
-                             nudge_y = 0.2) +
-    labs(x = "PC1 (quality associated component)",y="log(detP + 1) -- qc metric") +
-    theme_bw() +
-    geom_hline(yintercept = log2(5 +1 ), lty=2, col="red",lwd=0.5) +
-    theme(legend.position = "none")
+    dplyr::mutate(col = dplyr::case_when(
+      array_sentrix_id == cur_sentrix_id ~ isolation_id,
+      array_qc.pca.detP.outlier == T ~ "outlier: excluded",
+      array_qc.pca.detP.outlier == F ~ "no outlier: good / sufficient quality"
+    ))
   
-  p1 / (p2 + p3 )
+  p3 <- ggplot(plt, aes(x=array_qc.pca.comp1, y=array_percentage.detP.signi, col = col, label=isolation_id)) +
+    scale_y_continuous(trans = "log1p", limits=c(0,100), breaks=c(0,2.5,5,10,25,50,100)) +
+    scale_x_continuous(breaks=c(-400,0,400,600,800,1200)) +
+    geom_hline(yintercept=2.5, col="red", lty=2, lwd=theme_cellpress_lwd) +
+    geom_vline(xintercept=600, col="red", lty=2, lwd=theme_cellpress_lwd) +
+    geom_point(size=1) +
+    geom_point(data = subset(plt, array_sentrix_id == cur_sentrix_id), size=2.2, col="black", pch=21) +
+    ggrepel::geom_text_repel(data=subset(plt, array_sentrix_id == cur_sentrix_id), show_guide=F, 
+                             col="black", size=theme_cellpress_size,nudge_y = 0.5) +
+    labs(x = "PC1 all samples", y="percentage detP failed", col=NULL) +
+    theme_cellpress
+  p3
+  
+  
+  
+  ## p4: A/O/IDH/LG/HG ----
+  
+  sel <- unique(c("O_IDH", "A_IDH_LG", "A_IDH_HG", "OLIGOSARC_IDH"))
+  plt <- cur_idat |> dplyr::select(paste0("array_mnp_predictBrain_v12.8_cal_",sel)) |> 
+    t() |> 
+    as.data.frame() |> 
+    tibble::rownames_to_column('v12.8_predicted_class') |> 
+    dplyr::mutate(v12.8_predicted_class = gsub("array_mnp_predictBrain_v12.8_cal_", "", v12.8_predicted_class)) |> 
+    dplyr::mutate(tumor_type = ifelse(grepl("A_IDH",v12.8_predicted_class), "Astrocytoma", "Oligodendroglioma")) |> 
+    dplyr::mutate(lg_hg = ifelse(v12.8_predicted_class %in% c("A_IDH","A_IDH_LG", "O_IDH"), "LG", "HG")) |> 
+    dplyr::mutate(y_ref = ifelse(lg_hg == "LG", 0 , 1)) |> 
+    dplyr::mutate(y_dat = ifelse(lg_hg == "HG", 1 - V1, V1)) |> 
+    tidyr::pivot_longer(cols=c(y_ref,y_dat), values_to = 'y')
+  
+  p4 <- ggplot(plt, aes(x=tumor_type, y=y, group=v12.8_predicted_class, col=v12.8_predicted_class)) +
+    geom_hline(yintercept = 1 , col="black", alpha=0.5, lwd=theme_cellpress_lwd) +
+    geom_hline(yintercept = 0 , col="black", alpha=0.5, lwd=theme_cellpress_lwd) +
+    geom_line(lwd=10, show_guide=F) +
+    geom_point(data=subset(plt, y==9999)) +
+    labs(x = NULL, y="Prediction probability MNP v12.8", col=NULL) +
+    scale_color_manual(values = palette_mnp_12.8_6) +
+    theme_cellpress
+  p4
+  
+  
+  ## p5: Reasons excluded plot ----
+  plt <- cur_idat |> 
+    dplyr::select(contains("excluded")) |> 
+    t() |>
+    as.data.frame() |> 
+    tibble::rownames_to_column("reason") |> 
+    dplyr::mutate(reason = gsub("_reason_excluded","",reason)) |> 
+    dplyr::mutate(excluded = !is.na(V1)) |> 
+    dplyr::mutate(V1 = ifelse(excluded, V1, "no reason for exclusion"))
+  
+  
+  p5 <- ggplot(plt, aes(y = reason, label=V1, fill=excluded)) +
+    geom_label(x = 0, hjust=0, size=theme_cellpress_size, show_guide=F) +
+    scale_fill_manual(values=c('FALSE'=mixcol('green','darkgreen',0.4), 'TRUE'='red')) +
+    labs(y=NULL, subtitle = paste0(cur_idat$isolation_id, ": reasons excluded"), fill=NULL, col=NULL, x=NULL) +
+    theme_cellpress
+  p5
+  
+  
+  ## p6: H&E ------
+  
+  if(is.na(cur_idat$HE_coupe_thumbnail_roi)) {
+    p6 <- grid::rasterGrob(width = 1.25, png::readPNG('data/gray-pix.png'), interpolate=TRUE)
+    
+  } else {
+    p6 <- grid::rasterGrob(jpeg::readJPEG(cur_idat$HE_coupe_thumbnail_roi), interpolate=TRUE)
+  }
+  
+  
+  if(is.na(cur_idat$HE_coupe_thumbnail_full)) {
+    p7 <- grid::rasterGrob(width = 1.25, png::readPNG('data/gray-pix.png'), interpolate=TRUE)
+    
+  } else {
+    p7 <- grid::rasterGrob(png::readPNG(cur_idat$HE_coupe_thumbnail_full), interpolate=TRUE)
+  }
+  
+  
+  
+  ## merge ----
+  
+  p1 / (p2 + p3 + p4) / (p5 + p6 + p7)
   
   
   ggsave(paste0("output/figures/cnv_profiles/",
-                cur_idat$resection_id,".tpc.estimate.png"), width = 8.3, height = 5, scale = 2)
+                cur_idat$isolation_id,"_badge.png"), width = 8.5 * 0.975, height = 5.25, scale=1.5)
 }
 
 
 pbapply::pblapply(glass_od.metadata.array_samples |> 
-                    dplyr::filter(is.na(reason_excluded_patient)) |> 
-                    dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
-                    dplyr::filter(is.na(reason_excluded_resection)) |> 
+                    dplyr::filter(!is.na(array_heidelberg_cnvp_bins)) |> 
+                    dplyr::filter(!is.na(array_mnp_predictBrain_v12.8_cal_class)) |> 
+                    
+                    #dplyr::filter(is.na(reason_excluded_patient)) |> 
+                    #dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
+                    #dplyr::filter(is.na(reason_excluded_resection)) |> 
                     #dplyr::filter(is.na(reason_excluded_array_sample)) |> 
-                    dplyr::pull(sentrix_id), cnv_plot)
+                    dplyr::pull(array_sentrix_id), cnv_plot)
 
-
-a = glass_od.metadata.array_samples |> 
-  dplyr::filter(is.na(reason_excluded_patient)) |> 
-  dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
-  dplyr::filter(is.na(reason_excluded_resection)) 
 
 
 

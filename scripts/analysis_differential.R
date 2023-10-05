@@ -32,6 +32,7 @@ if(!exists('glass_nl.metadata.array_samples')) {
 # analyses: GLASS-OD primary - last recurrence ----
 ## data: example ----
 
+
 metadata.example <- data.frame(pid = (1:100) %% 50) |> 
   dplyr::arrange(pid) |> 
   dplyr::mutate(pid = factor(paste0("p", pid))) |> 
@@ -187,12 +188,13 @@ plot(coef$conditionc2, -log(pval$conditionc2))
 
 
 
-## data: paired ----
+## data: full paired only ----
 
 
-metadata.p <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(163) |> 
-  filter_primaries_and_last_recurrences(136) |> 
+
+metadata.fp <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(211) |> 
+  filter_primaries_and_last_recurrences(179) |> 
   
   dplyr::group_by(patient_id) |> 
   dplyr::filter(dplyr::n() == 2) |> 
@@ -200,272 +202,351 @@ metadata.p <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p",patient_id))) |> 
   dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
   dplyr::mutate(batch = ifelse(isolation_person_name == "USA / Duke", "batch [US]", "batch [EU]")) |> 
-  dplyr::select(sentrix_id, patient, pr.status, batch)
+  dplyr::select(array_sentrix_id, patient, pr.status, batch)  |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (138)) # number of perfect pairs is smaller 
+    return(.)
+  })()
 
 
 tmp <- rbind(
-  metadata.p |> 
+  metadata.fp |> 
     dplyr::filter(pr.status == "primary") |> 
     dplyr::mutate(patient = as.character(patient)) |> 
     dplyr::mutate(patient = sample(patient, replace=F)) |> 
     assertr::verify(!duplicated(patient))
   ,
-  metadata.p |> 
+  metadata.fp |> 
     dplyr::filter(pr.status == "recurrence") |> 
     dplyr::mutate(patient = as.character(patient)) |> 
     dplyr::mutate(patient = sample(patient, replace=F)) |> 
     assertr::verify(!duplicated(patient))
 ) |> 
-  dplyr::mutate(patient_shuffled = as.factor(patient)) |> 
-  dplyr::select(sentrix_id, patient_shuffled)
+  #dplyr::mutate(patient_shuffled = as.factor(patient)) |> 
+  dplyr::select(array_sentrix_id)
 
-metadata.p <- metadata.p |> 
-  dplyr::left_join(tmp, by=c('sentrix_id'='sentrix_id'),suffix=c('',''))
+metadata.fp <- metadata.fp |> 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
 rm(tmp)
 
 
-data.p <- data.mvalues.hq_samples |> 
+
+data.fp <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.p$sentrix_id) |> 
-  (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
-  dplyr::arrange(mad) |>
-  dplyr::mutate(mad = NULL) 
-  #dplyr::slice_head(n=125000)
+  
+  dplyr::select(metadata.fp$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
 
 
-### test: pat + condition  ----
-
-
-design.p.p1 <- model.matrix(~factor(patient) + factor(pr.status), data=metadata.p)
-fit.p.p1 <- limma::lmFit(data.p, design.p.p1)
-fit.p.p1 <- limma::eBayes(fit.p.p1,trend=T)
-stats.p.p1 <- limma::topTable(fit.p.p1,
-                n=nrow(data.p),
+design.fp <- model.matrix(~factor(patient) + factor(pr.status), data=metadata.fp)
+fit.fp <- limma::lmFit(data.fp, design.fp)
+fit.fp <- limma::eBayes(fit.fp, trend=T)
+stats.fp <- limma::topTable(fit.fp,
+                n=nrow(data.fp),
                 coef="factor(pr.status)recurrence",
                 sort.by = "none",
                 adjust.method="fdr") |> 
-  tibble::column_to_rownames('probe_id') 
+  tibble::rownames_to_column('probe_id') 
 
 
-rm(design.p.p1, fit.p.p1)
+rm(design.fp)
 
 
-sum(stats.p.p1$P.Value < 0.01)
-sum(stats.p.p1$adj.P.Val < 0.01)
-
-
-
-#plot(coef.p.p1, -log(pval.p.p1),pch=19,cex=0.2)
+sum(stats.fp$P.Value < 0.01)
+sum(stats.fp$adj.P.Val < 0.01)
 
 
 
-
-### test: pat_shuffled + condition ----
-
-
-design.p.p1shuf <- model.matrix(~factor(patient_shuffled) + factor(pr.status), data=metadata.p)
-fit.p.p1shuf <- limma::lmFit(data.p, design.p.p1shuf)
-fit.p.p1shuf <- limma::eBayes(fit.p.p1shuf,trend=T)
-stats.p.p1shuf <- limma::topTable(fit.p.p1shuf,
-                                  n=nrow(data.p),
-                                  coef="factor(pr.status)recurrence",
-                                  sort.by = "none",
-                                  adjust.method="fdr") |> 
-  tibble::column_to_rownames('probe_id') 
-
-
-rm(design.p.p1shuf, fit.p.p1shuf)
-
-
-sum(stats.p.p1shuf$P.Value < 0.01)
-sum(stats.p.p1shuf$adj.P.Val < 0.01)
+saveRDS(fit.fp, file="cache/analysis_differential__primary_recurrence__full_paired__fit.Rds")
+saveRDS(stats.fp, file="cache/analysis_differential__primary_recurrence__full_paired__stats.Rds")
 
 
 
-### test: batch[US/EU] + condition ----
-
-design.p.b1 <- model.matrix(~factor(batch) + factor(pr.status), data=metadata.p)
-fit.p.b1 <- limma::lmFit(data.p, design.p.b1)
-fit.p.b1 <- limma::eBayes(fit.p.b1,trend=T)
-stats.p.b1 <- limma::topTable(fit.p.b1,
-                              n=nrow(data.p),
-                              coef="factor(pr.status)recurrence",
-                              sort.by = "none",
-                              adjust.method="fdr") |> 
-  tibble::column_to_rownames('probe_id') 
-
-
-rm(design.p.b1, fit.p.b1)
-
-
-sum(stats.p.b1$P.Value < 0.01)
-sum(stats.p.b1$adj.P.Val < 0.01)
-
-
-
-### test:  removeBatchEffects() => unpaired ----
-#' to see how big the effect of diverse primaries is
-
-#t() |> #scale() |> #t() |>
-
-dn.p <- data.p |>
-  limma::removeBatchEffect(metadata.p$patient)
-
-
-design.p.rmb.u <- model.matrix(~factor(pr.status), data=metadata.p)
-fit.p.rmb.u <- limma::lmFit(dn.p, design.p.rmb.u)
-fit.p.rmb.u <- limma::eBayes(fit.p.rmb.u,trend=T)
-stats.p.rmb.u <- limma::topTable(fit.p.rmb.u,
-                   n=nrow(data.p),
-                   coef="factor(pr.status)recurrence",
-                   sort.by = "none",
-                   adjust.method="fdr") |> 
-  tibble::column_to_rownames('probe_id') 
-
-
-rm(dn.p, design.p.rmb.u, fit.p.rmb.u)
-
-
-
-### test: condition (unpaired) ----
-#' to see how big the effect of diverse primaries is
-
-
-design.p.u <- model.matrix(~factor(pr.status), data=metadata.p)
-fit.p.u <- limma::lmFit(data.p, design.p.u)
-fit.p.u <- limma::eBayes(fit.p.u,trend=T)
-stats.p.u <- limma::topTable(fit.p.u, 
-               n=nrow(data.p),
-               coef="factor(pr.status)recurrence",
-               sort.by = "none",
-               adjust.method="fdr") |> 
-  tibble::column_to_rownames('probe_id') 
-
-rm(design.p.u, fit.p.u)
+rm(fit.fp, stats.fp)
 
 
 
 
-## data: partially paired ----
 
-metadata.pp <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(163) |> 
-  filter_primaries_and_last_recurrences(136) |> 
+
+## data: partially paired [w/o FFPE/frozen batch correct] ----
+
+
+metadata.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(211) |> 
+  filter_primaries_and_last_recurrences(179) |> 
+  
+
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"remainder")))) |> 
+  dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
+  dplyr::select(array_sentrix_id, patient, pr.status) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (179)) 
+    return(.)
+  })()
+
+
+data.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+
+design.pp.nc <- model.matrix(~factor(patient) + factor(pr.status), data=metadata.pp.nc)
+fit.pp.nc <- limma::lmFit(data.pp.nc, design.pp.nc)
+fit.pp.nc <- limma::eBayes(fit.pp.nc, trend=T)
+stats.pp.nc <- limma::topTable(fit.pp.nc,
+                               n=nrow(data.pp.nc),
+                               coef="factor(pr.status)recurrence",
+                               sort.by = "none",
+                               adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.pp.nc)
+
+
+sum(stats.pp.nc$P.Value < 0.01)
+sum(stats.pp.nc$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.pp.nc, file="cache/analysis_differential__primary_recurrence__partial_paired_nc__fit.Rds")
+saveRDS(stats.pp.nc, file="cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds")
+
+
+rm(fit.pp.nc, stats.pp.nc)
+
+
+
+## data: partially paired [w/ FFPE/frozen batch correct] ----
+
+
+metadata.pp.cor <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(211) |> 
+  filter_primaries_and_last_recurrences(179) |> 
   
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() == 2) |> 
   dplyr::ungroup() |> 
-  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"remainder")))) |> 
+  
+  dplyr::mutate(batch = factor(ifelse(isolation_person_name == "USA / Duke", "Batch US [FF]", "Batch EU [FFPE]"))) |> 
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,paste0("_remainder","_",batch))))) |> 
   dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
-  dplyr::select(sentrix_id, patient, pr.status)
+  
+  dplyr::select(array_sentrix_id, patient, pr.status) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (179)) 
+    return(.)
+  })()
 
 
-data.pp <- data.mvalues.hq_samples |> 
+
+data.pp.cor <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.pp$sentrix_id) |> 
-  (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
-  dplyr::arrange(mad) |>
-  dplyr::mutate(mad = NULL)
-  #dplyr::slice_head(n=125000)
-
-
-
-
-### test: pat + condition  ----
-
-
-design.pp.p1 <- model.matrix(~factor(patient) + factor(pr.status), data=metadata.pp)
-fit.pp.p1 <- limma::lmFit(data.pp, design.pp.p1)
-fit.pp.p1 <- limma::eBayes(fit.pp.p1, trend=T)
-stats.pp.p1 <- limma::topTable(fit.pp.p1,
-                               n=nrow(data.pp),
-                               coef="factor(pr.status)recurrence",
-                               sort.by = "none",
-                               adjust.method="fdr") |> 
-  tibble::column_to_rownames('probe_id') 
-
-rm(design.pp.p1, fit.pp.p1)
-
-
-sum(stats.pp.p1$P.Value < 0.01)
-sum(stats.pp.p1$adj.P.Val < 0.01)
-
-
-
-### removeBatchEffects() => unpaired ----
-#' to see how big the effect of diverse primaries is
-
-
-dn.pp <- data.pp |> 
-  limma::removeBatchEffect(metadata.pp$patient)
-
-
-design.pp.rmb.u <- model.matrix(~factor(pr.status), data=metadata.pp)
-fit.pp.rmb.u <- limma::lmFit(dn.pp, design.pp.rmb.u)
-fit.pp.rmb.u <- limma::eBayes(fit.pp.rmb.u,trend=T)
-stats.pp.rmb.u <- limma::topTable(fit.pp.rmb.u,
-                                  n=nrow(data.pp),
-                                  coef="factor(pr.status)recurrence",
-                                  sort.by = "none",
-                                  adjust.method="fdr") |> 
-  tibble::column_to_rownames('probe_id') 
-
-rm(dn.pp, design.pp.rmb.u, fit.pp.rmb.u)
-
-
-### without pairing ----
-
-
-design.pp.u <- model.matrix(~factor(pr.status), data=metadata.pp)
-fit.pp.u <- limma::lmFit(data.pp, design.pp.u)
-fit.pp.u <- limma::eBayes(fit.pp.u, trend=T)
-stats.pp.u <- limma::topTable(fit.pp.u,
-                              n=nrow(data.pp),
-                              coef="factor(pr.status)recurrence",
-                              sort.by = "none",
-                              adjust.method="fdr") |> 
-  tibble::column_to_rownames('probe_id') 
-
-rm(design.pp.u, fit.pp.u)
-
-
-sum(stats.pp.u$P.Value < 0.01)
-sum(stats.pp.u$adj.P.Val < 0.01)
-
-
-
-## plot: sort(pvals) ----
-
-
-
-plt <- rbind(
-  stats.p.b1 |> dplyr::mutate(type = "~batch + cond", paired = paste0("full [n=",nrow(metadata.p),"]")),
-  stats.p.p1 |> dplyr::mutate(type = "~patient + cond", paired = paste0("full [n=",nrow(metadata.p),"]")),
-  stats.p.p1shuf |> dplyr::mutate(type = "~patient_shuffled + cond", paired = paste0("full [n=",nrow(metadata.p),"]")),
-  #stats.p.rmb.u |> dplyr::mutate(type = "removeBatchEffects() => cond", paired = paste0("full [n=",nrow(metadata.p),"]")),
-  stats.p.u |> dplyr::mutate(type = "~cond", paired = paste0("full [n=",nrow(metadata.p),"]")),
   
-  stats.pp.p1 |> dplyr::mutate(type = "~patient + cond", paired = paste0("partial [n=",nrow(metadata.pp),"]")),
-  #stats.pp.rmb.u |> dplyr::mutate(type = "removeBatchEffects() => cond", paired = paste0("partial [n=",nrow(metadata.pp),"]")),
-  stats.pp.u |> dplyr::mutate(type = "~cond", paired = paste0("partial [n=",nrow(metadata.pp),"]"))
-) |> 
-  dplyr::mutate(group = paste0(paired, ", ",type )) |> 
-  dplyr::arrange(group, P.Value) |> 
-  dplyr::group_by(group) |> 
-  dplyr::mutate(x = 1:dplyr::n()) |> 
-  dplyr::ungroup()
+  dplyr::select(metadata.pp.cor$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
 
 
-ggplot(plt,aes(x=x, y=P.Value, group = group, col=type, lty=paired)) +
-  geom_line() +
-  theme_bw() +
-  labs(x= "probe, ordered by p-value") +
-  geom_hline(yintercept = 0.01, col="red",lty=2,lwd=0.15)
 
+design.pp.cor <- model.matrix(~ factor(patient) + factor(pr.status), data=metadata.pp.cor)
+fit.pp.cor <- limma::lmFit(data.pp.cor, design.pp.cor)
+fit.pp.cor <- limma::eBayes(fit.pp.cor, trend=T)
+stats.pp.cor <- limma::topTable(fit.pp.cor,
+                                n=nrow(data.pp.cor),
+                                coef="factor(pr.status)recurrence",
+                                sort.by = "none",
+                                adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+rm(design.pp.cor)
+
+
+sum(stats.pp.cor$P.Value < 0.01)
+sum(stats.pp.cor$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.pp.cor, file="cache/analysis_differential__primary_recurrence__partial_paired_cor__fit.Rds")
+saveRDS(stats.pp.cor, file="cache/analysis_differential__primary_recurrence__partial_paired_cor__stats.Rds")
+
+
+rm(fit.pp.cor, stats.pp.cor)
+
+
+
+## data: unpaired [w/o FFPE/frozen batch correct] ----
+
+
+metadata.up.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(211) |> 
+  filter_primaries_and_last_recurrences(179) |> 
+  
+  dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
+  
+  dplyr::select(array_sentrix_id, pr.status) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (179)) 
+    return(.)
+  })()
+
+
+
+data.up.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.up.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+
+design.up.nc <- model.matrix(~ factor(pr.status), data=metadata.up.nc)
+fit.up.nc <- limma::lmFit(data.up.nc, design.up.nc)
+fit.up.nc <- limma::eBayes(fit.up.nc, trend=T)
+stats.up.nc <- limma::topTable(fit.up.nc,
+                                n=nrow(data.up.nc),
+                                coef="factor(pr.status)recurrence",
+                                sort.by = "none",
+                                adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+rm(design.up.nc)
+
+
+sum(stats.up.nc$P.Value < 0.01)
+sum(stats.up.nc$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.up.nc, file="cache/analysis_differential__primary_recurrence__unpaired_nc__fit.Rds")
+saveRDS(stats.up.nc, file="cache/analysis_differential__primary_recurrence__unpaired_nc__stats.Rds")
+
+
+rm(fit.up.cor, stats.up.cor)
+
+
+
+
+## data: unpaired [w/ FFPE/frozen batch correct] ----
+
+metadata.up.cor <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(211) |> 
+  filter_primaries_and_last_recurrences(179) |> 
+  
+  dplyr::mutate(batch = factor(ifelse(isolation_person_name == "USA / Duke", "Batch US [FF]", "Batch EU [FFPE]"))) |> 
+  dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
+  
+  dplyr::select(array_sentrix_id, batch, pr.status) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (179)) 
+    return(.)
+  })()
+
+
+
+data.up.cor <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.up.cor$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+
+design.up.cor <- model.matrix(~ factor(batch) + factor(pr.status), data=metadata.up.cor)
+fit.up.cor <- limma::lmFit(data.up.cor, design.up.cor)
+fit.up.cor <- limma::eBayes(fit.up.cor, trend=T)
+stats.up.cor <- limma::topTable(fit.up.cor,
+                                n=nrow(data.up.cor),
+                                coef="factor(pr.status)recurrence",
+                                sort.by = "none",
+                                adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+rm(design.up.cor)
+
+
+sum(stats.up.cor$P.Value < 0.01)
+sum(stats.up.cor$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.up.cor, file="cache/analysis_differential__primary_recurrence__unpaired_cor__fit.Rds")
+saveRDS(stats.up.cor, file="cache/analysis_differential__primary_recurrence__unpaired_cor__stats.Rds")
+
+
+rm(fit.up.cor, stats.up.cor)
+
+
+
+
+
+
+
+## plot ----
+
+
+
+plt <- readRDS(file="cache/analysis_differential__primary_recurrence__full_paired__stats.Rds") |> 
+  dplyr::mutate(significant = adj.P.Val < 0.01 & abs(logFC) > 0.5)
+
+
+ggplot(plt, aes(x=logFC , y=-log10(adj.P.Val), col=significant)) +
+  geom_point(pch=19,cex=0.01)
+
+
+#saveRDS(stats.pp.nc, file="cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds")
+#saveRDS(stats.pp.cor, file="cache/analysis_differential__primary_recurrence__partial_paired_cor__stats.Rds")
+#saveRDS(stats.up.nc, file="cache/analysis_differential__primary_recurrence__unpaired_nc__stats.Rds")
+#saveRDS(stats.up.cor, file="cache/analysis_differential__primary_recurrence__unpaired_cor__stats.Rds")
 
 
 
@@ -608,53 +689,81 @@ ggplot(subset(plt, chr == "chr2"), aes(x=pos / 1000000,y=delta1, col=chr)) +
 # analyses: GLASS-OD g2 - g3 ----
 #' @todo ASK what to do if first resection is G3 while last is G2 !!!
 
-## data: partially paired ----
+## data: partially paired [w/o FFPE/frozen batch correct] ----
 
-metadata.pp <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(163) |> 
-  filter_first_G2_and_last_G3(105) |> 
+metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(211) |> 
+  filter_first_G2_and_last_G3(140) |> 
+  
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() == 2) |> 
   dplyr::ungroup() |> 
-  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"remainder")))) |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
   assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
-  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2","Grade3"))
+  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2","Grade3")) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (140)) 
+    return(.)
+  })()
 
 
 
-data.pp <- data.mvalues.hq_samples |> 
+data.g2g3.pp.nc <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.pp$sentrix_id) |> 
-  (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
-  dplyr::arrange(mad) |>
-  dplyr::mutate(mad = NULL)
+  
+  dplyr::select(metadata.g2g3.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
 
 
 
 
-### test: pat + condition  ----
 
-
-design.g23 <- model.matrix(~factor(patient) + factor(gr.status), data=metadata.pp)
-fit.gr <- limma::lmFit(data.pp, design.g23)
-fit.gr <- limma::eBayes(fit.gr, trend=T)
-stats.gr <- limma::topTable(fit.gr,
-                            n=nrow(data.pp),
+design.g2g3.pp.nc <- model.matrix(~factor(patient) + factor(gr.status), data=metadata.g2g3.pp.nc)
+fit.g2g3.pp.nc <- limma::lmFit(data.g2g3.pp.nc, design.g2g3.pp.nc)
+fit.g2g3.pp.nc <- limma::eBayes(fit.g2g3.pp.nc, trend=T)
+stats.g2g3.pp.nc <- limma::topTable(fit.g2g3.pp.nc,
+                            n=nrow(data.g2g3.pp.nc),
                             coef="factor(gr.status)Grade3",
                             sort.by = "none",
                             adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id') 
 
-rm(design.g23, fit.gr)
+rm(design.g2g3.pp.nc)
 
 
-sum(stats.gr$P.Value < 0.01)
-sum(stats.gr$adj.P.Val < 0.01)
+sum(stats.g2g3.pp.nc$P.Value < 0.01)
+sum(stats.g2g3.pp.nc$adj.P.Val < 0.01)
 
 
-plot(sort(stats.gr$P.Value),type="l")
+
+saveRDS(fit.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__partial_paired_nc__fit.Rds")
+saveRDS(stats.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds")
+
+
+plt.a <- readRDS("cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds") |> 
+  dplyr::rename_with( ~ paste0(.x, "__g2_g3__partial_paired_nc"), .cols=!matches("^probe_id$",perl = T))
+
+plt.b <- readRDS("cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds") |> 
+  dplyr::rename_with( ~ paste0(.x, "__primary_recurrence__partial_paired_nc"), .cols=!matches("^probe_id$",perl = T))
+
+
+### neat plot ----
+plt <- dplyr::left_join(plt.a, plt.b, by=c('probe_id'='probe_id'), suffix=c('',''))
+ggplot(plt, aes(x=t__g2_g3__partial_paired_nc,
+                y=t__primary_recurrence__partial_paired_nc)) +
+  geom_point(pch=19, cex=0.001, alpha=0.075) +
+  labs(x = "t-score (Grade 2 ~ Grade 3)", y="t-score (primary ~ recurrence)")
+
+
 
 
 # analyses: GLASS-OD AcCGAP ----
@@ -704,6 +813,143 @@ sum(stats.lgc$P.Value < 0.01)
 sum(stats.lgc$adj.P.Val < 0.01)
 
 plot(sort(stats.lgc$P.Value),type="l")
+
+
+# analyses: GLASS-OD A_IDH_HG - OLIGOSARC ----
+
+
+metadata.hg_olsc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(211) |> 
+  dplyr::filter(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG", "OLIGOSARC_IDH")) |> 
+  dplyr::filter(isolation_id != "0104-R2")   # actual astro
+
+
+p1 = ggplot(metadata.hg_olsc, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_methylation_bins_1p19q_purity, label=isolation_id)) +
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
+  theme_cellpress
+
+
+p2 = ggplot(metadata.hg_olsc, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_median.overall.methylation, label=isolation_id)) +
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
+  theme_cellpress
+
+
+p3 = ggplot(metadata.hg_olsc, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, label=isolation_id)) +
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
+  theme_cellpress
+
+
+p4 = ggplot(metadata.hg_olsc, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_qc.pca.comp1, label=isolation_id)) +
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
+  theme_cellpress
+
+
+p1 + p2 + p3 + p4
+
+
+
+
+
+data.hg_olsc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata.hg_olsc$array_sentrix_id) 
+
+
+design.hg_olsc <- model.matrix(~  factor(array_mnp_predictBrain_v12.8_cal_class), data=metadata.hg_olsc)
+
+fit.hg_olsc <- limma::lmFit(data.hg_olsc, design.hg_olsc)
+fit.hg_olsc <- limma::eBayes(fit.hg_olsc, trend=T)
+stats.hg_olsc <- limma::topTable(fit.hg_olsc,
+                            n=nrow(data.hg_olsc),
+                            coef="factor(array_mnp_predictBrain_v12.8_cal_class)OLIGOSARC_IDH",
+                            sort.by = "none",
+                            adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.hg_olsc, fit.hg_olsc)
+
+
+paste0("DMPs: ",sum(stats.hg_olsc$adj.P.Val < 0.01), " / ", nrow(stats.hg_olsc), " (padj < 0.01)")
+
+
+
+
+
+#sum(stats.hg_olsc$P.Value < 0.01)
+plot(sort(stats.hg_olsc$P.Value),type="l")
+
+
+
+hg_olsc.borderline.probes <- stats.hg_olsc |> 
+  dplyr::filter(P.Value < 0.01) |> 
+  dplyr::left_join(
+    data.mvalues.probes, by=c('probe_id'='probe_id'),suffix=c('','')
+  ) |> 
+  dplyr::mutate(x = ((CpG_beg + CpG_end) / 2 ) / 100000000) |> 
+  dplyr::mutate(chr = factor(CpG_chrm, levels=gtools::mixedsort(unique(as.character(CpG_chrm))) ))
+
+
+plt <- rbind(
+  hg_olsc.borderline.probes |> 
+    dplyr::mutate(col = logFC),
+  hg_olsc.borderline.probes |> 
+    dplyr::mutate(col = logFC) |> 
+    dplyr::mutate(logFC = 0)
+) 
+
+
+
+
+ggplot(plt, aes(x = x, y= logFC, group=probe_id, col=col)) +
+  facet_grid(cols = vars(chr), scales = "free", space="free") +
+  geom_line(lwd=0.22, alpha=0.3) +
+  theme_cellpress +
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(-3, 3), breaks=c(-3, 3), oob = scales::squish)
+
+
+ggplot(plt |> dplyr::filter(chr == "chr2"), aes(x = x, y= logFC, group=probe_id, col=col)) +
+  facet_grid(cols = vars(chr), scales = "free", space="free") +
+  geom_line(lwd=0.22, alpha=0.3) +
+  theme_cellpress +
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(-3, 3), breaks=c(-3, 3), oob = scales::squish)
+
+
+ggplot(plt |> dplyr::filter(chr == "chr3"), aes(x = x, y= logFC, group=probe_id, col=col)) +
+  facet_grid(cols = vars(chr), scales = "free", space="free") +
+  geom_line(lwd=0.22, alpha=0.3) +
+  theme_cellpress +
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(-3, 3), breaks=c(-3, 3), oob = scales::squish)
+
+
+
+ggplot(plt |> dplyr::filter(chr == "chr4"), aes(x = x, y= logFC, group=probe_id, col=col)) +
+  facet_grid(cols = vars(chr), scales = "free", space="free") +
+  geom_line(lwd=0.22, alpha=0.3) +
+  theme_cellpress +
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(-3, 3), breaks=c(-3, 3), oob = scales::squish)
+
+
+
+ggplot(plt |> dplyr::filter(chr == "chr6"), aes(x = x, y= logFC, group=probe_id, col=col)) +
+  facet_grid(cols = vars(chr), scales = "free", space="free") +
+  geom_line(lwd=0.22, alpha=0.3) +
+  theme_cellpress +
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(-3, 3), breaks=c(-3, 3), oob = scales::squish)
+
+
+
+
+
+
+hg_olsc.borderline.probes |>
+  dplyr::filter(chr == "chr5") |> 
+  dplyr::arrange(-P.Value) |>  
+  dplyr::select(probe_id,  logFC ,   AveExpr   ,      t,     P.Value, adj.P.Val, CpG_beg ,genesUniq) |> 
+  View()
+
+
 
 
 # plot: g2-g3 x lgc ----

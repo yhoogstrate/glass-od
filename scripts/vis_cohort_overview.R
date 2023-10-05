@@ -56,14 +56,17 @@ p2 <- ggplot(plt, aes(x = x, y=A_IDH_HG__A_IDH_LG_lr, group=patient_id )) +
 p1 / p2
 
 
-# MNP brain classes ----
+
+# Fig 1: MNP brain classes ----
 
 
 
 plt <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(180, exclude.suspected.noncodels = F) |> 
-  dplyr::select(patient_id | patient_suspected_noncodel | resection_number | contains("_cal_class")) |> 
-  tidyr::pivot_longer(cols = c(array_mnp_predictBrain_v2.0.1_cal_class,
+  filter_GLASS_OD_idats(228, exclude.suspected.noncodels = F) |> 
+  dplyr::select(patient_id | patient_suspected_noncodel | resection_number | resection_tumor_grade | contains("_cal_class")) |> 
+  dplyr::mutate(resection_tumor_grade = paste0("Grade ", resection_tumor_grade)) |> 
+  tidyr::pivot_longer(cols = c(resection_tumor_grade,
+                               array_mnp_predictBrain_v2.0.1_cal_class,
                                array_mnp_predictBrain_v12.5_cal_class,
                                array_mnp_predictBrain_v12.8_cal_class), names_to = "classifier_version", values_to="class") |> 
   dplyr::mutate(col = as.factor(dplyr::case_when(
@@ -77,11 +80,27 @@ plt <- glass_od.metadata.array_samples |>
     patient_suspected_noncodel == F ~ "Codel",
     T ~ as.character("-")
   )) |> 
-  dplyr::mutate(classifier_version_txt = factor(gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version), levels=c("v2.0.1", "v12.5",  "v12.8" )))
+  dplyr::mutate(classifier_version_txt = 
+                  ifelse(
+                    classifier_version == "resection_tumor_grade",
+                    "WHO grade",
+                    gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version)
+                  )) |> 
+  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","v2.0.1", "v12.5",  "v12.8" )))
 
 
-plt.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |> dplyr::pull("patient_suspected_noncodel") |>  table()
-plt <- plt |> dplyr::mutate(patient_suspected_noncodel = paste0(patient_suspected_noncodel, " n=",plt.counts[plt$patient_suspected_noncodel]) )
+plt.resection.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
+  dplyr::pull("patient_suspected_noncodel") |>
+  table()
+plt.patient.counts <- plt |>
+  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
+  dplyr::select(patient_id, patient_suspected_noncodel) |> 
+  dplyr::distinct() |> 
+  dplyr::pull("patient_suspected_noncodel") |>
+  table()
+
+
+plt <- plt |> dplyr::mutate(patient_suspected_noncodel = paste0(patient_suspected_noncodel, "\n",plt.resection.counts[plt$patient_suspected_noncodel], " resections\n",plt.patient.counts[plt$patient_suspected_noncodel], " patients" ) )
 
 
 cols = c('A_IDH [_LG]' = 'lightblue',
@@ -91,21 +110,25 @@ cols = c('A_IDH [_LG]' = 'lightblue',
          'GBM_RTK_I' = 'red',
          
          'OLI' = 'lightgreen',
-         'OLIGOSARC_IDH' = 'darkgreen'
+         'OLIGOSARC_IDH' = 'darkgreen',
+         
+         'Grade 2' = mixcol( 'lightblue', 'lightgreen'),
+         'Grade 3' = mixcol( 'darkblue', 'darkgreen')
          )
 
 
 ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
   facet_grid(cols=vars(patient_suspected_noncodel),  rows=vars(classifier_version_txt), scales = "free", space="free") +
-  geom_point(pch=15,size=1.75,alpha=0.65) +
+  geom_point(pch=15,size=1.4,alpha=0.65) +
   scale_color_manual(values=cols) +
   labs(x = "patient",y="resection #", col="",fill="") +
   ylim(0.5,5.5) +
-  theme_cellpress_with_facet +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+  theme_cellpress +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  theme(panel.border = element_rect(fill=NA,color="black", size=theme_cellpress_lwd , linetype="solid"))
 
 
-ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.95, heigh = 2.5)
+ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 3.0)
 
 
 

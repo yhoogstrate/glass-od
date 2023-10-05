@@ -105,15 +105,17 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
 rm(tmp)
 
 
+## QC PCA outlier ----
 
-#' from: scripts/analysis_unsupervised_qc.R
 
-
-tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |> 
+tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds.bak') |> 
   dplyr::rename_with( ~ paste0("array_", .x)) |> 
   assertr::verify(!is.na(array_qc.pca.comp1)) |> 
+  assertr::verify(is.numeric(array_qc.pca.comp1)) |> 
   assertr::verify(!is.na(array_qc.pca.detP.outlier)) |> 
-  assertr::verify(glass_nl.metadata.array_samples$array_sentrix_id %in% array_sentrix_id)
+  assertr::verify(is.logical(array_qc.pca.detP.outlier)) |> 
+  assertr::verify(glass_nl.metadata.array_samples$array_sentrix_id %in% array_sentrix_id) |> 
+  dplyr::filter(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id)
 
 
 glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
@@ -122,6 +124,28 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
   assertr::verify(!is.na(array_qc.pca.detP.outlier))
 
 rm(tmp)
+
+
+
+## QC Purity PCA outlier 2 ----
+#' PCA was performed on only 218 HQ arrays
+#' these outliers in PC3 (val >300) were CONTR_ and sometimes difficultly classifiable
+
+# PC3_low_purity_samples <- c("203175700013_R08C01", "203189480016_R03C01", "203189480016_R05C01", "203986510092_R04C01", "203986510125_R04C01", "203989100024_R08C01",
+#                             "203989100035_R02C01", "203989100096_R03C01", "203989100096_R05C01", "203989100142_R02C01", "203991400003_R01C01", "203991400003_R06C01",
+#                             "204073520032_R07C01", "204073570005_R02C01", "203519500055_R03C01", "203519500055_R05C01")
+# 
+# glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+#   dplyr::mutate(qc.pca.pc3purity.outlier = sentrix_id %in% PC3_low_purity_samples) |> 
+#   (function(.) {
+#     print(dim(.))
+#     assertthat::assert_that(nrow(.) == 235)
+#     return(.)
+#   })()
+# 
+# rm(PC3_low_purity_samples)
+# 
+# 
 
 
 
@@ -234,24 +258,6 @@ rm(tmp)
 
 
 
-## QC PCA outlier ----
-
-
-tmp <- readRDS("cache/unsupervised_qc_outliers_all.Rds") |> 
-  dplyr::rename_with( ~ paste0("array_", .x)) |> 
-  assertr::verify(!is.na(array_qc.pca.comp1)) |> 
-  assertr::verify(is.numeric(array_qc.pca.comp1)) |> 
-  assertr::verify(!is.na(array_qc.pca.detP.outlier)) |> 
-  assertr::verify(is.logical(array_qc.pca.detP.outlier))
-
-
-glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
-  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(array_qc.pca.comp1)) |> 
-  assertr::verify(!is.na(array_qc.pca.detP.outlier))
-
-rm(tmp)
-
 
 
 ## RF purity calls ----
@@ -275,7 +281,8 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
 rm(tmp)
 
 
-## RNA cell-cycling signature ----
+## RNA signature ----
+### cell-cycling ----
 #' let wel - deze is supervised na primary - recurrent diff
 
 
@@ -292,8 +299,10 @@ tmp <- dplyr::inner_join(
   dplyr::inner_join(
     readRDS("cache/glass-nl_transcriptional.signatures.Rds") |> 
       dplyr::rename(rnaseq_cell.cycling.signature = lts.up1) |>  # x-checked, up1
+      dplyr::rename(rnaseq_ECM.signature = lts.up2) |>  # x-checked, up2
+      dplyr::rename(rnaseq_ACdown.signature = lts.down) |>  # x-checked, up2
       dplyr::rename(rnaseq_sample_id = genomescan.sid) |> 
-      dplyr::select(rnaseq_sample_id, rnaseq_cell.cycling.signature),
+      dplyr::select(rnaseq_sample_id, rnaseq_cell.cycling.signature, rnaseq_ECM.signature, lts.up3, rnaseq_ACdown.signature),
     by=c('rnaseq_sample_id'='rnaseq_sample_id')
   ) |> 
   dplyr::mutate(rnaseq_sample_id = NULL)
@@ -310,29 +319,6 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
 
 
 rm(tmp)
-
-
-
-
-## QC Purity PCA outlier ----
-#' PCA was performed on only 218 HQ arrays
-#' these outliers in PC3 (val >300) were CONTR_ and sometimes difficultly classifiable
-
-# PC3_low_purity_samples <- c("203175700013_R08C01", "203189480016_R03C01", "203189480016_R05C01", "203986510092_R04C01", "203986510125_R04C01", "203989100024_R08C01",
-#                             "203989100035_R02C01", "203989100096_R03C01", "203989100096_R05C01", "203989100142_R02C01", "203991400003_R01C01", "203991400003_R06C01",
-#                             "204073520032_R07C01", "204073570005_R02C01", "203519500055_R03C01", "203519500055_R05C01")
-# 
-# glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
-#   dplyr::mutate(qc.pca.pc3purity.outlier = sentrix_id %in% PC3_low_purity_samples) |> 
-#   (function(.) {
-#     print(dim(.))
-#     assertthat::assert_that(nrow(.) == 235)
-#     return(.)
-#   })()
-# 
-# rm(PC3_low_purity_samples)
-# 
-# 
 
 
 
@@ -371,8 +357,7 @@ rm(tmp)
 
 
 tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV.Rds") |> 
-  dplyr::rename(array_sentrix_id = sentrix_id) |> 
-  dplyr::rename(`array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV_v12.8` = `A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV`) |> 
+  dplyr::rename(`array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV_v12.8` = `array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV`) |> 
   assertr::verify(!is.na(`array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV_v12.8`)) |> 
   dplyr::filter(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
@@ -391,7 +376,7 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
 
 
 tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-NL_x.Rds") |> 
-  dplyr::rename_with( ~ paste0("array_", .x)) |> 
+  #dplyr::rename_with( ~ paste0("array_", .x)) |> 
   assertr::verify(!is.na(array_PC1)) |> 
   assertr::verify(!is.na(array_PC2)) |> 
   assertr::verify(!is.na(array_PC3)) |> 

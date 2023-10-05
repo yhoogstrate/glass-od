@@ -237,13 +237,15 @@ fun <- function(fn) {
 df <- do.call(
   rbind,
   pbapply::pblapply(glass_od.metadata.array_samples |> 
-                      dplyr::filter(is.na(reason_excluded_array_sample)) |> 
-                      dplyr::filter(is.na(reason_excluded_patient)) |> 
-                      dplyr::filter(is.na(reason_excluded_resection)) |> 
-                      dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
-                      dplyr::pull(heidelberg_cnvp_bins)
+                      dplyr::filter(!is.na(array_mnp_CNVP_v12.8_v5.2_CNVP_bins)) |> 
+                      #dplyr::filter(is.na(reason_excluded_array_sample)) |> 
+                      #dplyr::filter(is.na(reason_excluded_patient)) |> 
+                      #dplyr::filter(is.na(reason_excluded_resection)) |> 
+                      #dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
+                      dplyr::pull(array_mnp_CNVP_v12.8_v5.2_CNVP_bins)
                     , FUN = fun)
 ) 
+
 
 
 df[1:5,1:5]
@@ -280,6 +282,7 @@ stopifnot(length(features) == 1013)
 
 ## 2. calc
 
+
 glass_od.data.1p_19q_purity_most_informative_bins <- readRDS("cache/1p_19q_purity_most_informative_bins.Rds")
 
 
@@ -299,25 +302,33 @@ estimate_1p19q_purity_bin_based <- function(fn) {
   purity <- -2 * (2^{median.lfc} - 1)
   sd <- sd(bins |> dplyr::pull(c(5)))
   
-  out <- data.frame(sentrix_id = sentrix,
-                    methylation_bins_1p19q_median.lfc = median.lfc,
-                    methylation_bins_1p19q_purity = purity,
-                    methylation_bins_1p19q_sd = sd
+  out <- data.frame(array_sentrix_id = sentrix,
+                    array_methylation_bins_1p19q_median.lfc = median.lfc,
+                    array_methylation_bins_1p19q_purity = purity,
+                    array_methylation_bins_1p19q_sd = sd
                     )
   
   return (out)
 }
 
+
+
 purities.bin <- do.call(
 rbind,
 pbapply::pblapply(glass_od.metadata.array_samples |> 
-         dplyr::filter(is.na(reason_excluded_patient)) |> 
-         dplyr::filter(is.na(reason_excluded_resection)) |> 
-         dplyr::filter(is.na(reason_excluded_resection_isolation)) |> 
-         dplyr::filter(is.na(reason_excluded_array_sample)) |> 
-         dplyr::pull(heidelberg_cnvp_bins)
+         dplyr::filter(!is.na(array_mnp_CNVP_v12.8_v5.2_CNVP_bins)) |> 
+         dplyr::pull(array_mnp_CNVP_v12.8_v5.2_CNVP_bins)
        , estimate_1p19q_purity_bin_based)
-)
+) |> 
+  assertr::verify(!duplicated(array_sentrix_id)) |> 
+  assertr::verify(is.numeric(array_methylation_bins_1p19q_median.lfc)) |> 
+  assertr::verify(is.numeric(array_methylation_bins_1p19q_purity)) |> 
+  assertr::verify(is.numeric(array_methylation_bins_1p19q_sd)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 275)
+    return(.)
+  })()
 
 
 saveRDS(purities.bin, file="cache/analysis_tumor_purity_EPIC_bin-based.Rds")

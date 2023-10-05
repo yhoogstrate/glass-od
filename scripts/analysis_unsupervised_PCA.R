@@ -28,17 +28,17 @@ if(!exists('gsam.metadata.array_samples')) {
 
 
 metadata <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(163)
+  filter_GLASS_OD_idats(215) # should be going toward 211
 
 
 data <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata$sentrix_id) |> 
+  dplyr::select(metadata$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (694299))
+    assertthat::assert_that(nrow(.) == (693017))
     return(.)
   })()
 
@@ -58,11 +58,26 @@ data.pca.glass_od <- data |>
 data.pca.glass_od.x <- data.pca.glass_od |> 
   purrr::pluck('x') |> 
   as.data.frame(stringsAsFactors=F) |> 
-  tibble::rownames_to_column('sentrix_id')
+  dplyr::rename_with( ~ paste0("array_", .x)) |> 
+  tibble::rownames_to_column('array_sentrix_id')
 
 
 saveRDS(data.pca.glass_od, file="cache/analysis_unsupervised_PCA_GLASS-OD_prcomp.Rds")
 saveRDS(data.pca.glass_od.x, file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds")
+
+
+
+# tmp check ~ R=0.98 as compared without new samples
+# tmp <- data.pca.glass_od.x |> 
+#   dplyr::rename_with( ~ paste0(.x, "_new"), .cols=!matches("^array_sentrix_id$",perl = T))
+# 
+# plt <- glass_od.metadata.array_samples |> 
+#   filter_GLASS_OD_idats(215) |> 
+#   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+# 
+# ggplot(plt, aes(x=array_PC2, y=array_PC2_new)) +
+#   geom_point()
+
 
 
 
@@ -76,16 +91,17 @@ rm(data, metadata, data.pca.glass_od)
 
 metadata <- glass_nl.metadata.array_samples |>
   filter_GLASS_NL_idats(218) |> 
-  dplyr::select(sentrix_id)
+  dplyr::select(array_sentrix_id)
+
 
 data <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata$sentrix_id) |> 
+  dplyr::select(metadata$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (694299))
+    assertthat::assert_that(nrow(.) == (693017))
     return(.)
   })()
 
@@ -98,7 +114,8 @@ data.pca.glass_nl <- data |>
 data.pca.glass_nl.x <- data.pca.glass_nl |> 
   purrr::pluck('x') |> 
   as.data.frame(stringsAsFactors=F) |> 
-  tibble::rownames_to_column('sentrix_id')
+  dplyr::rename_with( ~ paste0("array_", .x)) |> 
+  tibble::rownames_to_column('array_sentrix_id')
 
 
 saveRDS(data.pca.glass_nl, file="cache/analysis_unsupervised_PCA_GLASS-NL_prcomp.Rds")
@@ -106,6 +123,7 @@ saveRDS(data.pca.glass_nl.x, file="cache/analysis_unsupervised_PCA_GLASS-NL_x.Rd
 
 
 rm(data, metadata, data.pca.glass_nl)
+
 
 
 
@@ -130,7 +148,7 @@ data <- data.mvalues.hq_samples |>
   dplyr::select(metadata$sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (694299))
+    assertthat::assert_that(nrow(.) == (693017))
     return(.)
   })()
 

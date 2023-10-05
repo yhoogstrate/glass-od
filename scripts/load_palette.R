@@ -29,12 +29,20 @@ col2 <- grDevices::colorRampPalette(c("#67001F", "#B2182B", "#D6604D", "#F4A582"
 
 
 palette_mnp_12.8_6 <- c(
-  'A_IDH_LG' = '#f85eb6',
+  'A_IDH_LG' = mixcol('#f85eb6', 'gray80',0.15),
   'A_IDH_HG' = '#d34394ff',
   'O_IDH' = 'aquamarine3',
   'OLIGOSARC_IDH' = 'aquamarine4',
   'CTRL_CORPCAL' = '#7f8b45',
   'GBM_RTK_I' = '#51458b'
+)
+
+
+palette_mnp_12.8_AC_3 <- c(
+  'A_IDH_LG' = mixcol('#f85eb6', 'gray80',0.15),
+  'A_IDH_HG' = '#d34394ff',
+  'other' = '#7f8b45'
+  #'GBM_RTK_I' = '#51458b'
 )
 
 

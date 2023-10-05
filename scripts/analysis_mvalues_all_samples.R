@@ -89,7 +89,7 @@ targets <- rbind(
 RGSet <- minfi::read.metharray.exp(targets = targets, force = T) #red/green channel together
 
 
-detP <- minfi::detectionP(RGSet, type = "m+u")
+#detP <- minfi::detectionP(RGSet, type = "m+u")
 proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = TRUE, verbose = TRUE, dyeMethod="reference") 
 rm(RGSet)
 gc()
@@ -100,8 +100,8 @@ gc()
 
 mvalue <- minfi::ratioConvert(proc, what = "M")
 
-stopifnot(rownames(mvalue) == rownames(detP))
-stopifnot(colnames(mvalue) == colnames(detP))
+#stopifnot(rownames(mvalue) == rownames(detP))
+#stopifnot(colnames(mvalue) == colnames(detP))
 
 
 mvalue <-  mvalue |> 
@@ -110,23 +110,20 @@ mvalue <-  mvalue |>
   purrr::pluck("M")
 
 
-stopifnot(dim(mvalue) == dim(detP))
+#stopifnot(dim(mvalue) == dim(detP))
 
 
-#mvalue.mask <- mvalue |> 
-#  magrittr::multiply_by(ifelse(detP > 0.01 , NA, 1))
-
-mvalue.mask <- ifelse(detP > 0.01 , NA, 1) |> 
-  data.table::as.data.table(keep.rownames = "probe_id") |> 
-  dplyr::filter(probe_id %in% (
-    metadata.cg_probes.epic |> 
-      dplyr::filter(MASK_general == F) |> 
-      dplyr::pull(probe_id)
-  )) |> 
-  tibble::column_to_rownames('probe_id')
+# mvalue.mask <- ifelse(detP > 0.01 , NA, 1) |> 
+#   data.table::as.data.table(keep.rownames = "probe_id") |> 
+#   dplyr::filter(probe_id %in% (
+#     metadata.cg_probes.epic |> 
+#       dplyr::filter(MASK_general == F) |> 
+#       dplyr::pull(probe_id)
+#   )) |> 
+#   tibble::column_to_rownames('probe_id')
 
 
-dim(mvalue.mask)
+#dim(mvalue.mask)
 
 
 mvalue <- mvalue |> 
@@ -147,21 +144,29 @@ dim(mvalue)
 
 
 stopifnot(sum(is.na(mvalue)) == 0)
-stopifnot(sum(is.na(mvalue.mask)) > 0)
+#stopifnot(sum(is.na(mvalue.mask)) > 0)
 
 
 stopifnot(targets$array_sentrix_id == colnames(mvalue))
 
+
+# barely an elbow - either ~0 or high
+# detP.rowMeans <- rowMeans(detP)
+# detP.rowMedians <- rowMedians(detP)
+# plot(sort( detP.rowMeans), type="l")
+# plot(sort( detP.rowMedians), type="l",ylim=c(0,0.000001))
+
+
 # cleanup 
 
-rm(detP, proc)
+rm(proc) #detP,
 gc()
 
 
 saveRDS(mvalue, "cache/mvalues.all_samples.Rds")
-saveRDS(mvalue.mask, "cache/mvalues.all_samples.detP_mask.Rds")
+#saveRDS(mvalue.mask, "cache/mvalues.all_samples.detP_mask.Rds")
 
-rm(mvalue, mvalue.mask)
+rm(mvalue)# , mvalue.mask
 gc()
 
 

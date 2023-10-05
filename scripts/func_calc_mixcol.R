@@ -1,6 +1,7 @@
 #!/usr/bin/env R
 
-mixcol <- function(c1, c2, ratio=0.5) {
+
+mixcol_single <- function(c1, c2, ratio=0.5) {
   n <- names(c1)
   
   m1 <- col2rgb(c1)
@@ -12,4 +13,17 @@ mixcol <- function(c1, c2, ratio=0.5) {
   
   return(r)
 }
+
+
+
+mixcol <- function(c1, c2, ratio=c(0.5)) {
+  out = c()
+  
+  for(rat in ratio) {
+    out <- c(out, mixcol_single(c1, c2, rat))
+  }
+  
+  return (out)
+}
+
 

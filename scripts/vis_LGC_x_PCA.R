@@ -20,38 +20,88 @@ if(!exists('glass_od.metadata.array_samples')) {
 
 
 metadata <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(163)
+  filter_GLASS_OD_idats(215)
+
+
+
+## x-check batch effect isolation(s) ----
+
+
+plt <- metadata |> 
+  dplyr::mutate(col = ifelse(isolation_person_name == "USA / Duke", "Batch [US]", "Batch [EU]")) |> 
+  dplyr::mutate(col2 = dplyr::case_when(
+    isolation_id == "0100-R2-repA" ~ "US: DNA as is",
+    isolation_id == "0100-R2-repB" ~ "US: DNA over column",
+    
+    isolation_id == "0101-R2-repA" ~ "US: DNA as is",
+    isolation_id == "0101-R2-repB" ~ "US: DNA over column",
+    
+    isolation_id == "0102-R2-repA" ~ "US: DNA as is",
+    isolation_id == "0102-R2-repB" ~ "US: DNA over column",
+    
+    isolation_id == "0104-R1-repA" ~ "US: DNA as is",
+    isolation_id == "0104-R1-repB" ~ "US: DNA over column",
+    
+    resection_id == "101-R3" ~ "US: FFPE",
+    resection_id == "102-R3" ~ "US: FFPE",
+    
+    resection_id == "0016-R2" ~ "EU: suspected frozen",
+    
+    T ~ col
+  )) |> 
+  dplyr::mutate(group = dplyr::case_when(
+    isolation_id == "0100-R2-repA" ~ "0100-R2",
+    isolation_id == "0100-R2-repB" ~ "0100-R2",
+    
+    isolation_id == "0101-R2-repA" ~ "0101-R2",
+    isolation_id == "0101-R2-repB" ~ "0101-R2",
+    
+    isolation_id == "0102-R2-repA" ~ "0102-R2",
+    isolation_id == "0102-R2-repB" ~ "0102-R2",
+    
+    isolation_id == "0104-R1-repA" ~ "0104-R1",
+    isolation_id == "0104-R1-repB" ~ "0104-R1",
+    
+    T ~ resection_id
+  ))
+
+
+ggplot(plt, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-array_PC2, col=col2, group=group)) +
+  geom_line(lwd = 0.3, col="black") +
+  geom_point(data = subset(plt, col2 %in% c("Batch [EU]", "Batch [US]")), alpha=0.26) +
+  geom_point(data = subset(plt, col2 %in% c("Batch [EU]", "Batch [US]") == F)) +
+  theme_cellpress
+
+
 
 
 
 ## PCA ----
 
 
-plt <- metadata
-
 
 plt.split <- rbind(
-  plt |>
+  metadata |>
     dplyr::mutate(col = as.factor(paste0("Grade ",resection_tumor_grade))) |> 
     dplyr::mutate(facet = "Histological grade") |> 
     dplyr::mutate(stat = 'NA')
   ,
-  plt |> 
+  metadata |> 
     dplyr::mutate(col = ifelse(array_mnp_predictBrain_v2.0.1_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", array_mnp_predictBrain_v2.0.1_cal_class)) |> 
     dplyr::mutate(facet = "MNP CNS Classifier 114b/2.0.1")  |> 
     dplyr::mutate(stat = 'NA')
   # ,
-  # plt |> 
+  # metadata |> 
   #   dplyr::mutate(col = ifelse(array_mnp_predictBrain_v12.5_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", array_mnp_predictBrain_v12.8_cal_class)) |> 
   #   dplyr::mutate(facet = "MNP CNS Classifier 12.5")  |> 
   #   dplyr::mutate(stat = 'NA')
   ,
-  plt |> 
+  metadata |> 
     dplyr::mutate(col = ifelse(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", array_mnp_predictBrain_v12.8_cal_class)) |> 
     dplyr::mutate(facet = "MNP CNS Classifier 12.8")  |> 
     dplyr::mutate(stat = 'NA')
   ,
-  plt |> 
+  metadata |> 
     dplyr::mutate(col = ifelse(isolation_person_name == "USA / Duke", "Batch [US]", "Batch [EU]")) |> 
     dplyr::mutate(facet = "Batch")  |> 
     dplyr::mutate(stat = col)

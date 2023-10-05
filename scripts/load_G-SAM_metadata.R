@@ -126,6 +126,7 @@ rm(tmp)
 ## Percentage detP probes ----
 #' from: scripts/analysis_percentage_detP_probes.R
 
+
 tmp <- read.table("output/tables/percentage_detP_probes.txt") |> 
   assertr::verify(!is.na(array_percentage.detP.signi) & is.numeric(array_percentage.detP.signi)) |> 
   assertr::verify(gsam.metadata.array_samples$array_sentrix_id %in% array_sentrix_id)
@@ -138,11 +139,10 @@ rm(tmp)
 
 
 
-## QC PCA outlier ----
+## Unsupervised PCA QC all samples ----
 
 
 tmp <- readRDS("cache/unsupervised_qc_outliers_all.Rds") |> 
-  dplyr::rename_with( ~ paste0("array_", .x)) |> 
   assertr::verify(!is.na(array_qc.pca.comp1)) |> 
   assertr::verify(is.numeric(array_qc.pca.comp1)) |> 
   assertr::verify(!is.na(array_qc.pca.detP.outlier)) |> 
@@ -155,6 +155,7 @@ gsam.metadata.array_samples <- gsam.metadata.array_samples |>
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(array_qc.pca.comp1)) |> 
   assertr::verify(!is.na(array_qc.pca.detP.outlier))
+
 
 rm(tmp)
 
@@ -243,7 +244,6 @@ rm(tmp)
 
 
 
-
 ## Heidelberg 12.8 CNVP segment files ----
 
 tmp <- query_mnp_12.8_CNVP_segment_csv(
@@ -298,18 +298,18 @@ rm(tmp)
 
 
 tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |>
-  dplyr::rename_with( ~ paste0("array_", .x)) |> 
   assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
   dplyr::filter(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 73)
+    assertthat::assert_that(nrow(.) == 77)
     return(.)
   })()
 
 
 gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
-  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(sum(is.na(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) == 2) # 2 of too poor quality, never used because of odd probes etc.
 
 
 

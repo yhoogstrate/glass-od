@@ -97,7 +97,15 @@ ggplot(plt, aes(
   theme_cellpress
 
 
-ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_scatter_observed_predicted.pdf", width=(8.5*0.95)/3, height=2.65)
+out.probe_based <- out.probe_based |> 
+  dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = ifelse(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH","A_IDH_LG","A_IDH_HG") == F, "other", array_mnp_predictBrain_v12.8_cal_class))
+
+
+#  scale_color_manual(values=palette_mnp_12.8_AC_3) +
+
+
+
+ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_scatter_observed_predicted.pdf", width=(8.5*0.975)/3, height=2.65)
 
 
 

@@ -18,7 +18,7 @@ if(!exists('metadata.cg_probes.epic')) {
 data.beta.values.hq_samples <- readRDS("cache/beta.values.HQ_samples.Rds") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (163+218+73))
+    assertthat::assert_that(ncol(.) == (510))
     assertthat::assert_that(nrow(.) == (760405))
     return(.)
   })()
@@ -26,7 +26,7 @@ data.beta.values.hq_samples <- readRDS("cache/beta.values.HQ_samples.Rds") |>
 data.beta.values.mask.hq_samples <- readRDS("cache/detP_masked_values.HQ_samples.Rds") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (163+218+73))
+    assertthat::assert_that(ncol(.) == (510))
     assertthat::assert_that(nrow(.) == (760405))
     return(.)
   })()
@@ -62,7 +62,7 @@ data.beta.values.good_probes <- data.beta.values.probes |>
   dplyr::filter(detP_good_probe) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (694299))
+    assertthat::assert_that(nrow(.) == (693017))
     return(.)
   })() |> 
   assertr::verify(MASK_general == F) |> 

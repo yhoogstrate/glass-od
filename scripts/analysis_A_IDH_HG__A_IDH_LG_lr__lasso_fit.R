@@ -32,7 +32,7 @@ if(!exists('gsam.metadata.array_samples')) {
 
 
 metadata.glass_od <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(163)
+  filter_GLASS_OD_idats(215)
 
 data.glass_od <- data.mvalues.hq_samples |>
   tibble::rownames_to_column('probe_id') |> 
@@ -61,13 +61,13 @@ data.glass_nl <- data.mvalues.hq_samples |>
 
 
 metadata.gsam <- gsam.metadata.array_samples |> 
-  filter_GSAM_idats(73)
+  filter_GSAM_idats(77)
 
 data.gsam <- data.mvalues.hq_samples |>
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.gsam$sentrix_id)
+  dplyr::select(metadata.gsam$array_sentrix_id)
   #(function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)))() |> # this synthax, oh my
   #dplyr::arrange(mad) |> 
   #dplyr::mutate(mad = NULL)
@@ -122,44 +122,28 @@ for(cv in 0:9) {
   set.seed(123456)
   lm.probe_based <- glmnet::glmnet(
     data.glass_nl |>
-      dplyr::select(metadata.train$sentrix_id) |> 
+      dplyr::select(metadata.train$array_sentrix_id) |> 
       t(),
-    metadata.train$A_IDH_HG__A_IDH_LG_lr,
+    metadata.train$array_A_IDH_HG__A_IDH_LG_lr_v12.8,
     alpha = 1, # 1 = lasso; 0 = ridge
     lambda = 0.01 # cv_model_probe_based$lambda.min
     )
   
   
   metadata.test$LGC.lasso.probe_based <- predict(lm.probe_based, data.glass_nl |>
-                                                   dplyr::select(metadata.test$sentrix_id) |> 
+                                                   dplyr::select(metadata.test$array_sentrix_id) |> 
                                                    t())|> 
     as.numeric()
   
   out.probe_based <- rbind(
     metadata.test |>  
-      dplyr::select(sentrix_id, LGC.lasso.probe_based, A_IDH_HG__A_IDH_LG_lr, mnp_predictBrain_v12.8_cal_class)
+      dplyr::select(array_sentrix_id, LGC.lasso.probe_based, array_A_IDH_HG__A_IDH_LG_lr_v12.8, array_mnp_predictBrain_v12.8_cal_class)
     , out.probe_based)
 }
 rm(cv)
 
-sqrt(sum((out.probe_based$LGC.lasso.probe_based - out.probe_based$A_IDH_HG__A_IDH_LG_lr)^2) / length(out.probe_based$A_IDH_HG__A_IDH_LG_lr))
 
-
-out.probe_based <- out.probe_based |> 
-  dplyr::mutate(mnp_predictBrain_v12.8_cal_class = ifelse(mnp_predictBrain_v12.8_cal_class %in% c("A_IDH","A_IDH_LG","A_IDH_HG") == F, "other", mnp_predictBrain_v12.8_cal_class))
-
-
-ggplot(out.probe_based, aes(
-  y=LGC.lasso.probe_based,
-  x=A_IDH_HG__A_IDH_LG_lr,
-  col=mnp_predictBrain_v12.8_cal_class
-  #label=sentrix_id
-)) +
-  geom_point(size=1.5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1") +
-  labs(subtitle = "Linear probe-based classifier predicting log(IDH_HG / IDH[_LG]) ratio [10x CV]")+
-  theme_bw() +
-  theme(legend.position = 'bottom')
+#sqrt(sum((out.probe_based$LGC.lasso.probe_based - out.probe_based$A_IDH_HG__A_IDH_LG_lr)^2) / length(out.probe_based$A_IDH_HG__A_IDH_LG_lr))
 
 
 
@@ -167,8 +151,8 @@ ggplot(out.probe_based, aes(
 
 
 tmp <- out.probe_based |> 
-  dplyr::rename(A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV = LGC.lasso.probe_based) |> 
-  dplyr::select(sentrix_id, A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV)
+  dplyr::rename(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV = LGC.lasso.probe_based) |> 
+  dplyr::select(array_sentrix_id, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV)
 
 saveRDS(tmp, file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV.Rds")
 
@@ -178,9 +162,9 @@ saveRDS(tmp, file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV.Rds")
 
 
 lm.full.probe_based <- glmnet::glmnet(data.glass_nl |> 
-                                      dplyr::select(metadata.glass_nl$sentrix_id) |>
+                                      dplyr::select(metadata.glass_nl$array_sentrix_id) |>
                                       t(),
-                                    metadata.glass_nl$A_IDH_HG__A_IDH_LG_lr,
+                                    metadata.glass_nl$array_A_IDH_HG__A_IDH_LG_lr_v12.8,
                                     alpha = 1, lambda = cv_model_probe_based$lambda.min)
 
 
@@ -300,19 +284,22 @@ saveRDS(lm.full.pca_based, file="cache/LGC_predictor_PCA_based_lm.Rds")
 
 classifier <- readRDS("cache/LGC_predictor_probe_based_lm.Rds")
 
+
 data.1 <- data.glass_od |> 
-  tibble::rownames_to_column('probeID') |> 
-  dplyr::filter(probeID %in% rownames(classifier$beta)) |> 
-  tibble::column_to_rownames('probeID') |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% rownames(classifier$beta)) |> 
+  tibble::column_to_rownames('probe_id') |> 
   t() |>
   as.data.frame() |> 
   dplyr::select(readRDS("cache/LGC_predictor_probe_based_ordered_probes.Rds")) |> 
   as.matrix()
 
+
+
 data.2 <- data.gsam |> 
-  tibble::rownames_to_column('probeID') |> 
-  dplyr::filter(probeID %in% rownames(classifier$beta)) |> 
-  tibble::column_to_rownames('probeID') |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% rownames(classifier$beta)) |> 
+  tibble::column_to_rownames('probe_id') |> 
   t() |>
   as.data.frame() |> 
   dplyr::select(readRDS("cache/LGC_predictor_probe_based_ordered_probes.Rds")) |> 
@@ -330,8 +317,8 @@ stopifnot(readRDS("cache/LGC_predictor_probe_based_ordered_probes.Rds") == colna
 
 p <- predict(classifier, data) |> 
   as.data.frame() |> 
-  dplyr::rename(`A_IDH_HG__A_IDH_LG_lr__lasso_fit` = 1) |> 
-  tibble::rownames_to_column('sentrix_id')
+  dplyr::rename(`array_A_IDH_HG__A_IDH_LG_lr__lasso_fit` = 1) |> 
+  tibble::rownames_to_column('array_sentrix_id')
 
 
 saveRDS(p, file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds")

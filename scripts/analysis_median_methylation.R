@@ -11,7 +11,7 @@ if(!exists('data.mvalues.hq_samples')) {
 data <- data.mvalues.hq_samples |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (456-2))
+    assertthat::assert_that(ncol(.) == (510))
     return(.)
   })()
 data.mask <- data.mvalues.mask.hq_samples
@@ -36,7 +36,7 @@ data <- data |>
   tibble::column_to_rownames('probe_id') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (695840))
+    assertthat::assert_that(nrow(.) == (693017))
     return(.)
   })()
 
