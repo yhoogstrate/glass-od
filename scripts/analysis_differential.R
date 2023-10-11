@@ -5,7 +5,7 @@
 
 
 library(ggplot2)
-library(minfi)
+#library(minfi)
 
 
 source('scripts/load_functions.R')
@@ -199,10 +199,10 @@ metadata.fp <- glass_od.metadata.array_samples |>
   dplyr::group_by(patient_id) |> 
   dplyr::filter(dplyr::n() == 2) |> 
   dplyr::ungroup() |> 
+  
   dplyr::mutate(patient = as.factor(paste0("p",patient_id))) |> 
   dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
-  dplyr::mutate(batch = ifelse(isolation_person_name == "USA / Duke", "batch [US]", "batch [EU]")) |> 
-  dplyr::select(array_sentrix_id, patient, pr.status, batch)  |> 
+  dplyr::select(array_sentrix_id, patient, pr.status, batch) |> 
   
   (function(.) {
     print(dim(.))
@@ -351,11 +351,18 @@ metadata.pp.cor <- glass_od.metadata.array_samples |>
   dplyr::mutate(is.paired = dplyr::n() == 2) |> 
   dplyr::ungroup() |> 
   
-  dplyr::mutate(batch = factor(ifelse(isolation_person_name == "USA / Duke", "Batch US [FF]", "Batch EU [FFPE]"))) |> 
-  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,paste0("_remainder","_",batch))))) |> 
+  #dplyr::mutate(batch = factor(ifelse(isolation_person_name == "USA / Duke", "Batch US [FF]", "Batch EU [FFPE]"))) |> 
+  dplyr::mutate(patient_correct = 
+                  dplyr::case_when(
+                    is.paired ~ paste0("p",patient_id),
+                    !is.paired & isolation_person_name == "USA / Duke" ~ "remainder - batch US [FF]",
+                    !is.paired & isolation_person_name != "USA / Duke" ~ "remainder - batch EU [FFPE]",
+                    T ~ "error"
+                  )) |>
+  assertr::verify(patient_correct != "error") |> 
   dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
   
-  dplyr::select(array_sentrix_id, patient, pr.status) |> 
+  dplyr::select(array_sentrix_id, patient_correct, pr.status) |> 
   
   (function(.) {
     print(dim(.))
@@ -379,7 +386,7 @@ data.pp.cor <- data.mvalues.hq_samples |>
 
 
 
-design.pp.cor <- model.matrix(~ factor(patient) + factor(pr.status), data=metadata.pp.cor)
+design.pp.cor <- model.matrix(~ factor(patient_correct) + factor(pr.status), data=metadata.pp.cor)
 fit.pp.cor <- limma::lmFit(data.pp.cor, design.pp.cor)
 fit.pp.cor <- limma::eBayes(fit.pp.cor, trend=T)
 stats.pp.cor <- limma::topTable(fit.pp.cor,
@@ -531,16 +538,33 @@ rm(fit.up.cor, stats.up.cor)
 
 
 
-## plot ----
+## plots ----
 
 
 
-plt <- readRDS(file="cache/analysis_differential__primary_recurrence__full_paired__stats.Rds") |> 
+plt <- readRDS(file="cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds") |> 
   dplyr::mutate(significant = adj.P.Val < 0.01 & abs(logFC) > 0.5)
 
 
 ggplot(plt, aes(x=logFC , y=-log10(adj.P.Val), col=significant)) +
-  geom_point(pch=19,cex=0.01)
+  geom_point(pch=19,cex=0.01) +
+  labs(title = "DMPs primary - recurrence") +
+  theme_cellpress
+
+ggsave("/tmp/volcano_pp.png", width=8.5/2,height=8.5/2)
+
+
+
+plt <- readRDS(file="cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds") |> 
+  dplyr::mutate(significant = adj.P.Val < 0.01 & abs(logFC) > 0.5)
+
+
+ggplot(plt, aes(x=logFC , y=-log10(adj.P.Val), col=significant)) +
+  geom_point(pch=19,cex=0.01) +
+  labs(title = "DMPs WHO Grade 2 - WHO Grade 3") +
+  theme_cellpress
+
+ggsave("/tmp/volcano_g3g2.png", width=8.5/2,height=8.5/2)
 
 
 #saveRDS(stats.pp.nc, file="cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds")
@@ -689,7 +713,70 @@ ggplot(subset(plt, chr == "chr2"), aes(x=pos / 1000000,y=delta1, col=chr)) +
 # analyses: GLASS-OD g2 - g3 ----
 #' @todo ASK what to do if first resection is G3 while last is G2 !!!
 
+
+## data: full paired only ----
+
+
+metadata.g2g3.fp <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(211) |> 
+  filter_first_G2_and_last_G3(140) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::filter(dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",patient_id))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2","Grade3")) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (72)) 
+    return(.)
+  })()
+
+
+
+data.g2g3.fp <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.g2g3.fp$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+
+design.g2g3.fp <- model.matrix(~factor(patient) + factor(gr.status), data=metadata.g2g3.fp)
+fit.g2g3.fp <- limma::lmFit(data.g2g3.fp, design.g2g3.fp)
+fit.g2g3.fp <- limma::eBayes(fit.g2g3.fp, trend=T)
+stats.g2g3.fp <- limma::topTable(fit.g2g3.fp,
+                                 n=nrow(data.g2g3.fp),
+                                 coef="factor(gr.status)Grade3",
+                                 sort.by = "none",
+                                 adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.g2g3.fp)
+
+
+sum(stats.g2g3.fp$P.Value < 0.01)
+sum(stats.g2g3.fp$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.g2g3.fp, file="cache/analysis_differential__g2_g3__full_paired__fit.Rds")
+saveRDS(stats.g2g3.fp, file="cache/analysis_differential__g2_g3__full_paired__stats.Rds")
+
+
+
+
 ## data: partially paired [w/o FFPE/frozen batch correct] ----
+
 
 metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(211) |> 
@@ -749,6 +836,202 @@ saveRDS(fit.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__partial_paired
 saveRDS(stats.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds")
 
 
+
+## data: partially paired [w/ FFPE/frozen batch correct] ----
+
+
+metadata.g2g3.pp.cor <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(211) |> 
+  filter_first_G2_and_last_G3(140) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient_correct = 
+                  dplyr::case_when(
+                    is.paired ~ paste0("p",patient_id),
+                    !is.paired & isolation_person_name == "USA / Duke" ~ "remainder - batch US [FF]",
+                    !is.paired & isolation_person_name != "USA / Duke" ~ "remainder - batch EU [FFPE]",
+                    T ~ "error"
+                  )) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2","Grade3")) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (140)) 
+    return(.)
+  })()
+
+
+
+data.g2g3.pp.cor <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.g2g3.pp.cor$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+
+
+
+design.g2g3.pp.cor <- model.matrix(~factor(patient_correct) + factor(gr.status), data=metadata.g2g3.pp.cor)
+fit.g2g3.pp.cor <- limma::lmFit(data.g2g3.pp.cor, design.g2g3.pp.cor)
+fit.g2g3.pp.cor <- limma::eBayes(fit.g2g3.pp.cor, trend=T)
+stats.g2g3.pp.cor <- limma::topTable(fit.g2g3.pp.cor,
+                                    n=nrow(data.g2g3.pp.cor),
+                                    coef="factor(gr.status)Grade3",
+                                    sort.by = "none",
+                                    adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.g2g3.pp.cor)
+
+
+sum(stats.g2g3.pp.cor$P.Value < 0.01)
+sum(stats.g2g3.pp.cor$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.g2g3.pp.cor, file="cache/analysis_differential__g2_g3__partial_paired_cor__fit.Rds")
+saveRDS(stats.g2g3.pp.cor, file="cache/analysis_differential__g2_g3__partial_paired_cor__stats.Rds")
+
+
+
+## data: unpaired [w/o FFPE/frozen batch correct] ----
+
+
+metadata.g2g3.up.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(211) |> 
+  filter_first_G2_and_last_G3(140) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  #dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2","Grade3")) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (140)) 
+    return(.)
+  })()
+
+
+
+data.g2g3.up.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.g2g3.up.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+
+
+design.g2g3.up.nc <- model.matrix(~ factor(gr.status), data=metadata.g2g3.up.nc)
+fit.g2g3.up.nc <- limma::lmFit(data.g2g3.up.nc, design.g2g3.up.nc)
+fit.g2g3.up.nc <- limma::eBayes(fit.g2g3.up.nc, trend=T)
+stats.g2g3.up.nc <- limma::topTable(fit.g2g3.up.nc,
+                                    n=nrow(data.g2g3.up.nc),
+                                    coef="factor(gr.status)Grade3",
+                                    sort.by = "none",
+                                    adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.g2g3.up.nc)
+
+
+sum(stats.g2g3.up.nc$P.Value < 0.01)
+sum(stats.g2g3.up.nc$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__unpaired_nc__fit.Rds")
+saveRDS(stats.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__unpaired_nc__stats.Rds")
+
+
+
+## data: unpaired [w/ FFPE/frozen batch correct] ----
+
+
+metadata.g2g3.up.cor <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(211) |> 
+  filter_first_G2_and_last_G3(140) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(batch = factor(ifelse(isolation_person_name == "USA / Duke", "Batch US [FF]", "Batch EU [FFPE]"))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2","Grade3")) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (140)) 
+    return(.)
+  })()
+
+
+
+data.g2g3.up.cor <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.g2g3.up.cor$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+
+
+
+design.g2g3.up.cor <- model.matrix(~factor(batch) + factor(gr.status), data=metadata.g2g3.up.cor)
+fit.g2g3.up.cor <- limma::lmFit(data.g2g3.up.cor, design.g2g3.up.cor)
+fit.g2g3.up.cor <- limma::eBayes(fit.g2g3.up.cor, trend=T)
+stats.g2g3.up.cor <- limma::topTable(fit.g2g3.up.cor,
+                                     n=nrow(data.g2g3.up.cor),
+                                     coef="factor(gr.status)Grade3",
+                                     sort.by = "none",
+                                     adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.g2g3.up.cor)
+
+
+sum(stats.g2g3.up.cor$P.Value < 0.01)
+sum(stats.g2g3.up.cor$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.g2g3.up.cor, file="cache/analysis_differential__g2_g3__unpaired_cor__fit.Rds")
+saveRDS(stats.g2g3.up.cor, file="cache/analysis_differential__g2_g3__unpaired_cor__stats.Rds")
+
+
+
+
+## plots ----
+
+
 plt.a <- readRDS("cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds") |> 
   dplyr::rename_with( ~ paste0(.x, "__g2_g3__partial_paired_nc"), .cols=!matches("^probe_id$",perl = T))
 
@@ -756,15 +1039,99 @@ plt.b <- readRDS("cache/analysis_differential__primary_recurrence__partial_paire
   dplyr::rename_with( ~ paste0(.x, "__primary_recurrence__partial_paired_nc"), .cols=!matches("^probe_id$",perl = T))
 
 
-### neat plot ----
-plt <- dplyr::left_join(plt.a, plt.b, by=c('probe_id'='probe_id'), suffix=c('',''))
+
+plt <- dplyr::left_join(plt.a, plt.b, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
+  dplyr::left_join( metadata.cg_probes.epic , by=c('probe_id'='probe_id'), suffix=c('','') )
+
+
+
 ggplot(plt, aes(x=t__g2_g3__partial_paired_nc,
-                y=t__primary_recurrence__partial_paired_nc)) +
-  geom_point(pch=19, cex=0.001, alpha=0.075) +
-  labs(x = "t-score (Grade 2 ~ Grade 3)", y="t-score (primary ~ recurrence)")
+                y=t__primary_recurrence__partial_paired_nc,
+                col=glass_nl_prim_rec__deep_significant)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  geom_point(data=subset(plt, glass_nl_prim_rec__deep_significant == F),pch=19, cex=0.001, alpha=0.015) +
+  geom_point(data=subset(plt, glass_nl_prim_rec__deep_significant == T),pch=19, cex=0.002) +
+  #geom_bin2d(bins = 350) + 
+  #geom_density_2d(h=0.8) +
+  #stat_density_2d(aes(fill = after_stat(level)), geom = "polygon", colour="white") +
+  #scale_fill_continuous(type = "viridis") +
+  #ggplot2::scale_fill_gradientn(colours = mixcol("gray90",col3(2)[1],0:100/100), na.value = "grey50")  +
+  labs(x = "t-score (Grade 2 ~ Grade 3)", y="t-score (primary ~ recurrence)") +
+  theme_cellpress +
+  xlim(-10,10) +
+  ylim(-6,6)
 
 
 
+#ggsave("/tmp/volcano_pp_x_g2_g3.png", width=8.5/2,height=3.5)
+
+
+
+### Select these strange probes ----
+
+
+sslope <- 1.7
+lb <- 0.2
+rb <- -2.2
+
+lb <- 0.2
+rb <- -2.2
+
+top <- -1.7
+bot <- -4.0
+
+plt <- dplyr::left_join(plt.a, plt.b, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
+  dplyr::left_join( metadata.cg_probes.epic , by=c('probe_id'='probe_id'), suffix=c('','') )  |> 
+  dplyr::mutate(col = dplyr::case_when(
+    glass_nl_prim_rec__deep_significant == T ~ "GLASS-NL deep signi",
+    
+    
+    (t__primary_recurrence__partial_paired_nc < top) &
+    (t__primary_recurrence__partial_paired_nc > bot) & 
+    (t__g2_g3__partial_paired_nc > ((t__primary_recurrence__partial_paired_nc - lb) / sslope)) & 
+    (t__g2_g3__partial_paired_nc < ((t__primary_recurrence__partial_paired_nc - rb) / sslope))
+      
+      ~ "SEL",
+    
+    T ~ "other"
+  )) |> 
+  head(n= 250000)
+
+
+
+ggplot(plt, aes(x=t__g2_g3__partial_paired_nc,
+                y=t__primary_recurrence__partial_paired_nc,
+                col=col)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=19, cex=0.001, alpha=0.15) + 
+  
+  geom_abline(intercept = lb, slope=sslope, col="darkgray", lty=2) +
+  geom_abline(intercept = rb, slope=sslope, col="red", lty=2) +
+
+  geom_hline(yintercept=top, col="purple", lty=2) +
+  geom_hline(yintercept=bot, col="red", lty=2) +
+  
+  
+  labs(x = "t-score (Grade 2 ~ Grade 3)", y="t-score (primary ~ recurrence)") +
+  theme_bw() + #theme_cellpress +
+  xlim(-10,10) +
+  ylim(-6,6)
+
+
+prbs <- plt |> 
+  dplyr::filter(col == "SEL") |>
+  dplyr::filter(!is.na(genesUniq)) |> 
+  dplyr::pull(genesUniq) |> 
+  stringr::str_split(";") |> 
+  unlist() |> 
+  table() |> 
+  sort(decreasing=T)
+
+
+# do pca on all these probes
 
 # analyses: GLASS-OD AcCGAP ----
 ## data: partially paired ----

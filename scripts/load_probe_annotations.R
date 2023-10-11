@@ -78,6 +78,22 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
 rm(tmp)
 
 
+# Wies signature ----
+
+
+tmp <- read.csv("data/GLASS_NL/Metadata/(Epi)genetic_data/ProbeSelection_IvR_FDR 1e-9 Delta 1_06072022.csv") |> 
+  dplyr::rename(probe_id = Probe_ID) |> 
+  dplyr::mutate(deep_significant = T) |> 
+  dplyr::rename_with( ~ paste0("glass_nl_prim_rec__",.x), .cols=!matches("^probe_id$",perl = T))
+
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
+  dplyr::mutate(glass_nl_prim_rec__deep_significant = ifelse(is.na(glass_nl_prim_rec__deep_significant), F, glass_nl_prim_rec__deep_significant))
+
+
+
+
 # 450K ----
 
 

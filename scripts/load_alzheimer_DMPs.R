@@ -2,8 +2,11 @@
 
 
 # BMC Clinical genetics 2019 ----
+#' https://clinicalepigeneticsjournal.biomedcentral.com/articles/10.1186/s13148-019-0672-7
+#' We evaluated postmortem hippocampal samples from 38 subjects (26 AD patients and 12 controls), provided by the Navarrabiomed Brain Bank.
+## DMP table from paper ----
 
-data.probes.alzheimer <- read.delim("data/Alzheimer-DMPs-10.1186_s13148-019-0672-7-table-1.txt") |> 
+data.probes.alzheimer.tbl <- read.delim("data/Alzheimer-DMPs-10.1186_s13148-019-0672-7-table-1.txt") |> 
   dplyr::rename(probe_id = DMPs) |> 
   dplyr::rename(chr = Chromosome) |> 
   dplyr::mutate(chr = paste0("chr",chr)) |> 
@@ -14,6 +17,9 @@ data.probes.alzheimer <- read.delim("data/Alzheimer-DMPs-10.1186_s13148-019-0672
   assertr::verify(is.numeric(FDR.p.value) & FDR.p.value >= 0 & FDR.p.value <= 0.05) |> 
   dplyr::mutate(label = paste0(GeneID1,";",GeneID2)) |> 
   tibble::tibble()
+
+
+
 
 
 # Nat Com 2022 ----

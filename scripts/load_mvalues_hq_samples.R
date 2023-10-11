@@ -12,7 +12,7 @@ if(!exists('metadata.cg_probes.epic')) {
 
 
 
-# all hq ----
+# EPIC: all hq ----
 
 
 data.mvalues.hq_samples <- readRDS("cache/mvalues.HQ_samples.Rds") |> 
@@ -70,6 +70,64 @@ data.mvalues.good_probes <- data.mvalues.probes |>
   })() |> 
   assertr::verify(MASK_general == F) |> 
   dplyr::pull(probe_id)
+
+
+
+
+# 450K ----
+## AD: from Beta-value exported files ----
+
+
+
+if(!exists('ad_bmc_clin_epi.metadata.array_samples')) {
+  source('scripts/load_AD_BMC_Clin_Epi.R')
+}
+
+
+
+tmp.1 <- read.delim("data/GLASS_OD/DNA Methylation - 450K arrays - Alzheimer/SampleMethFinalReport_ctrl-bkg.txt", skip=8, header=T) |> 
+  tibble::column_to_rownames("TargetID") |> 
+  dplyr::select(contains("_Beta")) |> 
+  dplyr::mutate_all(function(x){return (  log2( `x` / (1 - `x`))  )}) |>  # Beta to M-values
+  tibble::rownames_to_column("probe_id")
+
+
+
+tmp.2 <- read.delim("data/GLASS_OD/DNA Methylation - 450K arrays - Alzheimer/SampleMethFinalReport_nonorm.txt", skip=8, header=T) |> 
+  tibble::column_to_rownames("TargetID") |> 
+  dplyr::select(contains("_Beta")) |> 
+  dplyr::mutate_all(function(x){return (  log2( `x` / (1 - `x`))  )}) |>  # Beta to M-values
+  tibble::rownames_to_column("probe_id")
+
+
+stopifnot(tmp.1$probe_id == tmp.2$probe_id)
+stopifnot(nrow(tmp.1) == nrow(tmp.2))
+
+
+data.mvalues.alzheimer.dirty <- tmp.1.m |> 
+  dplyr::left_join(tmp.2.m, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::rename_with(~ gsub("\\.AVG_Beta$","",.x)) |> 
+  dplyr::rename_with(~ gsub("^X","",.x)) |> 
+  dplyr::rename_with(~ gsub("\\.","_",.x)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(ncol(.) == (26 + 12))
+    assertthat::assert_that(all(colnames(.) %in% tmp$DNAm_id))
+    
+    return(.)
+  })() |> 
+  dplyr::select(ad_bmc_clin_epi.metadata.array_samples |> dplyr::filter(is.na(reason_excluded)) |>  dplyr::pull(DNAm_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(ncol(.) == (26 + 12 - 1))
+    
+    return(.)
+  })()
+
+
+rm(tmp.1, tmp.2)
+
 
 
 

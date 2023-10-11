@@ -22,7 +22,7 @@ if(!exists('glass_od.metadata.array_samples')) {
 #' @todo: thumbnail of H&E
 
 cnv_plot <- function(cur_sentrix_id) {
-  cur_sentrix_id <- "207331540060_R01C01"
+  #cur_sentrix_id <- "206116800060_R06C01"
   print(cur_sentrix_id)
   #cur_sentrix_id <- "201496850071_R02C01"
   #cur_sentrix_id <- "201496850071_R02C01"
@@ -185,11 +185,18 @@ cnv_plot <- function(cur_sentrix_id) {
   
   ## p5: Reasons excluded plot ----
   plt <- cur_idat |> 
-    dplyr::select(contains("excluded")) |> 
+    dplyr::select(contains("excluded") | contains("patient_suspected_noncodel")) |> 
     t() |>
     as.data.frame() |> 
     tibble::rownames_to_column("reason") |> 
+    
+    dplyr::mutate(V1 = dplyr::case_when(
+      reason == "patient_suspected_noncodel" & V1 == TRUE ~ "TRUE",
+      reason == "patient_suspected_noncodel" & V1 == FALSE ~ as.character(NA),
+      T ~ V1
+    )) |> 
     dplyr::mutate(reason = gsub("_reason_excluded","",reason)) |> 
+    dplyr::mutate(reason = gsub("^patient_","",reason)) |> 
     dplyr::mutate(excluded = !is.na(V1)) |> 
     dplyr::mutate(V1 = ifelse(excluded, V1, "no reason for exclusion"))
   
@@ -232,6 +239,7 @@ cnv_plot <- function(cur_sentrix_id) {
 
 
 pbapply::pblapply(glass_od.metadata.array_samples |> 
+                    #dplyr::filter(grepl("0063", isolation_id)) |> 
                     dplyr::filter(!is.na(array_heidelberg_cnvp_bins)) |> 
                     dplyr::filter(!is.na(array_mnp_predictBrain_v12.8_cal_class)) |> 
                     
