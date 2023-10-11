@@ -104,8 +104,8 @@ stopifnot(tmp.1$probe_id == tmp.2$probe_id)
 stopifnot(nrow(tmp.1) == nrow(tmp.2))
 
 
-data.mvalues.alzheimer.dirty <- tmp.1.m |> 
-  dplyr::left_join(tmp.2.m, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
+data.mvalues.alzheimer.dirty <- tmp.1 |> 
+  dplyr::left_join(tmp.2, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
   tibble::column_to_rownames('probe_id') |> 
   dplyr::rename_with(~ gsub("\\.AVG_Beta$","",.x)) |> 
   dplyr::rename_with(~ gsub("^X","",.x)) |> 
@@ -113,8 +113,8 @@ data.mvalues.alzheimer.dirty <- tmp.1.m |>
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == (26 + 12))
-    assertthat::assert_that(all(colnames(.) %in% tmp$DNAm_id))
-    
+    assertthat::assert_that(all(colnames(.) %in% ad_bmc_clin_epi.metadata.array_samples$DNAm_id))
+
     return(.)
   })() |> 
   dplyr::select(ad_bmc_clin_epi.metadata.array_samples |> dplyr::filter(is.na(reason_excluded)) |>  dplyr::pull(DNAm_id)) |> 
@@ -123,10 +123,26 @@ data.mvalues.alzheimer.dirty <- tmp.1.m |>
     assertthat::assert_that(ncol(.) == (26 + 12 - 1))
     
     return(.)
+  })() |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (485577))
+
+    .$NAs <- rowSums(is.na(.))
+    . <- .[.$NAs == 0,]
+    .$NAs <- NULL
+
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (470691))
+    return(.)
   })()
 
 
-rm(tmp.1, tmp.2)
+
+
+
+
+#rm(tmp.1, tmp.2)
 
 
 
