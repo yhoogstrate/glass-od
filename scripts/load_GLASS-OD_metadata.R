@@ -154,9 +154,21 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'view_array_samples') |>
     patient_suspected_noncodel == "false" ~ FALSE,
     TRUE ~ as.logical(NA)
   )) |> 
+  assertr::verify(arrayplate_id != "GLASS-NL") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(sum(is.na(.$arraychip_date)) <= 6)
+    return(.)
+  })() |> 
+  
   dplyr::mutate(patient_diagnosis_date = as.Date(patient_diagnosis_date, format = "%d %b %Y")) |> 
   dplyr::mutate(resection_date = as.Date(resection_date, format = "%d %b %Y")) |> 
-  assertr::verify(is.na(patient_diagnosis_date) | is.na(resection_date) | patient_diagnosis_date <= resection_date)
+  dplyr::mutate(arraychip_date = as.Date(arraychip_date, format = "%d %b %Y")) |> 
+  
+  assertr::verify(is.na(patient_diagnosis_date) | is.na(resection_date) | patient_diagnosis_date <= resection_date) |> 
+  assertr::verify(is.na(arraychip_date) | is.na(resection_date) | resection_date < arraychip_date) |> 
+  
+  dplyr::mutate(time_between_resection_and_array = arraychip_date - resection_date)
 
 
 
@@ -177,6 +189,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
     return(.)
   })() |> 
   assertr::verify(!is.na(resection_id))
+  
 
 
 

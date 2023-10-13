@@ -1085,10 +1085,10 @@ plt <- plt.a |>
   dplyr::mutate(genesUniq = gsub("PAXIP1|PAXBP","", genesUniq)) |>
   dplyr::mutate(genesUniq = gsub("TBXAS|TBXT|TBXA","", genesUniq)) |>
   dplyr::mutate(genesUniq = gsub("QSOX","", genesUniq)) |>
-  #dplyr::mutate(col = ifelse(grepl("HOX", genesUniq), "HOX probe", "non-HOX probe")) |> 
-  dplyr::mutate(col = ifelse(grepl("PAX3", genesUniq), "PAX probe", "non PAX probe"))
+  dplyr::mutate(col = ifelse(grepl("HOX", genesUniq), "HOX probe", "non-HOX probe")) |> 
+  #dplyr::mutate(col = ifelse(grepl("PAX3", genesUniq), "PAX probe", "non PAX probe"))
   #dplyr::mutate(col = ifelse(grepl("TBX", genesUniq), "TBX probe", "non TBX probe")) |> 
-  #dplyr::mutate(col = ifelse(grepl("SOX", genesUniq), "SOX probe", "non SOX probe"))
+  #dplyr::mutate(col = ifelse(grepl("SOX", genesUniq), "SOX probe", "non SOX probe")) 
 
 
 plt |> 
@@ -1102,11 +1102,12 @@ ggplot(plt, aes(x=t__g2_g3__partial_paired_nc,
                 label=genesUniq)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
-  geom_point(data= subset(plt, col != "PAX probe"), pch=19, cex=0.25, alpha=0.45) +
-  geom_point(data= subset(plt, col == "PAX probe"), pch=19, cex=0.65, alpha=0.45) +
-  ggrepel::geom_text_repel(data= subset(plt, col == "PAX probe"), size = 2.5) +
+  geom_point(data= subset(plt, col != "HOX probe"), pch=19, cex=0.25, alpha=0.45) +
+  geom_point(data= subset(plt, col == "HOX probe"), pch=19, cex=0.65, alpha=0.45) +
+  #ggrepel::geom_text_repel(data= subset(plt, col == "X probe"), size = 2.5) +
   theme_cellpress +
-  scale_color_manual(values=c("red","darkblue"))
+  scale_color_manual(values=c("darkblue","red")) +
+  labs(x = "T-score limma Alzheimer Disease ~ Control", y="T-score limma Oligodendroglioma Grade 3 ~ Grade 2")
 
 cor(
   plt |> dplyr::filter(!is.na(t__g2_g3__partial_paired_nc) & !is.na(t__ad)) |>  dplyr::pull(t__g2_g3__partial_paired_nc),
@@ -1171,7 +1172,7 @@ plt <- dplyr::left_join(plt.a, plt.b, by=c('probe_id'='probe_id'), suffix=c('','
     
     T ~ "other"
   )) |> 
-  head(n= 250000)
+  dplyr::mutate(probe_suffix = gsub("^.+(....)$","\\1", AlleleB_ProbeSeq))
 
 
 
@@ -1196,6 +1197,13 @@ ggplot(plt, aes(x=t__g2_g3__partial_paired_nc,
   ylim(-6,6)
 
 
+
+ggplot(plt, aes(y=col, x=as.factor(probe_suffix))) +
+  geom_bar(stat="identity")
+plot(table(plt |>  dplyr::select(col, probe_suffix)) / rowSums(table(plt |>  dplyr::select(col, probe_suffix))))
+
+
+
 prbs <- plt |> 
   dplyr::filter(col == "SEL") |>
   dplyr::filter(!is.na(genesUniq)) |> 
@@ -1204,6 +1212,121 @@ prbs <- plt |>
   unlist() |> 
   table() |> 
   sort(decreasing=T)
+
+prbs <- plt |> 
+  dplyr::filter(col == "SEL") |>
+  dplyr::filter(!is.na(genesUniq)) |> 
+  dplyr::pull(probe_id) 
+
+
+gplot <- plt |> 
+  dplyr::filter(col == "SEL") |>
+  dplyr::mutate(chr = factor(CpG_chrm, levels=gtools::mixedsort(unique(as.character(CpG_chrm))) ))
+
+p1 = ggplot(gplot, aes(x=pos, y=logFC__primary_recurrence__partial_paired_nc, col=!grepl("COL",genesUniq))) +
+  #facet_wrap(~chr, scales="free_x", ncol=23) +
+  facet_grid(cols = vars(chr), scales = "free", space="free") + 
+  #geom_vline(xintercept=47000000) +
+  #geom_vline(xintercept=50000000) +
+  geom_point(pch=19,cex=0.01)
+
+
+
+gplot2 <- plt |> 
+  dplyr::filter(col != "SEL") |>
+  dplyr::mutate(chr = factor(CpG_chrm, levels=gtools::mixedsort(unique(as.character(CpG_chrm))) ))
+
+p2 = ggplot(gplot2, aes(x=pos, y=logFC__primary_recurrence__partial_paired_nc, col=!grepl("COL",genesUniq))) +
+  #facet_wrap(~chr, scales="free_x", ncol=23) +
+  facet_grid(cols = vars(chr), scales = "free", space="free") + 
+  #geom_vline(xintercept=47000000) +
+  #geom_vline(xintercept=50000000) +
+  geom_point(pch=19,cex=0.001,alpha=0.5)
+
+
+p1 / p2
+
+
+
+### mk PCA of these probes specifically ----
+
+
+
+m <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(211) 
+
+d <- data.mvalues.hq_samples |> 
+  dplyr::select(m$array_sentrix_id) |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes & probe_id %in% prbs) |> 
+  tibble::column_to_rownames('probe_id')
+
+dim(m)
+dim(d)
+
+
+pc <- prcomp(t(d))
+head(pc$x)
+
+factoextra::fviz_eig(pc)
+
+prim_rec_secondary_effect <- pc |>
+  purrr::pluck('x') |> 
+  as.data.frame() |>
+  dplyr::select(PC1) |> 
+  dplyr::mutate(inverse = sum(pc$rotation[,1] < 0) > sum(pc$rotation[,1] > 0)) |>
+  dplyr::mutate(PC1 = ifelse(inverse , -PC1, PC1), inverse = NULL ) |>
+  dplyr::rename(prim_rec_secondary_effect_PC = PC1) |> 
+  tibble::rownames_to_column('array_sentrix_id')
+
+
+saveRDS(prim_rec_secondary_effect, file="cache/analysis_differential__prim_rec_secondary_effect_PC.Rds")
+
+
+
+### plt & figure out stuff ----
+
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(211) |> 
+  #filter_primaries_and_last_recurrences(179) |> 
+  dplyr::left_join(prim_rec_secondary_effect, by=c('array_sentrix_id'='array_sentrix_id'),suffix=c('','')) |> 
+  dplyr::mutate(is.prim = resection_number == 1) |> 
+  dplyr::mutate(time_since_ok = Sys.Date() - resection_date) |> 
+  dplyr::mutate(batch = ifelse(isolation_person_name == "USA / Duke", "USA", "EU")) |> 
+  dplyr::mutate(col = paste0(batch , "-", isolation_material)) 
+
+
+
+
+ggplot(plt, aes(x=-time_between_resection_and_array, y=prim_rec_secondary_effect_PC, col=col, label=isolation_id)) +
+  geom_point() +
+  ggrepel::geom_text_repel(data=subset(plt, col=="EU-NA"))
+
+ggplot(plt, aes(x=resection_date, y=array_PC1, col=col, label=isolation_id, group=patient_id)) +
+  geom_line(col="gray") + 
+  geom_point()
+
+
+  #ggrepel::geom_text_repel(data=subset(plt, grepl("19",resection_date)), col="black",size=2.5)
+
+
+
+ggplot(plt, aes(x=patient_id, y=prim_rec_secondary_effect_PC, col=is.prim)) +
+  theme_cellpress +
+  geom_point()
+
+
+
+plt2 <- plt |> 
+  dplyr::filter(!is.na(prim_rec_secondary_effect_PC))
+plot(plt2$array_PC1, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor(plt2$batch)))
+plot(plt2$array_PC2, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor(plt2$batch)))
+plot(plt2$array_PC3, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor(plt2$batch)))
+plot(plt2$array_PC4, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor(plt2$batch)))
+plot(plt2$array_PC5, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor(plt2$batch)))
+plot(plt2$array_PC6, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor(plt2$batch)))
+
 
 
 # do pca on all these probes
