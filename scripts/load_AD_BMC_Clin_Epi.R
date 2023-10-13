@@ -1,5 +1,6 @@
 #!/usr/bin/env R
 
+#' https://clinicalepigeneticsjournal.biomedcentral.com/articles/10.1186/s13148-019-0672-7
 
 ad_bmc_clin_epi.metadata.array_samples <- readxl::read_xlsx('data/GLASS_OD/DNA Methylation - 450K arrays - Alzheimer/microarray_samples_AD.xlsx') |> 
   dplyr::mutate(DNAm_id = gsub("[ \\-]","_", `Sample ID`)) |> 

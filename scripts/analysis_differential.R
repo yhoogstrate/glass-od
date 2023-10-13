@@ -1038,10 +1038,15 @@ plt.a <- readRDS("cache/analysis_differential__g2_g3__partial_paired_nc__stats.R
 plt.b <- readRDS("cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds") |> 
   dplyr::rename_with( ~ paste0(.x, "__primary_recurrence__partial_paired_nc"), .cols=!matches("^probe_id$",perl = T))
 
+plt.c <- readRDS("cache/analysis_differential__ad_co__stats.Rds") |> 
+  dplyr::rename_with( ~ paste0(.x, "__ad"), .cols=!matches("^probe_id$",perl = T))
+
+
 
 
 plt <- dplyr::left_join(plt.a, plt.b, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
   dplyr::left_join( metadata.cg_probes.epic , by=c('probe_id'='probe_id'), suffix=c('','') )
+
 
 
 
@@ -1050,21 +1055,91 @@ ggplot(plt, aes(x=t__g2_g3__partial_paired_nc,
                 col=glass_nl_prim_rec__deep_significant)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
-  geom_point(data=subset(plt, glass_nl_prim_rec__deep_significant == F),pch=19, cex=0.001, alpha=0.015) +
-  geom_point(data=subset(plt, glass_nl_prim_rec__deep_significant == T),pch=19, cex=0.002) +
+  geom_point(data=subset(plt, glass_nl_prim_rec__deep_significant == F),pch=19, cex=0.0015, alpha=0.035) +
+  geom_point(data=subset(plt, glass_nl_prim_rec__deep_significant == T),pch=19, cex=0.0015, alpha=0.4) +
   #geom_bin2d(bins = 350) + 
   #geom_density_2d(h=0.8) +
   #stat_density_2d(aes(fill = after_stat(level)), geom = "polygon", colour="white") +
   #scale_fill_continuous(type = "viridis") +
   #ggplot2::scale_fill_gradientn(colours = mixcol("gray90",col3(2)[1],0:100/100), na.value = "grey50")  +
-  labs(x = "t-score (Grade 2 ~ Grade 3)", y="t-score (primary ~ recurrence)") +
+  scale_color_manual(values=c('#c04040', 'darkblue')) +
+  labs(x = "GLASS-OD: t-score (Grade 2 ~ Grade 3)", y="GLASS-OD: t-score (primary ~ recurrence)", col="GLASS-NL: deep significant") +
   theme_cellpress +
   xlim(-10,10) +
   ylim(-6,6)
 
 
+ggsave("/home/r361003/volcano_pp_x_g2_g3.png", width=8.5/2,height=3.5)
 
-#ggsave("/tmp/volcano_pp_x_g2_g3.png", width=8.5/2,height=3.5)
+
+### AD ----
+
+
+plt <- plt.a |> 
+  dplyr::left_join(plt.b, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
+  dplyr::left_join(plt.c, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
+  dplyr::left_join( metadata.cg_probes.epic , by=c('probe_id'='probe_id'), suffix=c('','') )  |> 
+  dplyr::left_join(data.probes.alzheimer, by=c('probe_id'='probe_id'),suffix=c('','')) |> 
+  #dplyr::mutate(col = ifelse(is.na(Beta..difference),"","Paper-reported")) |> 
+  dplyr::mutate(genesUniq = gsub("PHOX|SHOX","", genesUniq)) |> 
+  dplyr::mutate(genesUniq = gsub("PAXIP1|PAXBP","", genesUniq)) |>
+  dplyr::mutate(genesUniq = gsub("TBXAS|TBXT|TBXA","", genesUniq)) |>
+  dplyr::mutate(genesUniq = gsub("QSOX","", genesUniq)) |>
+  #dplyr::mutate(col = ifelse(grepl("HOX", genesUniq), "HOX probe", "non-HOX probe")) |> 
+  dplyr::mutate(col = ifelse(grepl("PAX3", genesUniq), "PAX probe", "non PAX probe"))
+  #dplyr::mutate(col = ifelse(grepl("TBX", genesUniq), "TBX probe", "non TBX probe")) |> 
+  #dplyr::mutate(col = ifelse(grepl("SOX", genesUniq), "SOX probe", "non SOX probe"))
+
+
+plt |> 
+  dplyr::filter(col == "SOX probe") |> 
+  dplyr::pull(genesUniq)
+
+
+ggplot(plt, aes(x=t__g2_g3__partial_paired_nc,
+                y=t__ad,
+                col=col,
+                label=genesUniq)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  geom_point(data= subset(plt, col != "PAX probe"), pch=19, cex=0.25, alpha=0.45) +
+  geom_point(data= subset(plt, col == "PAX probe"), pch=19, cex=0.65, alpha=0.45) +
+  ggrepel::geom_text_repel(data= subset(plt, col == "PAX probe"), size = 2.5) +
+  theme_cellpress +
+  scale_color_manual(values=c("red","darkblue"))
+
+cor(
+  plt |> dplyr::filter(!is.na(t__g2_g3__partial_paired_nc) & !is.na(t__ad)) |>  dplyr::pull(t__g2_g3__partial_paired_nc),
+  plt |> dplyr::filter(!is.na(t__g2_g3__partial_paired_nc) & !is.na(t__ad)) |>  dplyr::pull(t__ad)
+  ,
+  method = "spearman"
+)
+
+cor(
+  plt |> dplyr::filter(!is.na(t__g2_g3__partial_paired_nc) & !is.na(t__ad)) |>  dplyr::pull(t__primary_recurrence__partial_paired_nc),
+  plt |> dplyr::filter(!is.na(t__g2_g3__partial_paired_nc) & !is.na(t__ad)) |>  dplyr::pull(t__ad)
+  ,
+  method = "spearman"
+)
+
+cor(
+  plt |> dplyr::filter(!is.na(t__g2_g3__partial_paired_nc) & !is.na(t__ad)) |>  dplyr::pull(t__primary_recurrence__partial_paired_nc),
+  plt |> dplyr::filter(!is.na(t__g2_g3__partial_paired_nc) & !is.na(t__ad)) |>  dplyr::pull(t__g2_g3__partial_paired_nc)
+  ,
+  method = "spearman"
+)
+
+
+ggplot(plt, aes(x=t__primary_recurrence__partial_paired_nc,
+                y=t__ad,
+                col=col)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  geom_point(data= subset(plt, col == ""), pch=19, cex=0.25, alpha=0.15) +
+  geom_point(data= subset(plt, col != ""), pch=19, cex=0.65, alpha=0.45) +
+  labs(x = "t-score (Grade 2 ~ Grade 3)", y="t-score (AD ~ control)") +
+  theme_cellpress
+
 
 
 
@@ -1462,7 +1537,70 @@ ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=col2)) +
   theme_bw()
 
 
-# x alzheimer quick test ----
+
+# AD dataset ----
+
+
+metadata.ad <- ad_bmc_clin_epi.metadata.array_samples |> 
+  dplyr::mutate(ad.status = factor(ifelse(Type == "AD control", "Control","AlzheimerDisease"), levels=c( "Control","AlzheimerDisease"))) |> 
+  #dplyr::filter(is.na(reason_excluded)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 38)
+    return(.)
+  })()
+
+
+
+data.ad <- data.mvalues.alzheimer.dirty |> 
+  dplyr::select(metadata.ad$DNAm_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (470392)) #470691
+    return(.)
+  })()
+
+
+
+design.ad <- model.matrix(~factor(ad.status), data=metadata.ad)
+fit.ad <- limma::lmFit(data.ad, design.ad)
+fit.ad <- limma::eBayes(fit.ad, trend=T)
+stats.ad <- limma::topTable(fit.ad,
+                            n=nrow(data.ad),
+                            coef="factor(ad.status)AlzheimerDisease",
+                            sort.by = "none",
+                            adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+rm(design.ad)
+
+
+sum(stats.ad$P.Value < 0.01)
+sum(stats.ad$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.ad, file="cache/analysis_differential__ad_co__fit.Rds")
+saveRDS(stats.ad, file="cache/analysis_differential__ad_co__stats.Rds")
+
+
+## check plot ----
+
+plt <- stats.ad |> 
+  dplyr::left_join(
+    data.probes.alzheimer,
+    by=c('probe_id'='probe_id'), suffix=c('','')
+  )
+
+# plot(plt$Beta..difference, plt$logFC)
+# plot(plt$FDR.p.value, plt$adj.P.Val)
+
+
+
+
+
+## x alzheimer quick test ----
 
 plt <- stats.od |> 
   dplyr::left_join(data.probes.alzheimer, by=c('probe_id'='probe_id'),suffix=c('',''))

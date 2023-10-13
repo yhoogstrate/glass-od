@@ -76,7 +76,7 @@ data.mvalues.good_probes <- data.mvalues.probes |>
 
 # 450K ----
 ## AD: from Beta-value exported files ----
-
+#' https://clinicalepigeneticsjournal.biomedcentral.com/articles/10.1186/s13148-019-0672-7
 
 
 if(!exists('ad_bmc_clin_epi.metadata.array_samples')) {
@@ -117,13 +117,13 @@ data.mvalues.alzheimer.dirty <- tmp.1 |>
 
     return(.)
   })() |> 
-  dplyr::select(ad_bmc_clin_epi.metadata.array_samples |> dplyr::filter(is.na(reason_excluded)) |>  dplyr::pull(DNAm_id)) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(ncol(.) == (26 + 12 - 1))
-    
-    return(.)
-  })() |> 
+  # dplyr::select(ad_bmc_clin_epi.metadata.array_samples |> dplyr::filter(is.na(reason_excluded)) |>  dplyr::pull(DNAm_id)) |> 
+  # (function(.) {
+  #   print(dim(.))
+  #   assertthat::assert_that(ncol(.) == (26 + 12 - 1))
+  #   
+  #   return(.)
+  # })() |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == (485577))
@@ -133,17 +133,14 @@ data.mvalues.alzheimer.dirty <- tmp.1 |>
     .$NAs <- NULL
 
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (470691))
+    assertthat::assert_that(sum(is.na(.)) == 0)
+    assertthat::assert_that(nrow(.) == (470392))  #470691
     return(.)
   })()
 
 
 
-
-
-
-#rm(tmp.1, tmp.2)
-
+rm(tmp.1, tmp.2)
 
 
 
