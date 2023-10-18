@@ -85,7 +85,7 @@ glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resectio
   dplyr::mutate(patient_id = as.factor(patient_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 278) # + 22 x astro
+    assertthat::assert_that(nrow(.) == 277) # + 22 x astro
     return(.)
   })() |> 
   assertr::verify(is.numeric(resection_number)) |> 
@@ -162,13 +162,16 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'view_array_samples') |>
   })() |> 
   
   dplyr::mutate(patient_diagnosis_date = as.Date(patient_diagnosis_date, format = "%d %b %Y")) |> 
+  dplyr::mutate(patient_birth_date = as.Date(patient_birth_date, format = "%d %b %Y")) |> 
   dplyr::mutate(resection_date = as.Date(resection_date, format = "%d %b %Y")) |> 
   dplyr::mutate(arraychip_date = as.Date(arraychip_date, format = "%d %b %Y")) |> 
   
   assertr::verify(is.na(patient_diagnosis_date) | is.na(resection_date) | patient_diagnosis_date <= resection_date) |> 
   assertr::verify(is.na(arraychip_date) | is.na(resection_date) | resection_date < arraychip_date) |> 
+  assertr::verify(is.na(patient_birth_date) | is.na(resection_date) | patient_birth_date < resection_date) |> 
   
-  dplyr::mutate(time_between_resection_and_array = arraychip_date - resection_date)
+  dplyr::mutate(time_between_resection_and_array = arraychip_date - resection_date) |> 
+  dplyr::mutate(time_between_birth_and_resection = resection_date - patient_birth_date)
 
 
 
@@ -847,6 +850,12 @@ rm(tmp)
 ## epiTOC2 ----
 
 
+#' array_epiTOC2_tnsc: the estimated cumulative number of stem-cell divisions per stem-cell per year and per sample using the full epiTOC2 model
+#' array_epiTOC2_tnsc2: the estimated cumulative number of stem-cell divisions per stem-cell per year and per sample using an approximation of epiTOC2 which assumes all epiTOC2 CpGs have beta-values exactly 0 in the fetal stage
+#' array_epiTOC2_hypoSC: the HypoClock score over the 678 solo-WCGWs - QC associated?
+#' array_epiTOC2_pcgtAge: this is the mitotic-score obtained using our previous epiTOC model
+
+
 tmp <- readRDS("cache/analysis_EPITOC2.Rds") |> 
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
   (function(.) {
@@ -854,12 +863,37 @@ tmp <- readRDS("cache/analysis_EPITOC2.Rds") |>
     assertthat::assert_that(nrow(.) == 215)
     return(.)
   })()
-  
+
+
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
 rm(tmp)
 
+
+## dnaMethyAge ----
+
+
+tmp <- readRDS("cache/analysis_dnaMethyAge.Rds") |> 
+  tibble::rownames_to_column('array_sentrix_id') |> 
+  dplyr::mutate(dnaMethyAge__epiTOC2 = NULL) |> # superseded by `array_epiTOC2_tnsc`
+  dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 215)
+    return(.)
+  })()
+
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+rm(tmp)
+
+
+#plot(glass_od.metadata.array_samples$array_epiTOC2_hypoSC , glass_od.metadata.array_samples$dnaMethyAge__epiTOC2)
+#plot(glass_od.metadata.array_samples$array_epiTOC2_pcgtAge , glass_od.metadata.array_samples$dnaMethyAge__epiTOC2)
+#plot(glass_od.metadata.array_samples$array_epiTOC2_tnsc , glass_od.metadata.array_samples$dnaMethyAge__epiTOC2) ~= 1.0
+#plot(glass_od.metadata.array_samples$array_epiTOC2_tnsc2 , glass_od.metadata.array_samples$dnaMethyAge__epiTOC2)
 
 
 # cleanup db connection ----

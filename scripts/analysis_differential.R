@@ -186,9 +186,70 @@ plot(coef$conditionc2, -log(pval$conditionc2))
 
 
 
+## data: partially paired [w/o FFPE/frozen batch correct] ----
 
 
-## data: full paired only ----
+metadata.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(210) |> 
+  filter_primaries_and_last_recurrences(178) |> 
+  
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"remainder")))) |> 
+  dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
+  dplyr::select(array_sentrix_id, patient, pr.status) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (178)) 
+    return(.)
+  })()
+
+
+data.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+
+design.pp.nc <- model.matrix(~factor(patient) + factor(pr.status), data=metadata.pp.nc)
+fit.pp.nc <- limma::lmFit(data.pp.nc, design.pp.nc)
+fit.pp.nc <- limma::eBayes(fit.pp.nc, trend=T)
+stats.pp.nc <- limma::topTable(fit.pp.nc,
+                               n=nrow(data.pp.nc),
+                               coef="factor(pr.status)recurrence",
+                               sort.by = "none",
+                               adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.pp.nc)
+
+
+sum(stats.pp.nc$dmp__primary_recurrence__pp.nc__P.Value < 0.01)
+sum(stats.pp.nc$dmp__primary_recurrence__pp.nc__adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.pp.nc, file="cache/analysis_differential__primary_recurrence__partial_paired_nc__fit.Rds")
+saveRDS(stats.pp.nc, file="cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds")
+
+
+rm(fit.pp.nc, stats.pp.nc)
+
+
+
+## x data: full paired only ----
 
 
 
@@ -277,70 +338,9 @@ rm(fit.fp, stats.fp)
 
 
 
-## data: partially paired [w/o FFPE/frozen batch correct] ----
 
 
-metadata.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(211) |> 
-  filter_primaries_and_last_recurrences(179) |> 
-  
-
-  dplyr::group_by(patient_id) |> 
-  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
-  dplyr::ungroup() |> 
-
-  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"remainder")))) |> 
-  dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
-  dplyr::select(array_sentrix_id, patient, pr.status) |> 
-  
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (179)) 
-    return(.)
-  })()
-
-
-data.pp.nc <- data.mvalues.hq_samples |> 
-  tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
-  tibble::column_to_rownames('probe_id') |> 
-  
-  dplyr::select(metadata.pp.nc$array_sentrix_id) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
-    return(.)
-  })()
-
-
-
-design.pp.nc <- model.matrix(~factor(patient) + factor(pr.status), data=metadata.pp.nc)
-fit.pp.nc <- limma::lmFit(data.pp.nc, design.pp.nc)
-fit.pp.nc <- limma::eBayes(fit.pp.nc, trend=T)
-stats.pp.nc <- limma::topTable(fit.pp.nc,
-                               n=nrow(data.pp.nc),
-                               coef="factor(pr.status)recurrence",
-                               sort.by = "none",
-                               adjust.method="fdr") |> 
-  tibble::rownames_to_column('probe_id') 
-
-rm(design.pp.nc)
-
-
-sum(stats.pp.nc$P.Value < 0.01)
-sum(stats.pp.nc$adj.P.Val < 0.01)
-
-
-
-saveRDS(fit.pp.nc, file="cache/analysis_differential__primary_recurrence__partial_paired_nc__fit.Rds")
-saveRDS(stats.pp.nc, file="cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds")
-
-
-rm(fit.pp.nc, stats.pp.nc)
-
-
-
-## data: partially paired [w/ FFPE/frozen batch correct] ----
+## x data: partially paired [w/ FFPE/frozen batch correct] ----
 
 
 metadata.pp.cor <- glass_od.metadata.array_samples |> 
@@ -413,7 +413,7 @@ rm(fit.pp.cor, stats.pp.cor)
 
 
 
-## data: unpaired [w/o FFPE/frozen batch correct] ----
+## x data: unpaired [w/o FFPE/frozen batch correct] ----
 
 
 metadata.up.nc <- glass_od.metadata.array_samples |> 
@@ -474,7 +474,7 @@ rm(fit.up.cor, stats.up.cor)
 
 
 
-## data: unpaired [w/ FFPE/frozen batch correct] ----
+## x data: unpaired [w/ FFPE/frozen batch correct] ----
 
 metadata.up.cor <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(211) |> 
@@ -538,7 +538,7 @@ rm(fit.up.cor, stats.up.cor)
 
 
 
-## plots ----
+## x plots ----
 
 
 
@@ -574,147 +574,76 @@ ggsave("/tmp/volcano_g3g2.png", width=8.5/2,height=8.5/2)
 
 
 
-## dmpFinder ----
-
-targets <- array_samples |> 
-  dplyr::rename(Sample_Name = resection_isolation_id) |>
-  dplyr::mutate(Array = gsub("^.+_","",sentrix_id)) |> 
-  dplyr::rename(Slide = methylation_array_chip_id) |> 
-  dplyr::mutate(Basename = gsub("_Grn.idat$","", channel_green)) |> 
-  dplyr::select(Sample_Name, sentrix_id, status, Array,Slide, Basename) 
-
-
-
-
-RGSet <- read.metharray.exp(targets = targets, force =T)
-
-
-# manifest <- getManifest(RGSet)
-# manifest
-# 
-# #MSet.illumina <- preprocessIllumina(RGSet, bg.correct = TRUE,
-# #                                    normalize = "controls")
-# 
-# GRset.funnorm <- preprocessFunnorm(RGSet)
-# 
-# beta <- getBeta(GRset.funnorm)
-# status  <- pData(GRset.funnorm)$status
-
-
-# store m-values
-
-proc <- preprocessNoob(RGSet, offset = 0, dyeCorr = TRUE, verbose = TRUE, dyeMethod="reference") 
-proc.r.mvalue <- ratioConvert(proc , what = "M")
-
-mvalues <- as.data.frame(assays(proc.r.mvalue)$M)
-
-stats <- data.frame(mad = pbapply::pbapply(mvalues, 1, mad)) |> 
-  dplyr::mutate(
-    mean.a =
-      pbapply::pbapply(mvalues |> 
-                         dplyr::select(targets |> dplyr::filter(status == "primary") |> dplyr::mutate(id = gsub("^.+/","",Basename)) |>  dplyr::pull(id)),
-                       1, mean, na.rm=T)
-  ) |> 
-  dplyr::mutate(
-    mean.b =
-      pbapply::pbapply(mvalues |> 
-                         dplyr::select(targets |> dplyr::filter(status == "last_recurrence") |> dplyr::mutate(id = gsub("^.+/","",Basename)) |>  dplyr::pull(id)),
-                       1, mean, na.rm=T)
-  )
-
-
-
-
-stats <- stats |> 
-  dplyr::mutate(delta1 = mean.b - mean.a) |> 
-  tibble::rownames_to_column('probe_id') 
-
-
-
-beta <- getBeta(proc)
-status  <- pData(proc)$status
-
-
-dmp <- dmpFinder(beta, pheno = status  , type = "categorical") |> 
-  tibble::rownames_to_column('probe_id') |> 
-  dplyr::left_join(stats,
-                   by=c('probe_id'='probe_id'),
-                   suffix = c('','')
-                     )
-
-
-
-
-
-
-ggplot(dmp |> 
-         dplyr::filter(mad > 1) 
-       , aes(x=delta1, y=-log10(pval))) +
-  geom_point(pch=19,cex=0.1, alpha=0.1) +
-  labs(x = "delta M-value primary recurrence [20 random matching pairs]") +
-  youri_gg_theme
-
-
-
-# odd pca?
-
-pc <- prcomp(t(mvalues))
-pc_plt <- pc$x |> 
-  as.data.frame() |> 
-  tibble::rownames_to_column('sentrix_id') |> 
-  dplyr::left_join(targets, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
-
-ggplot(pc_plt, aes(x=PC1, y=PC2, label=Sample_Name) ) +
-  #geom_point() +
-  geom_text()
-
-## 0006-R1
-## 0019-R1
-
-
-
-
-plt <- read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |>
-  dplyr::filter(MASK_general == F) |> 
-  dplyr::mutate(pos = round((CpG_beg + CpG_end )/2)) |> 
-  dplyr::select(CpG_chrm, pos, probeID, probe_strand  ) |> 
-  dplyr::left_join(dmp, by=c('probeID' = 'probe_id'), suffix=c('','')) |> 
-  dplyr::filter(!is.na(delta1) & !is.na(qval)) |> 
-  dplyr::rename(chr = CpG_chrm) |> 
-  dplyr::mutate(chr = factor(chr, levels=gtools::mixedsort(unique(as.character(chr))) )) |> 
-  dplyr::mutate(significant = qval < 0.000001) |> 
-  dplyr::filter(chr %in% c("chrM","chrX","chrY", "NA",NA) == F)  |> 
-  dplyr::mutate(absdiff = abs(delta1))
-
-
-ggplot(plt, aes(x=pos / 1000000,y=delta1, col=chr)) + 
-  #geom_vline(xintercept=175, col="blue", alpha=0.5) + 
-  facet_grid(cols = vars(chr), scales = "free", space="free") +
-  geom_point(pch=19,cex=0.2, alpha=0.25) +
-  #geom_point(data = subset(plt, significant==T), pch=21,cex=0.8,col='black',fill=NA, alpha=0.5) +
-  geom_smooth(se=F,col="black", lwd=0.7, n=500) +
-  youri_gg_theme +
-  labs(x=NULL)
-
-
-# maybe stranded adds sth?
-
-ggplot(subset(plt, chr == "chr2"), aes(x=pos / 1000000,y=delta1, col=chr)) + 
-  geom_vline(xintercept=176.125, col="blue", alpha=0.5) + 
-  facet_grid(cols = vars(chr), scales = "free", space="free") +
-  geom_point(pch=19,cex=0.2) +
-  geom_point(data = subset(plt, significant==T & chr == "chr2"), pch=21,cex=0.8,col='black',fill=NA, alpha=0.5) +
-  geom_smooth(se=F,col="black", lwd=0.7,n=1000, span=0.2) +
-  youri_gg_theme +
-  labs(x=NULL) + 
-  xlim(170,180)
 
 
 # analyses: GLASS-OD g2 - g3 ----
 #' @todo ASK what to do if first resection is G3 while last is G2 !!!
 
 
-## data: full paired only ----
+## data: partially paired [w/o FFPE/frozen batch correct] ----
+
+
+metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(210) |> 
+  filter_first_G2_and_last_G3(140) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2", "Grade3")) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (140)) 
+    return(.)
+  })()
+
+
+
+data.g2g3.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.g2g3.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+
+
+
+design.g2g3.pp.nc <- model.matrix(~factor(patient) + factor(gr.status), data=metadata.g2g3.pp.nc)
+fit.g2g3.pp.nc <- limma::lmFit(data.g2g3.pp.nc, design.g2g3.pp.nc)
+fit.g2g3.pp.nc <- limma::eBayes(fit.g2g3.pp.nc, trend=T)
+stats.g2g3.pp.nc <- limma::topTable(fit.g2g3.pp.nc,
+                                    n=nrow(data.g2g3.pp.nc),
+                                    coef="factor(gr.status)Grade3",
+                                    sort.by = "none",
+                                    adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.g2g3.pp.nc)
+
+
+sum(stats.g2g3.pp.nc$P.Value < 0.01)
+sum(stats.g2g3.pp.nc$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__partial_paired_nc__fit.Rds")
+saveRDS(stats.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds")
+
+
+
+
+## x data: full paired only ----
 
 
 metadata.g2g3.fp <- glass_od.metadata.array_samples |> 
@@ -775,69 +704,7 @@ saveRDS(stats.g2g3.fp, file="cache/analysis_differential__g2_g3__full_paired__st
 
 
 
-## data: partially paired [w/o FFPE/frozen batch correct] ----
-
-
-metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(211) |> 
-  filter_first_G2_and_last_G3(140) |> 
-  
-  dplyr::group_by(patient_id) |> 
-  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
-  dplyr::ungroup() |> 
-  
-  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
-  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
-  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2","Grade3")) |> 
-  
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (140)) 
-    return(.)
-  })()
-
-
-
-data.g2g3.pp.nc <- data.mvalues.hq_samples |> 
-  tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
-  tibble::column_to_rownames('probe_id') |> 
-  
-  dplyr::select(metadata.g2g3.pp.nc$array_sentrix_id) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
-    return(.)
-  })()
-
-
-
-
-
-design.g2g3.pp.nc <- model.matrix(~factor(patient) + factor(gr.status), data=metadata.g2g3.pp.nc)
-fit.g2g3.pp.nc <- limma::lmFit(data.g2g3.pp.nc, design.g2g3.pp.nc)
-fit.g2g3.pp.nc <- limma::eBayes(fit.g2g3.pp.nc, trend=T)
-stats.g2g3.pp.nc <- limma::topTable(fit.g2g3.pp.nc,
-                            n=nrow(data.g2g3.pp.nc),
-                            coef="factor(gr.status)Grade3",
-                            sort.by = "none",
-                            adjust.method="fdr") |> 
-  tibble::rownames_to_column('probe_id') 
-
-rm(design.g2g3.pp.nc)
-
-
-sum(stats.g2g3.pp.nc$P.Value < 0.01)
-sum(stats.g2g3.pp.nc$adj.P.Val < 0.01)
-
-
-
-saveRDS(fit.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__partial_paired_nc__fit.Rds")
-saveRDS(stats.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds")
-
-
-
-## data: partially paired [w/ FFPE/frozen batch correct] ----
+## x data: partially paired [w/ FFPE/frozen batch correct] ----
 
 
 metadata.g2g3.pp.cor <- glass_od.metadata.array_samples |> 
@@ -905,7 +772,7 @@ saveRDS(stats.g2g3.pp.cor, file="cache/analysis_differential__g2_g3__partial_pai
 
 
 
-## data: unpaired [w/o FFPE/frozen batch correct] ----
+## x data: unpaired [w/o FFPE/frozen batch correct] ----
 
 
 metadata.g2g3.up.nc <- glass_od.metadata.array_samples |> 
@@ -966,7 +833,7 @@ saveRDS(stats.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__unpaired_nc_
 
 
 
-## data: unpaired [w/ FFPE/frozen batch correct] ----
+## x data: unpaired [w/ FFPE/frozen batch correct] ----
 
 
 metadata.g2g3.up.cor <- glass_od.metadata.array_samples |> 
@@ -1029,7 +896,7 @@ saveRDS(stats.g2g3.up.cor, file="cache/analysis_differential__g2_g3__unpaired_co
 
 
 
-## plots ----
+## x plots ----
 
 
 plt.a <- readRDS("cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds") |> 
@@ -1253,7 +1120,7 @@ p1 / p2
 
 
 m <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(211) 
+  filter_GLASS_OD_idats(210) 
 
 d <- data.mvalues.hq_samples |> 
   dplyr::select(m$array_sentrix_id) |> 
@@ -1294,21 +1161,15 @@ plt <- glass_od.metadata.array_samples |>
   dplyr::mutate(is.prim = resection_number == 1) |> 
   dplyr::mutate(time_since_ok = Sys.Date() - resection_date) |> 
   dplyr::mutate(batch = ifelse(isolation_person_name == "USA / Duke", "USA", "EU")) |> 
-  dplyr::mutate(col = paste0(batch , "-", isolation_material)) 
+  dplyr::mutate(col = paste0("Real: ", isolation_material, "    MNP: ", array_mnp_QC_v12.8_predicted_sample_type)) 
 
 
 
 
 ggplot(plt, aes(x=-time_between_resection_and_array, y=prim_rec_secondary_effect_PC, col=col, label=isolation_id)) +
   geom_point() +
-  ggrepel::geom_text_repel(data=subset(plt, col=="EU-NA"))
+  ggrepel::geom_text_repel(data=subset(plt, col=="EU-ffpe"), col="black", size=2.5) 
 
-ggplot(plt, aes(x=resection_date, y=array_PC1, col=col, label=isolation_id, group=patient_id)) +
-  geom_line(col="gray") + 
-  geom_point()
-
-
-  #ggrepel::geom_text_repel(data=subset(plt, grepl("19",resection_date)), col="black",size=2.5)
 
 
 
@@ -1329,36 +1190,72 @@ plot(plt2$array_PC6, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor
 
 
 
-# do pca on all these probes
-
 # analyses: GLASS-OD AcCGAP ----
-## data: partially paired ----
+## data: partially paired [w/o FFPE/frozen batch correct] ----
 
-metadata.pp <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(163) |> 
-  assertr::verify(!is.na(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
-  assertr::verify(is.numeric(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
-  dplyr::mutate(A_IDH_HG__A_IDH_LG_lr__lasso_fit = scale(A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
+
+metadata.AccGAP.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(210) |> 
+  assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
+  assertr::verify(is.numeric(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
+  dplyr::mutate(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit = scale(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
   dplyr::group_by(patient_id) |> 
-  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |>  # also pairs with n = 3 & n= 4
   dplyr::ungroup() |> 
-  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"remainder"))))
+  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (210)) 
+    return(.)
+  })()
 
 
 
-data.pp <- data.mvalues.hq_samples |> 
+data.AccGAP.pp.nc <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.pp$sentrix_id) |> 
-  (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
-  dplyr::arrange(mad) |>
-  dplyr::mutate(mad = NULL)
+  
+  dplyr::select(metadata.AccGAP.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
 
 
 
 
-### test: pat + condition  ----
+
+design.AccGAP.pp.nc <- model.matrix(~factor(patient) + array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, data=metadata.AccGAP.pp.nc)
+fit.AccGAP.pp.nc <- limma::lmFit(data.AccGAP.pp.nc, design.AccGAP.pp.nc)
+fit.AccGAP.pp.nc <- limma::eBayes(fit.AccGAP.pp.nc, trend=T)
+stats.AccGAP.pp.nc <- limma::topTable(fit.AccGAP.pp.nc,
+                                      n=nrow(data.AccGAP.pp.nc),
+                                      coef="array_A_IDH_HG__A_IDH_LG_lr__lasso_fit",
+                                      sort.by = "none",
+                                      adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.AccGAP.pp.nc)
+
+
+sum(stats.AccGAP.pp.nc$P.Value < 0.01)
+sum(stats.AccGAP.pp.nc$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.AccGAP.pp.nc, file="cache/analysis_differential__AcCGAP__partial_paired_nc__fit.Rds")
+saveRDS(stats.AccGAP.pp.nc, file="cache/analysis_differential__AcCGAP__partial_paired_nc__stats.Rds")
+
+
+
+rm(fit.AccGAP.pp.nc, stats.AccGAP.pp.nc)
+
+
+
+
+## x plots: test pat + condition  ----
 
 
 design.lgc <- model.matrix(~factor(patient) + as.numeric(A_IDH_HG__A_IDH_LG_lr__lasso_fit), data=metadata.pp)
@@ -1378,6 +1275,189 @@ sum(stats.lgc$P.Value < 0.01)
 sum(stats.lgc$adj.P.Val < 0.01)
 
 plot(sort(stats.lgc$P.Value),type="l")
+
+
+
+# analyses: FFPE-decay predictor ----
+## data: partially paired [w/o FFPE/frozen batch correct] ----
+
+
+metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(210) |> 
+  dplyr::filter(!is.na(isolation_material)) |> 
+  dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
+  dplyr::filter(!is.na(ffpe_decay_time)) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (190)) 
+    return(.)
+  })()
+
+
+data.ffpe_decay.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.ffpe_decay.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+
+design.ffpe_decay.pp.nc <- model.matrix(~factor(patient) + ffpe_decay_time, data=metadata.ffpe_decay.pp.nc)
+fit.ffpe_decay.pp.nc <- limma::lmFit(data.ffpe_decay.pp.nc, design.ffpe_decay.pp.nc)
+fit.ffpe_decay.pp.nc <- limma::eBayes(fit.ffpe_decay.pp.nc, trend=T)
+
+stats.ffpe_decay.pp.nc <- limma::topTable(fit.ffpe_decay.pp.nc,
+                                          n=nrow(data.ffpe_decay.pp.nc),
+                                          coef="ffpe_decay_time",
+                                          sort.by = "none",
+                                          adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')
+
+
+
+rm(design.ffpe_decay.pp.nc)
+
+
+sum(stats.ffpe_decay.pp.nc$P.Value < 0.01)
+sum(stats.ffpe_decay.pp.nc$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.ffpe_decay.pp.nc, file="cache/analysis_differential__ffpe-decay-time__partial_paired_nc__fit.Rds")
+saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds")
+
+
+rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
+
+
+## x data: unpaired [w/o FFPE/frozen batch correct] ----
+
+
+metadata.ffpe_decay.up.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(210) |> 
+  dplyr::filter(!is.na(isolation_material)) |> 
+  dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
+  dplyr::filter(!is.na(ffpe_decay_time)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (190)) 
+    return(.)
+  })()
+
+
+data.ffpe_decay.up.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.ffpe_decay.up.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+design.ffpe_decay.up.nc <- model.matrix(~ffpe_decay_time, data=metadata.ffpe_decay.up.nc)
+fit.ffpe_decay.up.nc <- limma::lmFit(data.ffpe_decay.up.nc, design.ffpe_decay.up.nc)
+fit.ffpe_decay.up.nc <- limma::eBayes(fit.ffpe_decay.up.nc, trend=T)
+
+stats.ffpe_decay.up.nc <- limma::topTable(fit.ffpe_decay.up.nc,
+                                          n=nrow(data.ffpe_decay.up.nc),
+                                          coef="ffpe_decay_time",
+                                          sort.by = "none",
+                                          adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')
+
+
+
+rm(design.ffpe_decay.up.nc)
+
+
+sum(stats.ffpe_decay.up.nc$P.Value < 0.01)
+sum(stats.ffpe_decay.up.nc$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.ffpe_decay.up.nc, file="cache/analysis_differential__ffpe-decay-time__unpaired_nc__fit.Rds")
+saveRDS(stats.ffpe_decay.up.nc, file="cache/analysis_differential__ffpe-decay-time__unpaired_nc__stats.Rds")
+
+
+rm(fit.ffpe_decay.up.nc, stats.ffpe_decay.up.nc)
+
+
+
+# analyses: epiTOC & Hanarth clock ----
+## data: partially paired [w/o FFPE/frozen batch correct] ----
+
+
+metadata.epiTOC2_hypoSC.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(210) |> 
+  dplyr::filter(!is.na(array_epiTOC2_hypoSC)) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (210)) 
+    return(.)
+  })()
+
+
+data.epiTOC2_hypoSC.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.epiTOC2_hypoSC.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+
+design.epiTOC2_hypoSC.pp.nc <- model.matrix(~factor(patient) + array_epiTOC2_hypoSC, data=metadata.epiTOC2_hypoSC.pp.nc)
+fit.epiTOC2_hypoSC.pp.nc <- limma::lmFit(data.epiTOC2_hypoSC.pp.nc, design.epiTOC2_hypoSC.pp.nc)
+fit.epiTOC2_hypoSC.pp.nc <- limma::eBayes(fit.epiTOC2_hypoSC.pp.nc, trend=T)
+
+stats.epiTOC2_hypoSC.pp.nc <- limma::topTable(fit.epiTOC2_hypoSC.pp.nc,
+                                              n=nrow(data.epiTOC2_hypoSC.pp.nc),
+                                              coef="array_epiTOC2_hypoSC",
+                                              sort.by = "none",
+                                              adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')
+
+
+
+rm(design.epiTOC2_hypoSC.pp.nc)
+
+
+sum(stats.epiTOC2_hypoSC.pp.nc$P.Value < 0.01)
+sum(stats.epiTOC2_hypoSC.pp.nc$adj.P.Val < 0.01)
+
+
+
+saveRDS(fit.epiTOC2_hypoSC.pp.nc, file="cache/analysis_differential__epiTOC2_hypoSC__partial_paired_nc__fit.Rds")
+saveRDS(stats.epiTOC2_hypoSC.pp.nc, file="cache/analysis_differential__epiTOC2_hypoSC__partial_paired_nc__stats.Rds")
+
+
+rm(fit.epiTOC2_hypoSC.pp.nc, stats.epiTOC2_hypoSC.pp.nc)
+
+
+
 
 
 # analyses: GLASS-OD A_IDH_HG - OLIGOSARC ----

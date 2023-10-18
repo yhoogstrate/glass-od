@@ -72,6 +72,67 @@ data.mvalues.good_probes <- data.mvalues.probes |>
   dplyr::pull(probe_id)
 
 
+## DMP outcomes ----
+
+### prim rec ----
+
+
+data.mvalues.probes <- data.mvalues.probes |> 
+  dplyr::left_join(
+    readRDS("cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds") |> 
+      dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
+    by=c('probe_id'='probe_id'), suffix=c('','') )
+
+
+### g3 g2 ----
+
+
+data.mvalues.probes <- data.mvalues.probes |> 
+  dplyr::left_join(
+    readRDS("cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds") |> 
+      dplyr::rename_with(~paste0("DMP__g2_g3__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
+    by=c('probe_id'='probe_id'), suffix=c('','') )
+
+
+### AcCGAP ----
+
+
+
+data.mvalues.probes <- data.mvalues.probes |> 
+  dplyr::left_join(
+    readRDS("cache/analysis_differential__AcCGAP__partial_paired_nc__stats.Rds") |> 
+      dplyr::rename_with(~paste0("DMP__AcCGAP__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
+    by=c('probe_id'='probe_id'), suffix=c('','') )
+
+### FFPE Decay time PP ----
+
+
+data.mvalues.probes <- data.mvalues.probes |> 
+  dplyr::left_join(
+    readRDS("cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds") |> 
+      dplyr::rename_with(~paste0("DMP__FFPE_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
+    by=c('probe_id'='probe_id'), suffix=c('','') )
+
+### FFPE Decay time UP ----
+
+
+data.mvalues.probes <- data.mvalues.probes |> 
+  dplyr::left_join(
+    readRDS("cache/analysis_differential__ffpe-decay-time__unpaired_nc__stats.Rds") |> 
+      dplyr::rename_with(~paste0("DMP__FFPE_decay_time__up_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
+    by=c('probe_id'='probe_id'), suffix=c('','') )
+
+
+### epiTOC2_hypoSC ----
+
+
+
+data.mvalues.probes <- data.mvalues.probes |> 
+  dplyr::left_join(
+    readRDS("cache/analysis_differential__epiTOC2_hypoSC__partial_paired_nc__stats.Rds") |> 
+      dplyr::rename_with(~paste0("DMP__epiTOC2_hypoSC__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
+    by=c('probe_id'='probe_id'), suffix=c('','') )
+
 
 
 # 450K ----
