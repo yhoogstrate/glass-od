@@ -31,19 +31,19 @@ theme_cellpress_size <- 7 * (3.88 / 11) # ~2.47
 theme_cellpress <- theme_bw() +
   theme(
     text =          element_text(size = 7, family = "Arial", face = "plain"),
-    axis.text =     element_text(size = 7, family = "Arial", face = "plain"),
-    axis.title.x =  element_text(size = 7, family = "Arial", face = "plain"),
-    axis.title.y =  element_text(size = 7, family = "Arial", face = "plain"),
+    axis.text =     element_text(size = 7, family = "Arial", face = "plain", color="black"),
+    axis.title.x =  element_text(size = 7, family = "Arial", face = "plain", color="black"),
+    axis.title.y =  element_text(size = 7, family = "Arial", face = "plain", color="black"),
     axis.line =     element_line(linewidth = theme_cellpress_lwd),
     axis.ticks =    element_line(linewidth = theme_cellpress_lwd),
     
-    strip.text =    element_text(size = 7, family = "Arial", face = "plain", margin=margin(1,1,1,1)),
-    strip.text.x =  element_text(size = 7, family = "Arial", face = "plain", margin=margin(1,1,1,1)),
-    strip.text.y =  element_text(size = 7, family = "Arial", face = "plain", margin=margin(1,1,1,1)),
+    strip.text =    element_text(size = 7, family = "Arial", face = "plain", margin=margin(1,1,1,1), color="black"),
+    strip.text.x =  element_text(size = 7, family = "Arial", face = "plain", margin=margin(1,1,1,1), color="black"),
+    strip.text.y =  element_text(size = 7, family = "Arial", face = "plain", margin=margin(1,1,1,1), color="black"),
     strip.background = element_blank(), # clean as possible
     
-    legend.title =  element_text(size = 7, family = "Arial", face = "plain"),
-    legend.text =   element_text(size = 7, family = "Arial", face = "plain"),
+    legend.title =  element_text(size = 7, family = "Arial", face = "plain", color="black"),
+    legend.text =   element_text(size = 7, family = "Arial", face = "plain", color="black"),
     
     legend.position = 'bottom',
     legend.margin   = margin(t=-2),
@@ -51,9 +51,9 @@ theme_cellpress <- theme_bw() +
     legend.background = element_blank(),
     legend.box.background = element_blank(),
     
-    plot.title =    element_text(size = 7, family = "Arial", face = "plain"), # `title` covers both title and subtitle
-    plot.subtitle = element_text(size = 7, family = "Arial", face = "italic"),
-    plot.caption =  element_text(size = 7, family = "Arial", face = "italic"),
+    plot.title =    element_text(size = 7, family = "Arial", face = "plain", color="black"), # `title` covers both title and subtitle
+    plot.subtitle = element_text(size = 7, family = "Arial", face = "italic", color="black"),
+    plot.caption =  element_text(size = 7, family = "Arial", face = "italic", color="black"),
     plot.background = element_blank(),
     
     panel.grid.major.x = element_blank(),
