@@ -26,6 +26,7 @@ metadata.cg_probes.epic <- read.table("data/Improved DNA Methylation Array Probe
 
 
 # old manifest for probeCpGcnt & context35 ----
+# these variables are only found in some strange files, presumably an old version of the manifest
 # probeCpGcnt: the number of CpG in the probe.
 # context35: the number of CpG in the [-35bp, +35bp] window.
 

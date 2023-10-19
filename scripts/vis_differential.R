@@ -102,19 +102,29 @@ p5 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
 
 
 
-ggplot(plt |> dplyr::filter(!is.na(probe_edit_distance)), aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probe_edit_distance)) +
+ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=log(1+probeCpGcnt))) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
-  geom_point(pch=19, cex=0.001, alpha=0.15) + 
-  
-  labs(col = gsub("_", " ",clock_name)) +
+  geom_point(data=subset(plt, probeCpGcnt == 0), pch=19, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, probeCpGcnt == 1), pch=19, cex=0.0025, alpha=0.15) + 
+  geom_point(data=subset(plt, probeCpGcnt == 2), pch=19, cex=0.005, alpha=0.20) + 
+  geom_point(data=subset(plt, probeCpGcnt == 3), pch=19, cex=0.05, alpha=0.25) + 
+  geom_point(data=subset(plt, probeCpGcnt == 4), pch=19, cex=0.01, alpha=0.30) + 
+  geom_point(data=subset(plt, probeCpGcnt == 5), pch=19, cex=0.01, alpha=0.35) + 
+  geom_point(data=subset(plt, probeCpGcnt == 6), pch=19, cex=0.01, alpha=0.40) + 
+  geom_point(data=subset(plt, probeCpGcnt == 7), pch=19, cex=0.025, alpha=0.45) + 
+  geom_point(data=subset(plt, probeCpGcnt == 8), pch=19, cex=0.05, alpha=0.50) + 
+  geom_point(data=subset(plt, probeCpGcnt == 9), pch=19, cex=0.1, alpha=0.55) + 
+  geom_point(data=subset(plt, probeCpGcnt == 10), pch=19, cex=0.1, alpha=0.60) + 
+  geom_point(data=subset(plt, probeCpGcnt == 11), pch=19, cex=0.1, alpha=0.65) + 
   
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
-  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", oob = scales::squish)
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits=c(log(2),log(13))) + # , oob = scales::squish
+  theme(legend.key.size = unit(0.6, 'lines')) 
 
 
 
