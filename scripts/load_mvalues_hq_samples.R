@@ -162,7 +162,30 @@ rm(fn)
 
 
 
-### epiTOC2 & epiGenetic clocks ----
+### epiTOC2 & dnaMethyAge epiGenetic clocks ----
+
+
+clocks <- list.files(path = "cache/", pattern = "*.Rds$", recursive = TRUE) |>
+  data.frame(filename = _) |> 
+  dplyr::mutate(filename = paste0("cache/", filename)) |> 
+  dplyr::filter(grepl("stats.Rds$", filename)) |> 
+  dplyr::filter(grepl("(epiTOC2|dnaMethyAge)", filename)) |> 
+  dplyr::pull(filename)
+
+
+for(clock in clocks) {
+  clock_name <- gsub("__stats.Rds","",gsub("unpaired","up",gsub("cache/analysis_differential__","", clock)))
+  print(clock_name)
+  
+  tmp <- readRDS(clock) |> 
+    dplyr::select(probe_id, t) |> 
+    dplyr::rename_with(~paste0("DMP__",clock_name,"__", .x), .cols=!matches("^probe_id$",perl = T))
+  
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  
+}
+
 
 
 #clocks <- 
