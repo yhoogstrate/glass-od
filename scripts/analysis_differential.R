@@ -1397,64 +1397,74 @@ rm(fit.ffpe_decay.up.nc, stats.ffpe_decay.up.nc)
 
 
 
-# analyses: epiTOC & Hanarth clock ----
-## data: partially paired [w/o FFPE/frozen batch correct] ----
+# analyses: epiGenetic clocks ----
+## data: unpaired [w/o FFPE/frozen batch correct] ----
 
 
-metadata.epiTOC2_hypoSC.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(210) |> 
-  dplyr::filter(!is.na(array_epiTOC2_hypoSC)) |> 
-  dplyr::group_by(patient_id) |> 
-  dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
-  dplyr::ungroup() |> 
-  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (210)) 
-    return(.)
-  })()
+clocks <- glass_od.metadata.array_samples |> 
+  dplyr::select(contains("epiTOC") | contains("dnaMethyAge_")) |> 
+  colnames()
 
 
-data.epiTOC2_hypoSC.pp.nc <- data.mvalues.hq_samples |> 
-  tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
-  tibble::column_to_rownames('probe_id') |> 
+for(clock in clocks) {
+  print(clock)
   
-  dplyr::select(metadata.epiTOC2_hypoSC.pp.nc$array_sentrix_id) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
-    return(.)
-  })()
+  metadata.current_clock.up.nc <- glass_od.metadata.array_samples |> 
+    filter_GLASS_OD_idats(210) |> 
+    data.table::setnames(old = (clock), new = c("array_current_clock")) |> 
+    dplyr::filter(!is.na(array_current_clock)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == (210)) 
+      return(.)
+    })()
+  
+  
+  
+  data.current_clock.up.nc <- data.mvalues.hq_samples |> 
+    tibble::rownames_to_column('probe_id') |> 
+    dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+    tibble::column_to_rownames('probe_id') |> 
+    
+    dplyr::select(metadata.current_clock.up.nc$array_sentrix_id) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == (693017)) 
+      return(.)
+    })()
+  
+  
+  
+  
+  design.current_clock.up.nc <- model.matrix(~array_current_clock, data=metadata.current_clock.up.nc)
+  fit.current_clock.up.nc <- limma::lmFit(data.current_clock.up.nc, design.current_clock.up.nc)
+  fit.current_clock.up.nc <- limma::eBayes(fit.current_clock.up.nc, trend=T)
+  
+  stats.current_clock.up.nc <- limma::topTable(fit.current_clock.up.nc,
+                                               n=nrow(data.current_clock.up.nc),
+                                               coef="array_current_clock",
+                                               sort.by = "none",
+                                               adjust.method="fdr") |> 
+    tibble::rownames_to_column('probe_id')
+  
+  
+  
+  rm(design.current_clock.up.nc)
+  
+  
+  sum(stats.current_clock.up.nc$P.Value < 0.01)
+  sum(stats.current_clock.up.nc$adj.P.Val < 0.01)
+  
+  
+  
+  saveRDS(stats.current_clock.up.nc, file=paste0("cache/analysis_differential__",gsub("array_","", clock),"__unpaired_nc__stats.Rds"))
+  
+  
+  rm(fit.current_clock.up.nc)
+  rm(stats.current_clock.up.nc)
+  rm(clock)
+}
 
-
-
-design.epiTOC2_hypoSC.pp.nc <- model.matrix(~factor(patient) + array_epiTOC2_hypoSC, data=metadata.epiTOC2_hypoSC.pp.nc)
-fit.epiTOC2_hypoSC.pp.nc <- limma::lmFit(data.epiTOC2_hypoSC.pp.nc, design.epiTOC2_hypoSC.pp.nc)
-fit.epiTOC2_hypoSC.pp.nc <- limma::eBayes(fit.epiTOC2_hypoSC.pp.nc, trend=T)
-
-stats.epiTOC2_hypoSC.pp.nc <- limma::topTable(fit.epiTOC2_hypoSC.pp.nc,
-                                              n=nrow(data.epiTOC2_hypoSC.pp.nc),
-                                              coef="array_epiTOC2_hypoSC",
-                                              sort.by = "none",
-                                              adjust.method="fdr") |> 
-  tibble::rownames_to_column('probe_id')
-
-
-
-rm(design.epiTOC2_hypoSC.pp.nc)
-
-
-sum(stats.epiTOC2_hypoSC.pp.nc$P.Value < 0.01)
-sum(stats.epiTOC2_hypoSC.pp.nc$adj.P.Val < 0.01)
-
-
-
-saveRDS(fit.epiTOC2_hypoSC.pp.nc, file="cache/analysis_differential__epiTOC2_hypoSC__partial_paired_nc__fit.Rds")
-saveRDS(stats.epiTOC2_hypoSC.pp.nc, file="cache/analysis_differential__epiTOC2_hypoSC__partial_paired_nc__stats.Rds")
-
-
-rm(fit.epiTOC2_hypoSC.pp.nc, stats.epiTOC2_hypoSC.pp.nc)
 
 
 

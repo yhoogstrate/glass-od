@@ -138,12 +138,13 @@ cols = c('A_IDH [_LG]' = 'lightblue',
 ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
   facet_grid(cols=vars(patient_suspected_noncodel),  rows=vars(classifier_version_txt), scales = "free", space="free") +
   geom_point(pch=15,size=1.4,alpha=0.65) +
-  labs(x = "patient",y="resection #", col="",fill="") +
-  ylim(0.5,5.5) +
-  theme_cellpress +
+  labs(x = "patient", y="resection #", col="",fill="") +
+  ylim(0.5, 5.5) +
   scale_color_manual(values=cols) +
+  theme_cellpress +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
-  theme(panel.border = element_rect(fill=NA,color="black", size=theme_cellpress_lwd , linetype="solid"))
+  theme(panel.border = element_rect(fill=NA, color="black", size=theme_cellpress_lwd , linetype="solid"))
+  #theme(legend.key = element_blank())
 
 
 ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 3.1)

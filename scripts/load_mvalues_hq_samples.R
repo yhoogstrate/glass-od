@@ -77,61 +77,100 @@ data.mvalues.good_probes <- data.mvalues.probes |>
 ### prim rec ----
 
 
-data.mvalues.probes <- data.mvalues.probes |> 
-  dplyr::left_join(
-    readRDS("cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds") |> 
-      dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
-    by=c('probe_id'='probe_id'), suffix=c('','') )
+fn <- "cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(
+      readRDS(fn) |> 
+        dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
+      by=c('probe_id'='probe_id'), suffix=c('','') )
+} else {
+  warning("DMP result primary - recurrence is missing")
+}
+
+rm(fn)
 
 
 ### g3 g2 ----
 
 
-data.mvalues.probes <- data.mvalues.probes |> 
-  dplyr::left_join(
-    readRDS("cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds") |> 
-      dplyr::rename_with(~paste0("DMP__g2_g3__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
-    by=c('probe_id'='probe_id'), suffix=c('','') )
+fn <- "cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(
+      readRDS(fn) |> 
+        dplyr::rename_with(~paste0("DMP__g2_g3__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
+      by=c('probe_id'='probe_id'), suffix=c('','') )
+} else {
+  warning("DMP result g2 - g3 is missing")
+}
+
+rm(fn)
 
 
 ### AcCGAP ----
 
 
+fn <- "cache/analysis_differential__AcCGAP__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(
+      readRDS(fn) |> 
+        dplyr::rename_with(~paste0("DMP__AcCGAP__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
+      by=c('probe_id'='probe_id'), suffix=c('','') )
+} else {
+  warning("DMP result AcCGAP is missing")
+}
 
-data.mvalues.probes <- data.mvalues.probes |> 
-  dplyr::left_join(
-    readRDS("cache/analysis_differential__AcCGAP__partial_paired_nc__stats.Rds") |> 
-      dplyr::rename_with(~paste0("DMP__AcCGAP__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
-    by=c('probe_id'='probe_id'), suffix=c('','') )
+rm(fn)
+
 
 ### FFPE Decay time PP ----
 
 
+
+fn <- "cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
 data.mvalues.probes <- data.mvalues.probes |> 
   dplyr::left_join(
-    readRDS("cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds") |> 
+    readRDS(fn) |> 
       dplyr::rename_with(~paste0("DMP__FFPE_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
     by=c('probe_id'='probe_id'), suffix=c('','') )
+} else {
+  warning("DMP result FFPE decay PP time is missing")
+}
+
+rm(fn)
+
+
 
 ### FFPE Decay time UP ----
 
 
-data.mvalues.probes <- data.mvalues.probes |> 
-  dplyr::left_join(
-    readRDS("cache/analysis_differential__ffpe-decay-time__unpaired_nc__stats.Rds") |> 
-      dplyr::rename_with(~paste0("DMP__FFPE_decay_time__up_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
-    by=c('probe_id'='probe_id'), suffix=c('','') )
+fn <- "cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(
+      readRDS(fn) |> 
+        dplyr::rename_with(~paste0("DMP__FFPE_decay_time__up_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
+      by=c('probe_id'='probe_id'), suffix=c('','') )
+} else {
+  warning("DMP result FFPE decay UP time is missing")
+}
+
+rm(fn)
 
 
-### epiTOC2_hypoSC ----
+
+### epiTOC2 & epiGenetic clocks ----
 
 
-
-data.mvalues.probes <- data.mvalues.probes |> 
-  dplyr::left_join(
-    readRDS("cache/analysis_differential__epiTOC2_hypoSC__partial_paired_nc__stats.Rds") |> 
-      dplyr::rename_with(~paste0("DMP__epiTOC2_hypoSC__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
-    by=c('probe_id'='probe_id'), suffix=c('','') )
+#clocks <- 
+# data.mvalues.probes <- data.mvalues.probes |> 
+#   dplyr::left_join(
+#     readRDS("cache/analysis_differential__epiTOC2_hypoSC__partial_paired_nc__stats.Rds") |> 
+#       dplyr::rename_with(~paste0("DMP__epiTOC2_hypoSC__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
+#     by=c('probe_id'='probe_id'), suffix=c('','') )
 
 
 

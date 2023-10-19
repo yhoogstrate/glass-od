@@ -874,9 +874,10 @@ rm(tmp)
 ## dnaMethyAge ----
 
 
-tmp <- readRDS("cache/analysis_dnaMethyAge.Rds") |> 
+tmp <- readRDS("cache/analysis_dnaMethyAge.Rds") |>
+  dplyr::rename_with( ~ paste0("array_", .x)) |> 
+  dplyr::mutate(array_dnaMethyAge__epiTOC2 = NULL) |> # superseded by `array_epiTOC2_tnsc`
   tibble::rownames_to_column('array_sentrix_id') |> 
-  dplyr::mutate(dnaMethyAge__epiTOC2 = NULL) |> # superseded by `array_epiTOC2_tnsc`
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
   (function(.) {
     print(dim(.))
