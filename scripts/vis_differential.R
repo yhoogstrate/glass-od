@@ -98,6 +98,28 @@ p5 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
 (p1 + p3 + p4) / (p2 + p5 + p1)
 
 
+## n seq diff ----
+
+
+
+ggplot(plt |> dplyr::filter(!is.na(probe_edit_distance)), aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probe_edit_distance)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=19, cex=0.001, alpha=0.15) + 
+  
+  labs(col = gsub("_", " ",clock_name)) +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  theme(plot.background = element_rect(fill="white")) +  # png export
+  
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", oob = scales::squish)
+
+
+
+
+
 ## x: all epigenetic clocks ----
 
 

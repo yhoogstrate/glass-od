@@ -1,5 +1,7 @@
 #!/usr/bin/env R
 
+# https://support.illumina.com/content/dam/illumina-support/documents/downloads/productfiles/methylationepic/infinium-methylationepic-manifest-column-headings.pdf
+
 # https://gdc.cancer.gov/content/improved-dna-methylation-array-probe-annotation
 
 # EPIC ----
@@ -14,13 +16,44 @@
 
 ## manifest ----
 
-
+# 2022
 metadata.cg_probes.epic <- read.table("data/Improved DNA Methylation Array Probe Annotation/EPIC/EPIC.hg38.manifest.tsv", header=T) |> 
   dplyr::rename(probe_id = Probe_ID) |> 
   assertr::verify(!duplicated(probe_id)) |> 
   dplyr::mutate(pos = round((CpG_beg + CpG_end )/2)) |> 
   dplyr::mutate(is_1P = CpG_chrm == 'chr1' & pos < 130 * 1000000) |> # rough margin
   dplyr::mutate(is_19Q = CpG_chrm == 'chr19' & pos > 23.5 * 1000000 ) # rough margin
+
+
+# old manifest for CpGcnt & context35 ----
+# probeCpGcnt: the number of CpG in the probe.
+# context35: the number of CpG in the [-35bp, +35bp] window.
+
+tmp <- read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |> 
+  dplyr::rename(probe_id = probeID) |> 
+  dplyr::select(probe_id, CpGcnt, context35)
+
+
+
+## manifest from illumina ----
+
+# https://support.illumina.com/array/array_kits/infinium-methylationepic-beadchip-kit/downloads.html
+# Infinium MethylationEPIC v1.0 B5 Manifest File (BPM Format)
+# 172 MB
+# Mar 13, 2020
+
+
+tmp <- read.csv("data/Improved DNA Methylation Array Probe Annotation/EPIC/infinium-methylationepic-v-1-0-b5-manifest-file.csv", skip=7,header=T, sep=",") |> 
+  dplyr::filter(grepl("^cg",IlmnID) & grepl("^cg",Name)) |> 
+  dplyr::rename(probe_id = IlmnID) |> 
+  dplyr::mutate(Name = NULL) |> 
+  dplyr::rename(AlleleA_ProbeSeq_Illumina_manifest = AlleleA_ProbeSeq) |> 
+  dplyr::rename(AlleleB_ProbeSeq_Illumina_manifest = AlleleB_ProbeSeq)
+
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
+
 
 
 ## add masking ----
@@ -55,6 +88,32 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
 
 rm(tmp)
+
+
+
+## Adds probe edit distances ----
+
+
+delt <- function(a, b) {
+  dd <- sum(strsplit(a, split = "")[[1]] != strsplit(b, split = "")[[1]])
+  
+  return(dd)
+}
+
+
+data.mvalues.probes <- data.mvalues.probes |> 
+  dplyr::rowwise() |> 
+  dplyr::mutate(probe_edit_distance = delt(AlleleA_ProbeSeq, AlleleB_ProbeSeq)) |> 
+  dplyr::ungroup()
+
+
+# majority has no probe sequence?!
+# plt |>
+#   dplyr::filter(is.na(probe_edit_distance)) |>
+#   head() |> 
+#   dplyr::select(probe_id, AlleleA_ProbeSeq, AlleleB_ProbeSeq, probe_edit_distance)
+
+
 
 
 ## AC embryionic development genes ghisai ----
