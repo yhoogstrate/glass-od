@@ -98,5 +98,44 @@ p5 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
 (p1 + p3 + p4) / (p2 + p5 + p1)
 
 
+## x: all epigenetic clocks ----
+
+
+clocks <- plt |> 
+  dplyr::select(contains("dnaMethyAge") | contains("epiTOC2")) |> 
+  colnames()
+
+
+for(clock in clocks) {
+  
+  clock_name <- gsub("__up_nc__t","",gsub("DMP__","", clock))
+  
+  plt.p <- plt |> 
+    data.table::copy() |> # odd hack needed, because setnames also affects the former "glass_od.metadata.array_samples" object...
+    data.table::setnames(old = c(clock), new = c("array_current_clock"))
+    
+  
+  ggplot(plt.p, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=array_current_clock)) +
+    geom_vline(xintercept=0, col="red") +
+    geom_hline(yintercept=0, col="red") +
+    
+    geom_point(pch=19, cex=0.001, alpha=0.15) + 
+    
+    labs(col = gsub("_", " ",clock_name)) +
+    
+    theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+    
+    theme(plot.background = element_rect(fill="white")) + # png export
+    
+    ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", oob = scales::squish)
+  
+  
+  ggsave(paste0("output/figures/vis_differential__epiGenetic_clock__",clock_name,".png"), width = (8.5*0.975/2), height = 4.3)
+  
+  
+  
+  
+}
+
 
 

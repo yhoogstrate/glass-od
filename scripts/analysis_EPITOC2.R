@@ -17,6 +17,11 @@ source('data/epiTOC2/epiTOC2.R')
 
 ### run epitoc ----
 
+#### tnsc: the estimated cumulative number of stem-cell divisions per stem-cell per year and per sample using the full epiTOC2 model.
+#### tnsc2: the estimated cumulative number of stem-cell divisions per stem-cell per year and per sample using an approximation of epiTOC2 which assumes all epiTOC2 CpGs have beta-values exactly 0 in the fetal stage.
+#### pcgtAge: this is the mitotic-score obtained using our previous epiTOC model.
+#### hypoSC: the HypoClock score over the 678 solo-WCGWs
+
 
 dat <- data.beta.values.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
