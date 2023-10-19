@@ -1409,16 +1409,17 @@ clocks <- glass_od.metadata.array_samples |>
 for(clock in clocks) {
   print(clock)
   
+  
   metadata.current_clock.up.nc <- glass_od.metadata.array_samples |> 
     filter_GLASS_OD_idats(210) |> 
-    data.table::setnames(old = (clock), new = c("array_current_clock")) |> 
+    data.table::copy() |> # odd hack needed, because setnames also affects the former "glass_od.metadata.array_samples" object...
+    data.table::setnames(old = c(clock), new = c("array_current_clock")) |> 
     dplyr::filter(!is.na(array_current_clock)) |> 
     (function(.) {
       print(dim(.))
       assertthat::assert_that(nrow(.) == (210)) 
       return(.)
     })()
-  
   
   
   data.current_clock.up.nc <- data.mvalues.hq_samples |> 
@@ -1452,8 +1453,8 @@ for(clock in clocks) {
   rm(design.current_clock.up.nc)
   
   
-  sum(stats.current_clock.up.nc$P.Value < 0.01)
-  sum(stats.current_clock.up.nc$adj.P.Val < 0.01)
+  #sum(stats.current_clock.up.nc$P.Value < 0.01)
+  #sum(stats.current_clock.up.nc$adj.P.Val < 0.01)
   
   
   
