@@ -23,6 +23,18 @@
 
 # pts to mm: 0.3527777778
 
+
+
+# For color palette's, have a look here:
+# https://cran.r-project.org/web/packages/ggsci/vignettes/ggsci.html
+
+
+
+# For alternative theme(s), have a look here:
+# https://github.com/koundy/ggplot_theme_Publication/blob/master/ggplot_theme_Publication-2.R
+
+
+
 theme_cellpress_lwd <- 0.5 / 2.14 # pt?
 theme_cellpress_size <- 7 * (3.88 / 11) # ~2.47
 
@@ -31,8 +43,8 @@ theme_cellpress_size <- 7 * (3.88 / 11) # ~2.47
 theme_cellpress <- theme_bw() +
   theme(
     text =          element_text(size = 7, family = "Arial", face = "plain"),
-    axis.text =     element_text(size = 7, family = "Arial", face = "plain", color="black"),
-    axis.title.x =  element_text(size = 7, family = "Arial", face = "plain", color="black"),
+    axis.text =     element_text(size = 7, family = "Arial", face = "plain", color="black", angle=90, vjust =2),
+    axis.title.x =  element_text(size = 7, family = "Arial", face = "plain", color="black", vjust = -0.2),
     axis.title.y =  element_text(size = 7, family = "Arial", face = "plain", color="black"),
     axis.line =     element_line(linewidth = theme_cellpress_lwd),
     axis.ticks =    element_line(linewidth = theme_cellpress_lwd),
@@ -44,16 +56,16 @@ theme_cellpress <- theme_bw() +
     
     legend.title =  element_text(size = 7, family = "Arial", face = "plain", color="black"),
     legend.text =   element_text(size = 7, family = "Arial", face = "plain", color="black"),
-    
     legend.position = 'bottom',
     legend.margin   = margin(t=-2),
     legend.key.size = unit(0.2, 'lines'),
+    legend.key = element_blank(), # this should remove the white squares around the legend items, but seems to fail sometimes, probably due to the key.size above?
     legend.background = element_blank(),
     legend.box.background = element_blank(),
     
-    plot.title =    element_text(size = 7, family = "Arial", face = "plain", color="black"), # `title` covers both title and subtitle
-    plot.subtitle = element_text(size = 7, family = "Arial", face = "italic", color="black"),
-    plot.caption =  element_text(size = 7, family = "Arial", face = "italic", color="black"),
+    plot.title =      element_text(size = 7, family = "Arial", face = "plain", color="black"), # `title` covers both title and subtitle
+    plot.subtitle =   element_text(size = 7, family = "Arial", face = "italic", color="black"),
+    plot.caption =    element_text(size = 7, family = "Arial", face = "italic", color="black"),
     plot.background = element_blank(),
     
     panel.grid.major.x = element_blank(),
@@ -62,7 +74,7 @@ theme_cellpress <- theme_bw() +
     panel.grid.minor.y = element_blank(),
     panel.spacing =      unit(0.1, "lines"), # facet_grid margin
     panel.border =       element_blank(), # no sqaure, but two lines instead (axis.line)
-    panel.background = element_blank()
+    panel.background =   element_blank()
     
     
     
