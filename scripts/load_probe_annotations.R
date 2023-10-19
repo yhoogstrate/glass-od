@@ -25,13 +25,16 @@ metadata.cg_probes.epic <- read.table("data/Improved DNA Methylation Array Probe
   dplyr::mutate(is_19Q = CpG_chrm == 'chr19' & pos > 23.5 * 1000000 ) # rough margin
 
 
-# old manifest for CpGcnt & context35 ----
+# old manifest for probeCpGcnt & context35 ----
 # probeCpGcnt: the number of CpG in the probe.
 # context35: the number of CpG in the [-35bp, +35bp] window.
 
 tmp <- read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |> 
   dplyr::rename(probe_id = probeID) |> 
-  dplyr::select(probe_id, CpGcnt, context35)
+  dplyr::select(probe_id, probeCpGcnt, context35)
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
 
 
 
