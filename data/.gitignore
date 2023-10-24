@@ -3,3 +3,7 @@ GLASS_NL
 G-SAM
 TCGA-LAML
 Improved DNA Methylation Array Probe Annotation
+*.gz
+*.bigWig
+*.bw
+*.bgr

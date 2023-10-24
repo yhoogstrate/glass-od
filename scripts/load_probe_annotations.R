@@ -1,5 +1,11 @@
 #!/usr/bin/env R
 
+# load ----
+
+source('scripts/load_functions.R')
+
+# info ----
+
 # https://support.illumina.com/content/dam/illumina-support/documents/downloads/productfiles/methylationepic/infinium-methylationepic-manifest-column-headings.pdf
 
 # https://gdc.cancer.gov/content/improved-dna-methylation-array-probe-annotation
@@ -39,26 +45,6 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
 
 
 
-## manifest from illumina ----
-
-# https://support.illumina.com/array/array_kits/infinium-methylationepic-beadchip-kit/downloads.html
-# Infinium MethylationEPIC v1.0 B5 Manifest File (BPM Format)
-# 172 MB
-# Mar 13, 2020
-
-
-tmp <- read.csv("data/Improved DNA Methylation Array Probe Annotation/EPIC/infinium-methylationepic-v-1-0-b5-manifest-file.csv", skip=7,header=T, sep=",") |> 
-  dplyr::filter(grepl("^cg",IlmnID) & grepl("^cg",Name)) |> 
-  dplyr::rename(probe_id = IlmnID) |> 
-  dplyr::mutate(Name = NULL) |> 
-  dplyr::rename(AlleleA_ProbeSeq_Illumina_manifest = AlleleA_ProbeSeq) |> 
-  dplyr::rename(AlleleB_ProbeSeq_Illumina_manifest = AlleleB_ProbeSeq)
-
-
-metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
-  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
-
-
 
 ## add masking ----
 
@@ -75,6 +61,33 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
   dplyr::mutate(exclude = is.na(MASK_general) | MASK_general == T) # control probes (^ctl_.+$ instead of ^gc[0-9]+$) have no MASK_general
 
 rm(tmp)
+
+
+
+## manifest from illumina ----
+
+# https://support.illumina.com/array/array_kits/infinium-methylationepic-beadchip-kit/downloads.html
+# Infinium MethylationEPIC v1.0 B5 Manifest File (BPM Format)
+# 172 MB
+# Mar 13, 2020
+
+
+tmp <- read.csv("data/Improved DNA Methylation Array Probe Annotation/EPIC/infinium-methylationepic-v-1-0-b5-manifest-file.csv", skip=7,header=T, sep=",") |> 
+  dplyr::filter(grepl("^cg",IlmnID) & grepl("^cg",Name)) |> 
+  dplyr::rename(probe_id = IlmnID) |> 
+  dplyr::mutate(Name = NULL) |> 
+  dplyr::rename(AlleleA_ProbeSeq_Illumina_manifest = AlleleA_ProbeSeq) |> 
+  dplyr::rename(AlleleB_ProbeSeq_Illumina_manifest = AlleleB_ProbeSeq)
+
+
+colnames(tmp)[colnames(tmp) %in% colnames(metadata.cg_probes.epic)]
+
+
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
+
+
 
 
 ## add gene annotation ----
@@ -95,21 +108,6 @@ rm(tmp)
 
 
 
-## Adds probe edit distances ----
-
-
-delt <- function(a, b) {
-  dd <- sum(strsplit(a, split = "")[[1]] != strsplit(b, split = "")[[1]])
-  
-  return(dd)
-}
-
-
-data.mvalues.probes <- data.mvalues.probes |> 
-  dplyr::rowwise() |> 
-  dplyr::mutate(probe_edit_distance = delt(AlleleA_ProbeSeq, AlleleB_ProbeSeq)) |> 
-  dplyr::ungroup()
-
 
 # majority has no probe sequence?!
 # plt |>
@@ -117,7 +115,33 @@ data.mvalues.probes <- data.mvalues.probes |>
 #   head() |> 
 #   dplyr::select(probe_id, AlleleA_ProbeSeq, AlleleB_ProbeSeq, probe_edit_distance)
 
+## add sequence-context ----
 
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::mutate(gc_sequence_context_1 = toupper(gsub("^.+(.[^A-Za-z][A-Za-z]{2}[^A-Za-z].).+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_2 = toupper(gsub("^.+(..[^A-Za-z][A-Za-z]{2}[^A-Za-z]..).+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_l1 = toupper(gsub("^.+(.)[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_l2 = toupper(gsub("^.+(.).[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_l3 = toupper(gsub("^.+(.)..[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_l4 = toupper(gsub("^.+(.)...[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_l5 = toupper(gsub("^.+(.)....[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_l6 = toupper(gsub("^.+(.).....[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_l7 = toupper(gsub("^.+(.)......[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_l8 = toupper(gsub("^.+(.).......[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_r1 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z](.).+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_r2 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].(.).+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_r3 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]..(.).+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_r4 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]...(.).+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_r5 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]....(.).+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_r6 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].....(.).+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_r7 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]......(.).+$","\\1", Forward_Sequence))) |> 
+  dplyr::mutate(gc_sequence_context_r8 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].......(.).+$","\\1", Forward_Sequence)))
+
+
+
+
+#qa = subsetByOverlaps(test.g, GRanges(seqnames = "chr1", ranges = IRanges(start = 24499 + 5, end = 24499 + 5 + 2 ) ))$score
 
 
 ## AC embryionic development genes ghisai ----
