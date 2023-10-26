@@ -7,3 +7,5 @@ Improved DNA Methylation Array Probe Annotation
 *.bigWig
 *.bw
 *.bgr
+*.txt
+*.xlsx

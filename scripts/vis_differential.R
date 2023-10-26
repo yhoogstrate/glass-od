@@ -4,7 +4,11 @@
 # load ----
 
 
+library(ggplot2)
+library(patchwork)
+
 source('scripts/load_palette.R')
+source('scripts/load_themes.R')
 
 if(!exixts('data.mvalues.probes')) {
   source('scripts/load_mvalues_hq_samples.R')
@@ -14,7 +18,37 @@ if(!exixts('data.mvalues.probes')) {
 
 # plot ----
 
+## A: overall density ----
 
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=19, cex=0.001, alpha=0.0075, col="black") + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+
+
+
+## B: ----
 
 plt <- data.mvalues.probes |> 
   (function(.) {
@@ -98,11 +132,10 @@ p5 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
 (p1 + p3 + p4) / (p2 + p5 + p1)
 
 
+
 ## n seq diff ----
 
-
-
-ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=log(1+probeCpGcnt))) +
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probeCpGcnt)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
@@ -119,16 +152,357 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(data=subset(plt, probeCpGcnt == 10), pch=19, cex=0.1, alpha=0.60) + 
   geom_point(data=subset(plt, probeCpGcnt == 11), pch=19, cex=0.1, alpha=0.65) + 
   
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
+                                 breaks = 0:11,
+                                 labels = c(0,"",2,"","","",6,"","","","",11)
+                                 ) + # , oob = scales::squish
+
+  labs(col = "CpG's per probe") +
+  
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white")) +  # png export
+  theme(legend.key.size = unit(0.6, 'lines'))
+
+ggsave("output/figures/vis_differential__g23_prim-rec__probe_CpG_count.png", width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+## motif: x[CG]x violin(s) ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |>
+  dplyr::filter(!is.na(gc_sequence_context_1))
+
+
+plt.per.context <- plt |> 
+  dplyr::select(gc_sequence_context_1) |> 
+  dplyr::filter(!duplicated(gc_sequence_context_1)) |> 
+  dplyr::mutate(gc_sequence_context_1_s = gsub("[CG]","CG",gc_sequence_context_1,fixed=T)) |> 
+  dplyr::mutate(gc_sequence_context_1_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(gc_sequence_context_1_s)))) |> 
+  dplyr::mutate(facet_name = dplyr::case_when(
+    gc_sequence_context_1_s < gc_sequence_context_1_rc ~ paste0(gc_sequence_context_1_s ,"\n&\n",gc_sequence_context_1_rc),
+    gc_sequence_context_1_s > gc_sequence_context_1_rc ~ paste0(gc_sequence_context_1_rc,"\n&\n",gc_sequence_context_1_s ),
+    gc_sequence_context_1_s == gc_sequence_context_1_rc ~ paste0(gc_sequence_context_1_s, "\npalin*")
+  ))
+  #dplyr::mutate(gc_sequence_context_1_s = NULL, gc_sequence_context_1_rc = NULL)
+
+
+plt <- plt |> 
+  dplyr::left_join(plt.per.context, by=c('gc_sequence_context_1'='gc_sequence_context_1'), suffix=c('','')) |> 
+  dplyr::group_by(facet_name) |> 
+  dplyr::mutate(facet_rank = median(DMP__g2_g3__pp_nc__t)) |> 
+  dplyr::ungroup()
+
+
+ggplot(plt, aes(x=gc_sequence_context_1, y=DMP__g2_g3__pp_nc__t)) +
+  facet_wrap(~reorder(facet_name, -facet_rank), scales="free_x", ncol=length(unique(plt$facet_name))) +
+  #ggbeeswarm::geom_quasirandom(size=0.01, alpha=0.65) +
+  ggplot2::geom_violin(draw_quantiles = c(0.5), col = "white", fill = "black") +
+  labs(x = NULL) +
+  coord_cartesian(ylim = c(-8, 4)) + # soft clip
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.5))
+
+
+
+
+## motif: xx[CG]xx violin(s) ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |>
+  dplyr::filter(!is.na(gc_sequence_context_2))
+
+
+plt.per.context <- plt |> 
+  dplyr::select(gc_sequence_context_2) |> 
+  dplyr::filter(!duplicated(gc_sequence_context_2)) |> 
+  dplyr::mutate(gc_sequence_context_2_s = gsub("[CG]","CG",gc_sequence_context_2,fixed=T)) |> 
+  dplyr::mutate(gc_sequence_context_2_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(gc_sequence_context_2_s)))) |> 
+  dplyr::mutate(facet_name = dplyr::case_when(
+    gc_sequence_context_2_s < gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_s ,"/",gc_sequence_context_2_rc),
+    gc_sequence_context_2_s > gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_rc,"/",gc_sequence_context_2_s ),
+    gc_sequence_context_2_s == gc_sequence_context_2_rc ~ paste0("*",gc_sequence_context_2_s,"/",gc_sequence_context_2_s)
+  ))
+#dplyr::mutate(gc_sequence_context_2_s = NULL, gc_sequence_context_2_rc = NULL)
+
+
+plt <- plt |> 
+  dplyr::left_join(plt.per.context, by=c('gc_sequence_context_2'='gc_sequence_context_2'), suffix=c('','')) |> 
+  dplyr::group_by(facet_name) |> 
+  dplyr::mutate(facet_rank = median(DMP__g2_g3__pp_nc__t)) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(facet_name = tolower(facet_name))
+
+
+ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc__t)) +
+  #facet_wrap(~reorder(facet_name, -facet_rank), scales="free_x", ncol=length(unique(plt$facet_name))) +
+  #ggbeeswarm::geom_quasirandom(size=0.01, alpha=0.65) +
+  ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_cellpress_lwd, col = "white", fill = "darkgray", adjust = 1.95) +
+  labs(x = NULL) +
+  coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono"))
+
+
+ggsave("output/figures/vis_differential__xxCGxx_violin.pdf", width = 11 * 0.97, height=3.75)
+
+
+
+## motif: xx[CG]xx * TET1-2 NatCom ----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |>
+  dplyr::filter(!is.na(gc_sequence_context_2))
+
+
+plt.per.context <- plt |> 
+  dplyr::select(gc_sequence_context_2) |> 
+  dplyr::filter(!duplicated(gc_sequence_context_2)) |>
+  dplyr::mutate(gc_sequence_context_2_s = gsub("[CG]","CG",gc_sequence_context_2,fixed=T)) |> 
+  dplyr::mutate(gc_sequence_context_2_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(gc_sequence_context_2_s)))) |> 
+  dplyr::mutate(facet_name = dplyr::case_when(
+    gc_sequence_context_2_s < gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_s ,"/",gc_sequence_context_2_rc),
+    gc_sequence_context_2_s > gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_rc,"/",gc_sequence_context_2_s ),
+    gc_sequence_context_2_s == gc_sequence_context_2_rc ~ paste0("*",gc_sequence_context_2_s,"/",gc_sequence_context_2_s)
+  )) 
+
+
+
+plt <- plt |> 
+  dplyr::left_join(plt.per.context, by=c('gc_sequence_context_2'='gc_sequence_context_2'), suffix=c('','')) |> 
+  dplyr::group_by(facet_name) |> 
+  dplyr::mutate(context_median__DMP__g2_g3__pp_nc__t = median(DMP__g2_g3__pp_nc__t)) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(facet_name = tolower(facet_name)) |> 
+  dplyr::select(facet_name, gc_sequence_context_2, context_median__DMP__g2_g3__pp_nc__t) |> 
+  dplyr::distinct() |> 
+  dplyr::mutate(adjacent_CG = grepl("^cg",facet_name) | grepl("cg$",facet_name)) 
+
+
+
+
+
+tmp <- readxl::read_xlsx('data/42003_2022_3033_MOESM4_ESM.xlsx', skip=3) |> 
+  dplyr::rename(sequence = 1) |> 
+  dplyr::rename(TET1_5mC_oxidation_kinetics  = 2) |> 
+  dplyr::rename(TET1_5hmC_oxidation_kinetics = 3) |> 
+  dplyr::rename(TET2_5mC_oxidation_kinetics  = 4) |> 
+  dplyr::rename(TET2_5hmC_oxidation_kinetics = 5) |> 
+  dplyr::mutate(sequence = gsub(" ", "" ,sequence))
+
+
+
+plt <- plt |> 
+  dplyr::mutate(sequence = gsub("[","",gsub("]","",gc_sequence_context_2),fixed=T),fixed=T) |> 
+  dplyr::left_join(tmp, by=c('sequence'='sequence'), suffix=c('','')) 
+
+
+plt.per.facet <- plt |> 
+  dplyr::mutate(gc_sequence_context_2 = NULL) |> 
+  dplyr::mutate(sequence = NULL) |> 
+  dplyr::group_by(facet_name) |> 
+  dplyr::mutate(TET1_5mC_oxidation_kinetics_per_facet = mean(TET1_5mC_oxidation_kinetics)) |> 
+  dplyr::mutate(TET1_5hmC_oxidation_kinetics_per_facet = mean(TET1_5hmC_oxidation_kinetics)) |> 
+  dplyr::mutate(TET2_5mC_oxidation_kinetics_per_facet = mean(TET2_5mC_oxidation_kinetics)) |> 
+  dplyr::mutate(TET2_5hmC_oxidation_kinetics_per_facet = mean(TET2_5hmC_oxidation_kinetics)) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(TET1_5mC_oxidation_kinetics = NULL) |> 
+  dplyr::mutate(TET1_5hmC_oxidation_kinetics = NULL) |> 
+  dplyr::mutate(TET2_5mC_oxidation_kinetics = NULL) |> 
+  dplyr::mutate(TET2_5hmC_oxidation_kinetics = NULL) |> 
+  dplyr::distinct() |> 
+  tidyr::pivot_longer(cols=contains("kinetics"), names_to="oxidation_kinetics")
+
+# TET1_5mC_oxidation_kinetics_per_facet
+
+ggplot(plt.per.facet, aes(x=context_median__DMP__g2_g3__pp_nc__t, y=value, label=facet_name, col=adjacent_CG)) +
+  facet_wrap(~oxidation_kinetics, scales="free",ncol=5) +
+  geom_point() +
+  ggrepel::geom_text_repel(data = subset(plt.per.facet, grepl("aacgtt|aacgtc|aacgtg", facet_name)), col="black", size=theme_cellpress_size, alpha=0.5) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_cellpress_size, label.x.npc="right", hjust=1) +
+  labs(col = "cg[CG]xx or xx[CG]cg", 
+       x = "median t-statistic for probes with given sequence context",
+       y = "oxidation kinetics value\n10.1038/s42003-022-03033-4\nAdams et al. NatCom 2021") +
+  theme_cellpress
+
+ggsave("output/figures/vis_differential__xxCGxx_x_TET1_2_NatCom.pdf", width = 11*0.975, height=3)
+
+
+## motif: xx[CG]xx * TET1-2-3 SciAdv ----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |>
+  dplyr::filter(!is.na(gc_sequence_context_2))
+
+
+plt.per.context <- plt |> 
+  dplyr::select(gc_sequence_context_2) |> 
+  dplyr::filter(!duplicated(gc_sequence_context_2)) |>
+  dplyr::mutate(gc_sequence_context_2_s = gsub("[CG]","CG",gc_sequence_context_2,fixed=T)) |> 
+  dplyr::mutate(gc_sequence_context_2_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(gc_sequence_context_2_s)))) |> 
+  dplyr::mutate(facet_name = dplyr::case_when(
+    gc_sequence_context_2_s < gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_s ,"/",gc_sequence_context_2_rc),
+    gc_sequence_context_2_s > gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_rc,"/",gc_sequence_context_2_s ),
+    gc_sequence_context_2_s == gc_sequence_context_2_rc ~ paste0("*",gc_sequence_context_2_s,"/",gc_sequence_context_2_s)
+  )) 
+
+
+
+plt <- plt |> 
+  dplyr::left_join(plt.per.context, by=c('gc_sequence_context_2'='gc_sequence_context_2'), suffix=c('','')) |> 
+  dplyr::group_by(facet_name) |> 
+  dplyr::mutate(context_median__DMP__g2_g3__pp_nc__t = median(DMP__g2_g3__pp_nc__t)) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(facet_name = tolower(facet_name)) |> 
+  dplyr::select(facet_name, gc_sequence_context_2, context_median__DMP__g2_g3__pp_nc__t) |> 
+  dplyr::distinct() |> 
+  dplyr::mutate(adjacent_CG = grepl("^cg",facet_name) | grepl("cg$",facet_name)) 
+
+
+
+
+
+tmp <- read.table("data/10.1126_sciadv.abm2427_Slope_summary.txt") |> 
+  tibble::rownames_to_column('Motif2') |> 
+  assertr::verify(Motif == Motif2) |> 
+  dplyr::mutate(Motif2 = NULL) |> 
+  dplyr::rename(sequence = Motif)
+
+
+
+plt <- plt |> 
+  dplyr::mutate(sequence = gsub("[","",gsub("]","",gc_sequence_context_2),fixed=T),fixed=T) |> 
+  dplyr::left_join(tmp, by=c('sequence'='sequence'), suffix=c('','')) 
+
+
+plt.per.facet <- plt |> 
+  dplyr::mutate(gc_sequence_context_2 = NULL) |> 
+  dplyr::mutate(sequence = NULL) |> 
+  dplyr::group_by(facet_name) |> 
+  #dplyr::mutate(ALL_72_per_facet = mean(ALL_72)) |> # 72H, not as powerful 
+  dplyr::mutate(ALL_84_per_facet = mean(ALL_84)) |> 
+  #dplyr::mutate(ALL_Dec_per_facet = mean(ALL_Dec)) |> 
+  
+  #dplyr::mutate(CGI_72_per_facet = mean(CGI_72)) |> 
+  #dplyr::mutate(CGI_84_per_facet = mean(CGI_84)) |> 
+  #dplyr::mutate(CGI_Dec_per_facet = mean(CGI_Dec)) |> 
+  
+  #dplyr::mutate(non_CGI_72_per_facet = mean(non_CGI_72)) |> 
+  #dplyr::mutate(non_CGI_84_per_facet = mean(non_CGI_84)) |> 
+  #dplyr::mutate(non_CGI_Dec_per_facet = mean(non_CGI_Dec)) |> 
+  
+  
+  dplyr::ungroup() |> 
+  dplyr::mutate(ALL_84 = NULL) |> 
+  dplyr::mutate(ALL_Dec = NULL) |> 
+  dplyr::mutate(CGI_Dec = NULL) |> 
+  dplyr::mutate(non_CGI_Dec = NULL) |> 
+  dplyr::mutate(ALL_72 = NULL) |> 
+  dplyr::mutate(CGI_84 = NULL) |> 
+  dplyr::mutate(non_CGI_84 = NULL) |> 
+  dplyr::mutate(CGI_72 = NULL) |> 
+  dplyr::mutate(non_CGI_72 = NULL) |> 
+  dplyr::distinct() |> 
+  tidyr::pivot_longer(cols=contains("_per_facet"), names_to="oxidation_kinetics")
+
+
+ggplot(plt.per.facet, aes(x=context_median__DMP__g2_g3__pp_nc__t, y=value, label=facet_name, col=adjacent_CG)) +
+  facet_wrap(~oxidation_kinetics, scales="free",ncol=5) +
+  geom_point() +
+  ggrepel::geom_text_repel(data = subset(plt.per.facet, grepl("aacgtt|aacgtc|aacgtg", facet_name)), col="black", size=theme_cellpress_size, alpha=0.5) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_cellpress_size, label.x.npc="right", hjust=1) +
+  labs(col = "cg[CG]xx or xx[CG]cg", 
+       x = "median t-statistic for probes with given sequence context",
+       y = "TET?3? de-meth velocity ALL 84h\nSciAdv 10.1126/sciadv.abm2427") +
+  theme_cellpress
+
+ggsave("output/figures/vis_differential__xxCGxx_x_TET1_2_3_SciAdv.pdf", width = 11*0.975/4, height=3)
+
+
+
+
+plt <- plt |> 
+  dplyr::left_join(tmp, by=c('sequence'='Motif'), suffix=c('','')) |> 
+  tibble::column_to_rownames('sequence')
+
+
+corrplot::corrplot(cor(plt, method="spearman"))
+
+
+## geen idee ----
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=gc_sequence_context_l4 )) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=19, cex=0.001, alpha=0.15, show.legend = F) + 
+  geom_point(data=head(plt, n=1),pch=19, cex=1, alpha=0.8) + 
+  
+  theme_cellpress + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
-  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits=c(log(2),log(13))) + # , oob = scales::squish
-  theme(legend.key.size = unit(0.6, 'lines')) 
+  theme(legend.key.size = unit(0.6, 'lines')) # resize colbox
 
-
-
-## sequence motifs ----
 
 
 ### motif: gc_sequence_context_1 ----
@@ -158,30 +532,7 @@ ggplot(stat, aes(x=gc_sequence_context_1, y=DMP__g2_g3__pp_nc__t)) +
 #### RC ----
 
 
-a = plt |> 
-  dplyr::filter(!is.na(gc_sequence_context_1)) |> 
-  dplyr::select(gc_sequence_context_1) |> 
-  dplyr::filter(!duplicated(gc_sequence_context_1)) |> 
-  dplyr::mutate(gc_sequence_context_1_s = gsub("[CG]","CG",gc_sequence_context_1,fixed=T)) |> 
-  dplyr::mutate(gc_sequence_context_1_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(gc_sequence_context_1_s)))) |> 
-  dplyr::mutate(facet_name = ifelse(gc_sequence_context_1_s <= gc_sequence_context_1_rc,
-                                    paste0(gc_sequence_context_1_s ,"_",gc_sequence_context_1_rc),
-                                    paste0(gc_sequence_context_1_rc,"_",gc_sequence_context_1_s ))) |> 
-  dplyr::arrange(facet_name) |> 
-  dplyr::mutate(gc_sequence_context_1_s = NULL, gc_sequence_context_1_rc = NULL)
 
-
-pplt <- plt |> 
-  dplyr::left_join(a, by=c('gc_sequence_context_1'='gc_sequence_context_1')) 
-
-
-
-ggplot(pplt, aes(x=gc_sequence_context_1, y=DMP__g2_g3__pp_nc__t)) +
-  facet_wrap(~facet_name, scales="free_x", ncol=136) +
-  ggbeeswarm::geom_quasirandom(size=0.1) +
-  ggplot2::geom_violin(draw_quantiles = c(0.5), col = "white", fill = alpha("white", 0)) +
-  theme_cellpress + 
-  theme(axis.text.x = element_text(angle = 90))
 
 
 
@@ -235,51 +586,6 @@ ggplot(stat, aes(x=gc_sequence_context_2, y=DMP__g2_g3__pp_nc__t)) +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 90))
 
-
-#### RC ----
-
-
-a = plt |> 
-  dplyr::filter(!is.na(gc_sequence_context_2)) |> 
-  dplyr::select(gc_sequence_context_2) |> 
-  dplyr::filter(!duplicated(gc_sequence_context_2)) |> 
-  dplyr::mutate(gc_sequence_context_2_s = gsub("[CG]","CG",gc_sequence_context_2,fixed=T)) |> 
-  dplyr::mutate(gc_sequence_context_2_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(gc_sequence_context_2_s)))) |> 
-  dplyr::mutate(palindrom = gc_sequence_context_2_s == gc_sequence_context_2_rc) |> 
-  dplyr::mutate(facet_name = dplyr::case_when(
-    gc_sequence_context_2_s < gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_s ,"_",gc_sequence_context_2_rc),
-    gc_sequence_context_2_s > gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_rc,"_",gc_sequence_context_2_s ),
-    gc_sequence_context_2_s == gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_s, " *")
-  )) |> 
-  dplyr::arrange(facet_name) |> 
-  dplyr::mutate(gc_sequence_context_2_s = NULL, gc_sequence_context_2_rc = NULL)
-
-
-pplt <- plt |> 
-  dplyr::left_join(a, by=c('gc_sequence_context_2'='gc_sequence_context_2')) 
-
-
-ggplot(pplt, aes(x=facet_name, y=DMP__g2_g3__pp_nc__t)) +
-  ggbeeswarm::geom_quasirandom(size=0.1) +
-  ggplot2::geom_violin(draw_quantiles = c(0.5), col = "white", fill = alpha("white", 0)) +
-  theme_cellpress + 
-  theme(axis.text.x = element_text(angle = 90))
-
-
-
-
-ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=gc_sequence_context_l4 )) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=19, cex=0.001, alpha=0.15, show.legend = F) + 
-  geom_point(data=head(plt, n=1),pch=19, cex=1, alpha=0.8) + 
-  
-  theme_cellpress + 
-  
-  theme(plot.background = element_rect(fill="white")) +  # png export
-  
-  theme(legend.key.size = unit(0.6, 'lines')) # resize colbox
 
 
 
@@ -747,6 +1053,175 @@ for(clock in clocks) {
   
   
 }
+
+## early ~ late repli ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |> 
+  dplyr::filter(!is.na(wgEncodeUwRepliSeqBjWaveSignalRep1)) |> 
+  dplyr::filter(wgEncodeUwRepliSeqBjWaveSignalRep2 < 79) |>  # outliers that mess up linear statistics
+  dplyr::filter(wgEncodeUwRepliSeqBg02esWaveSignalRep1 < 90) |> 
+  dplyr::filter(wgEncodeUwRepliSeqBjWaveSignalRep1 < 95) |> 
+  dplyr::filter(wgEncodeUwRepliSeqBjWaveSignalRep1 > 10) |> 
+  dplyr::filter(wgEncodeUwRepliSeqNhekWaveSignalRep1 < 80)
+
+
+ggplot(plt, aes(y= wgEncodeUwRepliSeqBjWaveSignalRep1, x=glass_nl_prim_rec__deep_significant)) +
+  ggbeeswarm::geom_quasirandom(size=0.1) +
+  ggpubr::stat_compare_means(aes(group=glass_nl_prim_rec__deep_significant), label.x.npc=0.1, method = "wilcox.test", show.lengend  = FALSE,  size=theme_cellpress_size)
+
+
+wilcox.test(
+  plt |>
+    dplyr::filter(glass_nl_prim_rec__deep_significant == T) |> 
+    dplyr::pull(wgEncodeUwRepliSeqBjWaveSignalRep1)
+  ,
+  plt |>
+    dplyr::filter(glass_nl_prim_rec__deep_significant == F) |> 
+    dplyr::pull(wgEncodeUwRepliSeqBjWaveSignalRep1)
+)
+
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqBg02esWaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqBg02esWaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqBjWaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqBjWaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqBjWaveSignalRep2, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white"))  # png export
+  #geom_vline(xintercept=79, col="red", lwd=0.5)
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqBjWaveSignalRep2.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqGm06990WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqGm06990WaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqGm12801WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqGm12801WaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqGm12812WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqGm12812WaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqGm12813WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqGm12813WaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqGm12878WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqGm12878WaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqHelas3WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqHelas3WaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqHepg2WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqHepg2WaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqHuvecWaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqHuvecWaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqImr90WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqImr90WaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqK562WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqK562WaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqMcf7WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqMcf7WaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqNhekWaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqNhekWaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+ggplot(plt, aes(x=wgEncodeUwRepliSeqSknshWaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
+  geom_point(pch=19,cex=0.0001,alpha=0.10) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqSknshWaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
 
 
 

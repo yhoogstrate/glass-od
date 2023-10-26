@@ -143,6 +143,14 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
 
 #qa = subsetByOverlaps(test.g, GRanges(seqnames = "chr1", ranges = IRanges(start = 24499 + 5, end = 24499 + 5 + 2 ) ))$score
 
+## repli-seq data ----
+
+
+tmp <- read.table("output/tables/repli-seq_data.txt", header=T)
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('', ''))
+
+
 
 ## AC embryionic development genes ghisai ----
 

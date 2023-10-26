@@ -43,8 +43,8 @@ theme_cellpress_size <- 7 * (3.88 / 11) # ~2.47
 theme_cellpress <- theme_bw() +
   theme(
     text =          element_text(size = 7, family = "Arial", face = "plain"),
-    axis.text =     element_text(size = 7, family = "Arial", face = "plain", color="black", angle=90, vjust =0.5),
-    axis.title.x =  element_text(size = 7, family = "Arial", face = "plain", color="black", vjust = -0.2),
+    axis.text =     element_text(size = 7, family = "Arial", face = "plain", color="black"), # , angle=90, vjust =0.5
+    axis.title.x =  element_text(size = 7, family = "Arial", face = "plain", color="black"), # , vjust = -0.2
     axis.title.y =  element_text(size = 7, family = "Arial", face = "plain", color="black"),
     axis.line =     element_line(linewidth = theme_cellpress_lwd),
     axis.ticks =    element_line(linewidth = theme_cellpress_lwd),
