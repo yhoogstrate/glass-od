@@ -118,30 +118,87 @@ rm(tmp)
 ## add sequence-context ----
 
 
+if(!file.exists("cache/load_probe_annotation__sequence_contexts.Rds")) {
+  
+  tmp <- metadata.cg_probes.epic |> 
+    dplyr::select(probe_id, Forward_Sequence) |> 
+    dplyr::mutate(gc_sequence_context_1 = toupper(gsub("^.+(.[^A-Za-z][A-Za-z]{2}[^A-Za-z].).+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_2 = toupper(gsub("^.+(..[^A-Za-z][A-Za-z]{2}[^A-Za-z]..).+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_l1 = toupper(gsub("^.+(.)[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_l2 = toupper(gsub("^.+(.).[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_l3 = toupper(gsub("^.+(.)..[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_l4 = toupper(gsub("^.+(.)...[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_l5 = toupper(gsub("^.+(.)....[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_l6 = toupper(gsub("^.+(.).....[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_l7 = toupper(gsub("^.+(.)......[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_l8 = toupper(gsub("^.+(.).......[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_r1 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z](.).+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_r2 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].(.).+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_r3 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]..(.).+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_r4 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]...(.).+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_r5 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]....(.).+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_r6 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].....(.).+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_r7 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]......(.).+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(gc_sequence_context_r8 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].......(.).+$","\\1", Forward_Sequence))) |> 
+    dplyr::mutate(Forward_Sequence = NULL)
+  
+    saveRDS(tmp, file="cache/load_probe_annotation__sequence_contexts.Rds")
+} else {
+  tmp <- readRDS(file="cache/load_probe_annotation__sequence_contexts.Rds")
+}
+
+
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
-  dplyr::mutate(gc_sequence_context_1 = toupper(gsub("^.+(.[^A-Za-z][A-Za-z]{2}[^A-Za-z].).+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_2 = toupper(gsub("^.+(..[^A-Za-z][A-Za-z]{2}[^A-Za-z]..).+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_l1 = toupper(gsub("^.+(.)[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_l2 = toupper(gsub("^.+(.).[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_l3 = toupper(gsub("^.+(.)..[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_l4 = toupper(gsub("^.+(.)...[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_l5 = toupper(gsub("^.+(.)....[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_l6 = toupper(gsub("^.+(.).....[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_l7 = toupper(gsub("^.+(.)......[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_l8 = toupper(gsub("^.+(.).......[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_r1 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z](.).+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_r2 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].(.).+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_r3 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]..(.).+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_r4 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]...(.).+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_r5 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]....(.).+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_r6 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].....(.).+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_r7 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]......(.).+$","\\1", Forward_Sequence))) |> 
-  dplyr::mutate(gc_sequence_context_r8 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].......(.).+$","\\1", Forward_Sequence)))
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+
+rm(tmp)
 
 
 
+## nearest CG ----
 
-#qa = subsetByOverlaps(test.g, GRanges(seqnames = "chr1", ranges = IRanges(start = 24499 + 5, end = 24499 + 5 + 2 ) ))$score
+
+
+if(!file.exists("cache/load_probe_annotation__nearest_CG.Rds")) {
+  
+  closest_cg <- function(dna_string) {
+    out <- gsub("[CG]","x",dna_string, fixed=T) |> 
+      stringr::str_locate_all("CG") |> 
+      as.data.frame() |> 
+      dplyr::mutate(start = ifelse(start < 60, start - 60 ,start - 61), end = NULL) |> 
+      dplyr::filter(start != 0)  |> 
+      rbind(data.frame(start = 61)) |> 
+      dplyr::arrange(abs(start)) |> 
+      head(n=1)
+    
+    return (out)
+  }
+  
+  stopifnot(closest_cg("CTAAGTGCAGTCAGGATCTGTTAGTACAGTGGCTTTTGATGGAACAGCTGAGGCACACAT[CG]CGCGTGGCATGGACTCCGGGGCCGAACGCTCACGACCAAGACTTTTGCCCTTTTGAAATG") == 1)
+  stopifnot(closest_cg("CTAAGTGCAGTCAGGATCTGTTAGTACAGTGGCTTTTGATGGAACAGCTGAGGCACACCG[CG]AACGTGGCATGGACTCCGGGGCCGAACGCTCACGACCAAGACTTTTGCCCTTTTGAAATG") == -1)
+  stopifnot(closest_cg("CTAAGTGCAGTCAGGATCTGTTAGTACAGTGGCTTTTGATGGAACAGCTGAGGCACACAT[CG]ACGCGTGGCATGGACTCCGGGGCCGAACGCTCACGACCAAGACTTTTGCCCTTTTGAAAT") == 2)
+  stopifnot(closest_cg("CTAAGTGCAGTCAGGATCTGTTAGTACAGTGGCTTTTGATGGAACAGCTGAGGCACACGA[CG]AACGTGGCATGGACTCCGGGGCCGAACGCTCACGACCAAGACTTTTGCCCTTTTGAAATG") == -2)
+  
+  tmp <- metadata.cg_probes.epic |> 
+    dplyr::select(probe_id, Forward_Sequence) |> 
+    dplyr::rowwise() |> 
+    dplyr::mutate(closest_CG = closest_cg(Forward_Sequence)) |> 
+    dplyr::ungroup() |> 
+    dplyr::mutate(Forward_Sequence = NULL)
+
+  saveRDS(tmp, file="cache/load_probe_annotation__nearest_CG.Rds")
+} else {
+  tmp <- readRDS(file="cache/load_probe_annotation__nearest_CG.Rds")
+}
+
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+
+
+rm(tmp)
+
+
 
 ## repli-seq data ----
 
