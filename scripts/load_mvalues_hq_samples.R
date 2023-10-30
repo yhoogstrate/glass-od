@@ -125,6 +125,24 @@ if(file.exists(fn)) {
 
 rm(fn)
 
+### Tissue or FFPE ----
+
+
+fn <- "cache/analysis_differential__ffpe_or_ff__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(
+      readRDS(fn) |> 
+        dplyr::rename_with(~paste0("DMP__FFPE_or_FF__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
+      by=c('probe_id'='probe_id'), suffix=c('','') )
+} else {
+  warning("DMP result FFPE | FF PP is missing")
+}
+
+rm(fn)
+
+
+
 
 ### FFPE Decay time PP ----
 

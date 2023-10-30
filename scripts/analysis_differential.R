@@ -1278,6 +1278,71 @@ plot(sort(stats.lgc$P.Value),type="l")
 
 
 
+# analyses: FFPE & FF ----
+## data: partially paired [w/o FFPE/frozen batch correct] ----
+
+
+metadata.ffpe_or_ff.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(210) |> 
+  dplyr::filter(!is.na(isolation_material)) |>
+  dplyr::mutate(isolation_material = factor(isolation_material, levels=c("ffpe", "tissue"))) |> 
+  dplyr::mutate(ffpe_or_ff_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
+  dplyr::filter(!is.na(ffpe_or_ff_time)) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (190)) 
+    return(.)
+  })()
+
+
+data.ffpe_or_ff.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.ffpe_or_ff.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+
+design.ffpe_or_ff.pp.nc <- model.matrix(~factor(patient) + isolation_material, data=metadata.ffpe_or_ff.pp.nc)
+fit.ffpe_or_ff.pp.nc <- limma::lmFit(data.ffpe_or_ff.pp.nc, design.ffpe_or_ff.pp.nc)
+fit.ffpe_or_ff.pp.nc <- limma::eBayes(fit.ffpe_or_ff.pp.nc, trend=T)
+
+stats.ffpe_or_ff.pp.nc <- limma::topTable(fit.ffpe_or_ff.pp.nc,
+                                          n=nrow(data.ffpe_or_ff.pp.nc),
+                                          coef="isolation_materialtissue",
+                                          sort.by = "none",
+                                          adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')
+
+
+
+rm(design.ffpe_or_ff.pp.nc)
+
+
+sum(stats.ffpe_or_ff.pp.nc$P.Value < 0.01)
+sum(stats.ffpe_or_ff.pp.nc$adj.P.Val < 0.01)
+
+
+
+#saveRDS(fit.ffpe_or_ff.pp.nc, file="cache/analysis_differential__ffpe_or_ff__partial_paired_nc__fit.Rds")
+saveRDS(stats.ffpe_or_ff.pp.nc, file="cache/analysis_differential__ffpe_or_ff__partial_paired_nc__stats.Rds")
+
+
+rm(fit.ffpe_or_ff.pp.nc, stats.ffpe_or_ff.pp.nc)
+
+
+
+
 # analyses: FFPE-decay predictor ----
 ## data: partially paired [w/o FFPE/frozen batch correct] ----
 

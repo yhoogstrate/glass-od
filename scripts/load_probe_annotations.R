@@ -169,9 +169,10 @@ if(!file.exists("cache/load_probe_annotation__nearest_CG.Rds")) {
       dplyr::filter(start != 0)  |> 
       rbind(data.frame(start = 61)) |> 
       dplyr::arrange(abs(start)) |> 
-      head(n=1)
+      head(n=1) |> 
+      dplyr::pull(start)
     
-    return (out)
+    return (as.numeric(out))
   }
   
   stopifnot(closest_cg("CTAAGTGCAGTCAGGATCTGTTAGTACAGTGGCTTTTGATGGAACAGCTGAGGCACACAT[CG]CGCGTGGCATGGACTCCGGGGCCGAACGCTCACGACCAAGACTTTTGCCCTTTTGAAATG") == 1)
@@ -180,13 +181,15 @@ if(!file.exists("cache/load_probe_annotation__nearest_CG.Rds")) {
   stopifnot(closest_cg("CTAAGTGCAGTCAGGATCTGTTAGTACAGTGGCTTTTGATGGAACAGCTGAGGCACACGA[CG]AACGTGGCATGGACTCCGGGGCCGAACGCTCACGACCAAGACTTTTGCCCTTTTGAAATG") == -2)
   
   tmp <- metadata.cg_probes.epic |> 
+    #head(n=1000) |> 
     dplyr::select(probe_id, Forward_Sequence) |> 
     dplyr::rowwise() |> 
     dplyr::mutate(closest_CG = closest_cg(Forward_Sequence)) |> 
     dplyr::ungroup() |> 
     dplyr::mutate(Forward_Sequence = NULL)
-
+  
   saveRDS(tmp, file="cache/load_probe_annotation__nearest_CG.Rds")
+  
 } else {
   tmp <- readRDS(file="cache/load_probe_annotation__nearest_CG.Rds")
 }
@@ -199,12 +202,40 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
 rm(tmp)
 
 
+## is solo-WCGW ----
+# >= 35 & == wCGw [https://www.nature.com/articles/s41467-022-34268-8]
+# w: https://en.wikipedia.org/wiki/FASTA_format = [AT]
+
+
+if(!file.exists("cache/load_probe_annotation__is_solo_WCGW.Rds")) {
+  
+  tmp <- metadata.cg_probes.epic |> 
+    dplyr::select(probe_id, Forward_Sequence, closest_CG) |> 
+    dplyr::mutate(tmp = gsub("^.+([ACTG])[^ACTG][CG]{2}[^ACTG]([ACTG]).+$","\\1:CG:\\2", Forward_Sequence)) |> 
+    dplyr::mutate(is_solo_WCGW = (closest_CG >= 35) & (tmp %in% c("A:CG:A", "A:CG:T", "T:CG:A", "T:CG:T"))) |> 
+    dplyr::select(probe_id, is_solo_WCGW)
+  
+  saveRDS(tmp, file="cache/load_probe_annotation__is_solo_WCGW.Rds")
+  
+} else {
+  tmp <- readRDS(file="cache/load_probe_annotation__is_solo_WCGW.Rds")
+}
+
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+
+
+rm(tmp)
+
+
+
 
 ## repli-seq data ----
 
 
 tmp <- read.table("output/tables/repli-seq_data.txt", header=T)
-metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+dplymetadata.cg_probes.epic <- metadata.cg_probes.epic |> 
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('', ''))
 
 

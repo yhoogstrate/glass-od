@@ -16,6 +16,7 @@ if(!exixts('data.mvalues.probes')) {
 
 
 
+
 # plot ----
 
 ## A: overall density ----
@@ -48,7 +49,36 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
 
 
 
-## B: ----
+## B: AcCGAP in OD ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=DMP__AcCGAP__pp_nc__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=19, cex=0.001, alpha=0.15) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+
+
+## C: GLASS-NL probes ----
+
 
 plt <- data.mvalues.probes |> 
   (function(.) {
@@ -64,46 +94,7 @@ plt <- data.mvalues.probes |>
   })()
 
 
-
-p1 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=19, cex=0.001, alpha=0.015, col="black") + 
-  
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
-#p1
-
-
-
-
-p2 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=DMP__FFPE_decay_time__pp_nc__t)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=19, cex=0.001, alpha=0.15) + 
-  
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
-#p2
-
-
-
-
-p3 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=DMP__AcCGAP__pp_nc__t)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=19, cex=0.001, alpha=0.15) + 
-  
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
-#p3
-
-
-
-p4 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=-10*glass_nl_prim_rec__deep_significant)) +
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=-10*glass_nl_prim_rec__deep_significant)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
@@ -112,11 +103,105 @@ p4 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
-#p4
 
 
 
-p5 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=DMP__epiTOC2_hypoSC__pp_nc__t)) +
+
+
+## D: FFPE | Tissue ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=DMP__FFPE_or_FF__pp_nc__t)) + # 
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=19, cex=0.001, alpha=0.15) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+
+
+
+## E: FFPE decay time ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=DMP__FFPE_decay_time__pp_nc__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=19, cex=0.001, alpha=0.15) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+
+
+
+## F: epiTOC2 / tsnc ----
+#' normal epiTOC
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=DMP__epiTOC2_tnsc__up_nc__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=19, cex=0.001, alpha=0.15) + 
+
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+
+
+
+## G: epiTOC2 / [hypoSC!!] ----
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=DMP__epiTOC2_hypoSC__pp_nc__t)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
@@ -125,17 +210,14 @@ p5 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
-#p5
 
 
 
-(p1 + p3 + p4) / (p2 + p5 + p1)
-
-
-
-## n seq diff ----
+## H: probeCpGcnt ----
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probeCpGcnt)) +
+  #facet_grid(cols = vars(Infinium_Design_Type))  +
+  
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
@@ -155,8 +237,8 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
                                  breaks = 0:11,
                                  labels = c(0,"",2,"","","",6,"","","","",11)
-                                 ) + # , oob = scales::squish
-
+  ) + # , oob = scales::squish
+  
   labs(col = "CpG's per probe") +
   
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
@@ -166,8 +248,64 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 ggsave("output/figures/vis_differential__g23_prim-rec__probe_CpG_count.png", width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
 
 
+## I: closest_CG  ----
 
-## motif: x[CG]x violin(s) ----
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |> 
+  dplyr::mutate(closest_CG_25 = dplyr::case_when(
+    closest_CG > 25 ~ 26,
+    closest_CG < -25 ~ -26,
+    T ~ closest_CG
+  ))
+
+### a: closest_CG distance x effect  ----
+
+
+ggplot(plt, aes(y=DMP__g2_g3__pp_nc__t, x=as.factor(closest_CG))) +
+  #geom_point(pch=19, cex=0.001, alpha=0.15, col="darkgray") +
+  ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_cellpress_lwd, col = "darkgray", adjust = 1.95) +
+  theme_cellpress +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+
+### b: in quadrant ----
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=abs(closest_CG_25))) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=19, cex=0.001, alpha=0.15) + 
+  
+  ggplot2::scale_color_gradientn(colours = rev(col3(200))[1:175], na.value = "grey50", 
+                                 #trans = "log1p",
+                                 breaks = c(1,5,10,15,20,26),
+                                 labels = c(1,"",10,"",20,"  25+")
+  ) + # , oob = scales::squish
+  
+  labs(col = "distance to next CpG (bp)") +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white")) +  # png export
+  theme(legend.key.size = unit(0.6, 'lines'))
+
+ggsave("output/figures/vis_differential__g23_prim-rec__closest_CG.png", width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+## J: solo-wCGw ----
+# >= 35 & == wCGw [https://www.nature.com/articles/s41467-022-34268-8]
 
 
 plt <- data.mvalues.probes |> 
@@ -181,38 +319,253 @@ plt <- data.mvalues.probes |>
     print(dim(.))
     assertthat::assert_that(nrow(.) == (693017)) 
     return(.)
+  })()
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=is_solo_WCGW)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data=subset(plt, is_solo_WCGW==F) , pch=19, cex=0.001, alpha=0.15, show.legend = F) + 
+  geom_point(data=subset(plt, is_solo_WCGW==T) , pch=19, cex=0.001, alpha=0.15, show.legend = F) + 
+  geom_point(data=head(plt, n=0) , pch=19) + # hack plotting empty data frame, but with right cex and alpha for guide
+  
+
+  labs(col = "is solo-WCGW", x = "Per probe t-score Grade2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence") +
+  scale_color_manual(values=c('TRUE'= col3(3)[1], 'FALSE'='gray80')) +
+
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white")) +  # png export
+  theme(legend.key.size = unit(0.6, 'lines'))
+
+ggsave("output/figures/vis_differential__g23_prim-rec__solo-WCGW.png", width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+## K: discrete motifs ----
+### a: motifs alone ----
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
   })() |>
-  dplyr::filter(!is.na(gc_sequence_context_1))
+  dplyr::filter(!is.na(gc_sequence_context_2)) |> 
+  
+  dplyr::mutate(cg_prefix_suffix = grepl("^CG", gc_sequence_context_2) | grepl("CG$", gc_sequence_context_2)) |> 
+  dplyr::mutate(top_affinity = gc_sequence_context_2 %in% c(
+    "GA[CG]AG", "GA[CG]TC","CT[CG]TT","GA[CG]TG", "CT[CG]TT","CA[CG]TG","CA[CG]TT","GA[CG]TT","AA[CG]TT", 
+    #            palin                                        palin                            palin
+    "CT[CG]TC", "GA[CG]TC","CA[CG]AG","CA[CG]TC", "AA[CG]AG","CA[CG]TG","AA[CG]TG","AA[CG]TC","AA[CG]TT" )) |> 
+  
+  dplyr::mutate(col_facet1 = ifelse(cg_prefix_suffix, "CG prefix/suffix", "other")) |> 
+  dplyr::mutate(col_facet2 = ifelse(top_affinity, "top affinity", "other")) 
+  
+
+plt <- rbind(
+  plt |> 
+    dplyr::mutate(col = col_facet1) |> 
+    dplyr::mutate(facet = "CG prefix/suffix")
+  ,
+  plt |> 
+    dplyr::mutate(col = col_facet2) |> 
+    dplyr::mutate(facet = "top affinity")
+) |> 
+  dplyr::mutate(col = factor(col, levels=c(   "top affinity"  ,"CG prefix/suffix" ,"other"   )))
 
 
-plt.per.context <- plt |> 
-  dplyr::select(gc_sequence_context_1) |> 
-  dplyr::filter(!duplicated(gc_sequence_context_1)) |> 
-  dplyr::mutate(gc_sequence_context_1_s = gsub("[CG]","CG",gc_sequence_context_1,fixed=T)) |> 
-  dplyr::mutate(gc_sequence_context_1_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(gc_sequence_context_1_s)))) |> 
-  dplyr::mutate(facet_name = dplyr::case_when(
-    gc_sequence_context_1_s < gc_sequence_context_1_rc ~ paste0(gc_sequence_context_1_s ,"\n&\n",gc_sequence_context_1_rc),
-    gc_sequence_context_1_s > gc_sequence_context_1_rc ~ paste0(gc_sequence_context_1_rc,"\n&\n",gc_sequence_context_1_s ),
-    gc_sequence_context_1_s == gc_sequence_context_1_rc ~ paste0(gc_sequence_context_1_s, "\npalin*")
-  ))
-  #dplyr::mutate(gc_sequence_context_1_s = NULL, gc_sequence_context_1_rc = NULL)
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=col)) +
+  facet_wrap(~facet, scales="free") +
+
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data=subset(plt, col == "other"), pch=19, cex=0.001, alpha=0.15, show.legend = F) + 
+  geom_point(data=subset(plt, col != "other"), pch=19, cex=0.001, alpha=0.15, show.legend = F) + 
+
+  geom_point(data=head(plt, n=0),pch=19) + 
+  
+  labs(col = "sequence context", x = "Per probe t-score Grade2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence") +
+  scale_color_manual(values=c('top affinity'= col3(3)[1],
+                              'other'='gray80',
+                              'CG prefix/suffix'= col3(3)[3])) +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white"))
 
 
-plt <- plt |> 
-  dplyr::left_join(plt.per.context, by=c('gc_sequence_context_1'='gc_sequence_context_1'), suffix=c('','')) |> 
-  dplyr::group_by(facet_name) |> 
-  dplyr::mutate(facet_rank = median(DMP__g2_g3__pp_nc__t)) |> 
-  dplyr::ungroup()
+
+### b: motifs x min closest_CG ----
 
 
-ggplot(plt, aes(x=gc_sequence_context_1, y=DMP__g2_g3__pp_nc__t)) +
-  facet_wrap(~reorder(facet_name, -facet_rank), scales="free_x", ncol=length(unique(plt$facet_name))) +
-  #ggbeeswarm::geom_quasirandom(size=0.01, alpha=0.65) +
-  ggplot2::geom_violin(draw_quantiles = c(0.5), col = "white", fill = "black") +
-  labs(x = NULL) +
-  coord_cartesian(ylim = c(-8, 4)) + # soft clip
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.5))
+
+## G: 1P ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=is_1P)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data=subset(plt, !is_1P), pch=19, cex=0.001, alpha=0.15, show.legend = F) + 
+  geom_point(data=subset(plt,  is_1P), pch=19, cex=0.001, alpha=0.15, show.legend = F) + 
+  geom_point(data=head(plt, n=1),pch=19, cex=1, alpha=0.8) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white"))
+
+
+
+
+## G: 19Q ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=is_19Q)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data=subset(plt, !is_19Q), pch=19, cex=0.001, alpha=0.15, show.legend = F) + 
+  geom_point(data=subset(plt,  is_19Q), pch=19, cex=0.001, alpha=0.15, show.legend = F) + 
+  geom_point(data=head(plt, n=1),pch=19, cex=1, alpha=0.8) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white"))
+
+
+## G: 1P | 19Q ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |> 
+  dplyr::mutate(col = dplyr::case_when(
+    CpG_chrm == "chr1" ~ CpG_chrm,
+    CpG_chrm == "chr19" ~ CpG_chrm,
+    T ~ "other"
+  )) |> 
+  dplyr::mutate(facet = ifelse(is_1P | is_19Q, "on 1p | 19q","other")) |> 
+  dplyr::mutate( CpG_chrm = dplyr::case_when(
+    CpG_chrm == "chr1" & is_1P ~ "chr1p",
+    CpG_chrm == "chr1" & !is_1P ~ "chr1q",
+  
+    CpG_chrm == "chr19" & is_19Q ~ "chr19q",
+    CpG_chrm == "chr19" & !is_19Q ~ "chr19p",
+    T ~ CpG_chrm
+  )) |> 
+  dplyr::mutate(chr = factor(CpG_chrm, levels=gtools::mixedsort(unique(as.character(CpG_chrm))) ))
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probeCpGcnt)) +
+  facet_grid(cols = vars(facet)) +
+
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data=subset(plt, probeCpGcnt == 0), pch=19, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, probeCpGcnt == 1), pch=19, cex=0.0025, alpha=0.15) + 
+  geom_point(data=subset(plt, probeCpGcnt == 2), pch=19, cex=0.005, alpha=0.20) + 
+  geom_point(data=subset(plt, probeCpGcnt == 3), pch=19, cex=0.05, alpha=0.25) + 
+  geom_point(data=subset(plt, probeCpGcnt == 4), pch=19, cex=0.01, alpha=0.30) + 
+  geom_point(data=subset(plt, probeCpGcnt == 5), pch=19, cex=0.01, alpha=0.35) + 
+  geom_point(data=subset(plt, probeCpGcnt == 6), pch=19, cex=0.01, alpha=0.40) + 
+  geom_point(data=subset(plt, probeCpGcnt == 7), pch=19, cex=0.025, alpha=0.45) + 
+  geom_point(data=subset(plt, probeCpGcnt == 8), pch=19, cex=0.05, alpha=0.50) + 
+  geom_point(data=subset(plt, probeCpGcnt == 9), pch=19, cex=0.1, alpha=0.55) + 
+  geom_point(data=subset(plt, probeCpGcnt == 10), pch=19, cex=0.1, alpha=0.60) + 
+  geom_point(data=subset(plt, probeCpGcnt == 11), pch=19, cex=0.1, alpha=0.65) + 
+  geom_point(data=head(plt, n=1),pch=19, cex=1, alpha=0.8) + 
+  
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
+                                 breaks = 0:11,
+                                 labels = c(0,"",2,"","","",6,"","","","",11)
+  ) + # , oob = scales::squish
+  
+  labs(col = "CpG's per probe") +
+  
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white"))
+
+
+ggplot(plt, aes(x = chr, y=DMP__g2_g3__pp_nc__t, fill=col)) +
+  ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_cellpress_lwd, col = "white", adjust = 1.95) +
+  scale_fill_manual(values=c('chr1'='red','chr19'='blue','other'='darkgray')) +
+  theme_cellpress +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+
+
+## X: Infinium_Design_Type ----
+#' not need to be shown, effect is by CpG's per probe,
+#' design type is defined by number of probes
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=Infinium_Design_Type)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data = subset(plt, Infinium_Design_Type == "II"), pch=19, cex=0.001, alpha=0.15) + 
+  geom_point(data = subset(plt,Infinium_Design_Type == "I"), pch=19, cex=0.001, alpha=0.15) +   
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) 
 
 
 
@@ -267,6 +620,8 @@ ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc__t)) +
 
 
 ggsave("output/figures/vis_differential__xxCGxx_violin.pdf", width = 11 * 0.97, height=3.75)
+
+
 
 
 
@@ -475,33 +830,6 @@ plt <- plt |>
 corrplot::corrplot(cor(plt, method="spearman"))
 
 
-## geen idee ----
-
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
-    return(.)
-  })() |> 
-  dplyr::filter(detP_good_probe & !MASK_general) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
-    return(.)
-  })()
-
-ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=gc_sequence_context_l4 )) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=19, cex=0.001, alpha=0.15, show.legend = F) + 
-  geom_point(data=head(plt, n=1),pch=19, cex=1, alpha=0.8) + 
-  
-  theme_cellpress + 
-  
-  theme(plot.background = element_rect(fill="white")) +  # png export
-  
-  theme(legend.key.size = unit(0.6, 'lines')) # resize colbox
 
 
 
