@@ -88,6 +88,57 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
 
 
+## G-CIMP ----
+
+### IDH-mut ----
+
+
+tmp <- read.delim('data/GLASS_NL/Methylation/Analysis/RF TCGA/IDHmtprobes.txt') |> 
+  dplyr::rename(probe_id = 1)
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::mutate(GCIMP_IDHmut_probe = probe_id %in% tmp$probe_id)
+
+rm(tmp)
+
+
+
+### IDH-wt ----
+
+
+tmp <- read.delim('data/GLASS_NL/Methylation/Analysis/RF TCGA/IDHwtprobes.txt') |> 
+  dplyr::rename(probe_id = 1)
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::mutate(GCIMP_IDHwt_probe = probe_id %in% tmp$probe_id)
+
+rm(tmp)
+
+
+### PanGlioma ----
+
+
+tmp <- read.delim('data/GLASS_NL/Methylation/Analysis/RF TCGA/pangliomaprobes.txt') |> 
+  dplyr::rename(probe_id = 1)
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::mutate(GCIMP_PanGlioma_probe = probe_id %in% tmp$probe_id)
+
+rm(tmp)
+
+
+### magic 90 ----
+
+
+load("data/GLASS_NL/Methylation/Analysis/RF TCGA/GCIMPlow.90probes.Rda")
+tmp <- GCIMPlow.probes |> 
+  dplyr::rename(probe_id = probes)
+
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::mutate(GCIMP_low_90 = probe_id %in% tmp$probe_id)
+
+rm(tmp)
 
 
 ## add gene annotation ----
