@@ -181,7 +181,7 @@ tmp <- c(
   tidyr::unnest(tmp) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 75)
+    assertthat::assert_that(nrow(.) == 79)
     return(.)
   })() |> 
   assertr::verify(!is.na(array_mnp_predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
@@ -198,7 +198,7 @@ gsam.metadata.array_samples <- gsam.metadata.array_samples |>
   assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr_v12.8)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 75)
+    assertthat::assert_that(nrow(.) == 79)
     return(.)
   })() 
 
@@ -224,7 +224,7 @@ tmp <- list.files(path = "data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS cla
   assertr::verify(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 75)
+    assertthat::assert_that(nrow(.) == 79)
     return(.)
   })()
 
@@ -235,7 +235,7 @@ gsam.metadata.array_samples <- gsam.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_QC_v12.8_predicted_sample_type)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 75)
+    assertthat::assert_that(nrow(.) == 79)
     return(.)
   })()
 
@@ -246,9 +246,10 @@ rm(tmp)
 
 ## Heidelberg 12.8 CNVP segment files ----
 
+
 tmp <- query_mnp_12.8_CNVP_segment_csv(
   "data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/",
-  75,
+  79,
   gsam.metadata.array_samples$array_sentrix_id,
   "array_mnp_CNVP_v12.8_v5.2_"
   )
@@ -261,7 +262,7 @@ gsam.metadata.array_samples <- gsam.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_CNVP_v12.8_v5.2_CNVP_version)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 75)
+    assertthat::assert_that(nrow(.) == 79)
     return(.)
   })()
 rm(tmp)
@@ -282,7 +283,7 @@ tmp <- readRDS("cache/analysis_median_methylation.Rds") |>
   dplyr::filter(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 73) # only HQ samples
+    assertthat::assert_that(nrow(.) == 77) # only HQ samples
     return(.)
   })()
 
@@ -320,7 +321,7 @@ tmp <- readRDS("cache/analysis_EPITOC2.Rds") |>
   dplyr::filter(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |>
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 73)
+    assertthat::assert_that(nrow(.) == 77)
     return(.)
   })()
 

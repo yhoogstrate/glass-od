@@ -1,6 +1,29 @@
 #!/usr/bin/env R
 
 
+# mixcol
+source('scripts/load_functions.R')
+
+
+# center with darker gray - original also used in corrplot and some HI-publications
+col4 <- grDevices::colorRampPalette(c(       "#67001F", 
+                                             mixcol("#B2182B","black",0.025*2),
+                                             mixcol("#D6604D","black",0.050*2),
+                                             mixcol("#F4A582","black",0.075*2),
+                                             mixcol("#FDDBC7","black",0.100*2),
+                                             
+                                             mixcol("#FFFFFF","black",0.125*2),
+                                             
+                                             mixcol("#D1E5F0","black",0.100*2),
+                                             mixcol("#92C5DE","black",0.075*2),
+                                             mixcol("#4393C3","black",0.050*2),
+                                             mixcol("#2166AC","black",0.025*2),
+                                             
+                                             "#053061"
+))
+
+
+
 
 # center with gray - original also used in corrplot and some HI-publications
 col3 <- grDevices::colorRampPalette(c(       "#67001F", 
