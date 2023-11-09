@@ -75,9 +75,6 @@ theme_cellpress <- theme_bw() +
     panel.spacing =      unit(0.1, "lines"), # facet_grid margin
     panel.border =       element_blank(), # no sqaure, but two lines instead (axis.line)
     panel.background =   element_blank()
-    
-    
-    
   )
 
 
