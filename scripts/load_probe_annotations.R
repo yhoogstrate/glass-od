@@ -21,10 +21,21 @@ source('scripts/load_functions.R')
 
 
 ## manifest ----
-
 # 2022
+
+
 metadata.cg_probes.epic <- read.table("data/Improved DNA Methylation Array Probe Annotation/EPIC/EPIC.hg38.manifest.tsv", header=T) |> 
   dplyr::rename(probe_id = Probe_ID) |> 
+  dplyr::mutate(probe_type = dplyr::recode(type, "I"="I (red & green)", "II"="II (ligation Allele-A)")) |> # II is 1 (probe) and I is 2 probes.. ugh!
+  dplyr::mutate(probe_type_orientation = dplyr::case_when(
+    type == "I"  & mapYD_A == "f" ~ "I - forward (red & green)",
+    type == "I"  & mapYD_A == "r" ~ "I - reverse (red & green)",
+    type == "I"  & mapYD_A == "u" ~ "I - ? (red & green)",
+    type == "II" & mapYD_A == "f" ~ "II - forward (Allele-A)",
+    type == "II" & mapYD_A == "r" ~ "II - reverse (Allele-A)",
+    type == "II" & mapYD_A == "u" ~ "II - ? (Allele-A)",
+    T ~ "err"
+  )) |> 
   assertr::verify(!duplicated(probe_id)) |> 
   dplyr::mutate(pos = round((CpG_beg + CpG_end )/2)) |> 
   dplyr::mutate(is_1P = CpG_chrm == 'chr1' & pos < 130 * 1000000) |> # rough margin
@@ -205,6 +216,35 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
 rm(tmp)
 
 
+## add overall G-C content ----
+
+
+
+
+if(!file.exists("cache/load_probe_annotation__gc_content.Rds")) {
+  
+  tmp <- metadata.cg_probes.epic |> 
+    dplyr::filter(!is.na(Forward_Sequence)) |> 
+    dplyr::mutate(biostr = gsub("[CG]","",Forward_Sequence, fixed=T)) |> 
+    dplyr::mutate(c_content = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(biostr), letters="C") / Biostrings::letterFrequency(Biostrings::DNAStringSet(biostr), letters="ACTG"))) |> 
+    dplyr::mutate(g_content = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(biostr), letters="G") / Biostrings::letterFrequency(Biostrings::DNAStringSet(biostr), letters="ACTG"))) |> 
+    dplyr::mutate(gc_content = g_content + c_content) |> 
+    dplyr::select(probe_id, g_content, c_content, gc_content)
+  
+  saveRDS(tmp, file="cache/load_probe_annotation__gc_content.Rds")
+  
+} else {
+  tmp <- readRDS(file="cache/load_probe_annotation__gc_content.Rds")
+}
+
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+
+rm(tmp)
+
+
+
 
 ## nearest CG ----
 
@@ -290,26 +330,49 @@ dplymetadata.cg_probes.epic <- metadata.cg_probes.epic |>
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('', ''))
 
 
+## Repli-Tali predictors NatCom 2022 ----
+#' https://zenodo.org/records/7108429
+#' 10.1038/s41467-022-34268-8
 
-## AC embryionic development genes ghisai ----
+if(!file.exists('data/RepliTali_coefs.csv')) {
+  download.file('https://raw.githubusercontent.com/jamieendicott/Nature_Comm_2022/main/RepliTali/RepliTali_coefs.csv','data/RepliTali_coefs.csv')
+}
 
+tmp <- read.csv("data/RepliTali_coefs.csv") |> 
+  dplyr::filter(grepl("^cg", Coefficient)) |> 
+  dplyr::rename(probe_id = Coefficient) |> 
+  dplyr::mutate(RepliTali_coef = Value) |> 
+  dplyr::mutate(RepliTali_coef_type = ifelse(Value < 0, "negative", "positive")) |> 
+  dplyr::mutate(is_RepliTali_coef = T) |> 
+  dplyr::select(probe_id, contains("RepliTali"))
 
-tmp <- c("MFAP2","OPRD1","CD101","MIR3681HG","AC064875.1","OSR1","LINC01121","AC007402.1","AC007402.2","TLX2","LINC01956","EN1","GRB14","HOXD11","HOXD10","HOXD-AS2","HOXD9","HOXD8","HOXD3","HOXD4",
-         "HAGLROS","IGFBP2","PAX3","TRIM71","AC112487.1","GPR156","SHOX2","IGF2BP2","LNX1","NMU","NKX6-1","HAND2","HAND2-AS1","ASB5","TENM3-AS1","NPR3","OTP","SPRY4","COL9A1","EYA4",
-         "AL139393.1","AL139393.3","TWIST1","IGF2BP3","HOXA2","HOXA3","HOXA5","HOXA6","HOXA7","HOXA9","HOXA10","HOXA11","HOXA11-AS","MNX1","NRG1","PLAT","GDF6","OSR2","PAX5","BX255923.2",
-         "AL353150.1","VAX1","EBF3","IGF2","IGF2-AS","AC090692.1","LINC02367","AC084816.1","AC009318.4","LRRK2","HOXC9","HOXC8","HOXC4","LINC01234","TBX5","GSX1","PAX9","LINC00648","C14orf39","SIX6",
-         "AC087473.1","ISL2","HAPLN3","LINC01579","GPR139","CRNDE","IRX5","AC126773.4","GJC1","TBX21","AC015909.3","CACNG5","GALR1","ZNF560","NLRP11","COL9A3","SIM2","SOX10","NR0B1","TMSB15A","IL13RA2")
 
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
-  dplyr::mutate(catnon_embryionic_development = unlist(pbapply::pblapply(genesUniq, split_match, gid=tmp))   ) |> 
-  (function(.) {
-    print(sum(.$catnon_embryionic_development))
-    assertthat::assert_that(sum(.$catnon_embryionic_development) == (4310))
-    return(.)
-  })()
-
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
+  dplyr::mutate(is_RepliTali_coef = ifelse(is.na(is_RepliTali_coef),F, is_RepliTali_coef))
 rm(tmp)
+
+
+## AC embryionic development genes ghisai ----
+#'@todo fix gewoon die lijst met probes zoals in de supplement
+
+# tmp <- c("MFAP2","OPRD1","CD101","MIR3681HG","AC064875.1","OSR1","LINC01121","AC007402.1","AC007402.2","TLX2","LINC01956","EN1","GRB14","HOXD11","HOXD10","HOXD-AS2","HOXD9","HOXD8","HOXD3","HOXD4",
+#          "HAGLROS","IGFBP2","PAX3","TRIM71","AC112487.1","GPR156","SHOX2","IGF2BP2","LNX1","NMU","NKX6-1","HAND2","HAND2-AS1","ASB5","TENM3-AS1","NPR3","OTP","SPRY4","COL9A1","EYA4",
+#          "AL139393.1","AL139393.3","TWIST1","IGF2BP3","HOXA2","HOXA3","HOXA5","HOXA6","HOXA7","HOXA9","HOXA10","HOXA11","HOXA11-AS","MNX1","NRG1","PLAT","GDF6","OSR2","PAX5","BX255923.2",
+#          "AL353150.1","VAX1","EBF3","IGF2","IGF2-AS","AC090692.1","LINC02367","AC084816.1","AC009318.4","LRRK2","HOXC9","HOXC8","HOXC4","LINC01234","TBX5","GSX1","PAX9","LINC00648","C14orf39","SIX6",
+#          "AC087473.1","ISL2","HAPLN3","LINC01579","GPR139","CRNDE","IRX5","AC126773.4","GJC1","TBX21","AC015909.3","CACNG5","GALR1","ZNF560","NLRP11","COL9A3","SIM2","SOX10","NR0B1","TMSB15A","IL13RA2")
+# 
+# 
+# metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+#   dplyr::mutate(catnon_embryionic_development = unlist(pbapply::pblapply(genesUniq, split_match, gid=tmp))   ) |> 
+#   (function(.) {
+#     print(sum(.$catnon_embryionic_development))
+#     assertthat::assert_that(sum(.$catnon_embryionic_development) == (4310))
+#     return(.)
+#   })()
+# 
+# rm(tmp)
 
 
 # Wies signature ----
@@ -383,5 +446,19 @@ rm(tmp)
 
 
 # 27k ----
+
+exp <- readRDS("cache/load_probe_annotation__sequence_contexts.Rds") |> 
+  dplyr::select(probe_id, gc_sequence_context_2) |> 
+  dplyr::mutate(gc_sequence_context_2 = gsub("[][]","",gc_sequence_context_2)) |> 
+  dplyr::filter(!is.na(gc_sequence_context_2)) |> 
+  dplyr::rename(sequence_context_stranded = gc_sequence_context_2) |> 
+  dplyr::mutate(sequence_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(sequence_context_stranded)))) |> 
+  dplyr::mutate(sequence_context_unstranded = dplyr::case_when(
+    sequence_context_stranded < sequence_rc ~ paste0(sequence_context_stranded,"/",sequence_rc),
+    sequence_context_stranded > sequence_rc ~ paste0(sequence_rc,"/",sequence_context_stranded),
+    sequence_context_stranded == sequence_rc ~ paste0(sequence_context_stranded,"*",sequence_rc)
+  )) |> 
+  dplyr::mutate(sequence_rc = NULL) |> 
+  dplyr::tibble()
 
 

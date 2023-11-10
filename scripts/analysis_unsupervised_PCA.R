@@ -28,7 +28,7 @@ if(!exists('gsam.metadata.array_samples')) {
 
 
 metadata <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(215) # should be going toward 211
+  filter_GLASS_OD_idats(210) # should be going toward 211
 
 
 data <- data.mvalues.hq_samples |> 

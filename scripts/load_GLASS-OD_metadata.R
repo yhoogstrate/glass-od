@@ -798,11 +798,11 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds") |>
   assertr::verify(!is.na(array_PC2)) |> 
   assertr::verify(!is.na(array_PC3)) |> 
   assertr::verify(!is.na(array_PC163)) |> 
-  assertr::verify(!is.na(array_PC211)) |> 
+  assertr::verify(!is.na(array_PC210)) |> 
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 215)
+    assertthat::assert_that(nrow(.) == 210)
     return(.)
   })()
 
@@ -895,6 +895,51 @@ rm(tmp)
 #plot(glass_od.metadata.array_samples$array_epiTOC2_pcgtAge , glass_od.metadata.array_samples$dnaMethyAge__epiTOC2)
 #plot(glass_od.metadata.array_samples$array_epiTOC2_tnsc , glass_od.metadata.array_samples$dnaMethyAge__epiTOC2) ~= 1.0
 #plot(glass_od.metadata.array_samples$array_epiTOC2_tnsc2 , glass_od.metadata.array_samples$dnaMethyAge__epiTOC2)
+
+
+## RepliTali ----
+#' scripts/analysis_EPITOC2.R
+
+
+tmp <- readRDS("cache/analysis_RepliTali.Rds") |> 
+  tibble::rownames_to_column('array_sentrix_id') |> 
+  dplyr::rename(array_RepliTali = RepliTali) |> 
+  assertr::verify(is.numeric(array_RepliTali))
+
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+rm(tmp)
+
+
+## GLASS-NL median methylation 1300 probes signature ----
+
+
+tmp <- readRDS(file="cache/analysis_progression_signatures__GLASS-NL_prim_rec_signature.Rds")
+
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+rm(tmp)
+
+
+
+## GLASS-OP prog. signatures ----
+# 
+# tmp <- readRDS(file="cache/analysis_progression_signatures__GLASS-OD__g2_g3.Rds")
+# 
+# glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
+#   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+# rm(tmp)
+# 
+# 
+# tmp <- readRDS(file="cache/analysis_progression_signatures__GLASS-OD__primary_recurrence.Rds")
+# 
+# 
+# glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
+#   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+# rm(tmp)
+# 
 
 
 # cleanup db connection ----

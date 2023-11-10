@@ -7,6 +7,7 @@
 library(ggplot2)
 library(patchwork)
 
+
 source('scripts/load_palette.R')
 source('scripts/load_themes.R')
 
@@ -15,9 +16,356 @@ if(!exists('data.mvalues.probes')) {
 }
 
 
+## plt.motifs ----
 
 
-# plot ----
+
+
+plt.motifs <- data.frame(# R way of thinking
+  b1 = rep(c(rep("A",1),     rep("C",1),     rep("T",1),      rep("G",1)), 256/4),
+  b2 = rep(c(rep("A",4),     rep("C",4),     rep("T",4),      rep("G",4)), 256/(4*4)),
+  
+  b3 = rep("C", 4*4),
+  b4 = rep("G", 4*4),
+  
+  b5 = rep(c(rep("A",4*4),   rep("C",4*4),   rep("T", 4*4),   rep("G",4*4)), 256/(4*4*4)),
+  b6 = rep(c(rep("A",4*4*4), rep("C",4*4*4), rep("T", 4*4*4), rep("G",4*4*4)), 256/(4*4*4*4))
+) |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == (256))
+    return(.)
+  })() |> 
+  dplyr::tibble() |> 
+  dplyr::mutate(sequence_5p = paste0(b1, b2, b3, b4, b5, b6)) |> 
+  dplyr::mutate(sequence_3p = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(sequence_5p)))) |> 
+  assertr::verify(!duplicated(sequence_5p)) |> 
+  assertr::verify(!duplicated(sequence_3p)) |> 
+  dplyr::select(sequence_5p, sequence_3p) |> 
+  dplyr::mutate(palindromic = sequence_5p == sequence_3p) |> 
+  dplyr::mutate(
+    oligo_sequence = tolower(dplyr::case_when(
+      sequence_5p < sequence_3p ~ paste0(sequence_5p,"/",sequence_3p),
+      sequence_5p > sequence_3p ~ paste0(sequence_3p,"/",sequence_5p),
+      palindromic ~ paste0("*",sequence_5p,"/",sequence_3p)
+    ))) |> 
+  dplyr::filter(!duplicated(oligo_sequence)) |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == (136))
+    return(.)
+  })()
+
+
+### adds: DNMT1 - Adam NatCom 2020 ----
+#' https://www.nature.com/articles/s41467-020-17531-8
+
+
+tmp <- readxl::read_xlsx('data/DNMT1_Adam_et_al_2020_N2_data.xlsx') |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == (256))
+    return(.)
+  })() |> 
+  dplyr::rename(sequence_5p = D1) |> 
+  dplyr::mutate(sequence_5p = gsub(" ","", sequence_5p)) |> 
+  dplyr::rename(DNMT1_Adam_NatCom_2020_stranded = av) |>
+  assertr::verify(!duplicated(sequence_5p)) |> 
+  assertr::verify(is.numeric(DNMT1_Adam_NatCom_2020_stranded)) |> 
+  dplyr::mutate(sequence_3p = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(sequence_5p)))) |> 
+  assertr::verify(!duplicated(sequence_5p)) |> 
+  assertr::verify(!duplicated(sequence_3p)) |> 
+  dplyr::select(sequence_5p, sequence_3p, DNMT1_Adam_NatCom_2020_stranded) |> 
+  dplyr::mutate(palindromic = sequence_5p == sequence_3p) |> 
+  dplyr::mutate(
+    oligo_sequence = tolower(dplyr::case_when(
+      sequence_5p < sequence_3p ~ paste0(sequence_5p,"/",sequence_3p),
+      sequence_5p > sequence_3p ~ paste0(sequence_3p,"/",sequence_5p),
+      palindromic ~ paste0("*",sequence_5p,"/",sequence_3p)
+    ))) |> 
+  dplyr::group_by(oligo_sequence) |> 
+  dplyr::mutate(DNMT1_Adam_NatCom_2020 = mean(DNMT1_Adam_NatCom_2020_stranded)) |> 
+  dplyr::ungroup() |> 
+  dplyr::select(oligo_sequence, DNMT1_Adam_NatCom_2020) |> 
+  dplyr::distinct() |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == (136))
+    return(.)
+  })() |> 
+  assertr::verify(oligo_sequence %in% plt.motifs$oligo_sequence)
+
+
+
+plt.motifs <- plt.motifs |> 
+  dplyr::left_join(tmp, by=c('oligo_sequence'='oligo_sequence'), suffix=c('','')) |> 
+  assertr::verify(!is.na(DNMT1_Adam_NatCom_2020))
+
+
+rm(tmp)
+
+
+### adds: DNMT1 - Adam NAR 2023 ----
+#' https://academic.oup.com/nar/article-abstract/51/13/6622/7184160
+#' "integrated with more data, but very similar"
+
+
+
+tmp <- readxl::read_xlsx('data/DNMT1_Adam_NAR_2023_HM_combi_N2.xlsx') |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == (256))
+    return(.)
+  })() |> 
+  dplyr::rename(sequence_5p = Site) |> 
+  dplyr::mutate(sequence_5p = gsub(" ","", sequence_5p)) |> 
+  dplyr::rename(DNMT1_Adam_NAR_2023_stranded = HM) |>
+  assertr::verify(!duplicated(sequence_5p)) |> 
+  assertr::verify(is.numeric(DNMT1_Adam_NAR_2023_stranded)) |> 
+  dplyr::mutate(sequence_3p = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(sequence_5p)))) |> 
+  assertr::verify(!duplicated(sequence_5p)) |> 
+  assertr::verify(!duplicated(sequence_3p)) |> 
+  dplyr::select(sequence_5p, sequence_3p, DNMT1_Adam_NAR_2023_stranded) |> 
+  dplyr::mutate(palindromic = sequence_5p == sequence_3p) |> 
+  dplyr::mutate(
+    oligo_sequence = tolower(dplyr::case_when(
+      sequence_5p < sequence_3p ~ paste0(sequence_5p,"/",sequence_3p),
+      sequence_5p > sequence_3p ~ paste0(sequence_3p,"/",sequence_5p),
+      palindromic ~ paste0("*",sequence_5p,"/",sequence_3p)
+    ))) |> 
+  dplyr::group_by(oligo_sequence) |> 
+  dplyr::mutate(DNMT1_Adam_NAR_2023 = mean(DNMT1_Adam_NAR_2023_stranded)) |> 
+  dplyr::ungroup() |> 
+  dplyr::select(oligo_sequence, DNMT1_Adam_NAR_2023) |> 
+  dplyr::distinct() |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == (136))
+    return(.)
+  })() |> 
+  assertr::verify(oligo_sequence %in% plt.motifs$oligo_sequence)
+
+
+plt.motifs <- plt.motifs |> 
+  dplyr::left_join(tmp, by=c('oligo_sequence'='oligo_sequence'), suffix=c('','')) |> 
+  assertr::verify(!is.na(DNMT1_Adam_NAR_2023))
+
+
+
+
+### adds: DNMT3 - Gao NatCom 2020 ----
+#' https://www.nature.com/articles/s41467-020-17109-4
+
+
+
+tmp <- readxl::read_xlsx('data/41467_2020_17109_MOESM4_ESM.xlsx', skip=3) |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == (4096))
+    return(.)
+  })() |> 
+  dplyr::rename(sequence_full = 1) |> 
+  dplyr::rename(sequence_full_2 = 4) |> 
+  dplyr::rename(sequence_full_3 = 7) |> 
+  assertr::verify(sequence_full == sequence_full_2) |> 
+  assertr::verify(sequence_full == sequence_full_3) |> 
+  dplyr::rename(DNMT3A_Gao_NatCom_2020_stranded = 2) |> 
+  dplyr::rename(DNMT3B_Gao_NatCom_2020_stranded = 5) |> 
+  dplyr::select(sequence_full, DNMT3A_Gao_NatCom_2020_stranded, DNMT3B_Gao_NatCom_2020_stranded) |> 
+  dplyr::mutate(sequence_5p = gsub("^.(..) CG (..).$","\\1CG\\2", sequence_full)) |> 
+  dplyr::mutate(sequence_3p = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(sequence_5p)))) |> 
+  dplyr::mutate(palindromic = sequence_5p == sequence_3p) |> 
+  dplyr::mutate(
+    oligo_sequence = tolower(dplyr::case_when(
+      sequence_5p < sequence_3p ~ paste0(sequence_5p,"/",sequence_3p),
+      sequence_5p > sequence_3p ~ paste0(sequence_3p,"/",sequence_5p),
+      palindromic ~ paste0("*",sequence_5p,"/",sequence_3p)
+    ))) |> 
+  dplyr::group_by(oligo_sequence) |> 
+  dplyr::mutate(DNMT3A_Gao_NatCom_2020 = mean(DNMT3A_Gao_NatCom_2020_stranded)) |> 
+  dplyr::mutate(DNMT3B_Gao_NatCom_2020 = mean(DNMT3B_Gao_NatCom_2020_stranded)) |> 
+  dplyr::ungroup() |> 
+  dplyr::select(oligo_sequence, DNMT3A_Gao_NatCom_2020, DNMT3B_Gao_NatCom_2020) |> 
+  dplyr::distinct() |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == (136))
+    return(.)
+  })() |> 
+  assertr::verify(oligo_sequence %in% plt.motifs$oligo_sequence)
+
+
+
+plt.motifs <- plt.motifs |> 
+  dplyr::left_join(tmp, by=c('oligo_sequence'='oligo_sequence'), suffix=c('','')) |> 
+  assertr::verify(!is.na(DNMT3A_Gao_NatCom_2020)) |> 
+  assertr::verify(!is.na(DNMT3B_Gao_NatCom_2020))
+
+
+rm(tmp)
+
+### adds: TET1/2 - Adam NatCom 2022 ----
+#' https://www.nature.com/articles/s42003-022-03033-4
+
+
+
+tmp <- readxl::read_xlsx('data/42003_2022_3033_MOESM4_ESM.xlsx', skip=3) |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == (256))
+    return(.)
+  })() |> 
+  dplyr::rename(sequence_5p = 1) |> 
+  dplyr::mutate(sequence_5p = gsub(" ", "" ,sequence_5p)) |> 
+  assertr::verify(!duplicated(sequence_5p)) |> 
+  dplyr::rename(TET1_5mC_Adam_NatCom_2022_stranded  = 2) |> 
+  dplyr::rename(TET2_5mC_Adam_NatCom_2022_stranded  = 4) |> 
+  dplyr::rename(TET1_5hmC_Adam_NatCom_2022_stranded = 3) |> 
+  dplyr::rename(TET2_5hmC_Adam_NatCom_2022_stranded = 5) |> 
+  assertr::verify(is.numeric(TET1_5mC_Adam_NatCom_2022_stranded)) |> 
+  assertr::verify(is.numeric(TET2_5mC_Adam_NatCom_2022_stranded)) |> 
+  assertr::verify(is.numeric(TET1_5hmC_Adam_NatCom_2022_stranded)) |> 
+  assertr::verify(is.numeric(TET2_5hmC_Adam_NatCom_2022_stranded)) |> 
+  dplyr::mutate(sequence_3p = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(sequence_5p)))) |> 
+  assertr::verify(!duplicated(sequence_5p)) |> 
+  assertr::verify(!duplicated(sequence_3p)) |> 
+  dplyr::select(sequence_5p, sequence_3p, starts_with("TET")) |> 
+  dplyr::mutate(palindromic = sequence_5p == sequence_3p) |> 
+  dplyr::mutate(
+    oligo_sequence = tolower(dplyr::case_when(
+      sequence_5p < sequence_3p ~ paste0(sequence_5p,"/",sequence_3p),
+      sequence_5p > sequence_3p ~ paste0(sequence_3p,"/",sequence_5p),
+      palindromic ~ paste0("*",sequence_5p,"/",sequence_3p)
+    ))) |> 
+  dplyr::group_by(oligo_sequence) |> 
+  dplyr::mutate(TET1_5mC_Adam_NatCom_2022 = mean(TET1_5mC_Adam_NatCom_2022_stranded)) |> 
+  dplyr::mutate(TET2_5mC_Adam_NatCom_2022 = mean(TET2_5mC_Adam_NatCom_2022_stranded)) |> 
+  dplyr::mutate(TET1_5hmC_Adam_NatCom_2022 = mean(TET1_5hmC_Adam_NatCom_2022_stranded)) |> 
+  dplyr::mutate(TET2_5hmC_Adam_NatCom_2022 = mean(TET2_5hmC_Adam_NatCom_2022_stranded)) |> 
+  dplyr::ungroup() |> 
+  dplyr::select(oligo_sequence, TET1_5mC_Adam_NatCom_2022, TET2_5mC_Adam_NatCom_2022, TET1_5hmC_Adam_NatCom_2022, TET2_5hmC_Adam_NatCom_2022) |> 
+  dplyr::distinct() |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == (136))
+    return(.)
+  })() |> 
+  assertr::verify(oligo_sequence %in% plt.motifs$oligo_sequence)
+
+
+
+plt.motifs <- plt.motifs |> 
+  dplyr::left_join(tmp, by=c('oligo_sequence'='oligo_sequence'), suffix=c('','')) |> 
+  assertr::verify(!is.na(TET1_5mC_Adam_NatCom_2022)) |> 
+  assertr::verify(!is.na(TET2_5mC_Adam_NatCom_2022)) |> 
+  assertr::verify(!is.na(TET1_5hmC_Adam_NatCom_2022)) |> 
+  assertr::verify(!is.na(TET2_5hmC_Adam_NatCom_2022))
+
+
+rm(tmp)
+
+
+
+
+### adds: TET3 - Ravichandran SciAdv 2022 ----
+#' https://www.science.org/doi/10.1126/sciadv.abm2427
+
+
+
+tmp <- read.table("data/10.1126_sciadv.abm2427_Slope_summary.txt") |> 
+  dplyr::rename(sequence_5p = Motif) |> 
+  tibble::rownames_to_column('sequence') |> 
+  assertr::verify(sequence_5p == sequence) |> 
+  dplyr::mutate(sequence = NULL) |> 
+  dplyr::rename(TET3_Ravichandran_SciAdv_2022_stranded = ALL_84) |> 
+  dplyr::tibble() |> 
+  assertr::verify(!duplicated(sequence_5p)) |> 
+  assertr::verify(is.numeric(TET3_Ravichandran_SciAdv_2022_stranded)) |> 
+  dplyr::mutate(sequence_3p = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(sequence_5p)))) |> 
+  assertr::verify(!duplicated(sequence_5p)) |> 
+  assertr::verify(!duplicated(sequence_3p)) |> 
+  dplyr::select(sequence_5p, sequence_3p, starts_with("TET")) |> 
+  dplyr::mutate(palindromic = sequence_5p == sequence_3p) |> 
+  dplyr::mutate(
+    oligo_sequence = tolower(dplyr::case_when(
+      sequence_5p < sequence_3p ~ paste0(sequence_5p,"/",sequence_3p),
+      sequence_5p > sequence_3p ~ paste0(sequence_3p,"/",sequence_5p),
+      palindromic ~ paste0("*",sequence_5p,"/",sequence_3p)
+    ))) |> 
+  dplyr::group_by(oligo_sequence) |> 
+  dplyr::mutate(TET3_Ravichandran_SciAdv_2022 = mean(TET3_Ravichandran_SciAdv_2022_stranded)) |> 
+  dplyr::ungroup() |> 
+  dplyr::select(oligo_sequence, TET3_Ravichandran_SciAdv_2022) |> 
+  dplyr::distinct() |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == (136))
+    return(.)
+  })() |> 
+  assertr::verify(oligo_sequence %in% plt.motifs$oligo_sequence)
+
+
+
+plt.motifs <- plt.motifs |> 
+  dplyr::left_join(tmp, by=c('oligo_sequence'='oligo_sequence'), suffix=c('','')) |> 
+  assertr::verify(!is.na(TET3_Ravichandran_SciAdv_2022))
+
+
+rm(tmp)
+
+
+
+### adds: DMP outcomes GLASS-OD ----
+
+
+
+tmp <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |>
+  dplyr::tibble() |> 
+  dplyr::filter(!is.na(gc_sequence_context_2)) |> 
+  dplyr::select(gc_sequence_context_2, DMP__g2_g3__pp_nc__t, DMP__primary_recurrence__pp_nc__t) |> 
+  dplyr::mutate(sequence_5p = gsub("[CG]","CG",gc_sequence_context_2,fixed=T), gc_sequence_context_2=NULL) |> 
+  dplyr::mutate(sequence_3p = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(sequence_5p)))) |> 
+  dplyr::mutate(palindromic = sequence_5p == sequence_3p) |> 
+  dplyr::mutate(
+    oligo_sequence = tolower(dplyr::case_when(
+      sequence_5p < sequence_3p ~ paste0(sequence_5p,"/",sequence_3p),
+      sequence_5p > sequence_3p ~ paste0(sequence_3p,"/",sequence_5p),
+      palindromic ~ paste0("*",sequence_5p,"/",sequence_3p)
+    ))) |> 
+  dplyr::mutate(
+    oligo_sequence = tolower(dplyr::case_when(
+      sequence_5p < sequence_3p ~ paste0(sequence_5p,"/",sequence_3p),
+      sequence_5p > sequence_3p ~ paste0(sequence_3p,"/",sequence_5p),
+      palindromic ~ paste0("*",sequence_5p,"/",sequence_3p)
+    ))) |> 
+  dplyr::group_by(oligo_sequence) |>
+  dplyr::mutate(GLASS_OD__DMP__g2_g3__mean = mean(DMP__g2_g3__pp_nc__t)) |> 
+  dplyr::mutate(GLASS_OD__DMP__g2_g3__median = median(DMP__g2_g3__pp_nc__t)) |>
+  dplyr::mutate(GLASS_OD__DMP__primary_recurrence__mean = mean(DMP__primary_recurrence__pp_nc__t)) |> 
+  dplyr::mutate(GLASS_OD__DMP__primary_recurrence__median = median(DMP__primary_recurrence__pp_nc__t)) |> 
+  dplyr::ungroup() |> 
+  dplyr::select(oligo_sequence, GLASS_OD__DMP__g2_g3__mean, GLASS_OD__DMP__g2_g3__median, GLASS_OD__DMP__primary_recurrence__mean, GLASS_OD__DMP__primary_recurrence__median) |> 
+  dplyr::distinct() |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == (136))
+    return(.)
+  })() |> 
+  assertr::verify(oligo_sequence %in% plt.motifs$oligo_sequence)
+
+
+plt.motifs <- plt.motifs |> 
+  dplyr::left_join(tmp, by=c('oligo_sequence'='oligo_sequence'), suffix=c('','')) |> 
+  assertr::verify(!is.na(GLASS_OD__DMP__g2_g3__mean)) |> 
+  assertr::verify(!is.na(GLASS_OD__DMP__g2_g3__median)) |> 
+  assertr::verify(!is.na(GLASS_OD__DMP__primary_recurrence__mean)) |> 
+  assertr::verify(!is.na(GLASS_OD__DMP__primary_recurrence__median))
+
+
+rm(tmp)
+
+
+
+# plots ----
 
 ## A: overall density ----
 
@@ -46,7 +394,7 @@ p_A <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc_
   geom_hline(yintercept=0, col="red", alpha=0.1) +
   
   
-  labs(x = "Per probe t-score Grade2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence") +
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence") +
   
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
@@ -82,7 +430,7 @@ p_B <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc_
   geom_vline(xintercept=0, col="red", alpha=0.1) +
   geom_hline(yintercept=0, col="red", alpha=0.1) +
   
-  labs(x = "Per probe t-score Grade2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence", col="Association A_IDH_LG ~ A_IDH_HG") +
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence", col="Association A_IDH_LG ~ A_IDH_HG") +
   
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
@@ -118,7 +466,7 @@ p_C <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc_
   geom_vline(xintercept=0, col="red", alpha=0.1) +
   geom_hline(yintercept=0, col="red", alpha=0.1) +
   
-  labs(x = "Per probe t-score Grade2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence", col="Significant GLASS-NL\nPrimary ~ Recurrent") +
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence", col="Significant GLASS-NL\nPrimary ~ Recurrent") +
   
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   scale_color_manual(values=c('TRUE'= col3(3)[1], 'FALSE'='gray80'))
@@ -209,6 +557,111 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
+## X: RepliTali predictors ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=-10*RepliTali_coef)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data = subset(plt, RepliTali_coef == F | is.na(RepliTali_coef)),pch=16, cex=0.001, alpha=0.15) + 
+  geom_point(data = subset(plt, RepliTali_coef == T),pch=16, cex=1, alpha=0.35) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |> 
+  dplyr::filter(!is.na(RepliTali_coef) & RepliTali_coef != F)
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=RepliTali_coef)) +
+  #geom_vline(xintercept=0, col="red") +
+  #geom_hline(yintercept=0, col="red") +
+  
+  #geom_point(data = subset(plt, RepliTali_coef == F | is.na(RepliTali_coef)),pch=16, cex=0.001, alpha=0.15) + 
+  #geom_point(data = subset(plt, RepliTali_coef == T),pch=16, cex=1, alpha=0.35) + 
+  geom_point(pch=16, cex=1, alpha=0.35) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines'))  # resize colbox
+
+
+ggplot(plt, aes(x=DMP__primary_recurrence__pp_nc__t, y=RepliTali_coef)) +
+  #geom_vline(xintercept=0, col="red") +
+  #geom_hline(yintercept=0, col="red") +
+  
+  #geom_point(data = subset(plt, RepliTali_coef == F | is.na(RepliTali_coef)),pch=16, cex=0.001, alpha=0.15) + 
+  #geom_point(data = subset(plt, RepliTali_coef == T),pch=16, cex=1, alpha=0.35) + 
+  geom_point(pch=16, cex=1, alpha=0.35) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines'))  # resize colbox
+
+
+
+## death clock ----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |> 
+  dplyr::mutate(death_clock_probe = probe_id %in% c("cg03725309","cg25763716","cg13854219","cg25189904","cg15459165","cg19266329","cg24397007","cg23079012","cg27241845","cg06905155","cg16503724","cg19859270","cg02657160","cg14975410","cg05575921","cg14817490","cg21161138","cg12513616","cg20732076","cg06126421","cg15342087","cg01612140","cg25983901","cg12510708","cg00285394","cg01140244","cg23190089","cg07123182","cg26963277","cg18550212","cg10321156","cg25193885","cg07986378","cg23665802","cg04987734","cg19459791","cg00310412","cg23842572","cg19572487","cg01572694","cg08546016","cg18181703","cg03636183","cg24704287","cg11341610","cg14085840","cg26470501","cg05492306","cg25607249","cg01406381","cg07626482","cg03707168","cg08362785"))
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=-10*death_clock_probe, label=probe_id)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data = subset(plt, death_clock_probe == F | is.na(death_clock_probe)),pch=16, cex=0.001, alpha=0.15) + 
+  geom_point(data = subset(plt, death_clock_probe == T),pch=16, cex=1, alpha=0.35) + 
+  
+  #ggrepel::geom_text_repel(data = subset(plt, probe_id %in% 
+  #                                         c("cg06905155","cg18181703","cg03636183","cg24704287","cg26470501")),nudge_y = 1) +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+
+
+
 
 ## D: FFPE | Tissue ----
 
@@ -238,6 +691,51 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 
 
 
+## E: FFPE decay time INTENSITY ----
+
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693060)) 
+    return(.)
+  })()
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                col=DPI__FFPE_decay_time__pp_nc__t)) +
+  #facet_wrap(~probe_type, scales="free",ncol=2) +
+  facet_wrap(~map, scales="free",ncol=2) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
+
+
+plt |> 
+  dplyr::filter(type == "I") |> 
+  dplyr::select(Forward_Sequence, AlleleB_ProbeSeq_Illumina_manifest,  AlleleA_ProbeSeq_Illumina_manifest) |> 
+  View()
+
+
+plt |> 
+  dplyr::filter(type == "II") |> 
+  dplyr::select(probe_id, Forward_Sequence, AlleleA_ProbeSeq_Illumina_manifest, mapFlag_A, mapQ_A, DMP__FFPE_decay_time__pp_nc__t) |> 
+  dplyr::arrange(DMP__FFPE_decay_time__pp_nc__t) |> 
+  View()
+
+
 
 
 ## E: FFPE decay time ----
@@ -257,7 +755,8 @@ plt <- data.mvalues.probes |>
   })()
 
 
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=DMP__FFPE_decay_time__pp_nc__t)) +
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                col=DMP__FFPE_decay_time__pp_nc__t)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
@@ -265,6 +764,204 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+
+a = plt |> 
+  dplyr::select(CHR_hg38, gc_sequence_context_2, Forward_Sequence, DMP__FFPE_decay_time__pp_nc__t) |> 
+  dplyr::arrange(DMP__FFPE_decay_time__pp_nc__t) 
+
+
+b = plt |> 
+  dplyr::select(CHR_hg38, gc_sequence_context_2, Forward_Sequence,DMP__FFPE_decay_time__pp_nc__t) |> 
+  dplyr::arrange(-DMP__FFPE_decay_time__pp_nc__t)
+
+
+
+
+### sandbox ----
+#' uitzoeken wat 
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |> 
+  dplyr::filter(abs(DMP__FFPE_decay_time__pp_nc__t) > 4.5)
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=c_content)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.1, alpha=0.75) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=g_content)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.1, alpha=0.75) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=gc_content)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.1, alpha=0.75) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probeCpGcnt)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.1, alpha=0.75) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
+                                 breaks = 0:11,
+                                 labels = c(0,"",2,"","","",6,"","","","",11)
+  )  # , oob = scales::squish
+
+
+
+
+
+ggplot(plt, aes(x=DMP__FFPE_decay_time__pp_nc__t, y=gc_content, col=probeCpGcnt)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.1, alpha=0.75) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
+                                 breaks = 0:11,
+                                 labels = c(0,"",2,"","","",6,"","","","",11)
+  )  # , oob = scales::squish
+
+
+
+
+
+ggplot(plt, aes(x=DMP__FFPE_decay_time__pp_nc__t, y=gc_content, col=probeCpGcnt)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.1, alpha=0.75) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
+                                 breaks = 0:11,
+                                 labels = c(0,"",2,"","","",6,"","","","",11)
+  )  # , oob = scales::squish
+
+
+
+ggplot(plt, aes(x=DMP__FFPE_decay_time__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probeCpGcnt)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.1, alpha=0.75) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
+                                 breaks = 0:11,
+                                 labels = c(0,"",2,"","","",6,"","","","",11)
+  )  # , oob = scales::squish
+
+
+
+
+
+## probe type
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=DMP__FFPE_decay_time__pp_nc__t)) +
+  facet_wrap(~type, scales="free",ncol=2) +
+
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.5, alpha=0.75) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-7, 7), oob = scales::squish)
+
+
+
+
+ggplot(plt, aes(x=type, y=probeCpGcnt)) +
+  ggbeeswarm::geom_quasirandom(size=0.01)
+
+
+ggplot(plt, aes(x=as.factor(probeCpGcnt), y=DMP__FFPE_decay_time__pp_nc__t)) +
+  facet_wrap(~type, scales="free",ncol=2) +
+  geom_violin(draw_quantiles = c(0.5), col="red")
+
+#' wanneer een andere CpG wordt aangepast, wordt deze de-methylated?
+
+
+## uberhaupt aantal C's
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |> 
+  dplyr::filter(abs(DMP__epiTOC2_tnsc__up_nc__t) > 4.5 & !is.na(gc_content))
+
+
+ggplot(plt, aes(x=probeCpGcnt, y=DMP__primary_recurrence__pp_nc__t, col=gc_content)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.1, alpha=0.75) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
+
+
+
+
+## uberhaupt aantal G's
+## overall GC content
+## overall intensity
+## median b-value
 
 
 
@@ -300,8 +997,20 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 
 
 
-
 ## G: epiTOC2 / [hypoSC!!] ----
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })()
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=DMP__epiTOC2_hypoSC__pp_nc__t)) +
   geom_vline(xintercept=0, col="red") +
@@ -315,7 +1024,186 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 
 
 
+## C content ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |> 
+  dplyr::filter(!is.na(c_content))
+
+
+plt <- plt |> 
+  dplyr::mutate(
+    c_content_f = cut(c_content,
+                      breaks=quantile(plt$c_content,
+                      probs = seq(0,1, by=0.10),
+                      na.rm=TRUE, 
+                      names=TRUE,
+                      include.lowest=TRUE, 
+                      right = TRUE)))
+
+
+
+p1 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=c_content)) +
+  #facet_grid(cols = vars(Infinium_Design_Type))  +
+  
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[1]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[2]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[3]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[4]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[5]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[6]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[7]), pch=16, cex=0.05, alpha=0.50) + 
+  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[8]), pch=16, cex=0.1, alpha=0.55) + 
+  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[9]), pch=16, cex=0.1, alpha=0.60) + 
+  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[10]),  pch=16, cex=0.1, alpha=0.65) + 
+  
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", 
+                                 limits = c(0, 0.5), oob = scales::squish ) + 
+  
+  labs(col = "C content") +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white")) +  # png export
+  theme(legend.key.size = unit(0.6, 'lines'))
+
+
+
+## G content ----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |> 
+  dplyr::filter(!is.na(c_content))
+
+
+plt <- plt |> 
+  dplyr::mutate(
+    g_content_f = cut(g_content,
+                      breaks=quantile(plt$g_content,
+                                      probs = seq(0,1, by=0.10),
+                                      na.rm=TRUE, 
+                                      names=TRUE,
+                                      include.lowest=TRUE, 
+                                      right = TRUE)))
+
+
+
+p2 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=g_content)) +
+  #facet_grid(cols = vars(Infinium_Design_Type))  +
+  
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[1]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[2]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[3]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[4]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[5]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[6]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[7]), pch=16, cex=0.05, alpha=0.50) + 
+  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[8]), pch=16, cex=0.1, alpha=0.55) + 
+  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[9]), pch=16, cex=0.1, alpha=0.60) + 
+  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[10]),  pch=16, cex=0.1, alpha=0.65) + 
+  
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50",
+                                 limits = c(0, 0.5), oob = scales::squish
+                                 ) + 
+  
+  labs(col = "G content") +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white")) +  # png export
+  theme(legend.key.size = unit(0.6, 'lines'))
+
+
+
+## GC content ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (760405)) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693017)) 
+    return(.)
+  })() |> 
+  dplyr::filter(!is.na(c_content) & !is.na(g_content))
+
+
+plt <- plt |> 
+  dplyr::mutate(
+    gc_content_f = cut(gc_content,
+                      breaks=quantile(plt$gc_content,
+                                      probs = seq(0,1, by=0.10),
+                                      na.rm=TRUE, 
+                                      names=TRUE,
+                                      include.lowest=TRUE, 
+                                      right = TRUE)))
+
+
+
+p3 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=gc_content)) +
+  #facet_grid(cols = vars(Infinium_Design_Type))  +
+  
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[1]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[2]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[3]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[4]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[5]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[6]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[7]), pch=16, cex=0.05, alpha=0.50) + 
+  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[8]), pch=16, cex=0.1, alpha=0.55) + 
+  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[9]), pch=16, cex=0.1, alpha=0.60) + 
+  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[10]),  pch=16, cex=0.1, alpha=0.65) + 
+  
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", 
+                                 limits = c(0, 1), oob = scales::squish
+                                 ) + 
+  
+  labs(col = "GC content") +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white")) +  # png export
+  theme(legend.key.size = unit(0.6, 'lines'))
+
+
+
+
 ## H: probeCpGcnt ----
+
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probeCpGcnt)) +
   #facet_grid(cols = vars(Infinium_Design_Type))  +
@@ -347,7 +1235,10 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
 
+
 ggsave("output/figures/vis_differential__g23_prim-rec__probe_CpG_count.png", width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
 
 
 ## I: closest_CG  ----
@@ -370,21 +1261,13 @@ plt <- data.mvalues.probes |>
     T ~ closest_CG
   ))
 
-### a: closest_CG distance x effect  ----
-
-
-ggplot(plt, aes(y=DMP__g2_g3__pp_nc__t, x=as.factor(closest_CG))) +
-  #geom_point(pch=16, cex=0.001, alpha=0.15, col="darkgray") +
-  ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_cellpress_lwd, col = "darkgray", adjust = 1.95) +
-  theme_cellpress +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
-
-
-### b: in quadrant ----
 
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=abs(closest_CG_25))) +
+  
+  facet_wrap(~abs(closest_CG_25) > 8, scales="free",ncol=5) +
+  
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
@@ -402,7 +1285,20 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
 
+
+
 ggsave("output/figures/vis_differential__g23_prim-rec__closest_CG.png", width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+### b: in quadrant ----
+
+
+ggplot(plt, aes(y=DMP__g2_g3__pp_nc__t, x=as.factor(closest_CG))) +
+  #geom_point(pch=16, cex=0.001, alpha=0.15, col="darkgray") +
+  ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_cellpress_lwd, col = "darkgray", adjust = 1.95) +
+  theme_cellpress +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
 
 
 
@@ -433,7 +1329,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   geom_point(data=head(plt, n=0) , pch=16) + # hack plotting empty data frame, but with right cex and alpha for guide
   
 
-  labs(col = "is solo-WCGW", x = "Per probe t-score Grade2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence") +
+  labs(col = "is solo-WCGW", x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence") +
   scale_color_manual(values=c('TRUE'= col3(3)[1], 'FALSE'='gray80')) +
 
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
@@ -497,7 +1393,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 
   geom_point(data=head(plt, n=0),pch=16) + 
   
-  labs(col = "sequence context", x = "Per probe t-score Grade2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence") +
+  labs(col = "sequence context", x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence") +
   scale_color_manual(values=c('top affinity'= col3(3)[1],
                               'other'='gray80',
                               'CG prefix/suffix'= col3(3)[3])) +
@@ -641,6 +1537,13 @@ ggplot(plt, aes(x = chr, y=DMP__g2_g3__pp_nc__t, fill=col)) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 
+## L: PC1 ----
+
+## M: PC2 ----
+
+## N: PC3 ----
+
+
 
 ## X: Infinium_Design_Type ----
 #' not need to be shown, effect is by CpG's per probe,
@@ -671,6 +1574,83 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) 
 
+
+## Y: per oligo/motifs correlation ----
+
+
+tmp.cor <- plt.motifs |> 
+  dplyr::mutate(`TET3_Ravichandran_SciAdv_2022 * -1` = -1 * TET3_Ravichandran_SciAdv_2022) |> 
+  dplyr::select(GLASS_OD__DMP__g2_g3__mean,
+                TET1_5mC_Adam_NatCom_2022, TET2_5mC_Adam_NatCom_2022, `TET3_Ravichandran_SciAdv_2022 * -1`,
+                DNMT1_Adam_NAR_2023, DNMT3A_Gao_NatCom_2020, DNMT3B_Gao_NatCom_2020) |> 
+  cor(method = "spearman") |> 
+  as.data.frame()  |> 
+  tibble::rownames_to_column('enzyme') |> 
+  dplyr::select(enzyme, GLASS_OD__DMP__g2_g3__mean) |> 
+  dplyr::rename(cor_w_GLASS_OD__DMP__g2_g3__mean = GLASS_OD__DMP__g2_g3__mean) |> 
+  dplyr::filter(enzyme != "GLASS_OD__DMP__g2_g3__mean")
+  
+
+
+
+plt <- plt.motifs |> 
+  dplyr::mutate(`TET3_Ravichandran_SciAdv_2022 * -1` = -1 * TET3_Ravichandran_SciAdv_2022) |> 
+  dplyr::select(oligo_sequence, GLASS_OD__DMP__g2_g3__mean,
+                TET1_5mC_Adam_NatCom_2022, TET2_5mC_Adam_NatCom_2022, `TET3_Ravichandran_SciAdv_2022 * -1`,
+                DNMT1_Adam_NAR_2023, DNMT3A_Gao_NatCom_2020, DNMT3B_Gao_NatCom_2020) |> 
+  tidyr::pivot_longer(cols = -c(oligo_sequence, GLASS_OD__DMP__g2_g3__mean), names_to = "enzyme", values_to = "relative de-methylation affinity") |> 
+  dplyr::left_join(tmp.cor, by=c('enzyme'='enzyme'), suffix=c('','') ) |> 
+  dplyr::mutate(enzyme = gsub("_"," ", enzyme))
+
+
+
+
+ggplot(plt, aes(x=GLASS_OD__DMP__g2_g3__mean, y=`relative de-methylation affinity`, label=oligo_sequence, col=cor_w_GLASS_OD__DMP__g2_g3__mean)) +
+  facet_wrap(~enzyme, scales="free",ncol=3) +
+  geom_point(size=theme_cellpress_size / 3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)),  cor.coef.name ="rho", size=theme_cellpress_size, label.x.npc="right", hjust=1, col="black") +
+  labs(x = "Mean t-score Grade 2 ~ Grade for probes with given sequence context",
+       col = "Spearman correlation enzyme affinity with mean t-score") +
+  theme_cellpress +
+  ggplot2::scale_color_gradientn(colours = col4(200), na.value = "grey50", oob = scales::squish, 
+                                 limits=c(-1,1),
+                                 breaks = c(-1,-0.5,0,0.5,1),
+                                 labels = c("-1","",0,"",1)
+                                 )  +
+  theme(legend.key.size = unit(0.6, 'lines'))
+
+
+ggsave("output/figures/vis_differential__motif_tscores_x_enzyme_kinetics.pdf", width = 6.5, height=4.5)
+
+
+
+
+
+## Z: motif corrplot ----
+
+
+pdf("output/figures/vis_differential__motif_tscores_x_enzyme_kinetics__corrplot.pdf", width=4,height=4)
+
+plt <- plt.motifs |> 
+  dplyr::select(-c(sequence_5p, sequence_3p, palindromic,
+                   GLASS_OD__DMP__g2_g3__median, 
+                   GLASS_OD__DMP__primary_recurrence__median, GLASS_OD__DMP__primary_recurrence__mean,
+                   TET1_5hmC_Adam_NatCom_2022, TET2_5hmC_Adam_NatCom_2022
+                   )) |> 
+  dplyr::mutate(`-1 * TET3_Ravichandran_SciAdv_2022` = -1 * TET3_Ravichandran_SciAdv_2022, TET3_Ravichandran_SciAdv_2022=NULL) |> 
+  dplyr::mutate(`-1 * GLASS_OD__DMP__g2_g3__mean` = -1 * GLASS_OD__DMP__g2_g3__mean, GLASS_OD__DMP__g2_g3__mean = NULL) |> 
+  tibble::column_to_rownames('oligo_sequence') |> 
+  cor(method="pearson")
+
+colnames(plt) <- gsub("_"," ",colnames(plt))
+rownames(plt) <- gsub("_"," ",rownames(plt))
+
+corrplot::corrplot(plt, order="hclust", tl.cex=0.65 * (7/8),
+                   cl.cex=0.65 * (7/8),
+                   bg=NA,  tl.col = "black")
+
+
+dev.off()
 
 
 
@@ -717,331 +1697,19 @@ ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc__t)) +
   #facet_wrap(~reorder(facet_name, -facet_rank), scales="free_x", ncol=length(unique(plt$facet_name))) +
   #ggbeeswarm::geom_quasirandom(size=0.01, alpha=0.65) +
   #ggplot2::geom_violin(draw_quantiles = c(), linewidth=theme_cellpress_lwd, col = "white", fill="darkgray", adjust = 1.95) +
-  geom_boxplot(width=0.85, outlier.shape=NA, outlier.color=NA, col="darkgray",
-              ,coef=0, fill=NA,linewidth=theme_cellpress_lwd) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+              ,coef=0.5, fill=NA,linewidth=theme_cellpress_lwd) +
   
   stat_summary(fun.y = median, fun.min = median, fun.max = median,
-               geom = "crossbar", width = 0.5, col="red",  linewidth=theme_cellpress_lwd) +
+               geom = "crossbar", width = 0.5, col="red", width=0.85, linewidth=theme_cellpress_lwd) +
   
-  labs(x = NULL, y="Per probe t-score Grade2 ~ Grade 3") +
+  labs(x = NULL, y="Per probe t-score Grade 2 ~ Grade 3") +
   coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono"))
 
 
 ggsave("output/figures/vis_differential__xxCGxx_violin.pdf", width = 11 * 0.97, height=3.75)
-
-
-
-
-## motif: xx[CG]xx * DNMT3 NatCom ----
-
-
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
-    return(.)
-  })() |> 
-  dplyr::filter(detP_good_probe & !MASK_general) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
-    return(.)
-  })() |>
-  dplyr::filter(!is.na(gc_sequence_context_2))
-
-
-plt.per.context <- plt |> 
-  dplyr::select(gc_sequence_context_2) |> 
-  dplyr::filter(!duplicated(gc_sequence_context_2)) |>
-  dplyr::mutate(gc_sequence_context_2_s = gsub("[CG]","CG",gc_sequence_context_2,fixed=T)) |> 
-  dplyr::mutate(gc_sequence_context_2_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(gc_sequence_context_2_s)))) |> 
-  dplyr::mutate(facet_name = dplyr::case_when(
-    gc_sequence_context_2_s < gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_s ,"/",gc_sequence_context_2_rc),
-    gc_sequence_context_2_s > gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_rc,"/",gc_sequence_context_2_s ),
-    gc_sequence_context_2_s == gc_sequence_context_2_rc ~ paste0("*",gc_sequence_context_2_s,"/",gc_sequence_context_2_s)
-  )) 
-
-
-
-plt <- plt |> 
-  dplyr::left_join(plt.per.context, by=c('gc_sequence_context_2'='gc_sequence_context_2'), suffix=c('','')) |> 
-  dplyr::group_by(facet_name) |> 
-  dplyr::mutate(context_median__DMP__g2_g3__pp_nc__t = median(DMP__g2_g3__pp_nc__t)) |> 
-  dplyr::ungroup() |> 
-  dplyr::mutate(facet_name = tolower(facet_name)) |> 
-  dplyr::select(facet_name, gc_sequence_context_2, context_median__DMP__g2_g3__pp_nc__t) |> 
-  dplyr::distinct() |> 
-  dplyr::mutate(adjacent_CG = grepl("^cg",facet_name) | grepl("cg$",facet_name)) 
-
-
-
-
-
-tmp <- readxl::read_xlsx('data/41467_2020_17109_MOESM4_ESM.xlsx', skip=3) |> 
-  dplyr::rename(sequence_3CG3 = 1) |> 
-  dplyr::rename(sequence_2 = 4) |> 
-  dplyr::rename(sequence_3 = 7) |> 
-  assertr::verify(sequence_3CG3 == sequence_2) |> 
-  assertr::verify(sequence_3CG3 == sequence_3) |> 
-  dplyr::rename(DNMT3A = 2) |> 
-  dplyr::rename(DNMT3B = 5) |> 
-  dplyr::select(sequence_3CG3, DNMT3A, DNMT3B) |> 
-  dplyr::mutate(sequence_2CG2 = gsub("^.(..) CG (..).$","\\1CG\\2", sequence_3CG3)) |> 
-  dplyr::group_by(sequence_2CG2) |> 
-  
-  dplyr::mutate(DNMT3A_2CG2 = mean(DNMT3A)) |> 
-  dplyr::mutate(DNMT3B_2CG2 = mean(DNMT3B)) |> 
-  
-  dplyr::ungroup() |> 
-  dplyr::select(contains("2CG2")) |> 
-  dplyr::distinct() |> 
-  dplyr::rename(sequence = sequence_2CG2)
-
-
-
-
-
-
-
-plt <- plt |> 
-  dplyr::mutate(sequence = gsub("[","",gsub("]","",gc_sequence_context_2),fixed=T),fixed=T) |> 
-  dplyr::left_join(tmp, by=c('sequence'='sequence'), suffix=c('','')) 
-
-
-plt.per.facet <- plt |> 
-  dplyr::mutate(gc_sequence_context_2 = NULL) |> 
-  dplyr::mutate(sequence = NULL) |> 
-  dplyr::group_by(facet_name) |> 
-  dplyr::mutate(DNMT3A_2CG2_per_facet = mean(DNMT3A_2CG2)) |> 
-  dplyr::mutate(DNMT3B_2CG2_per_facet = mean(DNMT3B_2CG2)) |> 
-  dplyr::ungroup() |> 
-  dplyr::mutate(DNMT3A_2CG2 = NULL) |> 
-  dplyr::mutate(DNMT3B_2CG2 = NULL) |> 
-  dplyr::distinct() |> 
-  tidyr::pivot_longer(cols=contains("DNMT"), names_to="DNMT")
-
-
-
-ggplot(plt.per.facet, aes(x=context_median__DMP__g2_g3__pp_nc__t, y=value, label=facet_name, col=adjacent_CG)) +
-  facet_wrap(~DNMT, scales="free",ncol=5) +
-  geom_point() +
-  ggrepel::geom_text_repel(data = subset(plt.per.facet, grepl("aacgtt|aacgtc|aacgtg", facet_name)), col="black", size=theme_cellpress_size, alpha=0.5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_cellpress_size, label.x.npc="right", hjust=1) +
-  #labs(col = "cg[CG]xx or xx[CG]cg", 
-  #     x = "median t-statistic for probes with given sequence context",
-  #     y = "oxidation kinetics value\n10.1038/s42003-022-03033-4\nAdams et al. NatCom 2021") +
-  theme_cellpress
-
-ggsave("output/figures/vis_differential__xxCGxx_x_TET1_2_NatCom.pdf", width = 11*0.975, height=3)
-
-
-
-## motif: xx[CG]xx * TET1-2 NatCom ----
-
-
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
-    return(.)
-  })() |> 
-  dplyr::filter(detP_good_probe & !MASK_general) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
-    return(.)
-  })() |>
-  dplyr::filter(!is.na(gc_sequence_context_2))
-
-
-plt.per.context <- plt |> 
-  dplyr::select(gc_sequence_context_2) |> 
-  dplyr::filter(!duplicated(gc_sequence_context_2)) |>
-  dplyr::mutate(gc_sequence_context_2_s = gsub("[CG]","CG",gc_sequence_context_2,fixed=T)) |> 
-  dplyr::mutate(gc_sequence_context_2_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(gc_sequence_context_2_s)))) |> 
-  dplyr::mutate(facet_name = dplyr::case_when(
-    gc_sequence_context_2_s < gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_s ,"/",gc_sequence_context_2_rc),
-    gc_sequence_context_2_s > gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_rc,"/",gc_sequence_context_2_s ),
-    gc_sequence_context_2_s == gc_sequence_context_2_rc ~ paste0("*",gc_sequence_context_2_s,"/",gc_sequence_context_2_s)
-  )) 
-
-
-
-plt <- plt |> 
-  dplyr::left_join(plt.per.context, by=c('gc_sequence_context_2'='gc_sequence_context_2'), suffix=c('','')) |> 
-  dplyr::group_by(facet_name) |> 
-  dplyr::mutate(context_median__DMP__g2_g3__pp_nc__t = median(DMP__g2_g3__pp_nc__t)) |> 
-  dplyr::ungroup() |> 
-  dplyr::mutate(facet_name = tolower(facet_name)) |> 
-  dplyr::select(facet_name, gc_sequence_context_2, context_median__DMP__g2_g3__pp_nc__t) |> 
-  dplyr::distinct() |> 
-  dplyr::mutate(adjacent_CG = grepl("^cg",facet_name) | grepl("cg$",facet_name)) 
-
-
-
-
-
-tmp <- readxl::read_xlsx('data/42003_2022_3033_MOESM4_ESM.xlsx', skip=3) |> 
-  dplyr::rename(sequence = 1) |> 
-  dplyr::rename(TET1_5mC_oxidation_kinetics  = 2) |> 
-  dplyr::rename(TET1_5hmC_oxidation_kinetics = 3) |> 
-  dplyr::rename(TET2_5mC_oxidation_kinetics  = 4) |> 
-  dplyr::rename(TET2_5hmC_oxidation_kinetics = 5) |> 
-  dplyr::mutate(sequence = gsub(" ", "" ,sequence))
-
-
-
-plt <- plt |> 
-  dplyr::mutate(sequence = gsub("[","",gsub("]","",gc_sequence_context_2),fixed=T),fixed=T) |> 
-  dplyr::left_join(tmp, by=c('sequence'='sequence'), suffix=c('','')) 
-
-
-plt.per.facet <- plt |> 
-  dplyr::mutate(gc_sequence_context_2 = NULL) |> 
-  dplyr::mutate(sequence = NULL) |> 
-  dplyr::group_by(facet_name) |> 
-  dplyr::mutate(TET1_5mC_oxidation_kinetics_per_facet = mean(TET1_5mC_oxidation_kinetics)) |> 
-  dplyr::mutate(TET1_5hmC_oxidation_kinetics_per_facet = mean(TET1_5hmC_oxidation_kinetics)) |> 
-  dplyr::mutate(TET2_5mC_oxidation_kinetics_per_facet = mean(TET2_5mC_oxidation_kinetics)) |> 
-  dplyr::mutate(TET2_5hmC_oxidation_kinetics_per_facet = mean(TET2_5hmC_oxidation_kinetics)) |> 
-  dplyr::ungroup() |> 
-  dplyr::mutate(TET1_5mC_oxidation_kinetics = NULL) |> 
-  dplyr::mutate(TET1_5hmC_oxidation_kinetics = NULL) |> 
-  dplyr::mutate(TET2_5mC_oxidation_kinetics = NULL) |> 
-  dplyr::mutate(TET2_5hmC_oxidation_kinetics = NULL) |> 
-  dplyr::distinct() |> 
-  tidyr::pivot_longer(cols=contains("kinetics"), names_to="oxidation_kinetics")
-
-# TET1_5mC_oxidation_kinetics_per_facet
-
-ggplot(plt.per.facet, aes(x=context_median__DMP__g2_g3__pp_nc__t, y=value, label=facet_name, col=adjacent_CG)) +
-  facet_wrap(~oxidation_kinetics, scales="free",ncol=5) +
-  geom_point() +
-  ggrepel::geom_text_repel(data = subset(plt.per.facet, grepl("aacgtt|aacgtc|aacgtg", facet_name)), col="black", size=theme_cellpress_size, alpha=0.5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_cellpress_size, label.x.npc="right", hjust=1) +
-  labs(col = "cg[CG]xx or xx[CG]cg", 
-       x = "median t-statistic for probes with given sequence context",
-       y = "oxidation kinetics value\n10.1038/s42003-022-03033-4\nAdams et al. NatCom 2021") +
-  theme_cellpress
-
-ggsave("output/figures/vis_differential__xxCGxx_x_TET1_2_NatCom.pdf", width = 11*0.975, height=3)
-
-
-## motif: xx[CG]xx * TET1-2-3 SciAdv ----
-
-
-
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
-    return(.)
-  })() |> 
-  dplyr::filter(detP_good_probe & !MASK_general) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
-    return(.)
-  })() |>
-  dplyr::filter(!is.na(gc_sequence_context_2))
-
-
-plt.per.context <- plt |> 
-  dplyr::select(gc_sequence_context_2) |> 
-  dplyr::filter(!duplicated(gc_sequence_context_2)) |>
-  dplyr::mutate(gc_sequence_context_2_s = gsub("[CG]","CG",gc_sequence_context_2,fixed=T)) |> 
-  dplyr::mutate(gc_sequence_context_2_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(gc_sequence_context_2_s)))) |> 
-  dplyr::mutate(facet_name = dplyr::case_when(
-    gc_sequence_context_2_s < gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_s ,"/",gc_sequence_context_2_rc),
-    gc_sequence_context_2_s > gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_rc,"/",gc_sequence_context_2_s ),
-    gc_sequence_context_2_s == gc_sequence_context_2_rc ~ paste0("*",gc_sequence_context_2_s,"/",gc_sequence_context_2_s)
-  )) 
-
-
-
-plt <- plt |> 
-  dplyr::left_join(plt.per.context, by=c('gc_sequence_context_2'='gc_sequence_context_2'), suffix=c('','')) |> 
-  dplyr::group_by(facet_name) |> 
-  dplyr::mutate(context_median__DMP__g2_g3__pp_nc__t = median(DMP__g2_g3__pp_nc__t)) |> 
-  dplyr::ungroup() |> 
-  dplyr::mutate(facet_name = tolower(facet_name)) |> 
-  dplyr::select(facet_name, gc_sequence_context_2, context_median__DMP__g2_g3__pp_nc__t) |> 
-  dplyr::distinct() |> 
-  dplyr::mutate(adjacent_CG = grepl("^cg",facet_name) | grepl("cg$",facet_name)) 
-
-
-
-
-
-tmp <- read.table("data/10.1126_sciadv.abm2427_Slope_summary.txt") |> 
-  tibble::rownames_to_column('Motif2') |> 
-  assertr::verify(Motif == Motif2) |> 
-  dplyr::mutate(Motif2 = NULL) |> 
-  dplyr::rename(sequence = Motif)
-
-
-
-plt <- plt |> 
-  dplyr::mutate(sequence = gsub("[","",gsub("]","",gc_sequence_context_2),fixed=T),fixed=T) |> 
-  dplyr::left_join(tmp, by=c('sequence'='sequence'), suffix=c('','')) 
-
-
-plt.per.facet <- plt |> 
-  dplyr::mutate(gc_sequence_context_2 = NULL) |> 
-  dplyr::mutate(sequence = NULL) |> 
-  dplyr::group_by(facet_name) |> 
-  #dplyr::mutate(ALL_72_per_facet = mean(ALL_72)) |> # 72H, not as powerful 
-  dplyr::mutate(ALL_84_per_facet = mean(ALL_84)) |> 
-  #dplyr::mutate(ALL_Dec_per_facet = mean(ALL_Dec)) |> 
-  
-  #dplyr::mutate(CGI_72_per_facet = mean(CGI_72)) |> 
-  #dplyr::mutate(CGI_84_per_facet = mean(CGI_84)) |> 
-  #dplyr::mutate(CGI_Dec_per_facet = mean(CGI_Dec)) |> 
-  
-  #dplyr::mutate(non_CGI_72_per_facet = mean(non_CGI_72)) |> 
-  #dplyr::mutate(non_CGI_84_per_facet = mean(non_CGI_84)) |> 
-  #dplyr::mutate(non_CGI_Dec_per_facet = mean(non_CGI_Dec)) |> 
-  
-  
-  dplyr::ungroup() |> 
-  dplyr::mutate(ALL_84 = NULL) |> 
-  dplyr::mutate(ALL_Dec = NULL) |> 
-  dplyr::mutate(CGI_Dec = NULL) |> 
-  dplyr::mutate(non_CGI_Dec = NULL) |> 
-  dplyr::mutate(ALL_72 = NULL) |> 
-  dplyr::mutate(CGI_84 = NULL) |> 
-  dplyr::mutate(non_CGI_84 = NULL) |> 
-  dplyr::mutate(CGI_72 = NULL) |> 
-  dplyr::mutate(non_CGI_72 = NULL) |> 
-  dplyr::distinct() |> 
-  tidyr::pivot_longer(cols=contains("_per_facet"), names_to="oxidation_kinetics")
-
-
-ggplot(plt.per.facet, aes(x=context_median__DMP__g2_g3__pp_nc__t, y=value, label=facet_name, col=adjacent_CG)) +
-  facet_wrap(~oxidation_kinetics, scales="free",ncol=5) +
-  geom_point() +
-  ggrepel::geom_text_repel(data = subset(plt.per.facet, grepl("aacgtt|aacgtc|aacgtg", facet_name)), col="black", size=theme_cellpress_size, alpha=0.5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_cellpress_size, label.x.npc="right", hjust=1) +
-  labs(col = "cg[CG]xx or xx[CG]cg", 
-       x = "median t-statistic for probes with given sequence context",
-       y = "TET?3? de-meth velocity ALL 84h\nSciAdv 10.1126/sciadv.abm2427") +
-  theme_cellpress
-
-ggsave("output/figures/vis_differential__xxCGxx_x_TET1_2_3_SciAdv.pdf", width = 11*0.975/4, height=3)
-
-
-
-
-plt <- plt |> 
-  dplyr::left_join(tmp, by=c('sequence'='Motif'), suffix=c('','')) |> 
-  tibble::column_to_rownames('sequence')
-
-
-corrplot::corrplot(cor(plt, method="spearman"))
-
-
 
 
 
@@ -1150,7 +1818,7 @@ p1 = ggplot(pplt1 , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc
   
   geom_point(data=head(pplt1, n=1),pch=16, cex=1, alpha=0.8) + # for label
   
-  labs(x = "Per probe t-score Grade2 ~ Grade 3",
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
        y = "Per probe t-score Primary ~ Recurrence") +
   
   theme_cellpress + 
@@ -1186,7 +1854,7 @@ p2 = ggplot(pplt2 , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc
   
   geom_point(data=head(pplt2, n=1),pch=16, cex=1, alpha=0.8) + # for label
   
-  labs(x = "Per probe t-score Grade2 ~ Grade 3",
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
        y = "Per probe t-score Primary ~ Recurrence") +
   
   theme_cellpress + 
@@ -1596,7 +2264,6 @@ for(clock in clocks) {
 
 ## early ~ late repli ----
 
-
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
@@ -1761,6 +2428,55 @@ ggplot(plt, aes(x=wgEncodeUwRepliSeqSknshWaveSignalRep1, y=DMP__g2_g3__pp_nc__t)
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
   theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqSknshWaveSignalRep1.png",width=8.5/2, height=8.5/2)
+
+
+
+# Figure S2A: corr covars per sample ----
+## corr ----
+
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(210) |> 
+  dplyr::mutate(time_tissue_in_ffpe =  ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> 
+  dplyr::select(array_epiTOC2_tnsc, array_epiTOC2_hypoSC, contains("array_dnaMethyAge"), array_RepliTali,
+                array_percentage.detP.signi, array_PC1, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`,
+                time_tissue_in_ffpe,
+                array_GLASS_NL_g2_g3_sig, array_PC2, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
+                
+                array_PC3
+  ) |> 
+  dplyr::filter(!is.na(time_tissue_in_ffpe)) |> 
+  
+  dplyr::mutate(array_GLASS_OD_g2_g3_sig2 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_prim_rec_sig2 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_g2_g3_sig3 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_prim_rec_sig3 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_g2_g3_sig4 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_prim_rec_sig4 = NULL) |> 
+  
+  dplyr::mutate(array_PC3 = -1 * array_PC3) |> 
+  
+  dplyr::mutate(AcCGAP = -1 * array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit = NULL) |> 
+  dplyr::mutate(`-1 * array_dnaMethyAge__ZhangY2017` = -1 * array_dnaMethyAge__ZhangY2017 , array_dnaMethyAge__ZhangY2017 = NULL) |> 
+  dplyr::mutate(`-1 * array_epiTOC2_hypoSC` = -1 * array_epiTOC2_hypoSC, array_epiTOC2_hypoSC = NULL) |>  # seems at inversed scale
+  dplyr::mutate(`-1 * array_dnaMethyAge__LuA2019` = -1 * array_dnaMethyAge__LuA2019, array_dnaMethyAge__LuA2019 = NULL) |>  # seems at inversed scale
+  dplyr::mutate(`-1 * QC: SPECIFICITY I GT MM 6` = -1 * `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`=NULL) |> 
+  dplyr::select(-array_dnaMethyAge__YangZ2016) |>  # epiTOC1, near identical to epiTOC2
+  dplyr::select(-array_dnaMethyAge__PCHorvathS2013) |>  # very similar to its 2018 equivalent
+  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-3_Beta_larger_0.12_0.18` = NULL) |> # contains N/A's
+  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-6_Beta_larger_0.2_0.3` = NULL)# contains N/A's
+
+
+colnames(plt) <- gsub("array_","",colnames(plt))
+colnames(plt) <- gsub("_"," ",colnames(plt))
+
+corrplot::corrplot(cor(plt, method="spearman"), order="hclust", tl.cex=0.75, tl.pos="l")
+#h = corrplot::corrplot(cor(plt, method="spearman"), order="hclust", tl.cex=0.75, tl.pos="l")
+
+#p1 = ggcorrplot2::ggcorrplot(h$corr) +
+#  theme(axis.title.x=element_blank(),
+#        axis.text.x=element_blank(),
+#        axis.ticks.x=element_blank())
 
 
 

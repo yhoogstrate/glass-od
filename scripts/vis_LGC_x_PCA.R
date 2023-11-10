@@ -3,12 +3,13 @@
 # load ----
 
 
-source('scripts/load_palette.R')
 source('scripts/load_functions.R')
+source('scripts/load_palette.R')
 source('scripts/load_themes.R')
 
 
 library(ggplot2)
+library(patchwork)
 
 
 if(!exists('glass_od.metadata.array_samples')) {
@@ -20,7 +21,7 @@ if(!exists('glass_od.metadata.array_samples')) {
 
 
 metadata <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(215)
+  filter_GLASS_OD_idats(210)
 
 
 
@@ -76,7 +77,7 @@ ggplot(plt, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-array_PC2, col=col2
 
 
 
-## PCA ----
+## Figure 2B: PCA ----
 
 
 
@@ -110,23 +111,28 @@ plt.split <- rbind(
 
 
 
-ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-array_PC2, col=col)) + 
+ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_PC2, col=col)) + 
   #facet_grid(cols = vars(facet), scales = "free", space="free") +
   facet_wrap(~facet, scales="free",ncol=5) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show_guide = FALSE) +
-  geom_point(size=0.8) +
-  theme_cellpress +
+  geom_point(size=theme_cellpress_size/3) +
   scale_color_manual(values=c(
-    "Grade 2"="blue","O_IDH"="blue",    "Batch [EU]"="darkgreen",
+    "Grade 2"= col3(11)[10],"O_IDH"=col3(11)[10], 
+    "Grade 3"="red","A_IDH_HG"="red",  
+    
+    "Batch [EU]"="darkgreen",
     "OLIGOSARC_IDH" = "orange",
     "NA" = "gray40",
     "other" = "purple",
-    "Grade 3"="red","A_IDH_HG"="red",     "Batch [US]"="brown"
+    "Batch [US]"="brown"
   )) +
-  labs(x="AcCGAP",y = "-PC2", col="")
+  labs(x="AcCGAP",y = "PC2", col="") +
+  labs(subtitle=format_subtitle("Logit WHO grade")) +
+  theme_cellpress
 
 
-ggsave("output/figures/vis_LGC_x_PCA__scatter_A.pdf",width=8.5 * 0.95 * (571/516), height = 2.72)
+
+ggsave("output/figures/vis_LGC_x_PCA__scatter_A.pdf",width=8.5 * 0.975, height = 2.72)
 
 
 
@@ -210,43 +216,19 @@ abline(h=0, col="red")
 
 
 
-## stats ----
+## Figure 2C: logit ----
 
 
 stats <- metadata |> 
   dplyr::filter(resection_tumor_grade %in% c(2,3)) |> 
   dplyr::mutate(resection_tumor_grade__hg = ifelse(resection_tumor_grade == 3, 1 , 0)) |> 
-  dplyr::mutate(batch_us = ifelse(isolation_person_name == "USA / Duke", 1, 0)) 
-
-
-
-### t-test LR ----
-
-t.test(
-  stats |>
-    dplyr::filter(resection_tumor_grade == 2) |> 
-    dplyr::pull(A_IDH_HG__A_IDH_LG_lr__lasso_fit),
-  stats |>
-    dplyr::filter(resection_tumor_grade == 3) |> 
-    dplyr::pull(A_IDH_HG__A_IDH_LG_lr__lasso_fit)
-)
-
-### t-test PC2 ----
-
-
-t.test(
-  stats |>
-    dplyr::filter(resection_tumor_grade == 2) |> 
-    dplyr::pull(PC2),
-  stats |>
-    dplyr::filter(resection_tumor_grade == 3) |> 
-    dplyr::pull(PC2)
-)
+  dplyr::mutate(batch_us = ifelse(isolation_person_name == "USA", 1, 0)) 
 
 
 
 
-### logistic LR ----
+
+### logistic AcCGAP ----
 
 
 scaling_factor_x <- 0.0185 * (0.5/0.37)
@@ -304,14 +286,30 @@ p1
 
 
 
+
+
+#### t-test ----
+
+t.test(
+  stats |>
+    dplyr::filter(resection_tumor_grade == 2) |> 
+    dplyr::pull(covar),
+  stats |>
+    dplyr::filter(resection_tumor_grade == 3) |> 
+    dplyr::pull(covar)
+)
+
+
+
+
 ### logistic PC2 ----
 
 
 
 scaling_factor_x <- 0.0185 * 50 * (0.5/0.26)
 stats <- stats |> 
-  dplyr::mutate(covar = -1 * array_PC2) |> 
-  dplyr::mutate(covar_name = "-1 * PC2")
+  dplyr::mutate(covar = array_PC2) |> 
+  dplyr::mutate(covar_name = "PC2")
 
 
 
@@ -359,6 +357,167 @@ p2 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
   theme_cellpress +
   theme(legend.key.size = unit(0.6, 'lines')) # resize colbox
 p2
+
+
+#### t-test ----
+
+
+t.test(
+  stats |>
+    dplyr::filter(resection_tumor_grade == 2) |> 
+    dplyr::pull(covar),
+  stats |>
+    dplyr::filter(resection_tumor_grade == 3) |> 
+    dplyr::pull(covar)
+)
+
+
+
+
+### logistic Zhang2017 Mortality risk clock ----
+
+
+
+
+scaling_factor_x <- 0.002*5*(0.5/0.83)
+stats <- stats |> 
+  dplyr::mutate(covar = array_dnaMethyAge__ZhangY2017) |> 
+  dplyr::mutate(covar_name = "Zhang 2017 Mortality risk clock")
+
+
+
+model <- glm(resection_tumor_grade__hg ~ covar, data = stats, family = binomial)
+pval <- model |>
+  summary() |> 
+  purrr::pluck('coefficients') |>
+  as.data.frame() |>  
+  tibble::rownames_to_column('coef') |>
+  dplyr::filter(coef == "covar") |> 
+  dplyr::pull(`Pr(>|z|)`)
+
+
+Predicted_data <- data.frame(covar=modelr::seq_range(stats$covar, 500))
+Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
+
+
+plt.logit <- rbind(
+  stats |> 
+    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(type = "data"),
+  Predicted_data |> 
+    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+    dplyr::mutate(type = "fit")
+) |> 
+  dplyr::mutate(`resection tumor grade` = resection_tumor_grade__hg + 2) |> 
+  dplyr::mutate(xmin=covar - scaling_factor_x,
+                xmax=covar + scaling_factor_x,
+                xmin_wash = covar - (2.25 * scaling_factor_x), 
+                xmax_wash = covar + (2.25 * scaling_factor_x), 
+                ymin=`resection tumor grade` - 0.06,
+                ymax=`resection tumor grade` + 0.06)
+
+
+
+p3 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
+  geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
+  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin_wash,xmax=xmax_wash,ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
+  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
+  annotate("text", x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
+  scale_y_continuous(breaks = c(2,3)) + 
+  labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
+  scale_fill_manual(values = palette_mnp_12.8_6) +
+  theme_cellpress +
+  theme(legend.key.size = unit(0.6, 'lines')) # resize colbox
+p3
+
+
+
+#### t-test ----
+
+
+t.test(
+  stats |>
+    dplyr::filter(resection_tumor_grade == 2) |> 
+    dplyr::pull(covar),
+  stats |>
+    dplyr::filter(resection_tumor_grade == 3) |> 
+    dplyr::pull(covar)
+)
+
+
+
+
+### logistic epiTOC2 ----
+
+
+
+scaling_factor_x <- 16 * (0.5 / 0.58)
+stats <- stats |> 
+  dplyr::mutate(covar = array_epiTOC2_tnsc) |> 
+  dplyr::mutate(covar_name = "epiTOC2")
+
+
+
+model <- glm(resection_tumor_grade__hg ~ covar, data = stats, family = binomial)
+pval <- model |>
+  summary() |> 
+  purrr::pluck('coefficients') |>
+  as.data.frame() |>  
+  tibble::rownames_to_column('coef') |>
+  dplyr::filter(coef == "covar") |> 
+  dplyr::pull(`Pr(>|z|)`)
+
+
+Predicted_data <- data.frame(covar=modelr::seq_range(stats$covar, 500))
+Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
+
+
+plt.logit <- rbind(
+  stats |> 
+    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(type = "data"),
+  Predicted_data |> 
+    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+    dplyr::mutate(type = "fit")
+) |> 
+  dplyr::mutate(`resection tumor grade` = resection_tumor_grade__hg + 2) |> 
+  dplyr::mutate(xmin=covar - scaling_factor_x,
+                xmax=covar + scaling_factor_x,
+                xmin_wash = covar - (2.25 * scaling_factor_x), 
+                xmax_wash = covar + (2.25 * scaling_factor_x), 
+                ymin=`resection tumor grade` - 0.06,
+                ymax=`resection tumor grade` + 0.06)
+
+
+
+p4 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
+  geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
+  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin_wash,xmax=xmax_wash,ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
+  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
+  annotate("text", x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
+  scale_y_continuous(breaks = c(2,3)) + 
+  labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
+  scale_fill_manual(values = palette_mnp_12.8_6) +
+  theme_cellpress +
+  theme(legend.key.size = unit(0.6, 'lines')) # resize colbox
+p4
+
+
+
+#### t-test ----
+
+
+t.test(
+  stats |>
+    dplyr::filter(resection_tumor_grade == 2) |> 
+    dplyr::pull(covar),
+  stats |>
+    dplyr::filter(resection_tumor_grade == 3) |> 
+    dplyr::pull(covar)
+)
+
 
 
 
@@ -480,70 +639,6 @@ p4
 
 
 
-
-
-### logistic epiTOC2 ----
-
-
-
-
-scaling_factor_x <- 16 * (0.5 / 0.58)
-stats <- stats |> 
-  dplyr::mutate(covar = array_epiTOC2_tnsc) |> 
-  dplyr::mutate(covar_name = "epiTOC2")
-
-
-
-model <- glm(resection_tumor_grade__hg ~ covar, data = stats, family = binomial)
-pval <- model |>
-  summary() |> 
-  purrr::pluck('coefficients') |>
-  as.data.frame() |>  
-  tibble::rownames_to_column('coef') |>
-  dplyr::filter(coef == "covar") |> 
-  dplyr::pull(`Pr(>|z|)`)
-
-
-Predicted_data <- data.frame(covar=modelr::seq_range(stats$covar, 500))
-Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
-
-
-plt.logit <- rbind(
-  stats |> 
-    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
-    dplyr::mutate(type = "data"),
-  Predicted_data |> 
-    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
-    dplyr::mutate(type = "fit")
-) |> 
-  dplyr::mutate(`resection tumor grade` = resection_tumor_grade__hg + 2) |> 
-  dplyr::mutate(xmin=covar - scaling_factor_x,
-                xmax=covar + scaling_factor_x,
-                xmin_wash = covar - (2.25 * scaling_factor_x), 
-                xmax_wash = covar + (2.25 * scaling_factor_x), 
-                ymin=`resection tumor grade` - 0.06,
-                ymax=`resection tumor grade` + 0.06)
-
-
-
-p5 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
-  geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
-  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin_wash,xmax=xmax_wash,ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
-  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
-  annotate("text", x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
-  scale_y_continuous(breaks = c(2,3)) + 
-  labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
-  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
-  scale_fill_manual(values = palette_mnp_12.8_6) +
-  theme_cellpress +
-  theme(legend.key.size = unit(0.6, 'lines')) # resize colbox
-p5
-
-
-
-
-
-
 ### logistic hypoSC solo-WCGW ----
 
 
@@ -608,12 +703,12 @@ p6
 library(patchwork)
 
 (p1 + p2) /
-(p3 + p4) /
-(p5 + p6) +
-  plot_annotation(theme = theme_cellpress)
+(p3 + p4) +
+  plot_annotation(theme = theme_cellpress,
+                  subtitle=format_subtitle("Logit WHO grade"))
 
 
-ggsave("output/figures/vis_LGC_x_PCA__logits.pdf", width = (8.5 * 0.95), height = 6)
+ggsave("output/figures/vis_LGC_x_PCA__logits.pdf", width = (8.5 * 0.975), height = 4)
 
 
 

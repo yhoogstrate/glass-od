@@ -3,11 +3,14 @@
 # load ----
 
 
+source('scripts/load_constants.R')
 source('scripts/load_functions.R')
 
 
 if(!exists('metadata.cg_probes.epic')) {
+  print("First loading probe annotations")
   source('scripts/load_probe_annotations.R')
+  print("Done")
 }
 
 
@@ -18,16 +21,16 @@ if(!exists('metadata.cg_probes.epic')) {
 data.mvalues.hq_samples <- readRDS("cache/mvalues.HQ_samples.Rds") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (510)) # 4 replicates still need to be removed still
-    assertthat::assert_that(nrow(.) == (760405))
+    assertthat::assert_that(ncol(.) == (CONST_N_SAMPLES))
+    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED))
     return(.)
   })()
 
 data.mvalues.mask.hq_samples <- readRDS("cache/detP_masked_values.HQ_samples.Rds") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (510)) # 4 replicates still need to be removed still
-    assertthat::assert_that(nrow(.) == (760405))
+    assertthat::assert_that(ncol(.) == (CONST_N_SAMPLES))
+    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED))
     return(.)
   })()
 
@@ -46,7 +49,12 @@ data.mvalues.probes <- data.mvalues.mask.hq_samples |>
   as.data.frame() |> 
   dplyr::rename(n_na = 1) |> 
   dplyr::mutate(detP_good_probe = n_na == 0) |> 
-  tibble::rownames_to_column('probe_id')
+  tibble::rownames_to_column('probe_id') |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    return(.)
+  })()
 
 
 
@@ -55,7 +63,12 @@ data.mvalues.probes <- data.mvalues.mask.hq_samples |>
 
 data.mvalues.probes <- data.mvalues.probes |> 
   dplyr::left_join(metadata.cg_probes.epic, by=c('probe_id'='probe_id'), suffix=c('','')) |>  # + annotation of ALL probes
-  assertr::verify(MASK_general == F)
+  assertr::verify(MASK_general == F) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    return(.)
+  })()
 
 
 
@@ -66,11 +79,12 @@ data.mvalues.good_probes <- data.mvalues.probes |>
   dplyr::filter(detP_good_probe) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
     return(.)
   })() |> 
   assertr::verify(MASK_general == F) |> 
   dplyr::pull(probe_id)
+
 
 
 ## DMP outcomes ----
@@ -80,11 +94,21 @@ data.mvalues.good_probes <- data.mvalues.probes |>
 
 fn <- "cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds"
 if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+    
+  
   data.mvalues.probes <- data.mvalues.probes |> 
-    dplyr::left_join(
-      readRDS(fn) |> 
-        dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
-      by=c('probe_id'='probe_id'), suffix=c('','') )
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
 } else {
   warning("DMP result primary - recurrence is missing")
 }
@@ -97,11 +121,20 @@ rm(fn)
 
 fn <- "cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds"
 if(file.exists(fn)) {
+  
+  tmp <-  readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMP__g2_g3__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
   data.mvalues.probes <- data.mvalues.probes |> 
-    dplyr::left_join(
-      readRDS(fn) |> 
-        dplyr::rename_with(~paste0("DMP__g2_g3__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
-      by=c('probe_id'='probe_id'), suffix=c('','') )
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  
+  rm(tmp)
+  
 } else {
   warning("DMP result g2 - g3 is missing")
 }
@@ -113,28 +146,49 @@ rm(fn)
 
 
 fn <- "cache/analysis_differential__AcCGAP__partial_paired_nc__stats.Rds"
+
 if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMP__AcCGAP__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+    
   data.mvalues.probes <- data.mvalues.probes |> 
-    dplyr::left_join(
-      readRDS(fn) |> 
-        dplyr::rename_with(~paste0("DMP__AcCGAP__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
-      by=c('probe_id'='probe_id'), suffix=c('','') )
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
 } else {
   warning("DMP result AcCGAP is missing")
 }
 
 rm(fn)
 
+
+
 ### Tissue or FFPE ----
 
 
 fn <- "cache/analysis_differential__ffpe_or_ff__partial_paired_nc__stats.Rds"
 if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMP__FFPE_or_FF__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+    
   data.mvalues.probes <- data.mvalues.probes |> 
-    dplyr::left_join(
-      readRDS(fn) |> 
-        dplyr::rename_with(~paste0("DMP__FFPE_or_FF__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
-      by=c('probe_id'='probe_id'), suffix=c('','') )
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  
+  rm(tmp)
+  
 } else {
   warning("DMP result FFPE | FF PP is missing")
 }
@@ -150,11 +204,48 @@ rm(fn)
 
 fn <- "cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds"
 if(file.exists(fn)) {
-data.mvalues.probes <- data.mvalues.probes |> 
-  dplyr::left_join(
-    readRDS(fn) |> 
-      dplyr::rename_with(~paste0("DMP__FFPE_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
-    by=c('probe_id'='probe_id'), suffix=c('','') )
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMP__FFPE_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result FFPE decay PP time is missing")
+}
+
+rm(fn)
+
+
+
+
+### FFPE Decay time PP intensities ----
+
+
+fn <- "cache/analysis_differential_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DPI__FFPE_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  
+  rm(tmp)
+  
 } else {
   warning("DMP result FFPE decay PP time is missing")
 }
@@ -168,11 +259,20 @@ rm(fn)
 
 fn <- "cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds"
 if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMP__FFPE_decay_time__up_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
   data.mvalues.probes <- data.mvalues.probes |> 
-    dplyr::left_join(
-      readRDS(fn) |> 
-        dplyr::rename_with(~paste0("DMP__FFPE_decay_time__up_nc__", .x), .cols=!matches("^probe_id$",perl = T)),
-      by=c('probe_id'='probe_id'), suffix=c('','') )
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
 } else {
   warning("DMP result FFPE decay UP time is missing")
 }
@@ -198,10 +298,17 @@ for(clock in clocks) {
   
   tmp <- readRDS(clock) |> 
     dplyr::select(probe_id, t) |> 
-    dplyr::rename_with(~paste0("DMP__",clock_name,"__", .x), .cols=!matches("^probe_id$",perl = T))
+    dplyr::rename_with(~paste0("DMP__",clock_name,"__", .x), .cols=!matches("^probe_id$",perl = T))  |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
   
   data.mvalues.probes <- data.mvalues.probes |> 
     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  
+  rm(tmp)
   
 }
 

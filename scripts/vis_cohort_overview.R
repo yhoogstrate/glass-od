@@ -17,44 +17,6 @@ if(!exists('glass_od.metadata.array_samples')) {
 }
 
 
-# plot A_IDH_rat ----
-
-
-
-plt <-
-  rbind(
-    glass_od.metadata.array_samples |> 
-      filter_GLASS_OD_idats(163) 
-    ,
-  glass_od.metadata.array_samples |> 
-    dplyr::filter(study_name != "GLASS-OD")
-  ) |> 
-  dplyr::mutate(patient_id = as.factor(patient_id)) |> 
-  dplyr::mutate(x = as.numeric(patient_id) + 1)|> 
-  dplyr::group_by(patient_id) |> 
-  dplyr::mutate(last_recurrence = resection_number != 1 & resection_number == max(resection_number)) |> 
-  dplyr::ungroup() |> 
-  dplyr::mutate(panel = dplyr::recode(study_name, `CATNON` = 'non-canonical codels [CATNON, ...]', `GLASS-OD`='canonical codels [GLASS-OD]')) 
-
-
-
-p1 <- ggplot(plt, aes(x = x, y=resection_number, fill=A_IDH_HG__A_IDH_LG_lr )) +
-  facet_grid(cols = vars(panel)) +
-  geom_rect(aes(xmin=x - 0.45,xmax=x + 0.45,
-                ymin=resection_number + 0.5 - 0.45, ymax=resection_number + 0.5 + 0.45)) +
-  theme_bw() +
-  scale_fill_gradient2(low = "darkgreen", mid="gray90", high = "red", midpoint=0) 
-
-
-p2 <- ggplot(plt, aes(x = x, y=A_IDH_HG__A_IDH_LG_lr, group=patient_id )) +
-  facet_grid(cols = vars(panel)) +
-  geom_line(alpha=0.3) +
-  geom_point(aes(col=resection_number == 1, shape=resection_number == 1)) +
-  theme_bw()
-
-
-p1 / p2
-
 
 
 # Figure 1: MNP brain classes ----
@@ -139,15 +101,15 @@ ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
   facet_grid(cols=vars(patient_suspected_noncodel),  rows=vars(classifier_version_txt), scales = "free", space="free") +
   geom_point(pch=15,size=1.4,alpha=0.65) +
   labs(x = "patient", y="resection #", col="",fill="") +
+  labs(subtitle=format_subtitle("Cohort overview")) +
   ylim(0.5, 5.5) +
   scale_color_manual(values=cols) +
   theme_cellpress +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
-  theme(panel.border = element_rect(fill=NA, color="black", size=theme_cellpress_lwd , linetype="solid"))
-  #theme(legend.key = element_blank())
+  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_cellpress_lwd , linetype="solid"))
 
 
-ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 3.1)
+ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 3.3)
 
 
 
@@ -155,7 +117,9 @@ ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, 
 ## no clear timing effect, but clear recurrence effect
 
 
-# p ~ r ----
+
+# sandbox ----
+## p ~ r ----
 
 
 plt <- glass_od.metadata.array_samples |> 
@@ -181,5 +145,43 @@ ggplot(plt, aes(x=stage_disease, y = Freq, fill=misclass)) +
   labs(y= "frequency", x=NULL, col="Oligo misclassified") +
   theme_cellpress
 
+
+## A_IDH_rat ----
+
+
+
+plt <-
+  rbind(
+    glass_od.metadata.array_samples |> 
+      filter_GLASS_OD_idats(163) 
+    ,
+    glass_od.metadata.array_samples |> 
+      dplyr::filter(study_name != "GLASS-OD")
+  ) |> 
+  dplyr::mutate(patient_id = as.factor(patient_id)) |> 
+  dplyr::mutate(x = as.numeric(patient_id) + 1)|> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(last_recurrence = resection_number != 1 & resection_number == max(resection_number)) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(panel = dplyr::recode(study_name, `CATNON` = 'non-canonical codels [CATNON, ...]', `GLASS-OD`='canonical codels [GLASS-OD]')) 
+
+
+
+p1 <- ggplot(plt, aes(x = x, y=resection_number, fill=A_IDH_HG__A_IDH_LG_lr )) +
+  facet_grid(cols = vars(panel)) +
+  geom_rect(aes(xmin=x - 0.45,xmax=x + 0.45,
+                ymin=resection_number + 0.5 - 0.45, ymax=resection_number + 0.5 + 0.45)) +
+  theme_bw() +
+  scale_fill_gradient2(low = "darkgreen", mid="gray90", high = "red", midpoint=0) 
+
+
+p2 <- ggplot(plt, aes(x = x, y=A_IDH_HG__A_IDH_LG_lr, group=patient_id )) +
+  facet_grid(cols = vars(panel)) +
+  geom_line(alpha=0.3) +
+  geom_point(aes(col=resection_number == 1, shape=resection_number == 1)) +
+  theme_bw()
+
+
+p1 / p2
 
 

@@ -39,7 +39,7 @@ if(!exists('gsam.metadata.array_samples')) {
 
 #'@todo four replicates need to be erased after analysis
 metadata.glass_od <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(215) |>  #@todo replicates
+  filter_GLASS_OD_idats(210) |>  #@todo replicates
   dplyr::select(array_sentrix_id, array_channel_green, array_percentage.detP.signi)
 
 
@@ -71,7 +71,7 @@ targets <- rbind(
   dplyr::mutate(Slide = gsub("^([0-9]+)_.+$","\\1", array_sentrix_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 215 + 218 + 77)
+    assertthat::assert_that(nrow(.) == 210 + 218 + 77)
     return(.)
   })()
 
@@ -85,6 +85,9 @@ rm(RGSet)
 gc()
 
 
+
+
+
 ### mask ----
 
 
@@ -95,16 +98,52 @@ masked.value <- ifelse(detP > 0.01 , NA, 1) |>
       dplyr::filter(MASK_general == F) |> 
       dplyr::pull(probe_id)
   )) |> 
-  tibble::column_to_rownames('probe_id')  |> 
+  tibble::column_to_rownames('probe_id') |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 760405)
-    assertthat::assert_that(ncol(.) == 510)
+    assertthat::assert_that(ncol(.) == 505)
     return(.)
   })()
 
 stopifnot(sum(is.na(masked.value)) > 0)
 
+
+
+
+## intensities ----
+
+
+intensities <- log2(minfi::getMeth(proc) + minfi::getUnmeth(proc)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 865859)
+    assertthat::assert_that(ncol(.) == 505)
+    return(.)
+  })() |> 
+  data.table::as.data.table(keep.rownames = "probe_id") |> 
+  dplyr::filter(probe_id %in% (
+    metadata.cg_probes.epic |> 
+      dplyr::filter(MASK_general == F) |> 
+      dplyr::pull(probe_id)
+  )) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 760405)
+    return(.)
+  })()
+
+
+stopifnot(sum(is.na(intensities)) == 0)
+stopifnot(targets$array_sentrix_id == colnames(intensities))
+
+
+saveRDS(intensities, "cache/intensities.HQ_samples.Rds")
+
+
+rm(intensities)
+gc()
 
 
 
@@ -118,7 +157,7 @@ mvalue <- minfi::ratioConvert(proc, what = "M") |>
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 865859)
-    assertthat::assert_that(ncol(.) == 510)
+    assertthat::assert_that(ncol(.) == 505)
     return(.)
   })() |> 
   data.table::as.data.table(keep.rownames = "probe_id") |> 
@@ -159,7 +198,7 @@ beta.value <- minfi::ratioConvert(proc, what = "beta") |>
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 865859)
-    assertthat::assert_that(ncol(.) == 510)
+    assertthat::assert_that(ncol(.) == 505)
     return(.)
   })() |> 
   data.table::as.data.table(keep.rownames = "probe_id") |> 
@@ -185,7 +224,6 @@ saveRDS(beta.value, "cache/beta.values.HQ_samples.Rds")
 
 rm(beta.value)
 gc()
-
 
 
 

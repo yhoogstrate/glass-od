@@ -3,7 +3,10 @@
 # load m-values ----
 
 
-source('scripts/load_beta.values_hq_samples.R')
+if(!exists('data.beta.values.hq_samples')) {
+  source('scripts/load_beta.values_hq_samples.R')
+}
+
 
 
 
@@ -133,6 +136,54 @@ saveRDS(out, file="cache/analysis_dnaMethyAge.Rds")
 
 
 rm(out)
+
+
+# RepliTali - Endicott NatCom 2022 ----
+
+
+dat <- data.beta.values.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.beta.values.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 693017)
+    assertthat::assert_that(ncol(.) == 510)
+    return(.)
+  })()
+
+
+
+if(!file.exists('data/RepliTali_coefs.csv')) {
+  download.file('https://raw.githubusercontent.com/jamieendicott/Nature_Comm_2022/main/RepliTali/RepliTali_coefs.csv','data/RepliTali_coefs.csv')
+}
+
+RT <- read.csv('data/RepliTali_coefs.csv')
+probes <- intersect(RT$X, rownames(dat))
+
+RT <- RT |> 
+  dplyr::filter(X %in% c("(Intercept)", probes))
+
+
+# RT.betas <- subset(dat,rownames(dat)%in%RT$Coefficient)
+RT.betas <- RT |>
+  dplyr::filter(X != "(Intercept)") |>
+  dplyr::select(X) |> 
+  dplyr::left_join(dat |> tibble::rownames_to_column("X"), by=c('X'="X")) |> 
+  tibble::column_to_rownames('X')
+
+stopifnot(RT$Coefficient[-1] == rownames(RT.betas))
+
+out <- apply(RT.betas,2,function(x) RT$Value[-1]*x)
+out <- data.frame(RepliTali = apply(out,2,function(x) sum(x) +RT$Value[1]))
+
+
+saveRDS(out, file="cache/analysis_RepliTali.Rds")
+
+
+rm(RT, probes, RT.betas, out)
+
+
 
 
 

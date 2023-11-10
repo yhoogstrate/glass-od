@@ -8,6 +8,7 @@ library(ggplot2)
 #library(minfi)
 
 
+source('scripts/load_constants.R')
 source('scripts/load_functions.R')
 source('scripts/load_themes.R')
 
@@ -15,7 +16,6 @@ source('scripts/load_themes.R')
 if(!exists('data.mvalues.hq_samples')) {
   source('scripts/load_mvalues_hq_samples.R')
 }
-
 
 
 if(!exists('glass_od.metadata.array_samples')) {
@@ -190,7 +190,7 @@ plot(coef$conditionc2, -log(pval$conditionc2))
 
 
 metadata.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(210) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
   filter_primaries_and_last_recurrences(178) |> 
   
   
@@ -217,7 +217,7 @@ data.pp.nc <- data.mvalues.hq_samples |>
   dplyr::select(metadata.pp.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED_AND_DETP)) 
     return(.)
   })()
 
@@ -236,13 +236,77 @@ stats.pp.nc <- limma::topTable(fit.pp.nc,
 rm(design.pp.nc)
 
 
-sum(stats.pp.nc$dmp__primary_recurrence__pp.nc__P.Value < 0.01)
-sum(stats.pp.nc$dmp__primary_recurrence__pp.nc__adj.P.Val < 0.01)
+sum(stats.pp.nc$P.Value < 0.01)
+sum(stats.pp.nc$adj.P.Val < 0.01)
 
 
 
-saveRDS(fit.pp.nc, file="cache/analysis_differential__primary_recurrence__partial_paired_nc__fit.Rds")
+#saveRDS(fit.pp.nc, file="cache/analysis_differential__primary_recurrence__partial_paired_nc__fit.Rds")
 saveRDS(stats.pp.nc, file="cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds")
+
+
+rm(fit.pp.nc, stats.pp.nc)
+
+
+## data: partially paired INTENSITY [w/o FFPE/frozen batch correct] ----
+
+
+
+metadata.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  filter_primaries_and_last_recurrences(178) |> 
+  
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"remainder")))) |> 
+  dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
+  dplyr::select(array_sentrix_id, patient, pr.status) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (178)) 
+    return(.)
+  })()
+
+
+
+data.pp.nc <- data.intensities.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.intensities.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693060)) 
+    return(.)
+  })()
+
+
+
+design.pp.nc <- model.matrix(~factor(patient) + factor(pr.status), data=metadata.pp.nc)
+fit.pp.nc <- limma::lmFit(data.pp.nc, design.pp.nc)
+fit.pp.nc <- limma::eBayes(fit.pp.nc, trend=T)
+stats.pp.nc <- limma::topTable(fit.pp.nc,
+                               n=nrow(data.pp.nc),
+                               coef="factor(pr.status)recurrence",
+                               sort.by = "none",
+                               adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.pp.nc)
+
+
+sum(stats.pp.nc$P.Value < 0.01)
+sum(stats.pp.nc$adj.P.Val < 0.01)
+
+
+
+#saveRDS(fit.pp.nc, file="cache/analysis_differential_intensities__primary_recurrence__partial_paired_nc__fit.Rds")
+saveRDS(stats.pp.nc, file="cache/analysis_differential_intensities__primary_recurrence__partial_paired_nc__stats.Rds")
 
 
 rm(fit.pp.nc, stats.pp.nc)
@@ -254,7 +318,7 @@ rm(fit.pp.nc, stats.pp.nc)
 
 
 metadata.fp <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(211) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
   filter_primaries_and_last_recurrences(179) |> 
   
   dplyr::group_by(patient_id) |> 
@@ -302,7 +366,7 @@ data.fp <- data.mvalues.hq_samples |>
   dplyr::select(metadata.fp$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED_AND_DETP)) 
     return(.)
   })()
 
@@ -380,7 +444,7 @@ data.pp.cor <- data.mvalues.hq_samples |>
   dplyr::select(metadata.pp.cor$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED_AND_DETP)) 
     return(.)
   })()
 
@@ -440,7 +504,7 @@ data.up.nc <- data.mvalues.hq_samples |>
   dplyr::select(metadata.up.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED_AND_DETP)) 
     return(.)
   })()
 
@@ -501,7 +565,7 @@ data.up.cor <- data.mvalues.hq_samples |>
   dplyr::select(metadata.up.cor$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED_AND_DETP)) 
     return(.)
   })()
 
@@ -584,8 +648,8 @@ ggsave("/tmp/volcano_g3g2.png", width=8.5/2,height=8.5/2)
 
 
 metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(210) |> 
-  filter_first_G2_and_last_G3(140) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  filter_first_G2_and_last_G3(150) |> 
   
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() == 2) |> 
@@ -597,7 +661,7 @@ metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |>
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (140)) 
+    assertthat::assert_that(nrow(.) == (150)) 
     return(.)
   })()
 
@@ -611,7 +675,7 @@ data.g2g3.pp.nc <- data.mvalues.hq_samples |>
   dplyr::select(metadata.g2g3.pp.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED_AND_DETP)) 
     return(.)
   })()
 
@@ -637,9 +701,77 @@ sum(stats.g2g3.pp.nc$adj.P.Val < 0.01)
 
 
 
-saveRDS(fit.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__partial_paired_nc__fit.Rds")
+#saveRDS(fit.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__partial_paired_nc__fit.Rds")
 saveRDS(stats.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds")
 
+
+rm(fit.g2g3.pp.nc, stats.g2g3.pp.nc)
+
+
+
+
+## data: partially paired INTENSITIES [w/o FFPE/frozen batch correct] ----
+
+
+metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  filter_first_G2_and_last_G3(150) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2", "Grade3")) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (150)) 
+    return(.)
+  })()
+
+
+
+data.g2g3.pp.nc <- data.intensities.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.intensities.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.g2g3.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693060)) 
+    return(.)
+  })()
+
+
+
+
+
+design.g2g3.pp.nc <- model.matrix(~factor(patient) + factor(gr.status), data=metadata.g2g3.pp.nc)
+fit.g2g3.pp.nc <- limma::lmFit(data.g2g3.pp.nc, design.g2g3.pp.nc)
+fit.g2g3.pp.nc <- limma::eBayes(fit.g2g3.pp.nc, trend=T)
+stats.g2g3.pp.nc <- limma::topTable(fit.g2g3.pp.nc,
+                                    n=nrow(data.g2g3.pp.nc),
+                                    coef="factor(gr.status)Grade3",
+                                    sort.by = "none",
+                                    adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.g2g3.pp.nc)
+
+
+sum(stats.g2g3.pp.nc$P.Value < 0.01)
+sum(stats.g2g3.pp.nc$adj.P.Val < 0.01)
+
+
+
+#saveRDS(fit.g2g3.pp.nc, file="cache/analysis_differential_intensities__g2_g3__partial_paired_nc__fit.Rds")
+saveRDS(stats.g2g3.pp.nc, file="cache/analysis_differential_intensities__g2_g3__partial_paired_nc__stats.Rds")
+
+
+rm(fit.g2g3.pp.nc, stats.g2g3.pp.nc)
 
 
 
@@ -674,7 +806,7 @@ data.g2g3.fp <- data.mvalues.hq_samples |>
   dplyr::select(metadata.g2g3.fp$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED_AND_DETP)) 
     return(.)
   })()
 
@@ -741,7 +873,7 @@ data.g2g3.pp.cor <- data.mvalues.hq_samples |>
   dplyr::select(metadata.g2g3.pp.cor$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED_AND_DETP)) 
     return(.)
   })()
 
@@ -803,7 +935,7 @@ data.g2g3.up.nc <- data.mvalues.hq_samples |>
   dplyr::select(metadata.g2g3.up.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED_AND_DETP)) 
     return(.)
   })()
 
@@ -864,7 +996,7 @@ data.g2g3.up.cor <- data.mvalues.hq_samples |>
   dplyr::select(metadata.g2g3.up.cor$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED_AND_DETP)) 
     return(.)
   })()
 
@@ -1120,7 +1252,7 @@ p1 / p2
 
 
 m <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(210) 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) 
 
 d <- data.mvalues.hq_samples |> 
   dplyr::select(m$array_sentrix_id) |> 
@@ -1195,7 +1327,7 @@ plot(plt2$array_PC6, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor
 
 
 metadata.AccGAP.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(210) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
   assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
   assertr::verify(is.numeric(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
   dplyr::mutate(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit = scale(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
@@ -1205,7 +1337,7 @@ metadata.AccGAP.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (210)) 
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_SAMPLES_INCLUDED)) 
     return(.)
   })()
 
@@ -1219,7 +1351,7 @@ data.AccGAP.pp.nc <- data.mvalues.hq_samples |>
   dplyr::select(metadata.AccGAP.pp.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -1245,7 +1377,7 @@ sum(stats.AccGAP.pp.nc$adj.P.Val < 0.01)
 
 
 
-saveRDS(fit.AccGAP.pp.nc, file="cache/analysis_differential__AcCGAP__partial_paired_nc__fit.Rds")
+#saveRDS(fit.AccGAP.pp.nc, file="cache/analysis_differential__AcCGAP__partial_paired_nc__fit.Rds")
 saveRDS(stats.AccGAP.pp.nc, file="cache/analysis_differential__AcCGAP__partial_paired_nc__stats.Rds")
 
 
@@ -1283,7 +1415,7 @@ plot(sort(stats.lgc$P.Value),type="l")
 
 
 metadata.ffpe_or_ff.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(210) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
   dplyr::filter(!is.na(isolation_material)) |>
   dplyr::mutate(isolation_material = factor(isolation_material, levels=c("ffpe", "tissue"))) |> 
   dplyr::mutate(ffpe_or_ff_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
@@ -1294,7 +1426,7 @@ metadata.ffpe_or_ff.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (190)) 
+    assertthat::assert_that(nrow(.) == (202)) 
     return(.)
   })()
 
@@ -1307,7 +1439,7 @@ data.ffpe_or_ff.pp.nc <- data.mvalues.hq_samples |>
   dplyr::select(metadata.ffpe_or_ff.pp.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -1343,12 +1475,13 @@ rm(fit.ffpe_or_ff.pp.nc, stats.ffpe_or_ff.pp.nc)
 
 
 
+
 # analyses: FFPE-decay predictor ----
 ## data: partially paired [w/o FFPE/frozen batch correct] ----
 
 
 metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(210) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
   dplyr::filter(!is.na(isolation_material)) |> 
   dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
   dplyr::filter(!is.na(ffpe_decay_time)) |> 
@@ -1358,7 +1491,7 @@ metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (190)) 
+    assertthat::assert_that(nrow(.) == 202) 
     return(.)
   })()
 
@@ -1371,7 +1504,7 @@ data.ffpe_decay.pp.nc <- data.mvalues.hq_samples |>
   dplyr::select(metadata.ffpe_decay.pp.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -1398,24 +1531,87 @@ sum(stats.ffpe_decay.pp.nc$adj.P.Val < 0.01)
 
 
 
-saveRDS(fit.ffpe_decay.pp.nc, file="cache/analysis_differential__ffpe-decay-time__partial_paired_nc__fit.Rds")
+#saveRDS(fit.ffpe_decay.pp.nc, file="cache/analysis_differential__ffpe-decay-time__partial_paired_nc__fit.Rds")
 saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds")
 
 
 rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
 
 
-## x data: unpaired [w/o FFPE/frozen batch correct] ----
+
+## data: partially paired INTENSITIES [w/o FFPE/frozen batch correct] ----
+
+
+metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  dplyr::filter(!is.na(isolation_material)) |> 
+  dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
+  dplyr::filter(!is.na(ffpe_decay_time)) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (202)) 
+    return(.)
+  })()
+
+
+data.ffpe_decay.pp.nc <- data.intensities.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.intensities.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.ffpe_decay.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (693060)) 
+    return(.)
+  })()
+
+
+
+design.ffpe_decay.pp.nc <- model.matrix(~factor(patient) + ffpe_decay_time, data=metadata.ffpe_decay.pp.nc)
+fit.ffpe_decay.pp.nc <- limma::lmFit(data.ffpe_decay.pp.nc, design.ffpe_decay.pp.nc)
+fit.ffpe_decay.pp.nc <- limma::eBayes(fit.ffpe_decay.pp.nc, trend=T)
+
+stats.ffpe_decay.pp.nc <- limma::topTable(fit.ffpe_decay.pp.nc,
+                                          n=nrow(data.ffpe_decay.pp.nc),
+                                          coef="ffpe_decay_time",
+                                          sort.by = "none",
+                                          adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')
+
+
+
+rm(design.ffpe_decay.pp.nc)
+
+
+sum(stats.ffpe_decay.pp.nc$P.Value < 0.01)
+sum(stats.ffpe_decay.pp.nc$adj.P.Val < 0.01)
+
+
+
+#saveRDS(fit.ffpe_decay.pp.nc, file="cache/analysis_differential_intensities__ffpe-decay-time__partial_paired_nc__fit.Rds")
+saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds")
+
+
+rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
+
+
+
+## data: unpaired [w/o FFPE/frozen batch correct] ----
 
 
 metadata.ffpe_decay.up.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(210) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
   dplyr::filter(!is.na(isolation_material)) |> 
   dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
   dplyr::filter(!is.na(ffpe_decay_time)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (190)) 
+    assertthat::assert_that(nrow(.) == 202) 
     return(.)
   })()
 
@@ -1428,7 +1624,7 @@ data.ffpe_decay.up.nc <- data.mvalues.hq_samples |>
   dplyr::select(metadata.ffpe_decay.up.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -1454,7 +1650,7 @@ sum(stats.ffpe_decay.up.nc$adj.P.Val < 0.01)
 
 
 
-saveRDS(fit.ffpe_decay.up.nc, file="cache/analysis_differential__ffpe-decay-time__unpaired_nc__fit.Rds")
+#saveRDS(fit.ffpe_decay.up.nc, file="cache/analysis_differential__ffpe-decay-time__unpaired_nc__fit.Rds")
 saveRDS(stats.ffpe_decay.up.nc, file="cache/analysis_differential__ffpe-decay-time__unpaired_nc__stats.Rds")
 
 
@@ -1476,13 +1672,13 @@ for(clock in clocks) {
   
   
   metadata.current_clock.up.nc <- glass_od.metadata.array_samples |> 
-    filter_GLASS_OD_idats(210) |> 
+    filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
     data.table::copy() |> # odd hack needed, because setnames also affects the former "glass_od.metadata.array_samples" object...
     data.table::setnames(old = c(clock), new = c("array_current_clock")) |> 
     dplyr::filter(!is.na(array_current_clock)) |> 
     (function(.) {
       print(dim(.))
-      assertthat::assert_that(nrow(.) == (210)) 
+      assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_SAMPLES_INCLUDED) 
       return(.)
     })()
   
@@ -1495,7 +1691,7 @@ for(clock in clocks) {
     dplyr::select(metadata.current_clock.up.nc$array_sentrix_id) |> 
     (function(.) {
       print(dim(.))
-      assertthat::assert_that(nrow(.) == (693017)) 
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
       return(.)
     })()
   
