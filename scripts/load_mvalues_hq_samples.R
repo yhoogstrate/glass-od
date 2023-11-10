@@ -312,6 +312,8 @@ for(clock in clocks) {
   
 }
 
+rm(clocks)
+
 
 
 # 450K ----

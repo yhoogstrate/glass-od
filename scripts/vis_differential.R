@@ -7,7 +7,8 @@
 library(ggplot2)
 library(patchwork)
 
-
+source('scripts/load_constants.R')
+source('scripts/load_functions.R')
 source('scripts/load_palette.R')
 source('scripts/load_themes.R')
 
@@ -311,13 +312,13 @@ rm(tmp)
 tmp <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |>
   dplyr::tibble() |> 
@@ -373,13 +374,13 @@ rm(tmp)
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -409,13 +410,13 @@ p_A <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc_
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -444,13 +445,13 @@ p_B <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc_
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -486,13 +487,13 @@ ggsave("/tmp/papbpc.png",width = 8.5*0.975, height=3.2, dpi=600)
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -563,13 +564,13 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -589,13 +590,13 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
   dplyr::filter(!is.na(RepliTali_coef) & RepliTali_coef != F)
@@ -632,13 +633,13 @@ ggplot(plt, aes(x=DMP__primary_recurrence__pp_nc__t, y=RepliTali_coef)) +
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
   dplyr::mutate(death_clock_probe = probe_id %in% c("cg03725309","cg25763716","cg13854219","cg25189904","cg15459165","cg19266329","cg24397007","cg23079012","cg27241845","cg06905155","cg16503724","cg19859270","cg02657160","cg14975410","cg05575921","cg14817490","cg21161138","cg12513616","cg20732076","cg06126421","cg15342087","cg01612140","cg25983901","cg12510708","cg00285394","cg01140244","cg23190089","cg07123182","cg26963277","cg18550212","cg10321156","cg25193885","cg07986378","cg23665802","cg04987734","cg19459791","cg00310412","cg23842572","cg19572487","cg01572694","cg08546016","cg18181703","cg03636183","cg24704287","cg11341610","cg14085840","cg26470501","cg05492306","cg25607249","cg01406381","cg07626482","cg03707168","cg08362785"))
@@ -669,13 +670,13 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -699,7 +700,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
@@ -744,19 +745,21 @@ plt |>
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
-  })()
+  })() |> 
+  dplyr::filter(!grepl(" \\? ", probe_type_orientation))
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
                 col=DMP__FFPE_decay_time__pp_nc__t)) +
+  facet_wrap(~probe_type_orientation, ncol=4) + 
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
@@ -777,6 +780,17 @@ b = plt |>
   dplyr::arrange(-DMP__FFPE_decay_time__pp_nc__t)
 
 
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                col=DMP__FFPE_decay_time__pp_nc__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
 
 
 ### sandbox ----
@@ -786,16 +800,17 @@ b = plt |>
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
-  dplyr::filter(abs(DMP__FFPE_decay_time__pp_nc__t) > 4.5)
+  dplyr::filter(abs(DMP__FFPE_decay_time__pp_nc__t) > 4.5) |> 
+  dplyr::filter(grepl("?", probe_type_orientation))
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=c_content)) +
@@ -805,7 +820,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   geom_point(pch=16, cex=0.1, alpha=0.75) + 
   
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
 
 
 
@@ -934,13 +949,13 @@ ggplot(plt, aes(x=as.factor(probeCpGcnt), y=DMP__FFPE_decay_time__pp_nc__t)) +
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
   dplyr::filter(abs(DMP__epiTOC2_tnsc__up_nc__t) > 4.5 & !is.na(gc_content))
@@ -974,13 +989,13 @@ ggplot(plt, aes(x=probeCpGcnt, y=DMP__primary_recurrence__pp_nc__t, col=gc_conte
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -1002,13 +1017,13 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -1030,13 +1045,13 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
   dplyr::filter(!is.na(c_content))
@@ -1089,13 +1104,13 @@ p1 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
   dplyr::filter(!is.na(c_content))
@@ -1148,13 +1163,13 @@ p2 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
   dplyr::filter(!is.na(c_content) & !is.na(g_content))
@@ -1246,13 +1261,13 @@ ggsave("output/figures/vis_differential__g23_prim-rec__probe_CpG_count.png", wid
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
   dplyr::mutate(closest_CG_25 = dplyr::case_when(
@@ -1309,13 +1324,13 @@ ggplot(plt, aes(y=DMP__g2_g3__pp_nc__t, x=as.factor(closest_CG))) +
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -1346,13 +1361,13 @@ ggsave("output/figures/vis_differential__g23_prim-rec__solo-WCGW.png", width=(8.
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |>
   dplyr::filter(!is.na(gc_sequence_context_2)) |> 
@@ -1413,13 +1428,13 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -1443,13 +1458,13 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -1471,13 +1486,13 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
   dplyr::mutate(col = dplyr::case_when(
@@ -1554,13 +1569,13 @@ ggplot(plt, aes(x = chr, y=DMP__g2_g3__pp_nc__t, fill=col)) +
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -1660,13 +1675,13 @@ dev.off()
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |>
   dplyr::filter(!is.na(gc_sequence_context_2))
@@ -2267,13 +2282,13 @@ for(clock in clocks) {
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (760405)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
   dplyr::filter(!is.na(wgEncodeUwRepliSeqBjWaveSignalRep1)) |> 
