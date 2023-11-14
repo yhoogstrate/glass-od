@@ -26,20 +26,17 @@ source('scripts/load_functions.R')
 
 metadata.cg_probes.epic <- read.table("data/Improved DNA Methylation Array Probe Annotation/EPIC/EPIC.hg38.manifest.tsv", header=T) |> 
   dplyr::rename(probe_id = Probe_ID) |> 
-  dplyr::mutate(probe_type = dplyr::recode(type, "I"="I (red & green)", "II"="II (ligation Allele-A)")) |> # II is 1 (probe) and I is 2 probes.. ugh!
-  dplyr::mutate(probe_type_orientation = dplyr::case_when(
-    type == "I"  & mapYD_A == "f" ~ "I - forward (red & green)",
-    type == "I"  & mapYD_A == "r" ~ "I - reverse (red & green)",
-    type == "I"  & mapYD_A == "u" ~ "I - ? (red & green)",
-    type == "II" & mapYD_A == "f" ~ "II - forward (Allele-A)",
-    type == "II" & mapYD_A == "r" ~ "II - reverse (Allele-A)",
-    type == "II" & mapYD_A == "u" ~ "II - ? (Allele-A)",
-    T ~ "err"
-  )) |> 
+  dplyr::mutate(probe_type = dplyr::recode(type, "I"="I (red & green)", "II"="II (ligation Allele-A)")) |>  # II is 1 (probe) and I is 2 probes.. ugh!
   assertr::verify(!duplicated(probe_id)) |> 
   dplyr::mutate(pos = round((CpG_beg + CpG_end )/2)) |> 
   dplyr::mutate(is_1P = CpG_chrm == 'chr1' & pos < 130 * 1000000) |> # rough margin
-  dplyr::mutate(is_19Q = CpG_chrm == 'chr19' & pos > 23.5 * 1000000 ) # rough margin
+  dplyr::mutate(is_19Q = CpG_chrm == 'chr19' & pos > 23.5 * 1000000 ) |>  # rough margin
+  dplyr::rename(target_hg38 = target) # noticed an example where target == 'CA' - while in hg19 ref genome it should have been actually 'CG'
+
+
+
+
+
 
 
 # old manifest for probeCpGcnt & context35 ----
@@ -84,19 +81,157 @@ rm(tmp)
 
 
 tmp <- read.csv("data/Improved DNA Methylation Array Probe Annotation/EPIC/infinium-methylationepic-v-1-0-b5-manifest-file.csv", skip=7,header=T, sep=",") |> 
-  dplyr::filter(grepl("^cg",IlmnID) & grepl("^cg",Name)) |> 
+  #dplyr::filter(grepl("^cg",IlmnID) & grepl("^cg",Name)) |> 
   dplyr::rename(probe_id = IlmnID) |> 
   dplyr::mutate(Name = NULL) |> 
-  dplyr::rename(AlleleA_ProbeSeq_Illumina_manifest = AlleleA_ProbeSeq) |> 
-  dplyr::rename(AlleleB_ProbeSeq_Illumina_manifest = AlleleB_ProbeSeq)
-
+  dplyr::mutate(AlleleA_ProbeSeq = NULL) |> # identical to the other manifest
+  dplyr::mutate(AlleleB_ProbeSeq = NULL) |> # identical to the other manifest
+  dplyr::rename(Forward_Sequence_hg19 = Forward_Sequence)
 
 colnames(tmp)[colnames(tmp) %in% colnames(metadata.cg_probes.epic)]
 
 
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
+
+
+### fix orientation ---
+##' both `mapFlag_A` and `mapYD_A` occasionally do not match
+##' `Forward_Sequence_hg19`, possibly because reference genomes changed
+##' while those are trivial for subsequence / context analysis
+
+
+fn <- "cache/load_probe_annotations__mapped_orientation.Rds"
+if(!file.exists(fn)) {
+  
+  tmp <- metadata.cg_probes.epic |> 
+    dplyr::filter(grepl("^cg", probe_id)) |> 
+    
+    dplyr::mutate(needle = gsub("R","A",AlleleA_ProbeSeq)) |> 
+    dplyr::filter(!is.na(Forward_Sequence_hg19)) |> 
+    dplyr::mutate(haystack = gsub("[][]","",Forward_Sequence_hg19)) |> 
+    dplyr::mutate(haystack_rc =  as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(haystack)))) |> 
+    
+    dplyr::mutate(haystack = gsub("G","A", haystack)) |> 
+    dplyr::mutate(haystack_rc = gsub("G","A", haystack_rc)) |> 
+    
+    dplyr::mutate(n_fwd    = !is.na(stringr::str_locate(haystack,    needle)[,2])) |> 
+    dplyr::mutate(n_fwd_rc = !is.na(stringr::str_locate(haystack_rc, needle)[,2])) |> 
+    
+    dplyr::mutate(orientation_mapped = dplyr::case_when(
+      n_fwd == T & n_fwd_rc == F ~ "reverse",
+      n_fwd == F & n_fwd_rc == T ~ "forward",
+      T ~ "error"
+    )) |> 
+    
+    dplyr::select(probe_id, orientation_mapped) |> 
+    
+    assertr::verify(orientation_mapped != "error") # orientation, AlleleA_ProbeSeq as compared to Forward_Sequence_hg19
+
+  saveRDS(tmp, file=fn)
+  
+} else {
+  
+  tmp <- readRDS(file = fn)
+  
+}
+
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
+
+
+rm(tmp, fn)
+
+
+
+
+## RC the Forward_Sequence_hg19 when direction is forward ----
+
+
+fn <- "cache/load_probe_annotations__sequence_pre_target_post.Rds"
+if(!file.exists(fn)) {
+
+  tmp <- metadata.cg_probes.epic |> 
+    
+    dplyr::filter(!is.na(orientation_mapped)) |>  # some QC probes
+    dplyr::filter(!is.na(Forward_Sequence_hg19)) |> 
+    
+    #dplyr::mutate(Forward_Sequence_hg19 = "AAAAAT[CG]GCCCC", orientation = "reverse") |> 
+    dplyr::mutate(sequence_pre = ifelse(orientation_mapped == "reverse",
+                                        gsub("\\x5B.+$","",Forward_Sequence_hg19),
+                                        spgs::reverseComplement(gsub("^.+\\x5D","",Forward_Sequence_hg19), case="as is")
+    )) |> 
+    dplyr::mutate(sequence_target = ifelse(orientation_mapped == "reverse",
+                                           gsub("^.+\\x5B(.+)\\x5D.+$","\\1",Forward_Sequence_hg19),
+                                           spgs::reverseComplement(gsub("^.+\\x5B(.+)\\x5D.+$","\\1",Forward_Sequence_hg19), case="as is")
+    )) |> 
+    dplyr::mutate(sequence_post = ifelse(orientation_mapped == "reverse",
+                                         gsub("^.+\\x5D","",Forward_Sequence_hg19),
+                                         spgs::reverseComplement(gsub("\\x5B.+$","",Forward_Sequence_hg19), case="as is")
+    )) |> 
+    assertr::verify(nchar(sequence_pre) == 60) |> 
+    assertr::verify(nchar(sequence_target) == 2) |> 
+    assertr::verify(nchar(sequence_post) == 60) |> 
+    dplyr::select(probe_id, sequence_pre, sequence_target, sequence_post) |> 
+    assertr::verify(probe_id %in% metadata.cg_probes.epic$probe_id)
+  
+  saveRDS(tmp, file=fn)
+  
+} else {
+  
+  tmp <- readRDS(file = fn)
+  
+}
+
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
+
+
+rm(tmp, fn)
+
+
+
+
+## proceed with annotations ----
+
+
+fn <- "cache/load_probe_annotations__probe_type_annotation.Rds"
+if(!file.exists(fn)) {
+  
+  tmp <- metadata.cg_probes.epic |> 
+    dplyr::filter(grepl("^cg", probe_id)) |> 
+    dplyr::mutate(probe_type_orientation = dplyr::case_when(
+      type == "I"  & orientation_mapped == "forward" ~ "I - forward (red & green)",
+      type == "I"  & orientation_mapped == "reverse" ~ "I - reverse (red & green)",
+      type == "II" & orientation_mapped == "forward" ~ "II - forward (Allele-A)",
+      type == "II" & orientation_mapped == "reverse" ~ "II - reverse (Allele-A)",
+      T ~ "error"
+    )) |> 
+    dplyr::select(probe_id, probe_type_orientation) |> 
+    assertr::verify(probe_type_orientation != "error")
+  
+  
+  #table(tmp$probe_type_orientation)
+  
+  
+  saveRDS(tmp, file=fn)
+  
+} else {
+  
+  tmp <- readRDS(file = fn)
+  
+}
+
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
+
+
+rm(tmp, fn)
+
+
 
 
 ## G-CIMP ----
@@ -183,30 +318,47 @@ rm(tmp)
 if(!file.exists("cache/load_probe_annotation__sequence_contexts.Rds")) {
   
   tmp <- metadata.cg_probes.epic |> 
-    dplyr::select(probe_id, Forward_Sequence) |> 
-    dplyr::mutate(gc_sequence_context_1 = toupper(gsub("^.+(.[^A-Za-z][A-Za-z]{2}[^A-Za-z].).+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_2 = toupper(gsub("^.+(..[^A-Za-z][A-Za-z]{2}[^A-Za-z]..).+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_l1 = toupper(gsub("^.+(.)[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_l2 = toupper(gsub("^.+(.).[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_l3 = toupper(gsub("^.+(.)..[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_l4 = toupper(gsub("^.+(.)...[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_l5 = toupper(gsub("^.+(.)....[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_l6 = toupper(gsub("^.+(.).....[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_l7 = toupper(gsub("^.+(.)......[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_l8 = toupper(gsub("^.+(.).......[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_r1 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z](.).+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_r2 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].(.).+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_r3 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]..(.).+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_r4 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]...(.).+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_r5 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]....(.).+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_r6 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].....(.).+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_r7 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]......(.).+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(gc_sequence_context_r8 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].......(.).+$","\\1", Forward_Sequence))) |> 
-    dplyr::mutate(Forward_Sequence = NULL)
+    dplyr::filter(!is.na(sequence_pre)) |> 
+    #head(n=10) |> 
+    dplyr::mutate(gc_sequence_context_1_new = paste0(gsub("^.+(.)$","\\1",sequence_pre),  "[", sequence_target, "]", gsub("^(.).+$","\\1",sequence_post))) |> 
+    dplyr::mutate(gc_sequence_context_1_old = toupper(gsub("^.+(.[^A-Za-z][A-Za-z]{2}[^A-Za-z].).+$","\\1", Forward_Sequence_hg19))) |> 
+    
+    dplyr::mutate(gc_sequence_context_2_new = paste0(gsub("^.+(..)$","\\1",sequence_pre),  "[", sequence_target, "]", gsub("^(..).+$","\\1",sequence_post))) |> 
+    dplyr::mutate(gc_sequence_context_2_old = toupper(gsub("^.+(..[^A-Za-z][A-Za-z]{2}[^A-Za-z]..).+$","\\1", Forward_Sequence_hg19))) |> 
+    
+    # dplyr::mutate(gc_sequence_context_l1 = toupper(gsub("^.+(.)[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_l2 = toupper(gsub("^.+(.).[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_l3 = toupper(gsub("^.+(.)..[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_l4 = toupper(gsub("^.+(.)...[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_l5 = toupper(gsub("^.+(.)....[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_l6 = toupper(gsub("^.+(.).....[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_l7 = toupper(gsub("^.+(.)......[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_l8 = toupper(gsub("^.+(.).......[^A-Za-z][A-Za-z]{2}[^A-Za-z].+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_r1 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z](.).+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_r2 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].(.).+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_r3 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]..(.).+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_r4 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]...(.).+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_r5 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]....(.).+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_r6 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].....(.).+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_r7 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z]......(.).+$","\\1", Forward_Sequence_hg19))) |> 
+    # dplyr::mutate(gc_sequence_context_r8 = toupper(gsub("^.+[^A-Za-z][A-Za-z]{2}[^A-Za-z].......(.).+$","\\1", Forward_Sequence_hg19))) |> 
+    
+    dplyr::select(probe_id, gc_sequence_context_1_new, gc_sequence_context_2_new,
+                            gc_sequence_context_1_old, gc_sequence_context_2_old) |> 
+    
+    assertr::verify(nchar(gc_sequence_context_1_new) == 6) |> 
+    assertr::verify(nchar(gc_sequence_context_1_old) == 6) |> 
+    assertr::verify(nchar(gc_sequence_context_2_new) == 8) |> 
+    assertr::verify(nchar(gc_sequence_context_2_old) == 8) |> 
+    assertr::verify(probe_id %in% metadata.cg_probes.epic$probe_id)
+  
   
     saveRDS(tmp, file="cache/load_probe_annotation__sequence_contexts.Rds")
+    
 } else {
+  
   tmp <- readRDS(file="cache/load_probe_annotation__sequence_contexts.Rds")
+  
 }
 
 
@@ -216,16 +368,20 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
 rm(tmp)
 
 
-## add overall G-C content ----
 
+
+## add overall G-C content ----
+#' split per pre- and post sequence
 
 
 
 if(!file.exists("cache/load_probe_annotation__gc_content.Rds")) {
   
   tmp <- metadata.cg_probes.epic |> 
-    dplyr::filter(!is.na(Forward_Sequence)) |> 
-    dplyr::mutate(biostr = gsub("[CG]","",Forward_Sequence, fixed=T)) |> 
+    dlpyr::mutate(sequence)
+  
+    dplyr::filter(!is.na(Forward_Sequence_hg19)) |> 
+    dplyr::mutate(biostr = gsub("[CG]","",Forward_Sequence_hg19, fixed=T)) |> 
     dplyr::mutate(c_content = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(biostr), letters="C") / Biostrings::letterFrequency(Biostrings::DNAStringSet(biostr), letters="ACTG"))) |> 
     dplyr::mutate(g_content = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(biostr), letters="G") / Biostrings::letterFrequency(Biostrings::DNAStringSet(biostr), letters="ACTG"))) |> 
     dplyr::mutate(gc_content = g_content + c_content) |> 
@@ -273,11 +429,11 @@ if(!file.exists("cache/load_probe_annotation__nearest_CG.Rds")) {
   
   tmp <- metadata.cg_probes.epic |> 
     #head(n=1000) |> 
-    dplyr::select(probe_id, Forward_Sequence) |> 
+    dplyr::select(probe_id, Forward_Sequence_hg19) |> 
     dplyr::rowwise() |> 
-    dplyr::mutate(closest_CG = closest_cg(Forward_Sequence)) |> 
+    dplyr::mutate(closest_CG = closest_cg(Forward_Sequence_hg19)) |> 
     dplyr::ungroup() |> 
-    dplyr::mutate(Forward_Sequence = NULL)
+    dplyr::mutate(Forward_Sequence_hg19 = NULL)
   
   saveRDS(tmp, file="cache/load_probe_annotation__nearest_CG.Rds")
   
@@ -301,8 +457,8 @@ rm(tmp)
 if(!file.exists("cache/load_probe_annotation__is_solo_WCGW.Rds")) {
   
   tmp <- metadata.cg_probes.epic |> 
-    dplyr::select(probe_id, Forward_Sequence, closest_CG) |> 
-    dplyr::mutate(tmp = gsub("^.+([ACTG])[^ACTG][CG]{2}[^ACTG]([ACTG]).+$","\\1:CG:\\2", Forward_Sequence)) |> 
+    dplyr::select(probe_id, Forward_Sequence_hg19, closest_CG) |> 
+    dplyr::mutate(tmp = gsub("^.+([ACTG])[^ACTG][CG]{2}[^ACTG]([ACTG]).+$","\\1:CG:\\2", Forward_Sequence_hg19)) |> 
     dplyr::mutate(is_solo_WCGW = (closest_CG >= 35) & (tmp %in% c("A:CG:A", "A:CG:T", "T:CG:A", "T:CG:T"))) |> 
     dplyr::select(probe_id, is_solo_WCGW)
   

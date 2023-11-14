@@ -759,7 +759,7 @@ plt <- data.mvalues.probes |>
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
                 col=DMP__FFPE_decay_time__pp_nc__t)) +
-  facet_wrap(~probe_type_orientation, ncol=4) + 
+  facet_wrap(~probe_type_orientation, ncol=2) + 
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
