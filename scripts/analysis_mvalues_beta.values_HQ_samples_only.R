@@ -43,7 +43,7 @@ if(!exists('gsam.metadata.array_samples')) {
 
 #'@todo four replicates need to be erased after analysis
 metadata.glass_od <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(210) |>  #@todo replicates
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |>  #@todo replicates
   dplyr::select(array_sentrix_id, array_channel_green, array_percentage.detP.signi)
 
 
@@ -75,7 +75,8 @@ targets <- rbind(
   dplyr::mutate(Slide = gsub("^([0-9]+)_.+$","\\1", array_sentrix_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 210 + 218 + 77)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES + 218 + 77)
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
     return(.)
   })()
 
@@ -150,8 +151,8 @@ rm(intensities)
 gc()
 
 
-## Meth intensities ----
 
+## Meth intensities ----
 
 meth_intensities <- log2(minfi::getMeth(proc)) |> 
   (function(.) {
@@ -183,6 +184,7 @@ saveRDS(meth_intensities, "cache/meth_intensities.HQ_samples.Rds")
 
 rm(meth_intensities)
 gc()
+
 
 
 ## Unmeth intensities ----

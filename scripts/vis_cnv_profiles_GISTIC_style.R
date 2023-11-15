@@ -171,7 +171,7 @@ p1 <- ggplot(plt, aes(x=pos/100000000,y=`quantile.50%`, col=grade)) +
   labs(x=NULL, col=NULL) +
   scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
   theme_cellpress + 
-  scale_color_manual(values=pallete_g2_g3)
+  scale_color_manual(values=palette_g2_g3)
 p1
 
 
@@ -461,7 +461,7 @@ p6 <- ggplot(plt, aes(x=pos/100000000,y=`quantile.50%`, col=pr.status)) +
   labs(x=NULL, col=NULL) +
   scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
   theme_cellpress + 
-  scale_color_manual(values=pallete_p_r)
+  scale_color_manual(values=palette_p_r)
 p6
 
 

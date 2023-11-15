@@ -107,7 +107,7 @@ glass_od.metadata.array_samples <- list.files(path = "data/GLASS_OD/DNA Methylat
   dplyr::mutate(array_filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays/", array_filename)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (550))
+    assertthat::assert_that(nrow(.) == (2 * CONST_N_GLASS_OD_ALL_SAMPLES))
     return(.)
   })() |> # equals in-pipe stopifnot(nrow(.) == 404)
   assertr::verify(file.exists(array_filename)) |>
@@ -118,7 +118,7 @@ glass_od.metadata.array_samples <- list.files(path = "data/GLASS_OD/DNA Methylat
   dplyr::rename(array_channel_red = Red) |>
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == ((550) / 2))
+    assertthat::assert_that(nrow(.) == ((2 * CONST_N_GLASS_OD_ALL_SAMPLES) / 2))
     return(.)
   })() |>
   assertr::verify(!is.na(array_channel_green)) |>
@@ -185,13 +185,13 @@ stopifnot(length(setdiff(tmp$array_sentrix_id, glass_od.metadata.array_samples$a
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (275))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })() |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id' = 'array_sentrix_id'), suffix=c('','')) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })() |> 
   assertr::verify(!is.na(resection_id))
@@ -315,7 +315,7 @@ tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |>
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (275))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -349,7 +349,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -360,7 +360,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_qc_report_full)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })() |> 
   dplyr::mutate(array_mnp_qc_report_full = NULL)
@@ -412,7 +412,7 @@ tmp <- c(list.files(
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
   
@@ -422,7 +422,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_A_IDH_HG__A_IDH_lr_v2.0.1)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -449,7 +449,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   dplyr::mutate(tmp_heidelberg_rs_gender_report = NULL) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -490,7 +490,7 @@ tmp <- c(list.files(
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -511,7 +511,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr_v12.8)) |> 
   (function(.) {
     print(paste0(sum(!is.na(.$array_mnp_predictBrain_v12.8_cal_class)), "/", nrow(.)))
-    assertthat::assert_that(sum(!is.na(.$array_mnp_predictBrain_v12.8_cal_class)) == 275) # 0118-R4 still failing
+    assertthat::assert_that(sum(!is.na(.$array_mnp_predictBrain_v12.8_cal_class)) == CONST_N_GLASS_OD_ALL_SAMPLES) # 0118-R4 still failing
     return(.)
   })() 
 
@@ -537,7 +537,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -548,7 +548,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_QC_v12.8_predicted_sample_type) ) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -561,13 +561,13 @@ rm(tmp)
 
 tmp <- query_mnp_12.8_CNVP_segment_csv(
   "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", 
-  275, 
+  CONST_N_GLASS_OD_ALL_SAMPLES, 
   glass_od.metadata.array_samples$array_sentrix_id,
   "array_mnp_CNVP_v12.8_v5.2_"
   ) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -579,7 +579,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_CNVP_v12.8_v5.2_CNVP_version) ) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 rm(tmp)
@@ -599,7 +599,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -609,7 +609,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_heidelberg_cnvp_bins) ) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -630,7 +630,7 @@ tmp <- readRDS("cache/analysis_tumor_purity_EPIC_bin-based.Rds") |>
   assertr::verify(is.numeric(array_methylation_bins_1p19q_sd)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275) # heidi still running
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES) # heidi still running
     return(.)
   })()
 
@@ -664,7 +664,7 @@ tmp <- c(
   assertr::verify(is.numeric(`array_mnp_CNVP_12.8_CDKN2A/B`)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -674,7 +674,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(`array_mnp_CNVP_12.8_CDKN2A/B`)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -700,7 +700,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   dplyr::mutate(tmp_heidelberg_mgmt_report = NULL) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -710,7 +710,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_MGMT_Estimated)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -737,7 +737,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   assertr::verify(!is.na(array_mnp_rsGender_12.8_chrYintensity) & is.numeric(array_mnp_rsGender_12.8_chrYintensity)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
 
@@ -762,7 +762,7 @@ tmp <- readRDS("cache/analysis_median_methylation.Rds") |>
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 215) # only HQ samples - should become 210?
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES) # only HQ samples - should become 210?
     return(.)
   })()
 
@@ -785,7 +785,7 @@ tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |>
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 215) # only HQ samples - should become 210?
+    assertthat::assert_that(nrow(.) == 215) # only HQ samples - should become 210 CONST_N_GLASS_OD_INCLUDED_SAMPLES?
     return(.)
   })()
 
@@ -810,7 +810,7 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds") |>
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 210)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
     return(.)
   })()
 
@@ -869,7 +869,7 @@ tmp <- readRDS("cache/analysis_EPITOC2.Rds") |>
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 215)# only HQ samples - should become 210?
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)# only HQ samples - should become 210?
     return(.)
   })()
 
@@ -886,13 +886,18 @@ rm(tmp)
 
 
 tmp <- readRDS("cache/analysis_dnaMethyAge.Rds") |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })() |> 
   dplyr::rename_with( ~ paste0("array_", .x)) |> 
   dplyr::mutate(array_dnaMethyAge__epiTOC2 = NULL) |> # superseded by `array_epiTOC2_tnsc`
   tibble::rownames_to_column('array_sentrix_id') |> 
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 215)# only HQ samples - should become 210?
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)# only HQ samples - should become 210?
     return(.)
   })()
 
@@ -914,12 +919,18 @@ rm(tmp)
 
 
 tmp <- readRDS("cache/analysis_RepliTali.Rds") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })() |> 
   tibble::rownames_to_column('array_sentrix_id') |> 
+  dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
   dplyr::rename(array_RepliTali = RepliTali) |> 
   assertr::verify(is.numeric(array_RepliTali)) |>
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 510)# only HQ samples - should become 210?
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)# only HQ samples - should become 210?
     return(.)
   })()
 
@@ -936,8 +947,14 @@ rm(tmp)
 tmp <- readRDS(file="cache/analysis_progression_signatures__GLASS-NL_prim_rec_signature.Rds") |>
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 510)# only HQ samples - should become 210?
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
     return(.)
+  })() |> 
+  dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
+  (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
+      return(.)
   })()
 
 

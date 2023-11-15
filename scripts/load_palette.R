@@ -71,14 +71,18 @@ palette_mnp_12.8_AC_3 <- c(
 )
 
 
-pallete_g2_g3 <- c(
+palette_g2_g3 <- c(
   'Grade 2' = mixcol(col2(10)[9], "white", 0.15),
   'Grade 3' = mixcol(col2(10)[2], "white", 0.15)
 )
 
 
-pallete_p_r <- c(
+palette_p_r <- c(
   'Primary' = mixcol(col2(10)[9], "white", 0.15),
   'Recurrence' = mixcol(col2(10)[2], "white", 0.15)
 )
+
+
+palette_infinium_signals <- c('methylated'='darkgreen', 'unmethylated'='red')
+
 

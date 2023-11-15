@@ -22,24 +22,44 @@ if(!exists('metadata.cg_probes.epic')) {
 # EPIC: all hq ----
 
 
-data.intensities.hq_samples <- readRDS("cache/intensities.HQ_samples.Rds") |> 
+data.intensities.combined.hq_samples <- readRDS("cache/intensities.HQ_samples.Rds") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (505)) # 4 replicates still need to be removed still
-    assertthat::assert_that(nrow(.) == (760405))
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES) # 4 replicates still need to be removed still
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
     return(.)
   })()
+
+
+data.intensities.methylated.hq_samples <- readRDS("cache/meth_intensities.HQ_samples.Rds") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES) # 4 replicates still need to be removed still
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    return(.)
+  })()
+
+
+data.intensities.unmethylated.hq_samples <- readRDS("cache/unmeth_intensities.HQ_samples.Rds") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES) # 4 replicates still need to be removed still
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    return(.)
+  })()
+
 
 data.intensities.mask.hq_samples <- readRDS("cache/detP_masked_values.HQ_samples.Rds") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (505)) # 4 replicates still need to be removed still
-    assertthat::assert_that(nrow(.) == (760405))
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES) # 4 replicates still need to be removed still
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
     return(.)
   })()
 
-stopifnot(colnames(data.intensities.hq_samples) == colnames(data.intensities.mask.hq_samples))
-stopifnot(rownames(data.intensities.hq_samples) == rownames(data.intensities.mask.hq_samples))
+
+stopifnot(colnames(data.intensities.combined.hq_samples) == colnames(data.intensities.mask.hq_samples))
+stopifnot(rownames(data.intensities.combined.hq_samples) == rownames(data.intensities.mask.hq_samples))
 
 
 
@@ -73,7 +93,7 @@ data.intensities.good_probes <- data.intensities.probes |>
   dplyr::filter(detP_good_probe) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693060))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
     return(.)
   })() |> 
   assertr::verify(MASK_general == F) |> 

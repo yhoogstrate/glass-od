@@ -20,7 +20,7 @@ if(!exists('data.mvalues.hq_samples')) {
 }
 
 
-if(!exists('data.intensities.hq_samples')) {
+if(!exists('data.intensities.combined.hq_samples')) {
   source('scripts/load_intensities_hq_samples.R')
 }
 
@@ -197,7 +197,7 @@ plot(coef$conditionc2, -log(pval$conditionc2))
 
 
 metadata.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   filter_primaries_and_last_recurrences(178) |> 
   
   
@@ -260,7 +260,7 @@ rm(fit.pp.nc, stats.pp.nc)
 
 
 metadata.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   filter_primaries_and_last_recurrences(178) |> 
   
   
@@ -280,7 +280,7 @@ metadata.pp.nc <- glass_od.metadata.array_samples |>
 
 
 
-data.pp.nc <- data.intensities.hq_samples |> 
+data.pp.nc <- data.intensities.combined.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.intensities.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
@@ -325,7 +325,7 @@ rm(fit.pp.nc, stats.pp.nc)
 
 
 metadata.fp <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   filter_primaries_and_last_recurrences(179) |> 
   
   dplyr::group_by(patient_id) |> 
@@ -655,7 +655,7 @@ ggsave("/tmp/volcano_g3g2.png", width=8.5/2,height=8.5/2)
 
 
 metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   filter_first_G2_and_last_G3(150) |> 
   
   dplyr::group_by(patient_id) |> 
@@ -721,7 +721,7 @@ rm(fit.g2g3.pp.nc, stats.g2g3.pp.nc)
 
 
 metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   filter_first_G2_and_last_G3(150) |> 
   
   dplyr::group_by(patient_id) |> 
@@ -740,7 +740,7 @@ metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |>
 
 
 
-data.g2g3.pp.nc <- data.intensities.hq_samples |> 
+data.g2g3.pp.nc <- data.intensities.combined.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.intensities.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
@@ -1259,7 +1259,7 @@ p1 / p2
 
 
 m <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) 
 
 d <- data.mvalues.hq_samples |> 
   dplyr::select(m$array_sentrix_id) |> 
@@ -1334,7 +1334,7 @@ plot(plt2$array_PC6, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor
 
 
 metadata.AccGAP.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
   assertr::verify(is.numeric(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
   dplyr::mutate(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit = scale(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
@@ -1344,7 +1344,7 @@ metadata.AccGAP.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_SAMPLES_INCLUDED)) 
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_INCLUDED_SAMPLES)) 
     return(.)
   })()
 
@@ -1422,7 +1422,7 @@ plot(sort(stats.lgc$P.Value),type="l")
 
 
 metadata.ffpe_or_ff.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   dplyr::filter(!is.na(isolation_material)) |>
   dplyr::mutate(isolation_material = factor(isolation_material, levels=c("ffpe", "tissue"))) |> 
   dplyr::mutate(ffpe_or_ff_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
@@ -1488,7 +1488,7 @@ rm(fit.ffpe_or_ff.pp.nc, stats.ffpe_or_ff.pp.nc)
 
 
 metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   dplyr::filter(!is.na(isolation_material)) |> 
   dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
   dplyr::filter(!is.na(ffpe_decay_time)) |> 
@@ -1550,7 +1550,7 @@ rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
 
 
 metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   dplyr::filter(!is.na(isolation_material)) |> 
   dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> # don't change sign here (!!)
   dplyr::filter(!is.na(ffpe_decay_time)) |> 
@@ -1565,7 +1565,7 @@ metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |>
   })()
 
 
-data.ffpe_decay.pp.nc <- data.intensities.hq_samples |> 
+data.ffpe_decay.pp.nc <- data.intensities.combined.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.intensities.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
@@ -1612,7 +1612,7 @@ rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
 
 
 metadata.ffpe_decay.up.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   dplyr::filter(!is.na(isolation_material)) |> 
   dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
   dplyr::filter(!is.na(ffpe_decay_time)) |> 
@@ -1679,13 +1679,13 @@ for(clock in clocks) {
   
   
   metadata.current_clock.up.nc <- glass_od.metadata.array_samples |> 
-    filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
+    filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
     data.table::copy() |> # odd hack needed, because setnames also affects the former "glass_od.metadata.array_samples" object...
     data.table::setnames(old = c(clock), new = c("array_current_clock")) |> 
     dplyr::filter(!is.na(array_current_clock)) |> 
     (function(.) {
       print(dim(.))
-      assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_SAMPLES_INCLUDED) 
+      assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES) 
       return(.)
     })()
   
