@@ -1,8 +1,10 @@
 #!/usr/bin/env R
 
 
-# mixcol
-source('scripts/load_functions.R')
+
+if(!exists('mixcol')) {
+  source('scripts/load_functions.R')
+}
 
 
 # center with darker gray - original also used in corrplot and some HI-publications

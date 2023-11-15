@@ -9,21 +9,15 @@ if(!exists('data.beta.values.hq_samples')) {
 
 
 
-
 # load EPITOC2 probes ----
 #' https://github.com/perishky/meffonym/blob/master/inst/epitoc2/epitoc2.r
+
 
 load('data/epiTOC2/dataETOC2.Rd')
 source('data/epiTOC2/epiTOC2.R')
 
 
-
-### run epitoc ----
-
-#### tnsc: the estimated cumulative number of stem-cell divisions per stem-cell per year and per sample using the full epiTOC2 model.
-#### tnsc2: the estimated cumulative number of stem-cell divisions per stem-cell per year and per sample using an approximation of epiTOC2 which assumes all epiTOC2 CpGs have beta-values exactly 0 in the fetal stage.
-#### pcgtAge: this is the mitotic-score obtained using our previous epiTOC model.
-#### hypoSC: the HypoClock score over the 678 solo-WCGWs
+# prep dat ----
 
 
 dat <- data.beta.values.hq_samples |> 
@@ -32,21 +26,31 @@ dat <- data.beta.values.hq_samples |>
   tibble::column_to_rownames('probe_id') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 693017)
-    assertthat::assert_that(ncol(.) == 510)
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
     return(.)
   })()
 
 
+
+## run epitoc ----
+
+#### tnsc: the estimated cumulative number of stem-cell divisions per stem-cell per year and per sample using the full epiTOC2 model.
+#### tnsc2: the estimated cumulative number of stem-cell divisions per stem-cell per year and per sample using an approximation of epiTOC2 which assumes all epiTOC2 CpGs have beta-values exactly 0 in the fetal stage.
+#### pcgtAge: this is the mitotic-score obtained using our previous epiTOC model.
+#### hypoSC: the HypoClock score over the 678 solo-WCGWs
+
+
+
 epiTOC2.data.out <- epiTOC2(as.matrix(dat))
-stopifnot(names(epiTOC2.data.out$tnsc) == names(epiTOC2.data.out$tnsc2))
+#stopifnot(names(epiTOC2.data.out$tnsc) == names(epiTOC2.data.out$tnsc2))
 stopifnot(names(epiTOC2.data.out$tnsc) == names(epiTOC2.data.out$pcgtAge))
 stopifnot(names(epiTOC2.data.out$tnsc) == names(epiTOC2.data.out$hypoSC))
 
 
 out <- data.frame(
   tnsc = epiTOC2.data.out$tnsc,
-  tnsc2 = epiTOC2.data.out$tnsc2,
+  #tnsc2 = epiTOC2.data.out$tnsc2,
   pcgtAge = epiTOC2.data.out$pcgtAge,
   hypoSC = epiTOC2.data.out$hypoSC
 ) |> 
@@ -64,12 +68,13 @@ gc()
 
 
 
-# dnaMethyAge package ----
+## run dnaMethyAge package ----
 
 # devtools::install_github("yiluyucheng/dnaMethyAge")
 
 dnaMethyAge::availableClock()
 library(dnaMethyAge)
+
 data(list='PC-clocks', envir=environment())
 
 age_HannumG2013    <- dnaMethyAge::methyAge(dat, clock='HannumG2013')    |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__HannumG2013 = mAge)
@@ -122,13 +127,20 @@ out <- age_HannumG2013 |>
   dplyr::left_join(age_LuA2023p1      , by=c('Sample'='Sample'), suffix=c('',''))  |> 
   dplyr::left_join(age_LuA2023p2      , by=c('Sample'='Sample'), suffix=c('',''))  |> 
   dplyr::left_join(age_LuA2023p3      , by=c('Sample'='Sample'), suffix=c('',''))  |> 
-  tibble::column_to_rownames('Sample')
+  tibble::column_to_rownames('Sample') |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
+
+# these break:
 #dplyr::left_join(age_DunedinPACE      , by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))  |> 
 #dplyr::left_join(age_PCGrimAge        , by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))  |> 
 #dplyr::left_join(age_BernabeuE2023c   , by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))  |> 
-
-corrplot::corrplot(cor(out, method = "spearman"))
+#corrplot::corrplot(cor(out, method = "spearman"))
 
 
 # LuA2019 seems inversed, ZhangY2017 seems different signal
@@ -138,19 +150,8 @@ saveRDS(out, file="cache/analysis_dnaMethyAge.Rds")
 rm(out)
 
 
-# RepliTali - Endicott NatCom 2022 ----
-
-
-dat <- data.beta.values.hq_samples |> 
-  tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% data.beta.values.good_probes) |> 
-  tibble::column_to_rownames('probe_id') |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 693017)
-    assertthat::assert_that(ncol(.) == 510)
-    return(.)
-  })()
+## run RepliTali - Endicott NatCom 2022 ----
+#' manually fixed some of the code
 
 
 

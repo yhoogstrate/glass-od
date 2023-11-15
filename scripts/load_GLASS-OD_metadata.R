@@ -270,13 +270,15 @@ rm(tmp.thumbnails_full)
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('resection_id'='resection_id'), suffix=c('',''))
 
+rm(tmp)
 
 
-# thumbnails
+
 
 
 ## Percentage detP probesC ----
 #' from: scripts/analysis_percentage_detP_probes.R
+
 
 tmp <- read.table("output/tables/percentage_detP_probes.txt") |> 
   assertr::verify(!is.na(array_percentage.detP.signi) & is.numeric(array_percentage.detP.signi)) |> 
@@ -420,6 +422,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
     assertthat::assert_that(nrow(.) == 275)
     return(.)
   })()
+
 
 rm(tmp)
 
@@ -606,6 +609,8 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
     assertthat::assert_that(nrow(.) == 275)
     return(.)
   })()
+
+
 rm(tmp)
 
 
@@ -705,6 +710,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
     assertthat::assert_that(nrow(.) == 275)
     return(.)
   })()
+
 rm(tmp)
 
 
@@ -753,7 +759,7 @@ tmp <- readRDS("cache/analysis_median_methylation.Rds") |>
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 215) # only HQ samples
+    assertthat::assert_that(nrow(.) == 215) # only HQ samples - should become 210?
     return(.)
   })()
 
@@ -772,12 +778,11 @@ rm(tmp)
 
 
 tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |> 
-  #dplyr::rename_with( ~ paste0("array_", .x)) |> 
   assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 215) # to become 211
+    assertthat::assert_that(nrow(.) == 215) # only HQ samples - should become 210?
     return(.)
   })()
 
@@ -843,6 +848,7 @@ tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined_no_1P
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
 rm(tmp)
 
 
@@ -860,15 +866,17 @@ tmp <- readRDS("cache/analysis_EPITOC2.Rds") |>
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 215)
+    assertthat::assert_that(nrow(.) == 215)# only HQ samples - should become 210?
     return(.)
   })()
 
 
-
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
 rm(tmp)
+
+
 
 
 ## dnaMethyAge ----
@@ -881,13 +889,14 @@ tmp <- readRDS("cache/analysis_dnaMethyAge.Rds") |>
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 215)
+    assertthat::assert_that(nrow(.) == 215)# only HQ samples - should become 210?
     return(.)
   })()
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
 rm(tmp)
 
 
@@ -904,22 +913,34 @@ rm(tmp)
 tmp <- readRDS("cache/analysis_RepliTali.Rds") |> 
   tibble::rownames_to_column('array_sentrix_id') |> 
   dplyr::rename(array_RepliTali = RepliTali) |> 
-  assertr::verify(is.numeric(array_RepliTali))
+  assertr::verify(is.numeric(array_RepliTali)) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 510)# only HQ samples - should become 210?
+    return(.)
+  })()
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
 rm(tmp)
 
 
 ## GLASS-NL median methylation 1300 probes signature ----
 
 
-tmp <- readRDS(file="cache/analysis_progression_signatures__GLASS-NL_prim_rec_signature.Rds")
+tmp <- readRDS(file="cache/analysis_progression_signatures__GLASS-NL_prim_rec_signature.Rds") |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 510)# only HQ samples - should become 210?
+    return(.)
+  })()
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
 rm(tmp)
 
 
