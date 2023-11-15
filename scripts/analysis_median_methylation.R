@@ -82,10 +82,6 @@ median.glass_nl.meth <- data |>
 
 
 
-# clean-up ----
-
-
-
 # merge & export ----
 
 
@@ -102,7 +98,7 @@ saveRDS(export, file="cache/analysis_median_methylation.Rds")
 
 
 
-rm(data, export, targets)
+rm(data, export)
 gc()
 
 
