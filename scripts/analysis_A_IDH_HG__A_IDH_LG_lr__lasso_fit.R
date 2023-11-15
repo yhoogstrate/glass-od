@@ -32,16 +32,19 @@ if(!exists('gsam.metadata.array_samples')) {
 
 
 metadata.glass_od <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(215)
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES)
+
 
 data.glass_od <- data.mvalues.hq_samples |>
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.glass_od$array_sentrix_id)
-  #(function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
-  #dplyr::arrange(mad) |> 
-  #dplyr::mutate(mad = NULL)
+  dplyr::select(metadata.glass_od$array_sentrix_id)  |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
 
 
 metadata.glass_nl <- glass_nl.metadata.array_samples |> 
@@ -49,14 +52,17 @@ metadata.glass_nl <- glass_nl.metadata.array_samples |>
   dplyr::mutate(i = 1:dplyr::n()) |> 
   dplyr::mutate(slice = i %% 10, i = NULL)
 
+
 data.glass_nl <- data.mvalues.hq_samples |>
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.glass_nl$array_sentrix_id)
-  #(function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
-  #dplyr::arrange(mad) |> 
-  #dplyr::mutate(mad = NULL)
+  dplyr::select(metadata.glass_nl$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
 
 
 
@@ -67,10 +73,12 @@ data.gsam <- data.mvalues.hq_samples |>
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.gsam$array_sentrix_id)
-  #(function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)))() |> # this synthax, oh my
-  #dplyr::arrange(mad) |> 
-  #dplyr::mutate(mad = NULL)
+  dplyr::select(metadata.gsam$array_sentrix_id)  |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
 
 
 

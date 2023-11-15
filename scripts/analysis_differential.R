@@ -4,14 +4,10 @@
 # load data ----
 
 
-library(ggplot2)
-
-
-
 source('scripts/load_constants.R')
 source('scripts/load_functions.R')
-source('scripts/load_palette.R')
-source('scripts/load_themes.R')
+#source('scripts/load_palette.R')
+#source('scripts/load_themes.R')
 
 
 
@@ -288,7 +284,7 @@ data.pp.nc <- data.intensities.combined.hq_samples |>
   dplyr::select(metadata.pp.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693060)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -748,7 +744,7 @@ data.g2g3.pp.nc <- data.intensities.combined.hq_samples |>
   dplyr::select(metadata.g2g3.pp.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693060)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -1546,7 +1542,7 @@ rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
 
 
 
-## data: partially paired INTENSITIES [w/o FFPE/frozen batch correct] ----
+## data: partially paired COMBINED INTENSITIES [w/o FFPE/frozen batch correct] ----
 
 
 metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
@@ -1573,7 +1569,7 @@ data.ffpe_decay.pp.nc <- data.intensities.combined.hq_samples |>
   dplyr::select(metadata.ffpe_decay.pp.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693060)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -1602,6 +1598,132 @@ sum(stats.ffpe_decay.pp.nc$adj.P.Val < 0.01)
 
 #saveRDS(fit.ffpe_decay.pp.nc, file="cache/analysis_differential_intensities__ffpe-decay-time__partial_paired_nc__fit.Rds")
 saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds")
+
+
+rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
+
+
+
+
+## data: partially paired METHYLATED INTENSITIES [w/o FFPE/frozen batch correct] ----
+
+
+metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(!is.na(isolation_material)) |> 
+  dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> # don't change sign here (!!)
+  dplyr::filter(!is.na(ffpe_decay_time)) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p_", ifelse(is.paired,patient_id, "remainder")))) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (202)) 
+    return(.)
+  })()
+
+
+data.ffpe_decay.pp.nc <- data.intensities.methylated.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.intensities.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.ffpe_decay.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+design.ffpe_decay.pp.nc <- model.matrix(~factor(patient) + ffpe_decay_time, data=metadata.ffpe_decay.pp.nc)
+fit.ffpe_decay.pp.nc <- limma::lmFit(data.ffpe_decay.pp.nc, design.ffpe_decay.pp.nc)
+fit.ffpe_decay.pp.nc <- limma::eBayes(fit.ffpe_decay.pp.nc, trend=T)
+
+stats.ffpe_decay.pp.nc <- limma::topTable(fit.ffpe_decay.pp.nc,
+                                          n=nrow(data.ffpe_decay.pp.nc),
+                                          coef="ffpe_decay_time",
+                                          sort.by = "none",
+                                          adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')
+
+
+
+rm(design.ffpe_decay.pp.nc)
+
+
+sum(stats.ffpe_decay.pp.nc$P.Value < 0.01)
+sum(stats.ffpe_decay.pp.nc$adj.P.Val < 0.01)
+
+
+
+#saveRDS(fit.ffpe_decay.pp.nc, file="cache/analysis_differential_methylated_intensities__ffpe-decay-time__partial_paired_nc__fit.Rds")
+saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential_methylated_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds")
+
+
+rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
+
+
+
+
+## data: partially paired UNMETHYLATED INTENSITIES [w/o FFPE/frozen batch correct] ----
+
+
+metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(!is.na(isolation_material)) |> 
+  dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> # don't change sign here (!!)
+  dplyr::filter(!is.na(ffpe_decay_time)) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p_", ifelse(is.paired,patient_id, "remainder")))) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (202)) 
+    return(.)
+  })()
+
+
+data.ffpe_decay.pp.nc <- data.intensities.unmethylated.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.intensities.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.ffpe_decay.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+design.ffpe_decay.pp.nc <- model.matrix(~factor(patient) + ffpe_decay_time, data=metadata.ffpe_decay.pp.nc)
+fit.ffpe_decay.pp.nc <- limma::lmFit(data.ffpe_decay.pp.nc, design.ffpe_decay.pp.nc)
+fit.ffpe_decay.pp.nc <- limma::eBayes(fit.ffpe_decay.pp.nc, trend=T)
+
+stats.ffpe_decay.pp.nc <- limma::topTable(fit.ffpe_decay.pp.nc,
+                                          n=nrow(data.ffpe_decay.pp.nc),
+                                          coef="ffpe_decay_time",
+                                          sort.by = "none",
+                                          adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')
+
+
+
+rm(design.ffpe_decay.pp.nc)
+
+
+sum(stats.ffpe_decay.pp.nc$P.Value < 0.01)
+sum(stats.ffpe_decay.pp.nc$adj.P.Val < 0.01)
+
+
+
+#saveRDS(fit.ffpe_decay.pp.nc, file="cache/analysis_differential_unmethylated_intensities__ffpe-decay-time__partial_paired_nc__fit.Rds")
+saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential_unmethylated_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds")
 
 
 rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)

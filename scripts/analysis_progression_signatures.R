@@ -26,13 +26,19 @@ stats <- read.csv("data/GLASS_NL/Metadata/(Epi)genetic_data/ProbeSelection_IvR_F
   matrixStats::colMedians() |> 
   as.data.frame() |> 
   dplyr::rename(array_GLASS_NL_g2_g3_sig = 1) |> 
-  tibble::rownames_to_column('array_sentrix_id')
+  tibble::rownames_to_column('array_sentrix_id') |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 
 saveRDS(stats, file="cache/analysis_progression_signatures__GLASS-NL_prim_rec_signature.Rds")
 
 rm(stats)
+
 
 
 # glass-od g2/g3 ----
@@ -51,7 +57,12 @@ stats1 <- data.mvalues.probes |>
   matrixStats::colMedians() |> 
   as.data.frame() |> 
   dplyr::rename(array_GLASS_OD_g2_g3_sig1 = 1) |> 
-  tibble::rownames_to_column('array_sentrix_id')
+  tibble::rownames_to_column('array_sentrix_id') |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 
@@ -73,7 +84,12 @@ stats2 <- data.mvalues.probes |>
   matrixStats::colMedians() |> 
   as.data.frame() |> 
   dplyr::rename(array_GLASS_OD_g2_g3_sig2 = 1) |> 
-  tibble::rownames_to_column('array_sentrix_id')
+  tibble::rownames_to_column('array_sentrix_id') |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 
@@ -94,7 +110,12 @@ stats3 <- data.mvalues.probes |>
   matrixStats::colMedians() |> 
   as.data.frame() |> 
   dplyr::rename(array_GLASS_OD_g2_g3_sig3 = 1) |> 
-  tibble::rownames_to_column('array_sentrix_id')
+  tibble::rownames_to_column('array_sentrix_id') |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 ## median type 4 ----
@@ -114,7 +135,12 @@ stats4 <- data.mvalues.probes |>
   matrixStats::colMedians() |> 
   as.data.frame() |> 
   dplyr::rename(array_GLASS_OD_g2_g3_sig4 = 1) |> 
-  tibble::rownames_to_column('array_sentrix_id')
+  tibble::rownames_to_column('array_sentrix_id') |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 
@@ -128,7 +154,7 @@ tmp <- data.mvalues.probes |>
     data.mvalues.hq_samples |> tibble::rownames_to_column('probe_id'),
     by=c('probe_id'='probe_id'), suffix=c('','')
   ) |> 
-  tibble::column_to_rownames('probe_id') 
+  tibble::column_to_rownames('probe_id')
 
 
 pc <- tmp |> 
@@ -141,7 +167,7 @@ pc <- tmp |>
   dplyr::rename(array_GLASS_OD_g2_g3_sig6 = PC2) |> 
   dplyr::rename(array_GLASS_OD_g2_g3_sig7 = PC3) |> 
   dplyr::rename(array_GLASS_OD_g2_g3_sig8 = PC4) |> 
-  tibble::rownames_to_column('array_sentrix_id')
+  tibble::rownames_to_column('array_sentrix_id') 
 
 
 
@@ -152,7 +178,12 @@ exp <- stats1 |>
   dplyr::left_join(stats2, by=c('array_sentrix_id'='array_sentrix_id'),suffix=c('','')) |> 
   dplyr::left_join(stats3, by=c('array_sentrix_id'='array_sentrix_id'),suffix=c('','')) |> 
   dplyr::left_join(stats4, by=c('array_sentrix_id'='array_sentrix_id'),suffix=c('','')) |> 
-  dplyr::left_join(pc, by=c('array_sentrix_id'='array_sentrix_id'),suffix=c('',''))
+  dplyr::left_join(pc, by=c('array_sentrix_id'='array_sentrix_id'),suffix=c('','')) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 saveRDS(exp, file="cache/analysis_progression_signatures__GLASS-OD__g2_g3.Rds")
@@ -177,7 +208,12 @@ stats1 <- data.mvalues.probes |>
   matrixStats::colMedians() |> 
   as.data.frame() |> 
   dplyr::rename(array_GLASS_OD_prim_rec_sig1 = 1) |> 
-  tibble::rownames_to_column('array_sentrix_id')
+  tibble::rownames_to_column('array_sentrix_id') |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 
@@ -199,7 +235,12 @@ stats2 <- data.mvalues.probes |>
   matrixStats::colMedians() |> 
   as.data.frame() |> 
   dplyr::rename(array_GLASS_OD_prim_rec_sig2 = 1) |> 
-  tibble::rownames_to_column('array_sentrix_id')
+  tibble::rownames_to_column('array_sentrix_id')|>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 
@@ -220,7 +261,12 @@ stats3 <- data.mvalues.probes |>
   matrixStats::colMedians() |> 
   as.data.frame() |> 
   dplyr::rename(array_GLASS_OD_prim_rec_sig3 = 1) |> 
-  tibble::rownames_to_column('array_sentrix_id')
+  tibble::rownames_to_column('array_sentrix_id') |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 ## median type 4 ----
@@ -240,7 +286,12 @@ stats4 <- data.mvalues.probes |>
   matrixStats::colMedians() |> 
   as.data.frame() |> 
   dplyr::rename(array_GLASS_OD_prim_rec_sig4 = 1) |> 
-  tibble::rownames_to_column('array_sentrix_id')
+  tibble::rownames_to_column('array_sentrix_id') |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 
@@ -278,7 +329,12 @@ exp <- stats1 |>
   dplyr::left_join(stats2, by=c('array_sentrix_id'='array_sentrix_id'),suffix=c('','')) |> 
   dplyr::left_join(stats3, by=c('array_sentrix_id'='array_sentrix_id'),suffix=c('','')) |> 
   dplyr::left_join(stats4, by=c('array_sentrix_id'='array_sentrix_id'),suffix=c('','')) |> 
-  dplyr::left_join(pc, by=c('array_sentrix_id'='array_sentrix_id'),suffix=c('',''))
+  dplyr::left_join(pc, by=c('array_sentrix_id'='array_sentrix_id'),suffix=c('','')) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 saveRDS(exp, file="cache/analysis_progression_signatures__GLASS-OD__primary_recurrence.Rds")
