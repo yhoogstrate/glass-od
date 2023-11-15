@@ -3,18 +3,16 @@
 # load m-values ----
 
 
+source('scripts/load_constants.R')
+source('scripts/load_functions.R')
+#source('scripts/load_palette.R')
+#source('scripts/load_themes.R')
+
+
 if(!exists('data.beta.values.hq_samples')) {
   source('scripts/load_beta.values_hq_samples.R')
 }
 
-
-
-# load EPITOC2 probes ----
-#' https://github.com/perishky/meffonym/blob/master/inst/epitoc2/epitoc2.r
-
-
-load('data/epiTOC2/dataETOC2.Rd')
-source('data/epiTOC2/epiTOC2.R')
 
 
 # prep dat ----
@@ -33,7 +31,16 @@ dat <- data.beta.values.hq_samples |>
 
 
 
-## run epitoc ----
+# run epitoc ----
+
+
+# load EPITOC2 probes
+#' https://github.com/perishky/meffonym/blob/master/inst/epitoc2/epitoc2.r
+
+
+load('data/epiTOC2/dataETOC2.Rd')
+source('data/epiTOC2/epiTOC2.R')
+
 
 #### tnsc: the estimated cumulative number of stem-cell divisions per stem-cell per year and per sample using the full epiTOC2 model.
 #### tnsc2: the estimated cumulative number of stem-cell divisions per stem-cell per year and per sample using an approximation of epiTOC2 which assumes all epiTOC2 CpGs have beta-values exactly 0 in the fetal stage.
@@ -55,12 +62,16 @@ out <- data.frame(
   hypoSC = epiTOC2.data.out$hypoSC
 ) |> 
   dplyr::rename_with( ~ paste0("array_epiTOC2_", .x)) |> 
-  tibble::rownames_to_column('array_sentrix_id')
+  tibble::rownames_to_column('array_sentrix_id')  |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 
 saveRDS(out, file="cache/analysis_EPITOC2.Rds")
-
 
 
 rm(epiTOC2.data.out, out)
@@ -68,14 +79,14 @@ gc()
 
 
 
-## run dnaMethyAge package ----
-
+# run dnaMethyAge package ----
 # devtools::install_github("yiluyucheng/dnaMethyAge")
+
 
 dnaMethyAge::availableClock()
 library(dnaMethyAge)
-
 data(list='PC-clocks', envir=environment())
+
 
 age_HannumG2013    <- dnaMethyAge::methyAge(dat, clock='HannumG2013')    |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__HannumG2013 = mAge)
 age_HorvathS2013   <- dnaMethyAge::methyAge(dat, clock='HorvathS2013')   |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__HorvathS2013 = mAge)
@@ -131,7 +142,7 @@ out <- age_HannumG2013 |>
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
     return(.)
   })()
 
@@ -150,7 +161,7 @@ saveRDS(out, file="cache/analysis_dnaMethyAge.Rds")
 rm(out)
 
 
-## run RepliTali - Endicott NatCom 2022 ----
+# run RepliTali - Endicott NatCom 2022 ----
 #' manually fixed some of the code
 
 
@@ -176,7 +187,12 @@ RT.betas <- RT |>
 stopifnot(RT$Coefficient[-1] == rownames(RT.betas))
 
 out <- apply(RT.betas,2,function(x) RT$Value[-1]*x)
-out <- data.frame(RepliTali = apply(out,2,function(x) sum(x) +RT$Value[1]))
+out <- data.frame(RepliTali = apply(out,2,function(x) sum(x) +RT$Value[1])) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 saveRDS(out, file="cache/analysis_RepliTali.Rds")

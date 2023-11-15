@@ -3,7 +3,10 @@
 # load libs, config & db ----
 
 
+source('scripts/load_constants.R')
 source('scripts/load_functions.R')
+#source('scripts/load_palette.R')
+#source('scripts/load_themes.R')
 
 
 metadata.db.con <- DBI::dbConnect(RSQLite::SQLite(), "../glass-od-clinical-database/glass-od-clinical-database.db")

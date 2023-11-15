@@ -14,8 +14,8 @@ library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19) # BiocManager::install("I
 
 source('scripts/load_constants.R')
 source('scripts/load_functions.R')
-source('scripts/load_palette.R')
-source('scripts/load_themes.R')
+#source('scripts/load_palette.R')
+#source('scripts/load_themes.R')
 
 
 

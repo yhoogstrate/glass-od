@@ -3,6 +3,12 @@
 # load data ----
 
 
+source('scripts/load_constants.R')
+source('scripts/load_functions.R')
+#source('scripts/load_palette.R')
+#source('scripts/load_themes.R')
+
+
 if(!exists('data.mvalues.hq_samples')) {
   source('scripts/load_mvalues_hq_samples.R')
 }
@@ -11,7 +17,7 @@ if(!exists('data.mvalues.hq_samples')) {
 data <- data.mvalues.hq_samples |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (510))
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
     return(.)
   })()
 data.mask <- data.mvalues.mask.hq_samples
@@ -36,7 +42,7 @@ data <- data |>
   tibble::column_to_rownames('probe_id') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
     return(.)
   })()
 
@@ -84,7 +90,12 @@ median.glass_nl.meth <- data |>
 
 
 export <- median.overall.meth |> 
-  dplyr::left_join(median.glass_nl.meth, by=c('sentrix_id'='sentrix_id'), suffix=c('',''))
+  dplyr::left_join(median.glass_nl.meth, by=c('sentrix_id'='sentrix_id'), suffix=c('','')) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })()
 
 
 saveRDS(export, file="cache/analysis_median_methylation.Rds")
