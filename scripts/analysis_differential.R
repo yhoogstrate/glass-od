@@ -10,11 +10,17 @@ library(ggplot2)
 
 source('scripts/load_constants.R')
 source('scripts/load_functions.R')
+source('scripts/load_palette.R')
 source('scripts/load_themes.R')
 
 
 if(!exists('data.mvalues.hq_samples')) {
   source('scripts/load_mvalues_hq_samples.R')
+}
+
+
+if(!exists('data.intensities.hq_samples')) {
+  source('scripts/load_intensities_hq_samples.R')
 }
 
 
@@ -1545,7 +1551,7 @@ rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
 metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_SAMPLES_INCLUDED) |> 
   dplyr::filter(!is.na(isolation_material)) |> 
-  dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
+  dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> # don't change sign here (!!)
   dplyr::filter(!is.na(ffpe_decay_time)) |> 
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() >= 2) |> 

@@ -101,8 +101,8 @@ masked.value <- ifelse(detP > 0.01 , NA, 1) |>
   tibble::column_to_rownames('probe_id') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 760405)
-    assertthat::assert_that(ncol(.) == 505)
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
     return(.)
   })()
 
@@ -117,8 +117,8 @@ stopifnot(sum(is.na(masked.value)) > 0)
 intensities <- log2(minfi::getMeth(proc) + minfi::getUnmeth(proc)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 865859)
-    assertthat::assert_that(ncol(.) == 505)
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES)
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
     return(.)
   })() |> 
   data.table::as.data.table(keep.rownames = "probe_id") |> 
@@ -130,7 +130,7 @@ intensities <- log2(minfi::getMeth(proc) + minfi::getUnmeth(proc)) |>
   tibble::column_to_rownames('probe_id') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 760405)
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
     return(.)
   })()
 
@@ -146,18 +146,14 @@ rm(intensities)
 gc()
 
 
+## Meth intensities ----
 
-### m-values ----
 
-
-mvalue <- minfi::ratioConvert(proc, what = "M") |> 
-  assays() |> 
-  purrr::pluck('listData') |> 
-  purrr::pluck("M") |> 
+meth_intensities <- log2(minfi::getMeth(proc)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 865859)
-    assertthat::assert_that(ncol(.) == 505)
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES)
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
     return(.)
   })() |> 
   data.table::as.data.table(keep.rownames = "probe_id") |> 
@@ -169,7 +165,81 @@ mvalue <- minfi::ratioConvert(proc, what = "M") |>
   tibble::column_to_rownames('probe_id') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 760405)
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    return(.)
+  })()
+
+
+stopifnot(sum(is.na(meth_intensities)) == 0)
+stopifnot(targets$array_sentrix_id == colnames(meth_intensities))
+
+
+saveRDS(meth_intensities, "cache/meth_intensities.HQ_samples.Rds")
+
+
+rm(meth_intensities)
+gc()
+
+
+## Unmeth intensities ----
+
+
+unmeth_intensities <- log2(minfi::getMeth(proc)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES)
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
+    return(.)
+  })() |> 
+  data.table::as.data.table(keep.rownames = "probe_id") |> 
+  dplyr::filter(probe_id %in% (
+    metadata.cg_probes.epic |> 
+      dplyr::filter(MASK_general == F) |> 
+      dplyr::pull(probe_id)
+  )) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    return(.)
+  })()
+
+
+stopifnot(sum(is.na(unmeth_intensities)) == 0)
+stopifnot(targets$array_sentrix_id == colnames(unmeth_intensities))
+
+
+saveRDS(unmeth_intensities, "cache/unmeth_intensities.HQ_samples.Rds")
+
+
+rm(unmeth_intensities)
+gc()
+
+
+
+### m-values ----
+
+
+mvalue <- minfi::ratioConvert(proc, what = "M") |> 
+  assays() |> 
+  purrr::pluck('listData') |> 
+  purrr::pluck("M") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES)
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
+    return(.)
+  })() |> 
+  data.table::as.data.table(keep.rownames = "probe_id") |> 
+  dplyr::filter(probe_id %in% (
+    metadata.cg_probes.epic |> 
+      dplyr::filter(MASK_general == F) |> 
+      dplyr::pull(probe_id)
+  )) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
     return(.)
   })()
 
@@ -197,8 +267,8 @@ beta.value <- minfi::ratioConvert(proc, what = "beta") |>
   purrr::pluck("Beta") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 865859)
-    assertthat::assert_that(ncol(.) == 505)
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES)
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
     return(.)
   })() |> 
   data.table::as.data.table(keep.rownames = "probe_id") |> 
@@ -210,7 +280,7 @@ beta.value <- minfi::ratioConvert(proc, what = "beta") |>
   tibble::column_to_rownames('probe_id') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 760405)
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
     return(.)
   })()
 

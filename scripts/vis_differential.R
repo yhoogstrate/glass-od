@@ -12,9 +12,23 @@ source('scripts/load_functions.R')
 source('scripts/load_palette.R')
 source('scripts/load_themes.R')
 
+
 if(!exists('data.mvalues.probes')) {
   source('scripts/load_mvalues_hq_samples.R')
 }
+
+
+if(!exists('data.intensities.probes')) {
+  source('scripts/load_intensities_hq_samples.R')
+}
+
+
+data.mvalues.probes |>  dplyr::arrange(DPI__FFPE_decay_time__pp_nc__t) |> head(n=25) |> 
+  dplyr::select(probe_id,  orientation_mapped ,sequence_pre, AlleleA_ProbeSeq,
+                
+                #sequence_post, AlleleB_ProbeSeq, 
+                DPI__FFPE_decay_time__pp_nc__t)
+
 
 
 ## plt.motifs ----
@@ -692,51 +706,6 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 
 
 
-## E: FFPE decay time INTENSITY ----
-
-
-
-
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
-    return(.)
-  })() |> 
-  dplyr::filter(detP_good_probe & !MASK_general) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == (693060)) 
-    return(.)
-  })()
-
-
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
-                col=DPI__FFPE_decay_time__pp_nc__t)) +
-  #facet_wrap(~probe_type, scales="free",ncol=2) +
-  facet_wrap(~map, scales="free",ncol=2) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=16, cex=0.001, alpha=0.15) + 
-  
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
-
-
-plt |> 
-  dplyr::filter(type == "I") |> 
-  dplyr::select(Forward_Sequence, AlleleB_ProbeSeq_Illumina_manifest,  AlleleA_ProbeSeq_Illumina_manifest) |> 
-  View()
-
-
-plt |> 
-  dplyr::filter(type == "II") |> 
-  dplyr::select(probe_id, Forward_Sequence, AlleleA_ProbeSeq_Illumina_manifest, mapFlag_A, mapQ_A, DMP__FFPE_decay_time__pp_nc__t) |> 
-  dplyr::arrange(DMP__FFPE_decay_time__pp_nc__t) |> 
-  View()
-
-
 
 
 ## E: FFPE decay time ----
@@ -1040,6 +1009,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 
 
 ## C content ----
+### on probe ----
 
 
 plt <- data.mvalues.probes |> 
@@ -1054,14 +1024,15 @@ plt <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
-  dplyr::filter(!is.na(c_content))
+  dplyr::filter(!is.na(sequence_pre_48_c_content)) |> 
+  dplyr::mutate(sequence_pre_48_c_content = scale(sequence_pre_48_c_content))
 
 
 plt <- plt |> 
   dplyr::mutate(
-    c_content_f = cut(c_content,
-                      breaks=quantile(plt$c_content,
-                      probs = seq(0,1, by=0.10),
+    sequence_pre_48_c_content_f = cut(sequence_pre_48_c_content,
+                      breaks=quantile(plt$sequence_pre_48_c_content,
+                      probs = seq(0,1, by=0.2),
                       na.rm=TRUE, 
                       names=TRUE,
                       include.lowest=TRUE, 
@@ -1069,37 +1040,96 @@ plt <- plt |>
 
 
 
-p1 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=c_content)) +
+p1 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=sequence_pre_48_c_content)) +
   #facet_grid(cols = vars(Infinium_Design_Type))  +
   
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
-  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[1]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[2]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[3]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[4]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[5]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[6]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[7]), pch=16, cex=0.05, alpha=0.50) + 
-  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[8]), pch=16, cex=0.1, alpha=0.55) + 
-  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[9]), pch=16, cex=0.1, alpha=0.60) + 
-  geom_point(data=subset(plt, c_content_f == levels(plt$c_content_f)[10]),  pch=16, cex=0.1, alpha=0.65) + 
+  geom_point(pch=16, cex=0.001, alpha=0.1) + 
   
+  geom_point(data=subset(plt, sequence_pre_48_c_content_f == levels(plt$sequence_pre_48_c_content_f)[5]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_pre_48_c_content_f == levels(plt$sequence_pre_48_c_content_f)[4]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_pre_48_c_content_f == levels(plt$sequence_pre_48_c_content_f)[3]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_pre_48_c_content_f == levels(plt$sequence_pre_48_c_content_f)[2]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_pre_48_c_content_f == levels(plt$sequence_pre_48_c_content_f)[1]), pch=16, cex=0.001, alpha=0.1) + 
+
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", 
-                                 limits = c(0, 0.5), oob = scales::squish ) + 
+                                 limits = c(-1.85, 1.85), oob = scales::squish ) + 
   
-  labs(col = "C content") +
+  labs(col = "C content on probe (scaled)") +
   
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
+
+
+
+
+### opposite to probe ----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::filter(!is.na(sequence_post_48_c_content)) |> 
+  dplyr::mutate(sequence_post_48_c_content = scale(sequence_post_48_c_content))
+
+
+
+plt <- plt |> 
+  dplyr::mutate(
+    sequence_post_48_c_content_f = cut(sequence_post_48_c_content,
+                      breaks=quantile(plt$sequence_post_48_c_content,
+                                      probs = seq(0,1, by=0.2),
+                                      na.rm=TRUE, 
+                                      names=TRUE,
+                                      include.lowest=TRUE, 
+                                      right = TRUE)))
+
+
+
+p2 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=sequence_post_48_c_content)) +
+  #facet_grid(cols = vars(Infinium_Design_Type))  +
+  
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.1) + 
+  
+  geom_point(data=subset(plt, sequence_post_48_c_content_f == levels(plt$sequence_post_48_c_content_f)[5]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_post_48_c_content_f == levels(plt$sequence_post_48_c_content_f)[4]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_post_48_c_content_f == levels(plt$sequence_post_48_c_content_f)[3]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_post_48_c_content_f == levels(plt$sequence_post_48_c_content_f)[2]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_post_48_c_content_f == levels(plt$sequence_post_48_c_content_f)[1]), pch=16, cex=0.001, alpha=0.1) + 
+
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", 
+                                 limits = c(-1.85, 1.85), oob = scales::squish ) + 
+  
+  labs(col = "C content after probe (scaled)") +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white")) +  # png export
+  theme(legend.key.size = unit(0.6, 'lines'))
+
 
 
 
 ## G content ----
 
 
+### on probe ----
+
 
 plt <- data.mvalues.probes |> 
   (function(.) {
@@ -1113,53 +1143,117 @@ plt <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
-  dplyr::filter(!is.na(c_content))
+  dplyr::filter(!is.na(sequence_pre_48_g_content)) |> 
+  dplyr::mutate(sequence_pre_48_g_content = scale(sequence_pre_48_g_content))
 
 
 plt <- plt |> 
   dplyr::mutate(
-    g_content_f = cut(g_content,
-                      breaks=quantile(plt$g_content,
-                                      probs = seq(0,1, by=0.10),
-                                      na.rm=TRUE, 
-                                      names=TRUE,
-                                      include.lowest=TRUE, 
-                                      right = TRUE)))
+    sequence_pre_48_g_content_f = cut(sequence_pre_48_g_content,
+                                      breaks=quantile(plt$sequence_pre_48_g_content,
+                                                      probs = seq(0,1, by=0.2),
+                                                      na.rm=TRUE, 
+                                                      names=TRUE,
+                                                      include.lowest=TRUE, 
+                                                      right = TRUE)))
 
 
 
-p2 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=g_content)) +
+p3 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=sequence_pre_48_g_content)) +
   #facet_grid(cols = vars(Infinium_Design_Type))  +
   
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
-  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[1]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[2]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[3]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[4]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[5]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[6]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[7]), pch=16, cex=0.05, alpha=0.50) + 
-  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[8]), pch=16, cex=0.1, alpha=0.55) + 
-  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[9]), pch=16, cex=0.1, alpha=0.60) + 
-  geom_point(data=subset(plt, g_content_f == levels(plt$g_content_f)[10]),  pch=16, cex=0.1, alpha=0.65) + 
+  geom_point(pch=16, cex=0.001, alpha=0.1) + 
   
-  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50",
-                                 limits = c(0, 0.5), oob = scales::squish
-                                 ) + 
+  geom_point(data=subset(plt, sequence_pre_48_g_content_f == levels(plt$sequence_pre_48_g_content_f)[5]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_pre_48_g_content_f == levels(plt$sequence_pre_48_g_content_f)[4]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_pre_48_g_content_f == levels(plt$sequence_pre_48_g_content_f)[3]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_pre_48_g_content_f == levels(plt$sequence_pre_48_g_content_f)[2]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_pre_48_g_content_f == levels(plt$sequence_pre_48_g_content_f)[1]), pch=16, cex=0.001, alpha=0.1) + 
   
-  labs(col = "G content") +
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", 
+                                 limits = c(-1.85, 1.85), oob = scales::squish ) + 
+  
+  labs(col = "G content on probe (scaled)") +
   
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
+
+
+
+
+### opposite to probe ----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::filter(!is.na(sequence_post_48_g_content)) |> 
+  dplyr::mutate(sequence_post_48_g_content = scale(sequence_post_48_g_content))
+
+
+
+plt <- plt |> 
+  dplyr::mutate(
+    sequence_post_48_g_content_f = cut(sequence_post_48_g_content,
+                                       breaks=quantile(plt$sequence_post_48_g_content,
+                                                       probs = seq(0,1, by=0.2),
+                                                       na.rm=TRUE, 
+                                                       names=TRUE,
+                                                       include.lowest=TRUE, 
+                                                       right = TRUE)))
+
+
+
+p4 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=sequence_post_48_g_content)) +
+  #facet_grid(cols = vars(Infinium_Design_Type))  +
+  
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.1) + 
+  
+  geom_point(data=subset(plt, sequence_post_48_g_content_f == levels(plt$sequence_post_48_g_content_f)[5]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_post_48_g_content_f == levels(plt$sequence_post_48_g_content_f)[4]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_post_48_g_content_f == levels(plt$sequence_post_48_g_content_f)[3]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_post_48_g_content_f == levels(plt$sequence_post_48_g_content_f)[2]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_post_48_g_content_f == levels(plt$sequence_post_48_g_content_f)[1]), pch=16, cex=0.001, alpha=0.1) + 
+  
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", 
+                                 limits = c(-1.85, 1.85), oob = scales::squish ) + 
+  
+  labs(col = "G content after probe (scaled)") +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white")) +  # png export
+  theme(legend.key.size = unit(0.6, 'lines'))
+
+
+
+
 
 
 
 ## GC content ----
 
 
+
+### on probe ----
+
+
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
@@ -1172,48 +1266,109 @@ plt <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
-  dplyr::filter(!is.na(c_content) & !is.na(g_content))
+  dplyr::filter(!is.na(sequence_pre_48_gc_content)) |> 
+  dplyr::mutate(sequence_pre_48_gc_content = scale(sequence_pre_48_gc_content))
 
 
 plt <- plt |> 
   dplyr::mutate(
-    gc_content_f = cut(gc_content,
-                      breaks=quantile(plt$gc_content,
-                                      probs = seq(0,1, by=0.10),
-                                      na.rm=TRUE, 
-                                      names=TRUE,
-                                      include.lowest=TRUE, 
-                                      right = TRUE)))
+    sequence_pre_48_gc_content_f = cut(sequence_pre_48_gc_content,
+                                       breaks=quantile(plt$sequence_pre_48_gc_content,
+                                                       probs = seq(0,1, by=0.2),
+                                                       na.rm=TRUE, 
+                                                       names=TRUE,
+                                                       include.lowest=TRUE, 
+                                                       right = TRUE)))
 
 
 
-p3 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=gc_content)) +
+p5 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=sequence_pre_48_gc_content)) +
   #facet_grid(cols = vars(Infinium_Design_Type))  +
   
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
-  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[1]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[2]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[3]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[4]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[5]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[6]), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[7]), pch=16, cex=0.05, alpha=0.50) + 
-  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[8]), pch=16, cex=0.1, alpha=0.55) + 
-  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[9]), pch=16, cex=0.1, alpha=0.60) + 
-  geom_point(data=subset(plt, gc_content_f == levels(plt$gc_content_f)[10]),  pch=16, cex=0.1, alpha=0.65) + 
+  geom_point(pch=16, cex=0.001, alpha=0.1) + 
+  
+  geom_point(data=subset(plt, sequence_pre_48_gc_content_f == levels(plt$sequence_pre_48_gc_content_f)[5]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_pre_48_gc_content_f == levels(plt$sequence_pre_48_gc_content_f)[4]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_pre_48_gc_content_f == levels(plt$sequence_pre_48_gc_content_f)[3]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_pre_48_gc_content_f == levels(plt$sequence_pre_48_gc_content_f)[2]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_pre_48_gc_content_f == levels(plt$sequence_pre_48_gc_content_f)[1]), pch=16, cex=0.001, alpha=0.1) + 
   
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", 
-                                 limits = c(0, 1), oob = scales::squish
-                                 ) + 
+                                 limits = c(-1.85, 1.85), oob = scales::squish ) + 
   
-  labs(col = "GC content") +
+  labs(col = "GC content on probe (scaled)") +
   
   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
 
+
+
+
+### opposite to probe ----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::filter(!is.na(sequence_post_48_gc_content)) |> 
+  dplyr::mutate(sequence_post_48_gc_content = scale(sequence_post_48_gc_content))
+
+
+
+plt <- plt |> 
+  dplyr::mutate(
+    sequence_post_48_gc_content_f = cut(sequence_post_48_gc_content,
+                                        breaks=quantile(plt$sequence_post_48_gc_content,
+                                                        probs = seq(0,1, by=0.2),
+                                                        na.rm=TRUE, 
+                                                        names=TRUE,
+                                                        include.lowest=TRUE, 
+                                                        right = TRUE)))
+
+
+
+p6 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=sequence_post_48_gc_content)) +
+  #facet_grid(cols = vars(Infinium_Design_Type))  +
+  
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.1) + 
+  
+  geom_point(data=subset(plt, sequence_post_48_gc_content_f == levels(plt$sequence_post_48_gc_content_f)[5]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_post_48_gc_content_f == levels(plt$sequence_post_48_gc_content_f)[4]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_post_48_gc_content_f == levels(plt$sequence_post_48_gc_content_f)[3]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_post_48_gc_content_f == levels(plt$sequence_post_48_gc_content_f)[2]), pch=16, cex=0.001, alpha=0.1) + 
+  geom_point(data=subset(plt, sequence_post_48_gc_content_f == levels(plt$sequence_post_48_gc_content_f)[1]), pch=16, cex=0.001, alpha=0.1) + 
+  
+  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", 
+                                 limits = c(-1.85, 1.85), oob = scales::squish ) + 
+  
+  labs(col = "GC content after probe (scaled)") +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white")) +  # png export
+  theme(legend.key.size = unit(0.6, 'lines'))
+
+
+
+
+
+(p1 + p2) / (p3 + p4) / (p5 + p6)
 
 
 
@@ -1557,6 +1712,111 @@ ggplot(plt, aes(x = chr, y=DMP__g2_g3__pp_nc__t, fill=col)) +
 ## M: PC2 ----
 
 ## N: PC3 ----
+
+
+## O: intensities ----
+### FFPE decay ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::filter(!is.na(DPI__FFPE_decay_time__pp_nc__t))
+
+
+p1 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                col=DPI__FFPE_decay_time__pp_nc__t)) +
+  #facet_wrap(~probe_type, scales="free",ncol=2) +
+  #facet_wrap(~map, scales="free",ncol=2) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
+
+
+
+
+### primary - recurrence ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::filter(!is.na(DPI__primary_recurrence__pp_nc__t))
+
+
+p2 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                     col=DPI__primary_recurrence__pp_nc__t)) +
+  #facet_wrap(~probe_type, scales="free",ncol=2) +
+  #facet_wrap(~map, scales="free",ncol=2) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
+
+
+
+
+
+### g2 - g3 ----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::filter(!is.na(DPI__g2_g3__pp_nc__t))
+
+
+p3 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                     col=DPI__g2_g3__pp_nc__t)) +
+  #facet_wrap(~probe_type, scales="free",ncol=2) +
+  #facet_wrap(~map, scales="free",ncol=2) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
+
+
+
+
+p1 + p2 + p3 
 
 
 

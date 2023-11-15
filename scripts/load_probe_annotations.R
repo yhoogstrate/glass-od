@@ -2,7 +2,12 @@
 
 # load ----
 
+
+source('scripts/load_constants.R')
 source('scripts/load_functions.R')
+source('scripts/load_palette.R')
+source('scripts/load_themes.R')
+
 
 # info ----
 
@@ -378,19 +383,38 @@ rm(tmp)
 if(!file.exists("cache/load_probe_annotation__gc_content.Rds")) {
   
   tmp <- metadata.cg_probes.epic |> 
-    dlpyr::mutate(sequence)
+    dplyr::filter(!is.na(sequence_pre))  |> 
   
-    dplyr::filter(!is.na(Forward_Sequence_hg19)) |> 
-    dplyr::mutate(biostr = gsub("[CG]","",Forward_Sequence_hg19, fixed=T)) |> 
-    dplyr::mutate(c_content = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(biostr), letters="C") / Biostrings::letterFrequency(Biostrings::DNAStringSet(biostr), letters="ACTG"))) |> 
-    dplyr::mutate(g_content = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(biostr), letters="G") / Biostrings::letterFrequency(Biostrings::DNAStringSet(biostr), letters="ACTG"))) |> 
-    dplyr::mutate(gc_content = g_content + c_content) |> 
-    dplyr::select(probe_id, g_content, c_content, gc_content)
+    dplyr::mutate(sequence_pre_48 = gsub("^.+(.{48})$","\\1",sequence_pre)) |> # probes are 50 long minus 1 or 2 CG bases (depending on probe type)
+    assertr::verify(nchar(sequence_pre_48) == 48) |> 
+    dplyr::mutate(sequence_post_48 = gsub("^(.{48}).+$","\\1",sequence_post)) |> # probes are 50 long minus 1 or 2 CG bases (depending on probe type)
+    assertr::verify(nchar(sequence_post_48) == 48) |> 
+    dplyr::mutate(sequence_48_flank = paste0(sequence_pre_48, sequence_target, sequence_post_48)) |> 
+    dplyr::mutate(sequence_60_flank = paste0(sequence_pre, sequence_target, sequence_post)) |> 
+
+    dplyr::mutate(sequence_pre_48_c_content   = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_pre_48  ), letters="C") / Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_pre_48  ), letters="ACTG"))) |> 
+    dplyr::mutate(sequence_post_48_c_content  = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_post_48 ), letters="C") / Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_post_48 ), letters="ACTG"))) |> 
+    dplyr::mutate(sequence_48_flank_c_content = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_48_flank), letters="C") / Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_48_flank), letters="ACTG"))) |> 
+    dplyr::mutate(sequence_60_flank_c_content = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_60_flank), letters="C") / Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_60_flank), letters="ACTG"))) |> 
+  
+    dplyr::mutate(sequence_pre_48_g_content   = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_pre_48  ), letters="G") / Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_pre_48  ), letters="ACTG"))) |> 
+    dplyr::mutate(sequence_post_48_g_content  = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_post_48 ), letters="G") / Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_post_48 ), letters="ACTG"))) |> 
+    dplyr::mutate(sequence_48_flank_g_content = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_48_flank), letters="G") / Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_48_flank), letters="ACTG"))) |> 
+    dplyr::mutate(sequence_60_flank_g_content = as.numeric(Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_60_flank), letters="G") / Biostrings::letterFrequency(Biostrings::DNAStringSet(sequence_60_flank), letters="ACTG"))) |> 
+    
+    dplyr::mutate(sequence_pre_48_gc_content   = sequence_pre_48_c_content   + sequence_pre_48_g_content) |> 
+    dplyr::mutate(sequence_post_48_gc_content  = sequence_post_48_c_content  + sequence_post_48_g_content) |> 
+    dplyr::mutate(sequence_48_flank_gc_content = sequence_48_flank_c_content + sequence_48_flank_g_content) |> 
+    dplyr::mutate(sequence_60_flank_gc_content = sequence_60_flank_c_content + sequence_60_flank_g_content) |> 
+    
+    dplyr::select(probe_id, ends_with("_content"))
   
   saveRDS(tmp, file="cache/load_probe_annotation__gc_content.Rds")
   
 } else {
+  
   tmp <- readRDS(file="cache/load_probe_annotation__gc_content.Rds")
+  
 }
 
 
@@ -603,18 +627,18 @@ rm(tmp)
 
 # 27k ----
 
-exp <- readRDS("cache/load_probe_annotation__sequence_contexts.Rds") |> 
-  dplyr::select(probe_id, gc_sequence_context_2) |> 
-  dplyr::mutate(gc_sequence_context_2 = gsub("[][]","",gc_sequence_context_2)) |> 
-  dplyr::filter(!is.na(gc_sequence_context_2)) |> 
-  dplyr::rename(sequence_context_stranded = gc_sequence_context_2) |> 
-  dplyr::mutate(sequence_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(sequence_context_stranded)))) |> 
-  dplyr::mutate(sequence_context_unstranded = dplyr::case_when(
-    sequence_context_stranded < sequence_rc ~ paste0(sequence_context_stranded,"/",sequence_rc),
-    sequence_context_stranded > sequence_rc ~ paste0(sequence_rc,"/",sequence_context_stranded),
-    sequence_context_stranded == sequence_rc ~ paste0(sequence_context_stranded,"*",sequence_rc)
-  )) |> 
-  dplyr::mutate(sequence_rc = NULL) |> 
-  dplyr::tibble()
-
-
+# exp <- readRDS("cache/load_probe_annotation__sequence_contexts.Rds") |> 
+#   dplyr::select(probe_id, gc_sequence_context_2_new) |> 
+#   dplyr::mutate(gc_sequence_context_2 = gsub("[][]","",gc_sequence_context_2)) |> 
+#   dplyr::filter(!is.na(gc_sequence_context_2)) |> 
+#   dplyr::rename(sequence_context_stranded = gc_sequence_context_2) |> 
+#   dplyr::mutate(sequence_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(sequence_context_stranded)))) |> 
+#   dplyr::mutate(sequence_context_unstranded = dplyr::case_when(
+#     sequence_context_stranded < sequence_rc ~ paste0(sequence_context_stranded,"/",sequence_rc),
+#     sequence_context_stranded > sequence_rc ~ paste0(sequence_rc,"/",sequence_context_stranded),
+#     sequence_context_stranded == sequence_rc ~ paste0(sequence_context_stranded,"*",sequence_rc)
+#   )) |> 
+#   dplyr::mutate(sequence_rc = NULL) |> 
+#   dplyr::tibble()
+# 
+# 
