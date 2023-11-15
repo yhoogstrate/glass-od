@@ -1716,11 +1716,91 @@ ggplot(plt, aes(x = chr, y=DMP__g2_g3__pp_nc__t, fill=col)) +
 
 ## N: PC3 ----
 
-
-## O: intensities ----
+## N: decay methy unmethy + unmethylated combined ----
 ### FFPE decay ----
 
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::filter(!is.na(DPI__FFPE_decay_time__pp_nc__t)) |> 
+  dplyr::filter(!is.na(DMPI__FFPE_decay_time__pp_nc__t)) |> 
+  dplyr::filter(!is.na(DUPI__FFPE_decay_time__pp_nc__t))
 
+
+p1 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                     col=DMPI__FFPE_decay_time__pp_nc__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  labs(col="Methylated probe intensity ~ FFPE decay time") +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
+
+
+
+p2 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                     col=DUPI__FFPE_decay_time__pp_nc__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  labs(col="Unmethylated probe intensity ~ FFPE decay time") +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
+
+
+
+p3 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                     col=DPI__FFPE_decay_time__pp_nc__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  labs(col="Total probe intensity ~ FFPE decay time") +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
+
+
+
+p4 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                     col=DMP__FFPE_decay_time__pp_nc__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  labs(col="Probe methylation ratio ~ FFPE decay time") +
+  
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
+
+
+p1 + p2 + p3 + p4
+
+
+
+
+
+## O: intensities ----
+
+
+### FFPE decay ----
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))

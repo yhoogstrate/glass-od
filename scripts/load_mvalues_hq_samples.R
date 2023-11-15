@@ -289,7 +289,7 @@ rm(fn)
 
 
 
-### FFPE Decay time PP intensities ----
+### FFPE Decay time PP intensities combi ----
 
 
 fn <- "cache/analysis_differential_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds"
@@ -297,6 +297,62 @@ if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
     dplyr::rename_with(~paste0("DPI__FFPE_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result FFPE decay PP time is missing")
+}
+
+rm(fn)
+
+
+
+
+### FFPE Decay time PP intensities methylated ----
+
+
+fn <- "cache/analysis_differential_methylated_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMPI__FFPE_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result FFPE decay PP time is missing")
+}
+
+rm(fn)
+
+
+
+
+### FFPE Decay time PP intensities unmethylated ----
+
+
+fn <- "cache/analysis_differential_unmethylated_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DUPI__FFPE_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
     (function(.) {
       print(dim(.))
       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
