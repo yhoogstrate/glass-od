@@ -243,6 +243,7 @@ if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
     dplyr::rename_with(~paste0("DMP__FFPE_or_FF__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    dplyr::select(probe_id, ends_with("__logFC"), ends_with("__t") ,  ends_with("__adj.P.Val"), ends_with("__AveExpr")) |> 
     (function(.) {
       print(dim(.))
       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
