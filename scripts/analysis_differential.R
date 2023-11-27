@@ -26,11 +26,6 @@ if(!exists('glass_od.metadata.array_samples')) {
 }
 
 
-if(!exists('glass_nl.metadata.array_samples')) {
-  source('scripts/load_GLASS-NL_metadata.R')
-}
-
-
 
 # analyses: GLASS-OD primary - last recurrence ----
 ## data: example ----
