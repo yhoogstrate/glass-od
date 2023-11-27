@@ -81,6 +81,7 @@ data.mvalues.probes <- data.mvalues.probes |>
 
 data.mvalues.good_probes <- data.mvalues.probes |> 
   dplyr::filter(detP_good_probe) |> 
+  dplyr::filter(grepl("^cg", probe_id)) |> # non CG probes https://knowledge.illumina.com/microarray/general/microarray-general-troubleshooting-list/000005501
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
@@ -146,6 +147,8 @@ if(file.exists(fn)) {
 }
 
 rm(fn)
+
+
 
 
 ### g3 g2 ----

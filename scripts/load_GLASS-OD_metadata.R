@@ -415,7 +415,7 @@ tmp <- c(list.files(
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
     return(.)
   })()
-  
+
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
@@ -756,13 +756,18 @@ rm(tmp)
 
 
 tmp <- readRDS("cache/analysis_median_methylation.Rds") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES) 
+    return(.)
+  })() |> 
   dplyr::rename_with( ~ paste0("array_", .x)) |> 
   assertr::verify(!is.na(array_median.overall.methylation)) |> 
   assertr::verify(!is.na(array_median.glass_nl_supervised.methylation)) |> 
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES) # only HQ samples - should become 210?
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
     return(.)
   })()
 
@@ -779,8 +784,13 @@ rm(tmp)
 ## A_IDH_HG__A_IDH_LG_lr__lasso_fit ----
 
 
-
 tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |> 
+  assertr::verify(!duplicated(array_sentrix_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_GSAM_INCLUDED_SAMPLES)
+    return(.)
+  })() |>
   assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
@@ -802,7 +812,13 @@ rm(tmp)
 
 
 tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds") |> 
-  #dplyr::rename_with( ~ paste0("array_", .x)) |> 
+  assertr::verify(!duplicated(array_sentrix_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
+    return(.)
+  })() |>
+
   assertr::verify(!is.na(array_PC1)) |> 
   assertr::verify(!is.na(array_PC2)) |> 
   assertr::verify(!is.na(array_PC3)) |> 
@@ -854,6 +870,12 @@ rm(tmp)
 
 
 tmp <- readRDS("cache/analysis_EPITOC2.Rds") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES) 
+    return(.)
+  })() |> 
+  
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
   (function(.) {
     print(dim(.))

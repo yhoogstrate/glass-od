@@ -85,7 +85,8 @@ RGSet <- minfi::read.metharray.exp(targets = targets, force = T) #red/green chan
 
 
 detP <- minfi::detectionP(RGSet, type = "m+u")
-proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = TRUE, verbose = TRUE, dyeMethod="reference") 
+proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = F, verbose = TRUE, dyeMethod="reference") 
+#proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = T, verbose = TRUE, dyeMethod="reference") 
 rm(RGSet)
 gc()
 
@@ -154,6 +155,7 @@ gc()
 
 ## Meth intensities ----
 
+
 meth_intensities <- log2(minfi::getMeth(proc)) |> 
   (function(.) {
     print(dim(.))
@@ -190,7 +192,7 @@ gc()
 ## Unmeth intensities ----
 
 
-unmeth_intensities <- log2(minfi::getMeth(proc)) |> 
+unmeth_intensities <- log2(minfi::getUnmeth(proc)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES)

@@ -251,6 +251,7 @@ saveRDS(stats.pp.nc, file="cache/analysis_differential__primary_recurrence__part
 rm(fit.pp.nc, stats.pp.nc)
 
 
+
 ## data: partially paired INTENSITY [w/o FFPE/frozen batch correct] ----
 
 
@@ -1539,6 +1540,73 @@ saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential__ffpe-decay-ti
 
 
 rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
+
+
+
+
+### lm per gene outcome x CG or C ----
+
+
+if(!exists('data.mvalues.probes')) {
+  source('scripts/load_mvalues_hq_samples.R')
+}
+
+#tmp <- readRDS(file="cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds")
+
+
+tmp <- data.mvalues.probes |> 
+  dplyr::filter(!is.na(DMP__FFPE_decay_time__pp_nc__t)) |>
+  dplyr::filter(!is.na(n_CG)) |> 
+  dplyr::select(probe_id, DMP__FFPE_decay_time__pp_nc__t,  n_CG, n_CG_to_CR, n_CG_to_CA, n_independent_C) |> 
+  dplyr::mutate(total_c = n_CG + n_independent_C)  |> 
+  dplyr::mutate(indep_c_frac = n_independent_C / (50 - (2 * n_CG)))
+
+
+
+stat <- stats::glm(tmp$DMP__FFPE_decay_time__pp_nc__t ~ tmp$n_CG + tmp$n_independent_C)
+summary(stat)
+
+
+stat <- stats::glm(tmp$DMP__FFPE_decay_time__pp_nc__t ~ tmp$n_CG + tmp$indep_c_frac)
+summary(stat)
+
+
+
+stat <- lm(tmp$DMP__FFPE_decay_time__pp_nc__t ~ tmp$n_independent_C )
+summary(stat)
+
+
+stat <- lm(tmp$DMP__FFPE_decay_time__pp_nc__t ~ tmp$indep_c_frac )
+summary(stat)
+
+
+
+stat <- lm(tmp$DMP__FFPE_decay_time__pp_nc__t ~  tmp$total_c)
+summary(stat)
+
+
+stat <- lm(tmp$DMP__FFPE_decay_time__pp_nc__t ~  tmp$n_CG )
+summary(stat)
+
+stat <- lm(tmp$DMP__FFPE_decay_time__pp_nc__t ~  tmp$n_CG_to_CR )
+summary(stat)
+
+stat <- lm(tmp$DMP__FFPE_decay_time__pp_nc__t ~  tmp$n_CG_to_CA )
+summary(stat)
+
+
+
+ggplot(tmp, aes(y=DMP__FFPE_decay_time__pp_nc__t, x=factor(n_CG))) + 
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray")
+
+
+ggplot(tmp, aes(y=DMP__FFPE_decay_time__pp_nc__t, x=factor(n_independent_C))) + 
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray")
+
+
+ggplot(tmp, aes(y=DMP__FFPE_decay_time__pp_nc__t, x=indep_c_frac)) + 
+  geom_point(cex=0.1)
+  #geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray")
 
 
 

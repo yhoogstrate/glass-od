@@ -112,7 +112,7 @@ if(!file.exists(fn)) {
   tmp <- metadata.cg_probes.epic |> 
     dplyr::filter(grepl("^cg", probe_id)) |> 
     
-    dplyr::mutate(needle = gsub("R","A",AlleleA_ProbeSeq)) |> 
+    dplyr::mutate(needle = gsub("R","A", AlleleA_ProbeSeq)) |> 
     dplyr::filter(!is.na(Forward_Sequence_hg19)) |> 
     dplyr::mutate(haystack = gsub("[][]","",Forward_Sequence_hg19)) |> 
     dplyr::mutate(haystack_rc =  as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(haystack)))) |> 
@@ -379,8 +379,9 @@ rm(tmp)
 #' split per pre- and post sequence
 
 
+fn <- "cache/load_probe_annotation__gc_content.Rds"
 
-if(!file.exists("cache/load_probe_annotation__gc_content.Rds")) {
+if(!file.exists(fn)) {
   
   tmp <- metadata.cg_probes.epic |> 
     dplyr::filter(!is.na(sequence_pre))  |> 
@@ -409,11 +410,11 @@ if(!file.exists("cache/load_probe_annotation__gc_content.Rds")) {
     
     dplyr::select(probe_id, ends_with("_content"))
   
-  saveRDS(tmp, file="cache/load_probe_annotation__gc_content.Rds")
+  saveRDS(tmp, file=fn)
   
 } else {
   
-  tmp <- readRDS(file="cache/load_probe_annotation__gc_content.Rds")
+  tmp <- readRDS(file=fn)
   
 }
 
@@ -422,6 +423,44 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
 
 rm(tmp)
+
+
+## overall CG-C's vs independent C's ----
+
+
+
+fn <- "cache/load_probe_annotation__CG_Cs_vs_independent_Cs.Rds"
+
+if(!file.exists(fn)) {
+  
+  tmp <- metadata.cg_probes.epic |> 
+    dplyr::filter(grepl("^cg", probe_id)) |> 
+    dplyr::select(probe_id, sequence_pre, orientation_mapped, AlleleA_ProbeSeq, probe_type) |> 
+    dplyr::mutate(tmp = gsub("^.+(.{50})$","\\1",sequence_pre)) |> 
+    dplyr::mutate(n_CG = stringr::str_count(tmp, pattern = "CG")) |> 
+    dplyr::mutate(n_CG_to_CR = stringr::str_count(AlleleA_ProbeSeq, pattern = "R")) |> 
+    dplyr::mutate(n_CG_to_CA = n_CG - n_CG_to_CR) |> 
+    dplyr::mutate(n_independent_A = stringr::str_count(gsub("CG","XX",tmp), pattern = "A")) |> 
+    dplyr::mutate(n_independent_C = stringr::str_count(gsub("CG","XX",tmp), pattern = "C")) |> 
+    dplyr::mutate(n_independent_T = stringr::str_count(gsub("CG","XX",tmp), pattern = "T")) |> 
+    dplyr::mutate(n_independent_G = stringr::str_count(gsub("CG","XX",tmp), pattern = "G")) |> 
+    dplyr::select(probe_id, n_CG, n_CG_to_CR, n_CG_to_CA, n_independent_A, n_independent_C, n_independent_T, n_independent_G)
+  
+  saveRDS(tmp, file=fn)
+  
+} else {
+  
+  tmp <- readRDS(file=fn)
+  
+}
+
+
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+
+
+rm(tmp)
+
 
 
 
