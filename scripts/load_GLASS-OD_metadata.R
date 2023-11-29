@@ -10,6 +10,7 @@ source('scripts/load_functions.R')
 
 
 metadata.db.con <- DBI::dbConnect(RSQLite::SQLite(), "../glass-od-clinical-database/glass-od-clinical-database.db")
+# DBI::dbListTables(metadata.db.con)
 
 
 # 1. patient level ----
@@ -164,10 +165,25 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'view_array_samples') |>
     return(.)
   })() |> 
   
+  assertr::verify(is.na(patient_diagnosis_date) | grepl("^[0-9]{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}$", patient_diagnosis_date)) |> 
+  assertr::verify(is.na(patient_birth_date) | grepl("^[0-9]{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}$", patient_birth_date)) |> 
+  assertr::verify(is.na(patient_last_follow_up_date) | grepl("^[0-9]{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}$", patient_last_follow_up_date)) |> 
+  assertr::verify(is.na(resection_date) | grepl("^[0-9]{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}$", resection_date)) |> 
+  assertr::verify(is.na(arraychip_date) | grepl("^[0-9]{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}$", arraychip_date)) |> 
+  
   dplyr::mutate(patient_diagnosis_date = as.Date(patient_diagnosis_date, format = "%d %b %Y")) |> 
   dplyr::mutate(patient_birth_date = as.Date(patient_birth_date, format = "%d %b %Y")) |> 
+  dplyr::mutate(patient_last_follow_up_date = as.Date(patient_last_follow_up_date, format = "%d %b %Y")) |> 
   dplyr::mutate(resection_date = as.Date(resection_date, format = "%d %b %Y")) |> 
   dplyr::mutate(arraychip_date = as.Date(arraychip_date, format = "%d %b %Y")) |> 
+  
+  assertr::verify(is.na(patient_last_follow_up_event) | grepl("^yes|no$", patient_last_follow_up_event)) |> 
+  assertr::verify(is.na(resection_treatment_status_tmz) | grepl("^yes|no$", resection_treatment_status_tmz)) |> 
+  assertr::verify(is.na(resection_treatment_status_radio) | grepl("^yes|no$", resection_treatment_status_radio)) |> 
+  
+  dplyr::mutate(patient_last_follow_up_event = patient_last_follow_up_event == "yes") |> 
+  dplyr::mutate(resection_treatment_status_tmz = resection_treatment_status_tmz == "yes") |> 
+  dplyr::mutate(resection_treatment_status_radio = resection_treatment_status_radio == "yes") |> 
   
   assertr::verify(is.na(patient_diagnosis_date) | is.na(resection_date) | patient_diagnosis_date <= resection_date) |> 
   assertr::verify(is.na(arraychip_date) | is.na(resection_date) | resection_date < arraychip_date) |> 
