@@ -43,7 +43,12 @@ if(!exists('gsam.metadata.array_samples')) {
 
 #'@todo four replicates need to be erased after analysis
 metadata.glass_od <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |>  #@todo replicates
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |>
+  dplyr::select(array_sentrix_id, array_channel_green, array_percentage.detP.signi)
+
+
+metadata.od_validation <- glass_od.metadata.array_samples |> 
+  filter_OD_validation_idats(CONST_N_VALIDATION_ALL_SAMPLES_EPIC) |>
   dplyr::select(array_sentrix_id, array_channel_green, array_percentage.detP.signi)
 
 
@@ -65,6 +70,7 @@ metadata.gsam <- gsam.metadata.array_samples |>
 
 targets <- rbind(
   metadata.glass_od |> dplyr::mutate(dataset = "GLASS-OD"),
+  metadata.od_validation |> dplyr::mutate(dataset = "OD-validation"),
   metadata.glass_nl |> dplyr::mutate(dataset = "GLASS-NL"),
   metadata.gsam |> dplyr::mutate(dataset = "G-SAM")
 ) |> 
@@ -75,7 +81,7 @@ targets <- rbind(
   dplyr::mutate(Slide = gsub("^([0-9]+)_.+$","\\1", array_sentrix_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES + 218 + 77)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES + 218 + CONST_N_GSAM_INCLUDED_SAMPLES)
     assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
     return(.)
   })()
@@ -85,7 +91,7 @@ RGSet <- minfi::read.metharray.exp(targets = targets, force = T) #red/green chan
 
 
 detP <- minfi::detectionP(RGSet, type = "m+u")
-proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = F, verbose = TRUE, dyeMethod="reference") 
+proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = T, verbose = TRUE, dyeMethod="single")  #dyeMethod="reference"
 #proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = T, verbose = TRUE, dyeMethod="reference") 
 rm(RGSet)
 gc()

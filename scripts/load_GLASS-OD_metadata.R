@@ -10,7 +10,20 @@ source('scripts/load_functions.R')
 
 
 metadata.db.con <- DBI::dbConnect(RSQLite::SQLite(), "../glass-od-clinical-database/glass-od-clinical-database.db")
-# DBI::dbListTables(metadata.db.con)
+
+# check whether views exist
+tmp <- DBI::dbListTables(metadata.db.con) |> 
+  as.data.frame() |> 
+  dplyr::rename(table = 1) |> 
+  dplyr::filter(grepl("^view_", table)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) >= 4)
+    return(.)
+  })()
+
+rm(tmp)
+
 
 
 # 1. patient level ----
@@ -30,7 +43,7 @@ metadata.db.con <- DBI::dbConnect(RSQLite::SQLite(), "../glass-od-clinical-datab
 glass_od.metadata.patients <- DBI::dbReadTable(metadata.db.con, 'view_patients') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 127)
+    assertthat::assert_that(nrow(.) == 127 + 57)
     return(.)
   })() |> 
   assertr::verify(is.na(patient_diagnosis_date) | grepl("^[0-9]{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}$", patient_diagnosis_date)) |> 
@@ -58,13 +71,13 @@ glass_od.metadata.patients <- glass_od.metadata.patients |>
   dplyr::filter(patient_id %in% patients_without_array_samples$patient_id == F) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) ==  126) # + 10x astro
+    assertthat::assert_that(nrow(.) ==  126 + 57) # + 10x astro
     return(.)
   })() |> 
   dplyr::filter(is.na(patient_reason_excluded)) |> # 7 non(-canonical) codels
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 126) # + 10x astro
+    assertthat::assert_that(nrow(.) == 126 + 57) # + 10x astro
     return(.)
   })()
 
@@ -89,7 +102,7 @@ glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resectio
   dplyr::mutate(patient_id = as.factor(patient_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 277) # + 22 x astro
+    assertthat::assert_that(nrow(.) == 277 + 57) # + 57 oligosarcoma-paper
     return(.)
   })() |> 
   assertr::verify(is.numeric(resection_number)) |> 
@@ -103,23 +116,27 @@ glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resectio
 ## a. load all idat files ----
 
 
+
 glass_od.metadata.array_samples <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |>
   data.frame(array_filename = _) |>
   dplyr::mutate(array_filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays/", array_filename)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (2 * CONST_N_GLASS_OD_ALL_SAMPLES))
+    assertthat::assert_that(nrow(.) == (2 * (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES)))
     return(.)
   })() |> # equals in-pipe stopifnot(nrow(.) == 404)
   assertr::verify(file.exists(array_filename)) |>
   dplyr::mutate(array_sentrix_id = gsub("^.+/([^/]+)_(Grn|Red)\\.idat$", "\\1", array_filename)) |>
+  dplyr::mutate(array_sentrix_id = gsub("GSM[0-9]+_", "", array_sentrix_id)) |>
   dplyr::mutate(array_channel = gsub("^.+_(Grn|Red)\\.idat$", "\\1", array_filename)) |>
   tidyr::pivot_wider(id_cols = array_sentrix_id, names_from = array_channel, values_from = c(array_filename)) |>
   dplyr::rename(array_channel_green = Grn) |>
   dplyr::rename(array_channel_red = Red) |>
+  dplyr::mutate(array_channel_green_filesize = file.info(array_channel_green)$size) |> 
+  dplyr::mutate(array_channel_red_filesize   = file.info(array_channel_red)$size) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == ((2 * CONST_N_GLASS_OD_ALL_SAMPLES) / 2))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES))
     return(.)
   })() |>
   assertr::verify(!is.na(array_channel_green)) |>
@@ -161,7 +178,7 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'view_array_samples') |>
   assertr::verify(arrayplate_id != "GLASS-NL") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(sum(is.na(.$arraychip_date)) <= 6)
+    assertthat::assert_that(sum(is.na(.$arraychip_date)) <= (6 + 57))
     return(.)
   })() |> 
   
@@ -178,11 +195,11 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'view_array_samples') |>
   dplyr::mutate(arraychip_date = as.Date(arraychip_date, format = "%d %b %Y")) |> 
   
   assertr::verify(is.na(patient_last_follow_up_event) | grepl("^yes|no$", patient_last_follow_up_event)) |> 
-  assertr::verify(is.na(resection_treatment_status_tmz) | grepl("^yes|no$", resection_treatment_status_tmz)) |> 
+  assertr::verify(is.na(resection_treatment_status_chemo) | grepl("^yes|no$", resection_treatment_status_chemo)) |> 
   assertr::verify(is.na(resection_treatment_status_radio) | grepl("^yes|no$", resection_treatment_status_radio)) |> 
   
   dplyr::mutate(patient_last_follow_up_event = patient_last_follow_up_event == "yes") |> 
-  dplyr::mutate(resection_treatment_status_tmz = resection_treatment_status_tmz == "yes") |> 
+  dplyr::mutate(resection_treatment_status_chemo = resection_treatment_status_chemo == "yes") |> 
   dplyr::mutate(resection_treatment_status_radio = resection_treatment_status_radio == "yes") |> 
   
   assertr::verify(is.na(patient_diagnosis_date) | is.na(resection_date) | patient_diagnosis_date <= resection_date) |> 
@@ -201,21 +218,27 @@ stopifnot(length(setdiff(tmp$array_sentrix_id, glass_od.metadata.array_samples$a
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES))
     return(.)
   })() |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id' = 'array_sentrix_id'), suffix=c('','')) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES))
     return(.)
   })() |> 
-  assertr::verify(!is.na(resection_id))
+  assertr::verify(!is.na(resection_id)) |> 
+  assertr::verify(
+    (array_channel_green_filesize < 10000000 & arraychip_version == "450k") |
+    (array_channel_green_filesize > 10000000 & arraychip_version == "EPICv1") |
+    (arraychip_version %in% c("450k", "EPICv1") == F)
+  )
   
 
 
 
 rm(tmp)
+
 
 
 
@@ -230,12 +253,25 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'HE_coupes') |>
   dplyr::mutate(join_prefix = gsub("\\.ndpi$", "", HE_coupe_filename)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 223)
+    assertthat::assert_that(nrow(.) == 230)
     
     print(length(unique(.$resection_id)))
-    assertthat::assert_that(length(unique(.$resection_id)) == 184)
+    assertthat::assert_that(length(unique(.$resection_id)) == 190)
     return(.)
-  })()
+  })() |> 
+  dplyr::full_join( # scan for files on disc but missing in the DB
+    list.files(path = "data/GLASS_OD/Stainings/H&E Slides/", pattern = "*.ndpi$", recursive = TRUE) |> 
+      data.frame(HE_coupe_filename = _) |> 
+      (function(.) {
+        print(dim(.))
+        assertthat::assert_that(nrow(.) == 230)
+        return(.)
+      })(),
+    by=c('HE_coupe_filename'='HE_coupe_filename')
+  ) |> 
+  assertr::verify(!is.na(HE_coupe_md5sum))
+
+
 
 
 tmp.thumbnails_full <- list.files(path = "output/figures/HE_thumbnails/full/", pattern = "*.png$", recursive = TRUE) |>
@@ -246,9 +282,10 @@ tmp.thumbnails_full <- list.files(path = "output/figures/HE_thumbnails/full/", p
   assertr::verify(join_prefix %in% tmp$join_prefix) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 223)
+    assertthat::assert_that(nrow(.) == 230)
     return(.)
   })()
+
 
 
 tmp.thumbnails_roi <- list.files(path = "output/figures/HE_thumbnails/roi/", pattern = "*.jpg$", recursive = TRUE) |>
@@ -259,7 +296,7 @@ tmp.thumbnails_roi <- list.files(path = "output/figures/HE_thumbnails/roi/", pat
   assertr::verify(join_prefix %in% tmp$join_prefix) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 200)
+    assertthat::assert_that(nrow(.) == 207)
     return(.)
   })()
 
@@ -272,7 +309,7 @@ tmp <- tmp |>
   dplyr::filter(HE_coupe_primary_coupe == "yes") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 184)
+    assertthat::assert_that(nrow(.) == 190)
     return(.)
   })() |> 
   assertr::verify(!is.na(HE_coupe_thumbnail_full)) |> 
@@ -305,7 +342,11 @@ tmp <- read.table("output/tables/percentage_detP_probes.txt") |>
   assertr::verify(glass_od.metadata.array_samples$array_sentrix_id %in% array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (783))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES  +
+                                          CONST_N_VALIDATION_ALL_SAMPLES +
+                                          235 +
+                                          79 +
+                                          194))
     return(.)
   })()
 
@@ -327,19 +368,20 @@ tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |>
   assertr::verify(is.numeric(array_qc.pca.comp1)) |> 
   assertr::verify(!is.na(array_qc.pca.detP.outlier)) |> 
   assertr::verify(is.logical(array_qc.pca.detP.outlier)) |> 
-  assertr::verify(glass_od.metadata.array_samples$array_sentrix_id %in% array_sentrix_id) |> 
+  assertr::verify(glass_od.metadata.array_samples |> dplyr::filter(arraychip_version == "EPICv1") |> dplyr::pull(`array_sentrix_id`) %in% array_sentrix_id) |> 
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES)
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES  + CONST_N_VALIDATION_ALL_SAMPLES_EPIC))
     return(.)
   })()
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(array_qc.pca.comp1)) |> 
-  assertr::verify(!is.na(array_qc.pca.detP.outlier))
+  assertr::verify((arraychip_version == "EPICv1" &!is.na(array_qc.pca.comp1)) | arraychip_version != "EPICv1" ) |> 
+  assertr::verify((arraychip_version == "EPICv1" &!is.na(array_qc.pca.detP.outlier)) | arraychip_version != "EPICv1" )
+
 
 rm(tmp)
 

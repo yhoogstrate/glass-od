@@ -64,7 +64,7 @@ theme_cellpress <- theme_bw() +
     legend.box.background = element_blank(),
     
     plot.title =      element_text(size = 7, family = "Arial", face = "plain", color="black"), # `title` covers both title and subtitle
-    plot.subtitle =   element_text(size = 7, family = "Arial", face = "italic", color="black"),
+    plot.subtitle =   element_text(size = 7, family = "Arial", face = "italic", color="darkgray"),
     plot.caption =    element_text(size = 7, family = "Arial", face = "italic", color="black"),
     plot.background = element_blank(),
     

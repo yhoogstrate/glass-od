@@ -12,6 +12,9 @@ library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19) # BiocManager::install("I
 
 
 
+source('scripts/load_functions.R')
+
+
 if(!exists('metadata.cg_probes.epic')) {
   source('scripts/load_probe_annotations.R')
 }
@@ -31,7 +34,6 @@ if(!exists('gsam.metadata.array_samples')) {
 }
 
 
-source('scripts/load_functions.R')
 
 
 # metadata ----
@@ -39,10 +41,11 @@ source('scripts/load_functions.R')
 
 metadata.glass_od <- glass_od.metadata.array_samples |> 
   dplyr::filter(!is.na(array_sentrix_id)) |> 
+  dplyr::filter(arraychip_version == "EPICv1") |> 
   dplyr::select(array_sentrix_id, array_channel_green) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (275))
+    assertthat::assert_that(nrow(.) == (274 + CONST_N_VALIDATION_ALL_SAMPLES_EPIC))
     return(.)
   })()
 
@@ -89,8 +92,9 @@ targets <- rbind(
 RGSet <- minfi::read.metharray.exp(targets = targets, force = T) #red/green channel together
 
 
-#detP <- minfi::detectionP(RGSet, type = "m+u")
-proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = TRUE, verbose = TRUE, dyeMethod="reference") 
+#detP <- minfi::detectionP(RGSet, type = "m+u") # moved to external script
+proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = TRUE, verbose = TRUE, dyeMethod="single")  # dyeMethod="reference"
+
 rm(RGSet)
 gc()
 
@@ -125,9 +129,9 @@ mvalue <-  mvalue |>
 
 #dim(mvalue.mask)
 
-
 mvalue <- mvalue |> 
   data.table::as.data.table(keep.rownames = "probe_id") |> 
+  dplyr::rename_with(~ gsub("^GSM[0-9]+_([^_]+_[^_]+)$","\\1",.x)) |> # I Guess GEO hard re-codes internal identifiers
   dplyr::filter(probe_id %in% (
     metadata.cg_probes.epic |> 
       dplyr::filter(MASK_general == F) |> 
@@ -136,7 +140,6 @@ mvalue <- mvalue |>
   tibble::column_to_rownames('probe_id')
 
 dim(mvalue)
-
 
 
 
