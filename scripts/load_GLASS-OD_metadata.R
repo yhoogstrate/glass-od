@@ -236,7 +236,6 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   
 
 
-
 rm(tmp)
 
 
@@ -372,7 +371,7 @@ tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |>
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES  + CONST_N_VALIDATION_ALL_SAMPLES_EPIC))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES))
     return(.)
   })()
 

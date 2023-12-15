@@ -25,20 +25,34 @@ source('scripts/load_functions.R')
 # + https://github.com/zhou-lab/KYCG_knowledgebase_EPIC
 
 
-## manifest ----
-# 2022
+## manifest 2022 ----
 
 
-metadata.cg_probes.epic <- read.table("data/Improved DNA Methylation Array Probe Annotation/EPIC/EPIC.hg38.manifest.tsv", header=T) |> 
-  dplyr::rename(probe_id = Probe_ID) |> 
-  dplyr::mutate(probe_type = dplyr::recode(type, "I"="I (red & green)", "II"="II (ligation Allele-A)")) |>  # II is 1 (probe) and I is 2 probes.. ugh!
-  assertr::verify(!duplicated(probe_id)) |> 
-  dplyr::mutate(pos = round((CpG_beg + CpG_end )/2)) |> 
-  dplyr::mutate(is_1P = CpG_chrm == 'chr1' & pos < 130 * 1000000) |> # rough margin
-  dplyr::mutate(is_19Q = CpG_chrm == 'chr19' & pos > 23.5 * 1000000 ) |>  # rough margin
-  dplyr::rename(target_hg38 = target) # noticed an example where target == 'CA' - while in hg19 ref genome it should have been actually 'CG'
+fn <- "cache/EPIC.hg38.manifest.tsv_2022.Rds" # unlink(fn)
+
+if(file.exists(fn)) {
+
+  message(paste0("loading '",fn,"' from cache"))
+  tmp <- readRDS(fn)
+
+} else {
+
+  tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/EPIC/EPIC.hg38.manifest.tsv", header=T) |> 
+    dplyr::rename(probe_id = Probe_ID) |> 
+    dplyr::mutate(probe_type = dplyr::recode(type, "I"="I (red & green)", "II"="II (ligation Allele-A)")) |>  # II is 1 (probe) and I is 2 probes.. ugh!
+    assertr::verify(!duplicated(probe_id)) |> 
+    dplyr::mutate(pos = round((CpG_beg + CpG_end )/2)) |> 
+    dplyr::mutate(is_1P = CpG_chrm == 'chr1' & pos < 130 * 1000000) |> # rough margin
+    dplyr::mutate(is_19Q = CpG_chrm == 'chr19' & pos > 23.5 * 1000000 ) |>  # rough margin
+    dplyr::rename(target_hg38 = target) # noticed an example where target == 'CA' - while in hg19 ref genome it should have been actually 'CG'
+
+  saveRDS(tmp, file=fn)
+
+}
 
 
+metadata.cg_probes.epic <- tmp
+rm(tmp, fn)
 
 
 
@@ -49,12 +63,29 @@ metadata.cg_probes.epic <- read.table("data/Improved DNA Methylation Array Probe
 # probeCpGcnt: the number of CpG in the probe.
 # context35: the number of CpG in the [-35bp, +35bp] window.
 
-tmp <- read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |> 
-  dplyr::rename(probe_id = probeID) |> 
-  dplyr::select(probe_id, probeCpGcnt, context35)
+
+fn <- "cache/EPIC.hg38.manifest.tsv_old.Rds" # unlink(fn)
+
+if(file.exists(fn)) {
+  
+  message(paste0("loading '",fn,"' from cache"))
+  tmp <- readRDS(fn)
+  
+} else {
+  
+  tmp <- read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |> 
+    dplyr::rename(probe_id = probeID) |> 
+    dplyr::select(probe_id, probeCpGcnt, context35)
+  
+  saveRDS(tmp, file=fn)
+  
+}
+
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
+
+rm(tmp, fn)
 
 
 
@@ -62,18 +93,32 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
 ## add masking ----
 
 
-tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/EPIC/EPIC.hg38.mask.tsv", header=T) |> 
-  dplyr::rename(probe_id = probeID)
 
+fn <- "cache/EPIC.hg38.manifest.tsv.Rds" # unlink(fn)
 
-stopifnot(intersect(colnames(tmp) , colnames(metadata.cg_probes.epic)) == c("probe_id"))
+if(file.exists(fn)) {
+  
+  message(paste0("loading '",fn,"' from cache"))
+  tmp <- readRDS(fn)
+  
+} else {
+  
+  tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/EPIC/EPIC.hg38.mask.tsv", header=T) |> 
+    dplyr::rename(probe_id = probeID)
+  
+  stopifnot(intersect(colnames(tmp) , colnames(metadata.cg_probes.epic)) == c("probe_id"))
+  
+  saveRDS(tmp, file=fn)
+  
+}
 
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
   dplyr::mutate(exclude = is.na(MASK_general) | MASK_general == T) # control probes (^ctl_.+$ instead of ^gc[0-9]+$) have no MASK_general
 
-rm(tmp)
+rm(tmp, fn)
+
 
 
 
@@ -85,19 +130,63 @@ rm(tmp)
 # Mar 13, 2020
 
 
-tmp <- read.csv("data/Improved DNA Methylation Array Probe Annotation/EPIC/infinium-methylationepic-v-1-0-b5-manifest-file.csv", skip=7,header=T, sep=",") |> 
-  #dplyr::filter(grepl("^cg",IlmnID) & grepl("^cg",Name)) |> 
-  dplyr::rename(probe_id = IlmnID) |> 
-  dplyr::mutate(Name = NULL) |> 
-  dplyr::mutate(AlleleA_ProbeSeq = NULL) |> # identical to the other manifest
-  dplyr::mutate(AlleleB_ProbeSeq = NULL) |> # identical to the other manifest
-  dplyr::rename(Forward_Sequence_hg19 = Forward_Sequence)
 
-colnames(tmp)[colnames(tmp) %in% colnames(metadata.cg_probes.epic)]
+fn <- "cache/infinium-methylationepic-v-1-0-b5-manifest-file.csv.Rds" # unlink(fn)
+
+if(file.exists(fn)) {
+  
+  message(paste0("loading '",fn,"' from cache"))
+  tmp <- readRDS(fn)
+  
+} else {
+  
+  tmp <- read.csv("data/Improved DNA Methylation Array Probe Annotation/EPIC/infinium-methylationepic-v-1-0-b5-manifest-file.csv", skip=7,header=T, sep=",") |> 
+    #dplyr::filter(grepl("^cg",IlmnID) & grepl("^cg",Name)) |> 
+    dplyr::rename(probe_id = IlmnID) |> 
+    dplyr::mutate(Name = NULL) |> 
+    dplyr::mutate(AlleleA_ProbeSeq = NULL) |> # identical to the other manifest - cross-checked
+    dplyr::mutate(AlleleB_ProbeSeq = NULL) |> # identical to the other manifest - cross-checked
+    dplyr::mutate(Infinium_Design_Type = NULL) |> # identical to `type` from the other manifest - cross-checked
+    dplyr::rename(Forward_Sequence_hg19 = Forward_Sequence) |> 
+    dplyr::select(
+      -c(
+        Phantom4_Enhancers , SNP_DISTANCE, SNP_MinorAlleleFrequency,  Random_Loci, MFG_Change_Flagged, SNP_ID, Coordinate_36, Chromosome_36, Methyl27_Loci, TFBS_Evidence_Count,
+        
+        Forward_Sequence_hg19, Genome_Build,
+        SourceSeq, # SourceSeq: The original, genomic sequence used for probe design before bisulfite conversion. - built against, not the exact probe seq
+        
+        UCSC_RefGene_Accession, UCSC_RefGene_Group, UCSC_CpG_Islands_Name,
+        Phantom5_Enhancers, DMR, HMM_Island, Regulatory_Feature_Name,
+        Regulatory_Feature_Group,
+        
+        GencodeBasicV12_NAME, GencodeBasicV12_Accession,
+        GencodeBasicV12_Group, GencodeCompV12_Accession,
+        GencodeCompV12_Group,
+        UCSC_RefGene_Accession,
+        UCSC_RefGene_Group,
+        X450k_Enhancer,
+        OpenChromatin_Evidence_Count, OpenChromatin_NAME,
+        TFBS_NAME
+      )
+    )
+  
+  colnames(tmp)[colnames(tmp) %in% colnames(metadata.cg_probes.epic)]
+  
+  saveRDS(tmp, file=fn)
+  
+}
+
+
 
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
+
+
+
+rm(tmp, fn)
+
+
 
 
 ### fix orientation ---

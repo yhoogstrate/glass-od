@@ -45,7 +45,7 @@ metadata.glass_od <- glass_od.metadata.array_samples |>
   dplyr::select(array_sentrix_id, array_channel_green) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (274 + CONST_N_VALIDATION_ALL_SAMPLES_EPIC))
+    assertthat::assert_that(nrow(.) == (274 + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES))
     return(.)
   })()
 

@@ -58,7 +58,7 @@ metadata <- rbind(
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES_EPIC + 235 + 79))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + 235 + 79))
     return(.)
   })()
 
@@ -67,7 +67,7 @@ data <- readRDS("cache/mvalues.all_samples.Rds") |>
   dplyr::select(metadata$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES_EPIC + 235 + 79))
+    assertthat::assert_that(ncol(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + 235 + 79))
     return(.)
   })()
 
@@ -176,7 +176,7 @@ out <- metadata |>
   assertr::verify(!is.na(array_qc.pca.comp1)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES_EPIC + 235 + 79))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + 235 + 79))
     return(.)
   })()
 

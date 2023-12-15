@@ -48,7 +48,7 @@ metadata.glass_od <- glass_od.metadata.array_samples |>
 
 
 metadata.od_validation <- glass_od.metadata.array_samples |> 
-  filter_OD_validation_idats(CONST_N_VALIDATION_ALL_SAMPLES_EPIC) |>
+  filter_OD_validation_idats(CONST_N_OD_VALIDATION_INCLUDED_SAMPLES) |>
   dplyr::select(array_sentrix_id, array_channel_green, array_percentage.detP.signi)
 
 
@@ -81,7 +81,6 @@ targets <- rbind(
   dplyr::mutate(Slide = gsub("^([0-9]+)_.+$","\\1", array_sentrix_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES + 218 + CONST_N_GSAM_INCLUDED_SAMPLES)
     assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
     return(.)
   })()
