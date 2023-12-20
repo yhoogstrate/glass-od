@@ -131,7 +131,8 @@ rm(tmp, fn)
 
 
 
-fn <- "cache/infinium-methylationepic-v-1-0-b5-manifest-file.csv.Rds" # unlink(fn)
+fn <- "cache/infinium-methylationepic-v-1-0-b5-manifest-file.csv.Rds"
+# unlink(fn)
 
 if(file.exists(fn)) {
   
@@ -199,7 +200,12 @@ fn <- "cache/load_probe_annotations__mapped_orientation.Rds"
 #unlink(fn)
 
 
-if(!file.exists(fn)) {
+if(file.exists(fn)) {
+  
+  message(paste0("loading '",fn,"' from cache"))
+  tmp <- readRDS(file = fn)
+  
+} else {
   
   tmp <- metadata.cg_probes.epic |> 
     dplyr::filter(grepl("^cg", probe_id)) |> 
@@ -227,10 +233,6 @@ if(!file.exists(fn)) {
 
   saveRDS(tmp, file=fn)
   
-} else {
-  
-  tmp <- readRDS(file = fn)
-  
 }
 
 
@@ -247,8 +249,14 @@ rm(tmp, fn)
 
 
 fn <- "cache/load_probe_annotations__sequence_pre_target_post.Rds"
-if(!file.exists(fn)) {
+# unlink(fn)
 
+if(file.exists(fn)) {
+  
+  message(paste0("loading '",fn,"' from cache"))
+  tmp <- readRDS(file = fn)
+  
+} else {
   tmp <- metadata.cg_probes.epic |> 
     
     dplyr::filter(!is.na(orientation_mapped)) |>  # some QC probes
@@ -275,10 +283,6 @@ if(!file.exists(fn)) {
   
   saveRDS(tmp, file=fn)
   
-} else {
-  
-  tmp <- readRDS(file = fn)
-  
 }
 
 
@@ -295,7 +299,14 @@ rm(tmp, fn)
 
 
 fn <- "cache/load_probe_annotations__probe_type_annotation.Rds"
-if(!file.exists(fn)) {
+#unlink(fn)
+
+if(file.exists(fn)) {
+  
+  message(paste0("loading '",fn,"' from cache"))
+  tmp <- readRDS(file = fn)
+  
+} else {
   
   tmp <- metadata.cg_probes.epic |> 
     dplyr::filter(grepl("^cg", probe_id)) |> 
@@ -314,10 +325,6 @@ if(!file.exists(fn)) {
   
   
   saveRDS(tmp, file=fn)
-  
-} else {
-  
-  tmp <- readRDS(file = fn)
   
 }
 
@@ -387,18 +394,41 @@ rm(tmp)
 ## add gene annotation ----
 
 
-tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/EPIC/EPIC.hg38.manifest.gencode.v36.tsv", header=T) |> 
-  dplyr::rename(probe_id = probeID) |> 
-  dplyr::mutate(CpG_chrm = NULL, CpG_beg  = NULL, CpG_end  = NULL)
 
 
-stopifnot(intersect(colnames(tmp) , colnames(metadata.cg_probes.epic)) == c("probe_id"))
+fn <- "cache/EPIC.hg38.manifest.gencode.v36.tsv.Rds"
+#unlink(fn)
+
+if(file.exists(fn)) {
+  
+  message(paste0("loading '",fn,"' from cache"))
+  tmp <- readRDS(file = fn)
+  
+} else {
+  
+  tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/EPIC/EPIC.hg38.manifest.gencode.v36.tsv", header=T) |> 
+    dplyr::rename(probe_id = probeID) |> 
+    dplyr::select(probe_id, genesUniq) |> 
+    dplyr::rename(hg38.manifest.gencode.v36.genesUniq = genesUniq)
+  
+  
+  stopifnot(intersect(colnames(tmp) , colnames(metadata.cg_probes.epic)) == c("probe_id"))
+  
+
+  saveRDS(tmp, file=fn)
+  
+}
 
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
-  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
 
-rm(tmp)
+
+rm(tmp, fn)
+
+
+
+
 
 
 
@@ -409,10 +439,20 @@ rm(tmp)
 #   head() |> 
 #   dplyr::select(probe_id, AlleleA_ProbeSeq, AlleleB_ProbeSeq, probe_edit_distance)
 
+
+
 ## add sequence-context ----
 
 
-if(!file.exists("cache/load_probe_annotation__sequence_contexts.Rds")) {
+fn <- "cache/load_probe_annotation__sequence_contexts.Rds"
+# unlink(fn)
+
+if(file.exists(fn)) {
+  
+  message(paste0("loading '",fn,"' from cache"))
+  tmp <- readRDS(file = fn)
+  
+} else {
   
   tmp <- metadata.cg_probes.epic |> 
     dplyr::filter(!is.na(sequence_pre)) |> 
@@ -449,20 +489,14 @@ if(!file.exists("cache/load_probe_annotation__sequence_contexts.Rds")) {
     assertr::verify(nchar(gc_sequence_context_2_old) == 8) |> 
     assertr::verify(probe_id %in% metadata.cg_probes.epic$probe_id)
   
-  
-    saveRDS(tmp, file="cache/load_probe_annotation__sequence_contexts.Rds")
-    
-} else {
-  
-  tmp <- readRDS(file="cache/load_probe_annotation__sequence_contexts.Rds")
-  
+    saveRDS(tmp, file=fn)
 }
 
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
 
-rm(tmp)
+rm(tmp, fn)
 
 
 
@@ -637,7 +671,7 @@ rm(tmp)
 
 
 tmp <- read.table("output/tables/repli-seq_data.txt", header=T)
-dplymetadata.cg_probes.epic <- metadata.cg_probes.epic |> 
+metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('', ''))
 
 
