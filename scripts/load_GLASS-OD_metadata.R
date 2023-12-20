@@ -1090,17 +1090,17 @@ rm(metadata.db.con)
 
 
 
-plt <- glass_od.metadata.array_samples |> 
-  dplyr::mutate(is_ffpe = ifelse(isolation_material == "ffpe", 1, 0)) |> 
-  dplyr::mutate(ffpe_or_ff_time = ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> 
-  dplyr::mutate(time_between_resection_and_array = as.numeric(time_between_resection_and_array)) |> 
-  dplyr::select(contains("array_qc_") | ffpe_or_ff_time | is_ffpe | time_between_resection_and_array) |> 
-  dplyr::filter(!is.na(ffpe_or_ff_time) & !is.na(time_between_resection_and_array)) |> 
-  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-1_Beta_larger_0.1_0.15` = NULL)
-
-plt <- plt[,colSums(is.na(plt)) == 0]
-
-corrplot::corrplot(abs(cor(plt, method="spearman")), order="hclust", tl.cex=0.75, tl.pos="l")
-
+# plt <- glass_od.metadata.array_samples |> 
+#   dplyr::mutate(is_ffpe = ifelse(isolation_material == "ffpe", 1, 0)) |> 
+#   dplyr::mutate(ffpe_or_ff_time = ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> 
+#   dplyr::mutate(time_between_resection_and_array = as.numeric(time_between_resection_and_array)) |> 
+#   dplyr::select(contains("array_qc_") | ffpe_or_ff_time | is_ffpe | time_between_resection_and_array) |> 
+#   dplyr::filter(!is.na(ffpe_or_ff_time) & !is.na(time_between_resection_and_array)) |> 
+#   dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-1_Beta_larger_0.1_0.15` = NULL)
+# 
+# plt <- plt[,colSums(is.na(plt)) == 0]
+# 
+# corrplot::corrplot(abs(cor(plt, method="spearman")), order="hclust", tl.cex=0.75, tl.pos="l")
+# 
 
 
