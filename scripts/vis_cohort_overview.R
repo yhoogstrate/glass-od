@@ -17,24 +17,48 @@ if(!exists('glass_od.metadata.array_samples')) {
 }
 
 
+tmp <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(is.na(patient_last_follow_up_date)) |> 
+  dplyr::select(patient_id, resection_id, patient_center_name, patient_last_follow_up_date, patient_last_follow_up_event) |> 
+  View()
 
 
-# Figure 1: MNP brain classes ----
+tmp <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(is.na(resection_treatment_status_summary) | is.na(resection_treatment_status_radio) | is.na(resection_treatment_status_chemo)) |> 
+  dplyr::select(patient_id, resection_id, patient_center_name, 
+                resection_treatment_status_radio, 
+                resection_treatment_status_chemo, 
+                resection_treatment_status_summary) |> 
+  View()
+
+
+# Figure 1a: overview GLASS_OD ----
 
 
 
 plt <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(227, exclude.suspected.noncodels = F) |> 
-  dplyr::mutate(Source = dplyr::recode(isolation_material, `ffpe`="FFPE", `tissue`="Fresh")) |> 
-  dplyr::select(patient_id | patient_suspected_noncodel | resection_number | resection_tumor_grade | Source | contains("_cal_class")) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES + 17, exclude.suspected.noncodels = F) |> 
+  dplyr::mutate(Source = dplyr::recode(isolation_material, `ffpe`="Source: FFPE", `tissue`="Source: fresh")) |> 
+  dplyr::mutate(resection_treatment_status_chemo = dplyr::recode(as.character(resection_treatment_status_chemo), `TRUE`="Yes", `FALSE`="No")) |> 
+  dplyr::mutate(resection_treatment_status_radio = dplyr::recode(as.character(resection_treatment_status_radio), `TRUE`="Yes", `FALSE`="No")) |> 
+  dplyr::select(patient_id, patient_suspected_noncodel, resection_number, resection_tumor_grade,
+                resection_treatment_status_chemo, resection_treatment_status_radio,
+                Source, contains("_cal_class")) |> 
   dplyr::mutate(resection_tumor_grade = dplyr::case_when(
     is.na(resection_tumor_grade) | patient_suspected_noncodel ~ as.character(NA),
      !patient_suspected_noncodel ~ paste0("Grade ", resection_tumor_grade)
   )) |> 
   tidyr::pivot_longer(cols = c(resection_tumor_grade,
+                               
                                array_mnp_predictBrain_v2.0.1_cal_class,
                                array_mnp_predictBrain_v12.5_cal_class,
                                array_mnp_predictBrain_v12.8_cal_class,
+                               
+                               resection_treatment_status_chemo,
+                               resection_treatment_status_radio,
+                               
                                Source), names_to = "classifier_version", values_to="class") |> 
   dplyr::mutate(col = as.factor(dplyr::case_when(
     class %in% c("A_IDH", "A_IDH_LG") ~ "A_IDH [_LG]",
@@ -45,7 +69,9 @@ plt <- glass_od.metadata.array_samples |>
     
     class %in% c("Grade 2", "Grade 3") ~ class,
     
-    class %in% c("FFPE", "Fresh") ~ class,
+    class %in% c("Source: FFPE", "Source: fresh") ~ class,
+    
+    class %in% c("Yes", "No") ~ class,
     
     is.na(class) ~ "N/A",
     
@@ -56,13 +82,120 @@ plt <- glass_od.metadata.array_samples |>
     patient_suspected_noncodel == F ~ "Codel",
     T ~ as.character("-")
   )) |> 
-  dplyr::mutate(classifier_version_txt = 
-                  ifelse(
-                    classifier_version == "resection_tumor_grade",
-                    "WHO grade",
-                    gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version)
-                  )) |> 
-  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","v2.0.1", "v12.5", "v12.8", "Source")))
+  dplyr::mutate(classifier_version_txt = dplyr::case_when(
+    classifier_version == "resection_tumor_grade" ~ "WHO grade",
+    classifier_version == "resection_treatment_status_radio" ~ "Radio",
+    classifier_version == "resection_treatment_status_chemo" ~ "Chemo",
+    T ~ gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version)
+  )) |> 
+  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Source")))
+
+
+plt.resection.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
+  dplyr::pull("patient_suspected_noncodel") |>
+  table()
+plt.patient.counts <- plt |>
+  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
+  dplyr::select(patient_id, patient_suspected_noncodel) |> 
+  dplyr::distinct() |> 
+  dplyr::pull("patient_suspected_noncodel") |>
+  table()
+
+
+plt <- plt |>
+  dplyr::mutate(patient_suspected_noncodel = paste0(patient_suspected_noncodel, "\n",plt.resection.counts[plt$patient_suspected_noncodel], " resections\n",plt.patient.counts[plt$patient_suspected_noncodel], " patients" ) )
+
+
+cols = c('A_IDH [_LG]' = 'lightblue',
+         'A_IDH_HG' = 'darkblue',
+         
+         'O_IDH' = 'lightgreen',
+         'OLIGOSARC_IDH' = 'darkgreen',
+         
+         'Grade 2' = mixcol( 'lightblue', 'lightgreen'),
+         'Grade 3' = mixcol( 'darkblue', 'darkgreen'),
+          
+         'Yes' = c('#E49E27', '#59B2E6', '#009E74', '#CB75A4')[1],
+         'No' = c('#E49E27', '#59B2E6', '#009E74', '#CB75A4')[2],
+         
+         'Source: FFPE' = mixcol('purple', "white", 0.2),
+         'Source: fresh' = mixcol(mixcol('red','pink',0.3), "white", 0.2),
+         
+         'Other' = '#FFAC1C',
+         'N/A' = 'darkgray'
+         )
+
+
+ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
+  facet_grid(cols=vars(patient_suspected_noncodel),  rows=vars(classifier_version_txt), scales = "free", space="free") +
+  geom_point(pch=15,size=1.4,alpha=0.65) +
+  labs(x = "patient", y="resection #", col="",fill="") +
+  labs(subtitle=format_subtitle("Cohort overview")) +
+  ylim(0.5, 5.5) +
+  scale_color_manual(values=cols) +
+  theme_cellpress +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_cellpress_lwd , linetype="solid"))
+
+
+ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 3.9)
+
+
+
+# Figure 1b: overview OD-validation ----
+
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_OD_validation_idats(CONST_N_OD_VALIDATION_INCLUDED_SAMPLES) |> 
+  dplyr::mutate(Source = dplyr::recode(isolation_material, `ffpe`="Source: FFPE", `tissue`="Source: fresh")) |> 
+  dplyr::mutate(resection_treatment_status_chemo = dplyr::recode(as.character(resection_treatment_status_chemo), `TRUE`="Yes", `FALSE`="No")) |> 
+  dplyr::mutate(resection_treatment_status_radio = dplyr::recode(as.character(resection_treatment_status_radio), `TRUE`="Yes", `FALSE`="No")) |> 
+  dplyr::select(patient_id, patient_suspected_noncodel, resection_number, resection_tumor_grade,
+                resection_treatment_status_chemo, resection_treatment_status_radio,
+                Source, contains("_cal_class")) |> 
+  dplyr::mutate(resection_tumor_grade = dplyr::case_when(
+    is.na(resection_tumor_grade) | patient_suspected_noncodel ~ as.character(NA),
+    !patient_suspected_noncodel ~ paste0("Grade ", resection_tumor_grade)
+  )) |> 
+  tidyr::pivot_longer(cols = c(resection_tumor_grade,
+                               
+                               array_mnp_predictBrain_v2.0.1_cal_class,
+                               array_mnp_predictBrain_v12.5_cal_class,
+                               array_mnp_predictBrain_v12.8_cal_class,
+                               
+                               resection_treatment_status_chemo,
+                               resection_treatment_status_radio,
+                               
+                               Source), names_to = "classifier_version", values_to="class") |> 
+  dplyr::mutate(col = as.factor(dplyr::case_when(
+    class %in% c("A_IDH", "A_IDH_LG") ~ "A_IDH [_LG]",
+    class == "A_IDH_HG" ~ class,
+    
+    class %in% c("O_IDH") ~ "O_IDH",
+    class %in% c("OLIGOSARC_IDH") ~ "OLIGOSARC_IDH",
+    
+    class %in% c("Grade 2", "Grade 3") ~ class,
+    
+    class %in% c("Source: FFPE", "Source: fresh") ~ class,
+    
+    class %in% c("Yes", "No") ~ class,
+    
+    is.na(class) ~ "N/A",
+    
+    T ~ "Other"
+  ))) |> 
+  dplyr::mutate(patient_suspected_noncodel = dplyr::case_when(
+    patient_suspected_noncodel == T ~ "Non-codel",
+    patient_suspected_noncodel == F ~ "Codel",
+    T ~ as.character("-")
+  )) |> 
+  dplyr::mutate(classifier_version_txt = dplyr::case_when(
+    classifier_version == "resection_tumor_grade" ~ "WHO grade",
+    classifier_version == "resection_treatment_status_radio" ~ "Radio",
+    classifier_version == "resection_treatment_status_chemo" ~ "Chemo",
+    T ~ gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version)
+  )) |> 
+  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Source")))
 
 
 plt.resection.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
@@ -89,12 +222,15 @@ cols = c('A_IDH [_LG]' = 'lightblue',
          'Grade 2' = mixcol( 'lightblue', 'lightgreen'),
          'Grade 3' = mixcol( 'darkblue', 'darkgreen'),
          
-         'FFPE' = 'purple',
-         'Fresh' = mixcol('red','pink',0.3),
+         'Yes' = c('#E49E27', '#59B2E6', '#009E74', '#CB75A4')[1],
+         'No' = c('#E49E27', '#59B2E6', '#009E74', '#CB75A4')[2],
+         
+         'Source: FFPE' = mixcol('purple', "white", 0.2),
+         'Source: fresh' = mixcol(mixcol('red','pink',0.3), "white", 0.2),
          
          'Other' = '#FFAC1C',
          'N/A' = 'darkgray'
-         )
+)
 
 
 ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
@@ -102,14 +238,13 @@ ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
   geom_point(pch=15,size=1.4,alpha=0.65) +
   labs(x = "patient", y="resection #", col="",fill="") +
   labs(subtitle=format_subtitle("Cohort overview")) +
-  ylim(0.5, 5.5) +
+  ylim(0.5, 2.5) +
   scale_color_manual(values=cols) +
   theme_cellpress +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
   theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_cellpress_lwd , linetype="solid"))
 
 
-ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 3.3)
 
 
 
@@ -146,7 +281,7 @@ ggplot(plt, aes(x=stage_disease, y = Freq, fill=misclass)) +
   theme_cellpress
 
 
-## A_IDH_rat ----
+## A_IDH_ratio ----
 
 
 

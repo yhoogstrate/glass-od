@@ -34,17 +34,21 @@ source('scripts/load_functions.R')
 
 metadata <- rbind(
   glass_od.metadata.array_samples |> 
-    dplyr::select(array_sentrix_id, array_percentage.detP.signi, array_mnp_QC_v12.8_predicted_sample_type,
+    dplyr::filter(arraychip_version == 'EPICv1') |> 
+    dplyr::select(array_sentrix_id, array_percentage.detP.signi, 
+                  #array_mnp_QC_v12.8_predicted_sample_type,
                   array_qc.pca.comp1, array_qc.pca.detP.outlier) |> 
     dplyr::mutate(dataset = "GLASS-OD") # & CATNON sample -> codels & oligosarcoma's
   ,
   glass_nl.metadata.array_samples |> 
-    dplyr::select(array_sentrix_id, array_percentage.detP.signi, array_mnp_QC_v12.8_predicted_sample_type,
+    dplyr::select(array_sentrix_id, array_percentage.detP.signi,
+                  #array_mnp_QC_v12.8_predicted_sample_type,
                   array_qc.pca.comp1, array_qc.pca.detP.outlier) |> 
     dplyr::mutate(dataset = "GLASS-NL") # astro's
   ,
   gsam.metadata.array_samples |> 
-    dplyr::select(array_sentrix_id, array_percentage.detP.signi, array_mnp_QC_v12.8_predicted_sample_type,
+    dplyr::select(array_sentrix_id, array_percentage.detP.signi, 
+                  #array_mnp_QC_v12.8_predicted_sample_type,
                   array_qc.pca.comp1, array_qc.pca.detP.outlier) |> 
     dplyr::mutate(dataset = "G-SAM")
   ) |> 
@@ -54,7 +58,7 @@ metadata <- rbind(
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (275 + 235 + 79))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + 235 + 79))
     return(.)
   })()
 
@@ -63,7 +67,7 @@ data <- readRDS("cache/mvalues.all_samples.Rds") |>
   dplyr::select(metadata$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (275 + 235 + 79))
+    assertthat::assert_that(ncol(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + 235 + 79))
     return(.)
   })()
 
@@ -87,10 +91,14 @@ tmp <- pca.raw |>
   purrr::pluck('x')  |>   # take coordinates
   as.data.frame(stringsAsFactor=F) |>  # transform back from matrix to data.frame 
   dplyr::select(paste0('PC',1:20)) |> 
-  tibble::rownames_to_column('array_sentrix_id')
+  tibble::rownames_to_column('array_sentrix_id') |> 
+  assertr::verify(array_sentrix_id %in% metadata$array_sentrix_id) |> 
+  assertr::verify(metadata$array_sentrix_id %in% array_sentrix_id)
+
 
 metadata <- metadata |> 
-  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'),suffix=c('',''))
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'),suffix=c('','')) |> 
+  assertr::verify(!is.na(PC1))
 
 rm(tmp)
 
@@ -98,12 +106,17 @@ rm(tmp)
 ## find the component w/ strongest cor w/ detP ----
 
 #' is indeed former pc1
-ggplot(metadata, aes(x=array_qc.pca.comp1, y=PC1)) + 
+ggplot(metadata, aes(x=array_qc.pca.comp1.old, y=PC1)) + 
   geom_point()
 
 
 metadata <- metadata |> 
   dplyr::mutate(array_qc.pca.detP.outlier.new = ifelse(PC1 >= 600 | array_percentage.detP.signi >= 2.5,T,F))
+
+
+# those that changed status:
+table(paste0(metadata$array_qc.pca.detP.outlier.old), paste0(metadata$array_qc.pca.detP.outlier.new))
+
 
 
 cor(metadata$array_percentage.detP.signi, metadata$PC1, method="spearman")
@@ -113,14 +126,15 @@ cor(metadata$array_percentage.detP.signi, metadata$PC4, method="spearman")
 
 
 ggplot(metadata, aes(x=PC1, y=array_percentage.detP.signi, col=array_qc.pca.detP.outlier.old)) +
-  geom_point() +
+  geom_point(data=subset(metadata, !is.na(array_qc.pca.detP.outlier.old))) +
+  geom_point(data=subset(metadata, is.na(array_qc.pca.detP.outlier.old))) +
   coord_cartesian(ylim = c(0, 25)) +
   geom_hline(yintercept=2.5, col="red", lty=2, lwd=0.5) +
   geom_vline(xintercept=600, col="red", lty=2, lwd=0.5) +
   theme_bw()
 
 
-ggplot(metadata, aes(x=PC3, y=percentage.detP.signi, col=qc.pca.detP.outlier)) +
+ggplot(metadata, aes(x=PC3, y=array_percentage.detP.signi, col=qc.pca.detP.outlier)) +
   geom_point() +
   coord_cartesian(ylim = c(0, 25)) +
   geom_hline(yintercept=2.5, col="red", lty=2, lwd=0.5) +
@@ -152,14 +166,20 @@ ggplot(metadata, aes(x=PC1,y=PC3, col=qc.pca.outlier)) +
   geom_point()
 
 
-
+# export ----
 
 out <- metadata |> 
   dplyr::select(array_sentrix_id, PC1, array_qc.pca.detP.outlier.new) |> 
   dplyr::rename(array_qc.pca.detP.outlier = array_qc.pca.detP.outlier.new) |> 
   dplyr::rename(array_qc.pca.comp1 = PC1) |> 
   assertr::verify(!is.na(array_qc.pca.detP.outlier)) |> 
-  assertr::verify(!is.na(array_qc.pca.comp1))
+  assertr::verify(!is.na(array_qc.pca.comp1)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + 235 + 79))
+    return(.)
+  })()
+
 
 
 saveRDS(out, file="cache/unsupervised_qc_outliers_all.Rds")

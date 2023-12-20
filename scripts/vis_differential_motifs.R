@@ -57,7 +57,13 @@ plt.motifs.stranded <- data.frame(# R way of thinking
   assertr::verify(!duplicated(sequence_5p)) |> 
   assertr::verify(!duplicated(sequence_3p)) |> 
   dplyr::select(sequence_5p, sequence_3p) |> 
-  dplyr::mutate(palindromic = sequence_5p == sequence_3p)
+  dplyr::mutate(palindromic = sequence_5p == sequence_3p) |> 
+  dplyr::mutate(
+    oligo_sequence = tolower(dplyr::case_when(
+      sequence_5p < sequence_3p ~ paste0(sequence_5p,"/",sequence_3p),
+      sequence_5p > sequence_3p ~ paste0(sequence_3p,"/",sequence_5p),
+      palindromic ~ paste0("*",sequence_5p,"/",sequence_3p)
+    )))
 
 
 
@@ -285,12 +291,6 @@ rm(tmp)
 
 
 plt.motifs.unstranded <- plt.motifs.stranded |> 
-  dplyr::mutate(
-    oligo_sequence = tolower(dplyr::case_when(
-      sequence_5p < sequence_3p ~ paste0(sequence_5p,"/",sequence_3p),
-      sequence_5p > sequence_3p ~ paste0(sequence_3p,"/",sequence_5p),
-      palindromic ~ paste0("*",sequence_5p,"/",sequence_3p)
-    ))) |> 
   dplyr::select(-c(sequence_5p, sequence_3p, palindromic)) |> 
   dplyr::group_by(oligo_sequence) |> 
   dplyr::summarise_all(mean) |> # all, except the one used to group_by
@@ -348,47 +348,33 @@ plt <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |>
-  #dplyr::filter(!is.na(sequence_pre) & !is.na(sequence_post)) |> 
-  dplyr::mutate(sequence_context_stranded = paste0(
-    gsub("^.+(..)$","\\1", sequence_pre)
-    ,"CG",
-    gsub("^(..).+$","\\1", sequence_post)
-    )) |> 
-  dplyr::filter(!is.na(sequence_context_stranded))
+  dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
+  dplyr::filter(!is.na(sequence_context_stranded)) |> 
+  dplyr::left_join(plt.motifs.stranded, by=c('sequence_context_stranded'='sequence_5p'),suffix=c('',''))
 
-
-
-# 
-# plt.per.context <- plt |> 
-#   dplyr::select(gc_sequence_context_2) |> 
-#   dplyr::filter(!duplicated(gc_sequence_context_2)) |> 
-#   dplyr::mutate(gc_sequence_context_2_s = gsub("[CG]","CG",gc_sequence_context_2,fixed=T)) |> 
-#   dplyr::mutate(gc_sequence_context_2_rc = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(gc_sequence_context_2_s)))) |> 
-#   dplyr::mutate(facet_name = dplyr::case_when(
-#     gc_sequence_context_2_s < gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_s ,"/",gc_sequence_context_2_rc),
-#     gc_sequence_context_2_s > gc_sequence_context_2_rc ~ paste0(gc_sequence_context_2_rc,"/",gc_sequence_context_2_s ),
-#     gc_sequence_context_2_s == gc_sequence_context_2_rc ~ paste0("*",gc_sequence_context_2_s,"/",gc_sequence_context_2_s)
-#   ))
-# #dplyr::mutate(gc_sequence_context_2_s = NULL, gc_sequence_context_2_rc = NULL)
 
 
 plt <- plt |> 
-  #dplyr::left_join(plt.per.context, by=c('gc_sequence_context_2'='gc_sequence_context_2'), suffix=c('','')) |> 
-  dplyr::group_by(sequence_context_stranded) |> 
+  dplyr::group_by(sequence_5p) |> 
   dplyr::mutate(facet_rank = median(DMP__g2_g3__pp_nc__t)) |> 
   dplyr::ungroup() |> 
-  dplyr::mutate(facet_name = tolower(sequence_context_stranded))
+  dplyr::mutate(facet_name = paste0(
+                    tolower(gsub("^(..)....$","\\1", sequence_5p)),
+                    toupper(gsub("^..(..).+$","\\1", sequence_5p)),
+                    tolower(gsub("^....(..)$","\\1", sequence_5p))
+                  ))
 
 
-ggplot(plt, aes(x=reorder(sequence_context_stranded, -facet_rank), y=DMP__g2_g3__pp_nc__t)) +
+
+ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc__t)) +
   #facet_wrap(~reorder(facet_name, -facet_rank), scales="free_x", ncol=length(unique(plt$facet_name))) +
   #ggbeeswarm::geom_quasirandom(size=0.01, alpha=0.65) +
   #ggplot2::geom_violin(draw_quantiles = c(), linewidth=theme_cellpress_lwd, col = "white", fill="darkgray", adjust = 1.95) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-              ,coef=0.5, fill=NA,linewidth=theme_cellpress_lwd) +
+               coef=0.5, fill=NA,linewidth=theme_cellpress_lwd) +
   
   stat_summary(fun.y = median, fun.min = median, fun.max = median,
-               geom = "crossbar", width = 0.5, col="red", width=0.85, linewidth=theme_cellpress_lwd) +
+               geom = "crossbar", col="red", width=0.85, linewidth=theme_cellpress_lwd) +
   
   labs(x = NULL, y="Per probe t-score Grade 2 ~ Grade 3") +
   coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
@@ -401,32 +387,352 @@ ggsave("output/figures/vis_differential__xxCGxx_violin.pdf", width = 11 * 0.97, 
 
 
 
-### motif: gc_sequence_context_1 ----
 
 
-ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=gc_sequence_context_1)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
+## motif: xx[CG]xx violin(s) unstranded ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |>
+  dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
+  dplyr::filter(!is.na(sequence_context_stranded)) |> 
+  dplyr::left_join(plt.motifs.stranded |> dplyr::select(sequence_5p, oligo_sequence), by=c('sequence_context_stranded'='sequence_5p'), suffix=c('','')) |> 
+  dplyr::left_join(plt.motifs.unstranded, by=c('oligo_sequence'='oligo_sequence'),suffix=c('',''))
+
+
+table(plt$sequence_context_stranded)
+table(plt$sequence_5p)
+
+
+plt <- plt |> 
+  dplyr::group_by(oligo_sequence) |> 
+  dplyr::mutate(facet_rank = median(DMP__g2_g3__pp_nc__t)) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(facet_name = tolower(oligo_sequence))
+
+
+
+ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc__t)) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=NA,linewidth=theme_cellpress_lwd) +
   
-  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  stat_summary(fun.y = median, fun.min = median, fun.max = median,
+               geom = "crossbar", col="red", width=0.85, linewidth=theme_cellpress_lwd) +
   
-  theme_cellpress + 
+  labs(x = NULL, y="Per probe t-score Grade 2 ~ Grade 3") +
+  coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+
+
+## motif: xx[CG]xx violin(s) stranded x TET1----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |>
+  dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
+  dplyr::filter(!is.na(sequence_context_stranded)) |> 
+  dplyr::left_join(plt.motifs.stranded, by=c('sequence_context_stranded'='sequence_5p'),suffix=c('','')) |> 
+  assertr::verify(is.numeric(TET1_5mC_Adam_NatCom_2022_stranded)) |> 
+  dplyr::select(sequence_context_stranded, DMP__g2_g3__pp_nc__t, TET1_5mC_Adam_NatCom_2022_stranded) |> 
+  dplyr::group_by(sequence_context_stranded) |> 
+  dplyr::summarise(DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
+                   TET1_5mC_Adam_NatCom_2022_stranded = mean(TET1_5mC_Adam_NatCom_2022_stranded)) |> 
+  dplyr::ungroup() |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 256) 
+    return(.)
+  })()
+
+
+
+
+ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_stranded, x=DMP__g2_g3__pp_nc__t)) +
+  geom_point() +
+  #geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+
+
+## motif: xx[CG]xx violin(s) stranded x TET2----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |>
+  dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
+  dplyr::filter(!is.na(sequence_context_stranded)) |> 
+  dplyr::left_join(plt.motifs.stranded, by=c('sequence_context_stranded'='sequence_5p'),suffix=c('','')) |> 
+  assertr::verify(is.numeric(TET1_5mC_Adam_NatCom_2022_stranded)) |> 
+  dplyr::select(sequence_context_stranded, DMP__g2_g3__pp_nc__t, TET2_5mC_Adam_NatCom_2022_stranded, palindromic) |> 
+  dplyr::group_by(sequence_context_stranded) |> 
+  dplyr::summarise(DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
+                   TET2_5mC_Adam_NatCom_2022_stranded = mean(TET2_5mC_Adam_NatCom_2022_stranded),
+                   palindromic = all(palindromic)) |> 
+  dplyr::ungroup() |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 256) 
+    return(.)
+  })()
+
+
+
+
+ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_stranded, x=DMP__g2_g3__pp_nc__t, col=palindromic)) +
+  geom_point() +
+  #geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+
+
+
+
+## motif: xx[CG]xx violin(s) stranded x TET3----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |>
+  dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
+  dplyr::filter(!is.na(sequence_context_stranded)) |> 
+  dplyr::left_join(plt.motifs.stranded, by=c('sequence_context_stranded'='sequence_5p'),suffix=c('','')) |> 
+  assertr::verify(is.numeric(TET3_Ravichandran_SciAdv_2022_stranded)) |> 
+  dplyr::group_by(sequence_context_stranded) |> 
+  dplyr::summarise(DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
+                   TET3_Ravichandran_SciAdv_2022_stranded = mean(TET3_Ravichandran_SciAdv_2022_stranded)) |> 
+  dplyr::ungroup() |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 256) 
+    return(.)
+  })()
+
+
+
+
+ggplot(plt, aes(y=TET3_Ravichandran_SciAdv_2022_stranded, x=DMP__g2_g3__pp_nc__t)) +
+  geom_point() +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress +
+  theme(plot.background = element_rect(fill="white")) # png export
+
+
+
+
+
+## motif: xx[CG]xx violin(s) unstranded x TET1----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |>
+  dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
+  dplyr::filter(!is.na(sequence_context_stranded)) |> 
+  dplyr::left_join(plt.motifs.stranded |> dplyr::select(sequence_5p, oligo_sequence), by=c('sequence_context_stranded'='sequence_5p'), suffix=c('','')) |> 
+  dplyr::left_join(plt.motifs.unstranded, by=c('oligo_sequence'='oligo_sequence'),suffix=c('','')) |> 
+  assertr::verify(is.numeric(TET1_5mC_Adam_NatCom_2022_unstranded)) |> 
   
-  theme(plot.background = element_rect(fill="white")) +  # png export
+  dplyr::group_by(sequence_context_stranded) |> 
+  dplyr::summarise(DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
+                   TET1_5mC_Adam_NatCom_2022_unstranded = mean(TET1_5mC_Adam_NatCom_2022_unstranded),
+                   oligo_sequence = unique(oligo_sequence)) |> 
+  dplyr::ungroup() |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 256) 
+    return(.)
+  })() |> 
   
-  theme(legend.key.size = unit(0.6, 'lines')) 
+  dplyr::group_by(oligo_sequence) |> 
+  dplyr::summarise(DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
+                   TET1_5mC_Adam_NatCom_2022_unstranded = mean(TET1_5mC_Adam_NatCom_2022_unstranded),
+                   oligo_sequence = unique(oligo_sequence)) |> 
+  dplyr::ungroup() |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 136) 
+    return(.)
+  })()
 
 
-stat <- plt |> 
-  dplyr::select(gc_sequence_context_1, DMP__g2_g3__pp_nc__t)
-
-ggplot(stat, aes(x=gc_sequence_context_1, y=DMP__g2_g3__pp_nc__t)) +
-  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
-  theme_bw()
 
 
-#### RC ----
+ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=DMP__g2_g3__pp_nc__t)) +
+  geom_point() +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress +
+  theme(plot.background = element_rect(fill="white")) # png export
 
+
+
+
+
+
+## motif: xx[CG]xx violin(s) unstranded x TET2----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |>
+  dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
+  dplyr::filter(!is.na(sequence_context_stranded)) |> 
+  dplyr::left_join(plt.motifs.stranded |> dplyr::select(sequence_5p, oligo_sequence), by=c('sequence_context_stranded'='sequence_5p'), suffix=c('','')) |> 
+  dplyr::left_join(plt.motifs.unstranded, by=c('oligo_sequence'='oligo_sequence'),suffix=c('','')) |> 
+  assertr::verify(is.numeric(TET1_5mC_Adam_NatCom_2022_unstranded)) |> 
+  
+  dplyr::group_by(sequence_context_stranded) |> 
+  dplyr::summarise(DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
+                   TET2_5mC_Adam_NatCom_2022_unstranded = mean(TET2_5mC_Adam_NatCom_2022_unstranded),
+                   oligo_sequence = unique(oligo_sequence)) |> 
+  dplyr::ungroup() |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 256) 
+    return(.)
+  })() |> 
+  
+  dplyr::group_by(oligo_sequence) |> 
+  dplyr::summarise(DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
+                   TET2_5mC_Adam_NatCom_2022_unstranded = mean(TET2_5mC_Adam_NatCom_2022_unstranded),
+                   oligo_sequence = unique(oligo_sequence)) |> 
+  dplyr::ungroup() |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 136) 
+    return(.)
+  })()
+
+
+
+
+ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded, x=DMP__g2_g3__pp_nc__t)) +
+  geom_point() +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress +
+  theme(plot.background = element_rect(fill="white")) # png export
+
+
+
+
+
+
+## motif: xx[CG]xx violin(s) unstranded x TET3----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |>
+  dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
+  dplyr::filter(!is.na(sequence_context_stranded)) |> 
+  dplyr::left_join(plt.motifs.stranded |> dplyr::select(sequence_5p, oligo_sequence), by=c('sequence_context_stranded'='sequence_5p'), suffix=c('','')) |> 
+  dplyr::left_join(plt.motifs.unstranded, by=c('oligo_sequence'='oligo_sequence'),suffix=c('','')) |> 
+  assertr::verify(is.numeric(TET3_Ravichandran_SciAdv_2022_unstranded)) |> 
+  
+  dplyr::group_by(sequence_context_stranded) |> 
+  dplyr::summarise(DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
+                   TET3_Ravichandran_SciAdv_2022_unstranded = mean(TET3_Ravichandran_SciAdv_2022_unstranded),
+                   oligo_sequence = unique(oligo_sequence)) |> 
+  dplyr::ungroup() |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 256) 
+    return(.)
+  })() |> 
+  
+  dplyr::group_by(oligo_sequence) |> 
+  dplyr::summarise(DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
+                   TET3_Ravichandran_SciAdv_2022_unstranded = mean(TET3_Ravichandran_SciAdv_2022_unstranded),
+                   oligo_sequence = unique(oligo_sequence)) |> 
+  dplyr::ungroup() |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 136) 
+    return(.)
+  })()
+
+
+
+
+ggplot(plt, aes(y=TET3_Ravichandran_SciAdv_2022_unstranded, x=DMP__g2_g3__pp_nc__t)) +
+  geom_point() +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  theme_cellpress +
+  theme(plot.background = element_rect(fill="white")) # png export
 
 
 
