@@ -61,28 +61,33 @@ parse_cells <- function(cell) {
     nuc_mean_y =  mean(t(data.frame(cell$nucleusGeometry$coordinates))[,2]),
     nuclear_dab_sd = cell$properties$measurements$`Nucleus: Hematoxylin OD std dev`,
     nuclear_dab_mean = cell$properties$measurements$`Nucleus: DAB OD mean`,
-    nuclear_dab_max = cell$properties$measurements$`Nucleus: DAB OD max`
+    nuclear_dab_max = cell$properties$measurements$`Nucleus: DAB OD max`,
+    cellular_dab_sd = cell$properties$measurements$`Cell: Hematoxylin OD std dev`,
+    cellular_dab_mean = cell$properties$measurements$`Cell: DAB OD mean`,
+    cellular_dab_max = cell$properties$measurements$`Cell: DAB OD max`
     ))
 }
 
-dat <- rjson::fromJSON(file = "/home/youri/test2.json.geojson")
-
-dat <- dat$features
-
-
-plt <- do.call(rbind, pbapply::pblapply(dat, parse_cells))
+dat <- rjson::fromJSON(file = "/home/youri/test2.json.geojson") # alt ctr C in qupath
+dat2 <- dat$features
+plt <- do.call(rbind, pbapply::pblapply(dat2, parse_cells))
 
 
 plot(plt$nuclear_dab_mean, plt$nuclear_dab_sd)
 
+plot(plt$nuclear_dab_mean, plt$cellular_dab_sd, pch=19,cex=0.01)
+plot(plt$nuclear_dab_mean, plt$cellular_dab_mean, pch=19,cex=0.01)
 
 
-ggplot(plt |> dplyr::filter(nuclear_dab_mean > 0.5), aes(x=nuc_mean_x, y=-nuc_mean_y
+
+ggplot(plt, aes(x=nuc_mean_x, y=-nuc_mean_y
                                                          #, col=nuclear_dab_mean
                                                          )) +
-  geom_point(cex=0.45)
+  geom_point(data=plt |> dplyr::filter(nuclear_dab_mean <= 0.5), col="darkgreen", alpha=0.25, cex=0.001) +
+  geom_point(data=plt |> dplyr::filter(nuclear_dab_mean > 0.5), col="red", cex=0.45)
   #ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", oob = scales::squish)
 
 
 
+plot(plt$nuclear_dab_mean, plt$nuclear_dab_sd, pch=19,cex=0.01)
 
