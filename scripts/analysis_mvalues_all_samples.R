@@ -45,9 +45,10 @@ metadata.glass_od <- glass_od.metadata.array_samples |>
   dplyr::select(array_sentrix_id, array_channel_green) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (274 + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES))
     return(.)
   })()
+
 
 
 metadata.glass_nl <- glass_nl.metadata.array_samples |> 
@@ -55,7 +56,7 @@ metadata.glass_nl <- glass_nl.metadata.array_samples |>
   dplyr::select(array_sentrix_id, array_channel_green) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (235))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_NL_ALL_SAMPLES)
     return(.)
   })()
 
@@ -65,7 +66,7 @@ metadata.gsam <- gsam.metadata.array_samples |>
   dplyr::select(array_sentrix_id, array_channel_green) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (79))
+    assertthat::assert_that(nrow(.) == CONST_N_GSAM_ALL_SAMPLES)
     return(.)
   })()
 
@@ -78,7 +79,7 @@ metadata.gsam <- gsam.metadata.array_samples |>
 
 
 all_targets <- rbind(
-  metadata.glass_od |> dplyr::mutate(dataset = "GLASS-OD"),
+  metadata.glass_od |> dplyr::mutate(dataset = "GLASS-OD"), # includes validation + catnon
   metadata.glass_nl |> dplyr::mutate(dataset = "GLASS-NL"),
   metadata.gsam |> dplyr::mutate(dataset = "G-SAM")
   ) |> 
@@ -87,7 +88,8 @@ all_targets <- rbind(
   dplyr::mutate(Sample_Name = paste0(dataset, "_", array_sentrix_id)) |>
   dplyr::mutate(Array = gsub("^.+_", "", array_sentrix_id)) |>
   dplyr::mutate(Slide = gsub("^([0-9]+)_.+$","\\1", array_sentrix_id)) |> 
-  dplyr::mutate(cached = file.exists(paste0("cache/mvalues/",array_sentrix_id,".Rds")))
+  dplyr::mutate(cache_mvalues = paste0("cache/mvalues/",array_sentrix_id,".Rds")) |> 
+  dplyr::mutate(cached = file.exists(cache_mvalues))
 
 
 message(paste0("excluded n=",sum(all_targets$cached),"/",nrow(all_targets)," samples that were already cached"))
@@ -121,7 +123,7 @@ for(target_id in targets$array_sentrix_id) { # for loop, to ensure things don't 
   gc()
   
   
-  ### m-values for all samples ----
+  ## m-values for all samples
   
   mvalue <- minfi::ratioConvert(proc, what = "M") |> 
     assays() |> 
@@ -138,13 +140,10 @@ for(target_id in targets$array_sentrix_id) { # for loop, to ensure things don't 
       metadata.cg_probes.epic |> 
         dplyr::filter(MASK_general == F) |> 
         dplyr::pull(probe_id)
-    )) |> 
-    tibble::column_to_rownames('probe_id')
-  
-  dim(mvalue)
+    ))
   
   stopifnot(sum(is.na(mvalue)) == 0)
-  stopifnot(target_id == colnames(mvalue))
+  stopifnot(colnames(mvalue) == c("probe_id", target_id))
 
   # cleanup 
   
@@ -159,26 +158,19 @@ for(target_id in targets$array_sentrix_id) { # for loop, to ensure things don't 
 
 
 
-# 
-# 
-# a = readRDS("cache/mvalues.all_samples.Rds")
-# c = readRDS("cache/mvalues/203293640061_R08C01.Rds")
-# plot(a$`203293640061_R08C01`, b$`203293640061_R08C01`, pch=19,cex = 0.01)
-# plot(a$`203293640061_R08C01`, c$`203293640061_R08C01`, pch=19,cex = 0.01)
-# plot(a$`203293640061_R08C01`, c$`203293640061_R08C01`, pch=19,cex = 0.01)
-# 
-# cc = cor(data.frame(a=a$`203293640061_R08C01`, b=b$`203293640061_R08C01`, c=c$`203293640061_R08C01`))
-# 
-# 
-# a = readRDS("cache/mvalues/201496850071_R02C01.Rds.bak")
-# b = readRDS("cache/mvalues/201496850071_R02C01.Rds")
-# plot(a$`201496850071_R02C01` , b$`201496850071_R02C01`, pch=19,cex = 0.01)
-# 
-# 
-# 
-# #saveRDS(mvalue, "cache/mvalues.all_samples.Rds")
-# ###saveRDS(mvalue.mask, "cache/mvalues.all_samples.detP_mask.Rds")
-# 
-# 
+# export ----
+
+
+exp <- all_targets |>
+  assertr::verify(file.exists(cache_mvalues)) |> 
+  dplyr::pull(cache_mvalues) |> 
+  pbapply::pblapply(readRDS) |> 
+  purrr::reduce(function(x, y) dplyr::left_join(x, y, by = 'probe_id')) |> 
+  tibble::column_to_rownames('probe_id')
+
+
+saveRDS(exp, "cache/mvalues/mvalues_all.Rds")
+
+
 
 

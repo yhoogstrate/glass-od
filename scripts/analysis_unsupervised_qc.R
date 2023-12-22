@@ -58,9 +58,15 @@ metadata <- rbind(
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + 235 + 79))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + 
+                                        CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + 
+                                        CONST_N_GLASS_NL_ALL_SAMPLES + 
+                                        CONST_N_GSAM_ALL_SAMPLES +
+                                        CONST_N_CATNON_ALL_SAMPLES
+                                        ))
     return(.)
   })()
+
 
 
 data <- readRDS("cache/mvalues.all_samples.Rds") |> 

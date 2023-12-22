@@ -57,11 +57,11 @@ tmp <- rbind(
   glass_nl.metadata.array_samples |> dplyr::select(array_sentrix_id, array_channel_green),
   gsam.metadata.array_samples |> dplyr::select(array_sentrix_id, array_channel_green)
   ) |> 
-  
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES  +
                                         CONST_N_VALIDATION_ALL_SAMPLES +
+                                        CONST_N_CATNON_ALL_SAMPLES +
                                         235 +
                                         79 +
                                         194
@@ -72,7 +72,10 @@ tmp <- rbind(
   dplyr::mutate(array_channel_green = NULL) |> 
   
   dplyr::filter(array_sentrix_id %in% old$array_sentrix_id == F) |> 
-  
+  (function(.) {
+    print(dim(.))
+    return(.)
+  })() |>
   dplyr::mutate(array_percentage.detP.signi = unlist(pbapply::pblapply(array_sentrix_path, calc_ratio_detP))) 
 
 
@@ -89,6 +92,18 @@ tmp <- rbind(
 # )
 
 
-write.table(rbind(old, tmp |> dplyr::mutate(array_sentrix_path = NULL)), file="output/tables/percentage_detP_probes.txt")
+exp <- rbind(old, tmp |> dplyr::mutate(array_sentrix_path = NULL)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES  +
+                                          CONST_N_VALIDATION_ALL_SAMPLES +
+                                          CONST_N_CATNON_ALL_SAMPLES +
+                                          235 +
+                                          79 +
+                                          194
+    ))
+    return(.)
+  })() |> 
+  write.table(file="output/tables/percentage_detP_probes.txt")
 
 

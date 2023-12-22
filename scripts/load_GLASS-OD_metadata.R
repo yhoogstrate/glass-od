@@ -43,7 +43,7 @@ rm(tmp)
 glass_od.metadata.patients <- DBI::dbReadTable(metadata.db.con, 'view_patients') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 127 + 57)
+    assertthat::assert_that(nrow(.) == 127 + 57 + 7)
     return(.)
   })()  |> 
   assertr::verify(is.na(patient_diagnosis_date) | grepl("^[0-9]{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}$", patient_diagnosis_date)) |> 
@@ -71,13 +71,13 @@ glass_od.metadata.patients <- glass_od.metadata.patients |>
   dplyr::filter(patient_id %in% patients_without_array_samples$patient_id == F) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) ==  126 + 57) # + 10x astro
+    assertthat::assert_that(nrow(.) ==  126 + 57 + 7) # + 10x astro
     return(.)
   })() |> 
   dplyr::filter(is.na(patient_reason_excluded)) |> # 7 non(-canonical) codels
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 126 + 57) # + 10x astro
+    assertthat::assert_that(nrow(.) == 126 + 57 + 7) # + 10x astro
     return(.)
   })()
 
@@ -178,7 +178,7 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'view_array_samples') |>
   assertr::verify(arrayplate_id != "GLASS-NL") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(sum(is.na(.$arraychip_date)) <= (6 + 57))
+    assertthat::assert_that(sum(is.na(.$arraychip_date)) <= (6 + 57 +  17))
     return(.)
   })() |> 
   

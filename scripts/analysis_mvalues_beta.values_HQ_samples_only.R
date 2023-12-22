@@ -90,15 +90,16 @@ all_targets <- rbind(
     assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
     return(.)
   })() |> 
+  dplyr::mutate(cache_mvalues =       paste0("cache/mvalues/",array_sentrix_id,".Rds")) |> 
+  assertr::verify(cache_mvalues) |>  # essential - in qc step - also for integration later
   dplyr::mutate(cache_mask =         paste0("cache/masks_hq/",array_sentrix_id,".Rds")) |> 
   dplyr::mutate(cache_intensities =    paste0("cache/intensities_hq/",array_sentrix_id,".Rds")) |> 
   dplyr::mutate(cache_intensities_m =  paste0("cache/intensities_m_hq/",array_sentrix_id,".Rds")) |> 
   dplyr::mutate(cache_intensities_um = paste0("cache/intensities_um_hq/",array_sentrix_id,".Rds")) |> 
-  dplyr::mutate(cache_mvalues =       paste0("cache/mvalues/",array_sentrix_id,".Rds")) |> 
   dplyr::mutate(cache_betavalues =         paste0("cache/betavalues_hq/",array_sentrix_id,".Rds")) |> 
   dplyr::mutate(cached = file.exists(cache_mask) &
                   file.exists(cache_intensities) & file.exists(cache_intensities_m) & file.exists(cache_intensities_um) & 
-                  file.exists(cache_mvalues) & file.exists(cache_betavalues))
+                  file.exists(cache_betavalues))
 
 
 message(paste0("excluded n=",sum(all_targets$cached),"/",nrow(all_targets)," samples that were already cached"))
@@ -275,43 +276,44 @@ for(target_id in targets$array_sentrix_id) { # yep loop, minor overhead but safe
 
   
   # M-value
+  # already generated for QC
   
-  mvalue <- minfi::ratioConvert(proc, what = "M") |> 
-    assays() |> 
-    purrr::pluck('listData') |> 
-    purrr::pluck("M") |> 
-    data.table::as.data.table(keep.rownames = "probe_id") |> 
-    dplyr::rename_with(~ gsub("^GSM[0-9]+_([^_]+_[^_]+)$","\\1",.x)) |> # I Guess GEO hard re-codes internal identifiers
-    dplyr::select(probe_id, target_id) |> 
-    (function(.) {
-      print(dim(.))
-      assertthat::assert_that(nrow(.) == CONST_N_PROBES)
-      assertthat::assert_that(ncol(.) == 2)
-      return(.)
-    })() |> 
-    dplyr::filter(probe_id %in% (
-      metadata.cg_probes.epic |> 
-        dplyr::filter(MASK_general == F) |> 
-        dplyr::pull(probe_id)
-    )) |> 
-    (function(.) {
-      print(dim(.))
-      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
-      return(.)
-    })()
-  
-  
-  stopifnot(sum(is.na(mvalue)) == 0)
-  stopifnot(colnames(mvalue) == c("probe_id", target_id))
-
-  
-  saveRDS(
-    mvalue  |> tibble::tibble(),
-    file = target |> dplyr::filter(array_sentrix_id == target_id) |> dplyr::pull(cache_mvalues)
-  )
-  
-  
-  rm(mvalue)
+  # mvalue <- minfi::ratioConvert(proc, what = "M") |> 
+  #   assays() |> 
+  #   purrr::pluck('listData') |> 
+  #   purrr::pluck("M") |> 
+  #   data.table::as.data.table(keep.rownames = "probe_id") |> 
+  #   dplyr::rename_with(~ gsub("^GSM[0-9]+_([^_]+_[^_]+)$","\\1",.x)) |> # I Guess GEO hard re-codes internal identifiers
+  #   dplyr::select(probe_id, target_id) |> 
+  #   (function(.) {
+  #     print(dim(.))
+  #     assertthat::assert_that(nrow(.) == CONST_N_PROBES)
+  #     assertthat::assert_that(ncol(.) == 2)
+  #     return(.)
+  #   })() |> 
+  #   dplyr::filter(probe_id %in% (
+  #     metadata.cg_probes.epic |> 
+  #       dplyr::filter(MASK_general == F) |> 
+  #       dplyr::pull(probe_id)
+  #   )) |> 
+  #   (function(.) {
+  #     print(dim(.))
+  #     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+  #     return(.)
+  #   })()
+  # 
+  # 
+  # stopifnot(sum(is.na(mvalue)) == 0)
+  # stopifnot(colnames(mvalue) == c("probe_id", target_id))
+  # 
+  # 
+  # saveRDS(
+  #   mvalue  |> tibble::tibble(),
+  #   file = target |> dplyr::filter(array_sentrix_id == target_id) |> dplyr::pull(cache_mvalues)
+  # )
+  # 
+  # 
+  # rm(mvalue)
   
   
   # beta value
