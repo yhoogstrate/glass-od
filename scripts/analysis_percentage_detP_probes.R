@@ -103,7 +103,9 @@ exp <- rbind(old, tmp |> dplyr::mutate(array_sentrix_path = NULL)) |>
                                           194
     ))
     return(.)
-  })() |> 
+  })()
+
+exp |> 
   write.table(file="output/tables/percentage_detP_probes.txt")
 
 
