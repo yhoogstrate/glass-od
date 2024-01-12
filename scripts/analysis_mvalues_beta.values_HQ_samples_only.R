@@ -91,7 +91,7 @@ all_targets <- rbind(
     return(.)
   })() |> 
   dplyr::mutate(cache_mvalues =       paste0("cache/mvalues/",array_sentrix_id,".Rds")) |> 
-  assertr::verify(cache_mvalues) |>  # essential - in qc step - also for integration later
+  assertr::verify(file.exists(cache_mvalues)) |>  # essential - in qc step - also for integration later
   dplyr::mutate(cache_mask =         paste0("cache/masks_hq/",array_sentrix_id,".Rds")) |> 
   dplyr::mutate(cache_intensities =    paste0("cache/intensities_hq/",array_sentrix_id,".Rds")) |> 
   dplyr::mutate(cache_intensities_m =  paste0("cache/intensities_m_hq/",array_sentrix_id,".Rds")) |> 

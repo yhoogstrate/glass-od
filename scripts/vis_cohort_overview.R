@@ -59,6 +59,8 @@ plt <- glass_od.metadata.array_samples |>
                                resection_treatment_status_chemo,
                                resection_treatment_status_radio,
                                
+                               arraychip_notes,
+                               
                                Source), names_to = "classifier_version", values_to="class") |> 
   dplyr::mutate(col = as.factor(dplyr::case_when(
     class %in% c("A_IDH", "A_IDH_LG") ~ "A_IDH [_LG]",
@@ -152,11 +154,25 @@ plt <- glass_od.metadata.array_samples |>
   dplyr::mutate(resection_treatment_status_radio = dplyr::recode(as.character(resection_treatment_status_radio), `TRUE`="Yes", `FALSE`="No")) |> 
   dplyr::select(patient_id, patient_suspected_noncodel, resection_number, resection_tumor_grade,
                 resection_treatment_status_chemo, resection_treatment_status_radio,
+                
+                array_notes,
+                
                 Source, contains("_cal_class")) |> 
   dplyr::mutate(resection_tumor_grade = dplyr::case_when(
     is.na(resection_tumor_grade) | patient_suspected_noncodel ~ as.character(NA),
     !patient_suspected_noncodel ~ paste0("Grade ", resection_tumor_grade)
   )) |> 
+  dplyr::rename(dataset_source = array_notes) |> 
+  dplyr::mutate(dataset_source = dplyr::case_when(
+    patient_id == "0106" ~ "internal",
+    dataset_source == "from Oligosarcoma manuscript" ~ "Oligosarcoma study",
+    dataset_source == "from GLASS-Methylome" ~ "GLASS-methylome",
+    dataset_source == "PMID: 35998208 untreated data" ~ "PMID:35998208 naive",
+    dataset_source == "PMID: 35998208 treated data" ~ "PMID:35998208 trt",
+    dataset_source == "from Valor LGG x GBM" ~ "GSE147391 Valor",
+    T ~ dataset_source
+  )) |> 
+  dplyr::mutate(dataset_source_pivot = dataset_source) |> 
   tidyr::pivot_longer(cols = c(resection_tumor_grade,
                                
                                array_mnp_predictBrain_v2.0.1_cal_class,
@@ -165,6 +181,8 @@ plt <- glass_od.metadata.array_samples |>
                                
                                resection_treatment_status_chemo,
                                resection_treatment_status_radio,
+                               
+                               dataset_source_pivot,
                                
                                Source), names_to = "classifier_version", values_to="class") |> 
   dplyr::mutate(col = as.factor(dplyr::case_when(
@@ -180,6 +198,9 @@ plt <- glass_od.metadata.array_samples |>
     
     class %in% c("Yes", "No") ~ class,
     
+    class %in% c("Oligosarcoma study","internal", "GLASS-methylome", 'GSE147391 Valor',
+                 "PMID:35998208 naive", "PMID:35998208 trt") ~ class,
+    
     is.na(class) ~ "N/A",
     
     T ~ "Other"
@@ -193,9 +214,10 @@ plt <- glass_od.metadata.array_samples |>
     classifier_version == "resection_tumor_grade" ~ "WHO grade",
     classifier_version == "resection_treatment_status_radio" ~ "Radio",
     classifier_version == "resection_treatment_status_chemo" ~ "Chemo",
+    classifier_version == "dataset_source_pivot" ~ "Dataset",
     T ~ gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version)
   )) |> 
-  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Source")))
+  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Dataset", "Source")))
 
 
 plt.resection.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
@@ -210,10 +232,13 @@ plt.patient.counts <- plt |>
 
 
 plt <- plt |>
-  dplyr::mutate(patient_suspected_noncodel = paste0(patient_suspected_noncodel, "\n",plt.resection.counts[plt$patient_suspected_noncodel], " resections\n",plt.patient.counts[plt$patient_suspected_noncodel], " patients" ) )
+  dplyr::mutate(patient_suspected_noncodel = paste0(patient_suspected_noncodel, "\n",plt.resection.counts[plt$patient_suspected_noncodel], " resections\n",plt.patient.counts[plt$patient_suspected_noncodel], " patients" ) ) |>
+  dplyr::arrange(dplyr::desc(dataset_source), patient_id) |> 
+  dplyr::mutate(x = factor(patient_id, levels=unique(patient_id))) |> 
+  dplyr::mutate()
 
 
-cols = c('A_IDH [_LG]' = 'lightblue',
+cols <- c('A_IDH [_LG]' = 'lightblue',
          'A_IDH_HG' = 'darkblue',
          
          'O_IDH' = 'lightgreen',
@@ -228,17 +253,24 @@ cols = c('A_IDH [_LG]' = 'lightblue',
          'Source: FFPE' = mixcol('purple', "white", 0.2),
          'Source: fresh' = mixcol(mixcol('red','pink',0.3), "white", 0.2),
          
-         'Other' = '#FFAC1C',
+         'internal' = 'red',
+         'GLASS-methylome' = '#686ae8', # #7a7be6
+         'GSE147391 Valor' = '#58e0da', 
+         'Oligosarcoma study' = '#5AE82C', #  #A9E82C
+         'PMID:35998208 naive' = '#f5ce42', # #ffdb58
+         'PMID:35998208 trt' = 'orange',
+         
+         'Other' = '#FFAC1C', # 
          'N/A' = 'darkgray'
 )
 
 
-ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
+ggplot(plt, aes(x = x, y = resection_number, col=col)) +
   facet_grid(cols=vars(patient_suspected_noncodel),  rows=vars(classifier_version_txt), scales = "free", space="free") +
   geom_point(pch=15,size=1.4,alpha=0.65) +
   labs(x = "patient", y="resection #", col="",fill="") +
   labs(subtitle=format_subtitle("Cohort overview")) +
-  ylim(0.5, 2.5) +
+  ylim(0.5, 3.5) +
   scale_color_manual(values=cols) +
   theme_cellpress +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +

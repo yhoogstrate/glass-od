@@ -69,11 +69,15 @@ metadata <- rbind(
 
 
 
-data <- readRDS("cache/mvalues.all_samples.Rds") |> 
+data <- readRDS("cache/mvalues/mvalues_all.Rds") |> 
   dplyr::select(metadata$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + 235 + 79))
+    assertthat::assert_that(ncol(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + 
+                                          CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + 
+                                          CONST_N_GLASS_NL_ALL_SAMPLES + 
+                                          CONST_N_GSAM_ALL_SAMPLES +
+                                          CONST_N_CATNON_ALL_SAMPLES))
     return(.)
   })()
 
@@ -117,7 +121,24 @@ ggplot(metadata, aes(x=array_qc.pca.comp1.old, y=PC1)) +
 
 
 metadata <- metadata |> 
-  dplyr::mutate(array_qc.pca.detP.outlier.new = ifelse(PC1 >= 600 | array_percentage.detP.signi >= 2.5,T,F))
+  dplyr::mutate(array_qc.pca.detP.outlier.new = ifelse(PC1 >= 625 | array_percentage.detP.signi >= 2.5,T,F))
+
+metadata |> 
+  dplyr::mutate(array_qc.pca.detP.outlier.new = paste0(array_qc.pca.detP.outlier.new)) |> 
+  dplyr::mutate(array_qc.pca.detP.outlier.old = paste0(array_qc.pca.detP.outlier.old)) |> 
+  dplyr::select(array_qc.pca.detP.outlier.old, array_qc.pca.detP.outlier.new) |> 
+  table()
+
+
+metadata |> 
+  dplyr::filer(dataset != "") |> 
+  dplyr::mutate(array_qc.pca.detP.outlier.new = paste0(array_qc.pca.detP.outlier.new)) |> 
+  dplyr::mutate(array_qc.pca.detP.outlier.old = paste0(array_qc.pca.detP.outlier.old)) |> 
+  dplyr::select(array_qc.pca.detP.outlier.old, array_qc.pca.detP.outlier.new) |> 
+  table()
+
+
+metadata |> dplyr::filter(array_qc.pca.detP.outlier.new == "TRUE" & array_qc.pca.detP.outlier.old == "FALSE")
 
 
 # those that changed status:
@@ -136,19 +157,19 @@ ggplot(metadata, aes(x=PC1, y=array_percentage.detP.signi, col=array_qc.pca.detP
   geom_point(data=subset(metadata, is.na(array_qc.pca.detP.outlier.old))) +
   coord_cartesian(ylim = c(0, 25)) +
   geom_hline(yintercept=2.5, col="red", lty=2, lwd=0.5) +
-  geom_vline(xintercept=600, col="red", lty=2, lwd=0.5) +
+  geom_vline(xintercept=620, col="red", lty=2, lwd=0.5) +
   theme_bw()
 
 
-ggplot(metadata, aes(x=PC3, y=array_percentage.detP.signi, col=qc.pca.detP.outlier)) +
+ggplot(metadata, aes(x=PC3, y=array_percentage.detP.signi, col=array_qc.pca.detP.outlier.new)) +
   geom_point() +
   coord_cartesian(ylim = c(0, 25)) +
   geom_hline(yintercept=2.5, col="red", lty=2, lwd=0.5) +
-  geom_vline(xintercept=600, col="red", lty=2, lwd=0.5) +
+  geom_vline(xintercept=620, col="red", lty=2, lwd=0.5) +
   theme_bw()
 
 
-ggplot(metadata, aes(x=PC1, y=PC3, col=qc.pca.detP.outlier)) +
+ggplot(metadata, aes(x=PC1, y=PC3, col=array_qc.pca.detP.outlier.new)) +
   geom_point() +
   theme_bw()
 
@@ -182,7 +203,13 @@ out <- metadata |>
   assertr::verify(!is.na(array_qc.pca.comp1)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + 235 + 79))
+    assertthat::assert_that(nrow(.) == 
+                              (CONST_N_GLASS_OD_ALL_SAMPLES + 
+                                 CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + 
+                                 CONST_N_GLASS_NL_ALL_SAMPLES + 
+                                 CONST_N_GSAM_ALL_SAMPLES +
+                                 CONST_N_CATNON_ALL_SAMPLES
+                              ))
     return(.)
   })()
 

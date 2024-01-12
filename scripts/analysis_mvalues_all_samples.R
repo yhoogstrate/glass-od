@@ -165,12 +165,20 @@ exp <- all_targets |>
   assertr::verify(file.exists(cache_mvalues)) |> 
   dplyr::pull(cache_mvalues) |> 
   pbapply::pblapply(readRDS) |> 
-  purrr::reduce(function(x, y) dplyr::left_join(x, y, by = 'probe_id')) |> 
-  tibble::column_to_rownames('probe_id')
+  purrr::reduce(function(x, y) dplyr::full_join(x, y, by = 'probe_id')) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    assertthat::assert_that(ncol(.) == nrow(all_targets))
+    return(.)
+  })()
+
 
 
 saveRDS(exp, "cache/mvalues/mvalues_all.Rds")
 
 
+rm(exp)
 
 

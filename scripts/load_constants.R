@@ -7,7 +7,7 @@ CONST_N_PROBES_UNMASKED_AND_DETP <- 691380
 
 
 CONST_N_GLASS_OD_ALL_SAMPLES   <- 273 # CATNON ook niet
-CONST_N_VALIDATION_ALL_SAMPLES <- 1 + 57 + 17 + 4 # 1 non pair plus oligosarcoma paper
+CONST_N_VALIDATION_ALL_SAMPLES <- 1 + 57 + 17 + 4 + 25 + 21# 1 non pair plus oligosarcoma paper
 CONST_N_CATNON_ALL_SAMPLES     <- 1   # not used for analysis yet, but idat is on server
 CONST_N_GLASS_NL_ALL_SAMPLES <- 235
 CONST_N_GSAM_ALL_SAMPLES <- 79
