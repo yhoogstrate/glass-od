@@ -2794,7 +2794,7 @@ ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqSknshWaveSignalR
 
 
 plt <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(210) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   dplyr::mutate(time_tissue_in_ffpe =  ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> 
   dplyr::select(array_epiTOC2_tnsc, array_epiTOC2_hypoSC, contains("array_dnaMethyAge"), array_RepliTali,
                 array_percentage.detP.signi, array_PC1, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`,
@@ -2837,5 +2837,45 @@ corrplot::corrplot(cor(plt, method="spearman"), order="hclust", tl.cex=0.75, tl.
 #        axis.ticks.x=element_blank())
 
 
+## qc covars
 
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::mutate(time_tissue_in_ffpe =  ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> 
+  dplyr::select(contains("array_qc_"), 
+                array_percentage.detP.signi, 
+                array_PC1, 
+                time_tissue_in_ffpe,
+                #array_GLASS_NL_g2_g3_sig,
+                array_PC2, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
+                
+                array_PC3
+  ) |> 
+  dplyr::filter(!is.na(time_tissue_in_ffpe)) |> 
+  
+  dplyr::mutate(array_GLASS_OD_g2_g3_sig2 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_prim_rec_sig2 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_g2_g3_sig3 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_prim_rec_sig3 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_g2_g3_sig4 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_prim_rec_sig4 = NULL) |> 
+  
+  dplyr::mutate(array_PC3 = -1 * array_PC3) |> 
+  
+  #dplyr::mutate(AcCGAP = -1 * array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit = NULL) |> 
+  #dplyr::mutate(`-1 * array_dnaMethyAge__ZhangY2017` = -1 * array_dnaMethyAge__ZhangY2017 , array_dnaMethyAge__ZhangY2017 = NULL) |> 
+  #dplyr::mutate(`-1 * array_epiTOC2_hypoSC` = -1 * array_epiTOC2_hypoSC, array_epiTOC2_hypoSC = NULL) |>  # seems at inversed scale
+  #dplyr::mutate(`-1 * array_dnaMethyAge__LuA2019` = -1 * array_dnaMethyAge__LuA2019, array_dnaMethyAge__LuA2019 = NULL) |>  # seems at inversed scale
+  #dplyr::mutate(`-1 * QC: SPECIFICITY I GT MM 6` = -1 * `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`=NULL) |> 
+  #dplyr::select(-array_dnaMethyAge__YangZ2016) |>  # epiTOC1, near identical to epiTOC2
+  #dplyr::select(-array_dnaMethyAge__PCHorvathS2013) |>  # very similar to its 2018 equivalent
+  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-3_Beta_larger_0.12_0.18` = NULL) |> # contains N/A's
+  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-6_Beta_larger_0.2_0.3` = NULL)# contains N/A's
+
+
+colnames(plt) <- gsub("array_","",colnames(plt))
+colnames(plt) <- gsub("_"," ",colnames(plt))
+
+corrplot::corrplot(abs(cor(plt), method="spearman"), order="hclust", tl.cex=0.75, tl.pos="l")
 

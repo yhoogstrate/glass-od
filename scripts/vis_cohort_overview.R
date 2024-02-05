@@ -59,7 +59,6 @@ plt <- glass_od.metadata.array_samples |>
                                resection_treatment_status_chemo,
                                resection_treatment_status_radio,
                                
-                               arraychip_notes,
                                
                                Source), names_to = "classifier_version", values_to="class") |> 
   dplyr::mutate(col = as.factor(dplyr::case_when(
@@ -140,7 +139,7 @@ ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
   theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_cellpress_lwd , linetype="solid"))
 
 
-ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 3.9)
+ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 4.4)
 
 
 
@@ -277,6 +276,8 @@ ggplot(plt, aes(x = x, y = resection_number, col=col)) +
   theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_cellpress_lwd , linetype="solid"))
 
 
+
+ggsave("output/figures/vis_validation_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 5)
 
 
 
