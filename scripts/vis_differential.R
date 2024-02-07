@@ -2877,5 +2877,5 @@ plt <- glass_od.metadata.array_samples |>
 colnames(plt) <- gsub("array_","",colnames(plt))
 colnames(plt) <- gsub("_"," ",colnames(plt))
 
-corrplot::corrplot(abs(cor(plt), method="spearman"), order="hclust", tl.cex=0.75, tl.pos="l")
+corrplot::corrplot(abs(cor(plt, method="spearman")), order="hclust", tl.cex=0.75, tl.pos="l")
 

@@ -315,7 +315,7 @@ tmp <- tmp |>
   assertr::verify(!is.na(HE_coupe_thumbnail_roi))
 
 
-rm(tmp.thumbnails_full)
+rm(tmp.thumbnails_full, tmp.thumbnails_roi)
 
 
 
@@ -351,7 +351,7 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'stainings_KI67') |>
   dplyr::mutate(file_exists = NULL) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (140))
+    assertthat::assert_that(nrow(.) == (138))
     return(.)
   })() |> 
   assertr::verify(sum(resection_id %in% glass_od.metadata.array_samples$resection_id == F) == 1) # 0003-R1
@@ -431,7 +431,9 @@ rm(tmp)
 
 
 
-tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", pattern = "_qc_full.txt", recursive = TRUE) |> 
+tmp.ls <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", pattern = "_qc_full.txt", recursive = TRUE)
+
+tmp <- tmp.ls |> 
   data.frame(array_mnp_qc_report_full = _) |> 
   dplyr::mutate(array_mnp_qc_report_full = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", array_mnp_qc_report_full)) |>
   dplyr::mutate(array_mnp_qc_report_version = gsub("^.+qc_(v[^_\\/]+)[_/].+$","\\1", array_mnp_qc_report_full)) |>
@@ -446,7 +448,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 +
-                              94 # validation files completed so far
+                              90 # validation files completed so far
                               ) # only one of the validation set so far & 1 CATNON
     return(.)
   })()
@@ -478,7 +480,7 @@ tmp.ls <- c(list.files(
   path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", pattern = "*_scores_cal.csv", recursive = TRUE)
 )
 
-tmp1 <- tmp.ls |> 
+tmp <- tmp.ls |> 
   data.frame(tmp_filename = _) |>
   dplyr::mutate(array_mnp_predictBrain_filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", tmp_filename)) |>
   dplyr::mutate(array_mnp_predictBrain_version = gsub("^.+predictBrain_([^_\\/]+)[_/].+$","\\1", tmp_filename)) |>
@@ -517,7 +519,7 @@ tmp1 <- tmp.ls |>
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 +
-                              94 # validaton files completed so far
+                              90 # validaton files completed so far
                             )
     return(.)
   })()
@@ -542,11 +544,13 @@ rm(tmp, tmp.ls)
 ## Heidelberg 11b4[+12.5] rs_gender ----
 
 
-tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", pattern = "*.mix_gender.csv", recursive = TRUE) |> 
+tmp.ls <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", pattern = "*.mix_gender.csv", recursive = TRUE)
+
+tmp <- tmp.ls |> 
   data.frame(tmp_heidelberg_rs_gender_report = _) |> 
   dplyr::mutate(tmp_heidelberg_rs_gender_report = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", tmp_heidelberg_rs_gender_report)) |>
   assertr::verify(file.exists(tmp_heidelberg_rs_gender_report)) |> 
-  dplyr::mutate(array_sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", tmp_heidelberg_rs_gender_report)) |> 
+  dplyr::mutate(array_sentrix_id = gsub("^.+[^0-9]([0-9]{10,12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", tmp_heidelberg_rs_gender_report)) |> 
   assertr::verify(!is.na(array_sentrix_id))|> 
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
@@ -558,7 +562,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 +
-                              88 # validation files completed so far
+                              90 # validation files completed so far
                             )
     return(.)
   })()
@@ -572,6 +576,8 @@ rm(tmp)
 
 
 
+
+
 ## Heidelberg 12.8 reportBrain files ----
 
 
@@ -579,11 +585,11 @@ tmp.ls <- c(list.files(
   path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "*_scores_cal.csv", recursive = TRUE)
 )
 
-tmp2 <- tmp.ls |>
+tmp <- tmp.ls |>
   data.frame(tmp_filename = _) |>
   dplyr::mutate(array_mnp_predictBrain_filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", tmp_filename)) |>
   dplyr::mutate(array_mnp_predictBrain_version = gsub("^.+predictBrain_([^_\\/]+)[_/].+$","\\1", tmp_filename)) |>
-  dplyr::mutate(array_sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", tmp_filename)) |>
+  dplyr::mutate(array_sentrix_id = gsub("^.+[^0-9]([0-9]{10,12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", tmp_filename)) |>
   dplyr::mutate(tmp_uniq = paste0(array_sentrix_id, array_mnp_predictBrain_version)) |> 
   assertr::verify(!duplicated(tmp_uniq)) |>
   dplyr::mutate(tmp_uniq = NULL) |> 
@@ -613,10 +619,6 @@ tmp2 <- tmp.ls |>
 
 
 
-
-tmp <- tmp2
-
-
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(array_mnp_predictBrain_v12.8_cal_class) | patient_study_id != 1) |> 
@@ -640,7 +642,9 @@ rm(tmp, tmp.ls)
 ## Heidelberg 12.8 Frozen ~ FFPE status ----
 
 
-tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/",  pattern = "_ffpe_frozen.txt", recursive = TRUE) |> 
+tmp.ls <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/",  pattern = "_ffpe_frozen.txt", recursive = TRUE)
+
+tmp <- tmp.ls |> 
   data.frame(array_mnp_QC_v12.8_FrozenFFPEstatus_table = _) |> 
   dplyr::mutate(array_mnp_QC_v12.8_FrozenFFPEstatus_table = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", array_mnp_QC_v12.8_FrozenFFPEstatus_table)) |>
   dplyr::rowwise() |> 
@@ -655,7 +659,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 +
-                              54) # validation files not yet completed
+                              90) # validation files not yet completed
     return(.)
   })()
 
@@ -666,14 +670,12 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_QC_v12.8_predicted_sample_type) | patient_study_id != 1 ) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES +
-                              54
-                              )
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES  )
     return(.)
   })()
 
 
-rm(tmp)
+rm(tmp.ls, tmp)
 
 
 
@@ -682,15 +684,10 @@ rm(tmp)
 
 tmp <- query_mnp_12.8_CNVP_segment_csv(
   "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", 
-  CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1, 
+  CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 90, 
   glass_od.metadata.array_samples$array_sentrix_id,
   "array_mnp_CNVP_v12.8_v5.2_"
-  ) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1)
-    return(.)
-  })()
+  )
 
 
 
@@ -714,13 +711,13 @@ rm(tmp)
 tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "*.bins.igv", recursive = TRUE) |> 
   data.frame(array_heidelberg_cnvp_bins = _) |> 
   dplyr::mutate(array_mnp_CNVP_v12.8_v5.2_CNVP_bins = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", array_heidelberg_cnvp_bins)) |> 
-  dplyr::mutate(array_sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$","\\1", array_heidelberg_cnvp_bins)) |> 
+  dplyr::mutate(array_sentrix_id = gsub("^.+[^0-9]([0-9]{10,12}_[A-Z][0-9]+[A-Z][0-9]+).+$","\\1", array_heidelberg_cnvp_bins)) |> 
   assertr::verify(!is.na(array_sentrix_id))|> 
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 90)
     return(.)
   })()
 
@@ -766,13 +763,15 @@ rm(tmp)
 ## Heidelberg 12.8 CNVP ongene scores ----
 
 
-tmp <- c(
+tmp.ls <- c(
   list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "*.detail.txt", recursive = TRUE)
-) |>
+)
+
+tmp <- tmp.ls |> 
   data.frame(tmp_filename = _) |>
   dplyr::mutate(tmp_filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", tmp_filename)) |>
   assertr::verify(file.exists(tmp_filename)) |> 
-  dplyr::mutate(array_sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", tmp_filename)) |>
+  dplyr::mutate(array_sentrix_id = gsub("^.+[^0-9]([0-9]{10,12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", tmp_filename)) |>
   assertr::verify(!is.na(array_sentrix_id))|> 
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
@@ -785,7 +784,7 @@ tmp <- c(
   assertr::verify(is.numeric(`array_mnp_CNVP_12.8_CDKN2A/B`)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 90)
     return(.)
   })()
 
@@ -799,18 +798,23 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
     return(.)
   })()
 
-rm(tmp)
+
+rm(tmp, tmp.ls)
+
 
 
 
 ## Heidelberg 12.8 predictMGMT ----
 
 
-tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "_mgmt.csv", recursive = TRUE) |> 
+tmp.ls <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "_mgmt.csv", recursive = TRUE)
+
+
+tmp <- tmp.ls |> 
   data.frame(tmp_heidelberg_mgmt_report = _) |> 
   dplyr::mutate(tmp_heidelberg_mgmt_report = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", tmp_heidelberg_mgmt_report)) |>
   assertr::verify(file.exists(tmp_heidelberg_mgmt_report)) |> 
-  dplyr::mutate(array_sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", tmp_heidelberg_mgmt_report)) |>
+  dplyr::mutate(array_sentrix_id = gsub("^.+[^0-9]([0-9]{10,12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", tmp_heidelberg_mgmt_report)) |>
   assertr::verify(!is.na(array_sentrix_id))|> 
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
@@ -821,9 +825,10 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   dplyr::mutate(tmp_heidelberg_mgmt_report = NULL) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 90)
     return(.)
   })()
+
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
@@ -836,18 +841,22 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   })()
 
 
-rm(tmp)
+rm(tmp, tmp.ls)
+
 
 
 
 ## Heidelberg 12.8 rs_gender ----
 
 
-tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "*.mix_gender.csv", recursive = TRUE) |> 
+tmp.ls <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", pattern = "*.mix_gender.csv", recursive = TRUE)
+
+
+tmp <- tmp.ls |> 
   data.frame(tmp_heidelberg_rs_gender_report = _) |> 
   dplyr::mutate(tmp_heidelberg_rs_gender_report = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", tmp_heidelberg_rs_gender_report)) |>
   assertr::verify(file.exists(tmp_heidelberg_rs_gender_report)) |> 
-  dplyr::mutate(array_sentrix_id = gsub("^.+([0-9]{12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", tmp_heidelberg_rs_gender_report)) |> 
+  dplyr::mutate(array_sentrix_id = gsub("^.+[^0-9]([0-9]{10,12}_[A-Z][0-9]+[A-Z][0-9]+).+$", "\\1", tmp_heidelberg_rs_gender_report)) |> 
   assertr::verify(!is.na(array_sentrix_id))|> 
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
@@ -859,15 +868,17 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   assertr::verify(!is.na(array_mnp_rsGender_12.8_chrYintensity) & is.numeric(array_mnp_rsGender_12.8_chrYintensity)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 90)
     return(.)
   })()
+
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
 
-rm(tmp)
+
+rm(tmp, tmp.ls)
 
 
 

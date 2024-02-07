@@ -1320,6 +1320,50 @@ plot(plt2$array_PC5, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor
 plot(plt2$array_PC6, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor(plt2$batch)))
 
 
+# analyses: GLASS-OD PC1-8 ----
+
+
+metadata.PCs.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  assertr::verify(!is.na(array_PC1)) |> 
+  assertr::verify(is.numeric(array_PC1)) |> 
+  dplyr::mutate(array_PC1 = scale(array_PC1)) |> 
+  dplyr::mutate(array_PC2 = scale(array_PC2)) |> 
+  dplyr::mutate(array_PC3 = scale(array_PC3)) |> 
+  dplyr::mutate(array_PC4 = scale(array_PC4)) |> 
+  dplyr::mutate(array_PC5 = scale(array_PC5)) |> 
+  dplyr::mutate(array_PC6 = scale(array_PC6)) |> 
+  dplyr::mutate(array_PC7 = scale(array_PC7)) |> 
+  dplyr::mutate(array_PC8 = scale(array_PC8)) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |>  # also pairs with n = 3 & n= 4
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_INCLUDED_SAMPLES)) 
+    return(.)
+  })()
+
+
+
+
+data.PCs.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.PCs.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+
+
 
 # analyses: GLASS-OD AcCGAP ----
 ## data: partially paired [w/o FFPE/frozen batch correct] ----

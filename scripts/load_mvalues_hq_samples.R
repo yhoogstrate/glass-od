@@ -22,7 +22,7 @@ if(!exists('metadata.cg_probes.epic')) {
 # EPIC: all hq ----
 
 
-data.mvalues.hq_samples <- readRDS("cache/mvalues.HQ_samples.Rds") |> 
+data.mvalues.hq_samples <- readRDS("cache/mvalues/mvalues_hq.Rds") |>  # former "cache/mvalues.HQ_samples.Rds"
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == (CONST_N_SAMPLES))
@@ -30,7 +30,7 @@ data.mvalues.hq_samples <- readRDS("cache/mvalues.HQ_samples.Rds") |>
     return(.)
   })()
 
-data.mvalues.mask.hq_samples <- readRDS("cache/detP_masked_values.HQ_samples.Rds") |> 
+data.mvalues.mask.hq_samples <- readRDS("cache/masks_hq/masks_hq.Rds") |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == (CONST_N_SAMPLES))
