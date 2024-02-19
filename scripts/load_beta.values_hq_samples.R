@@ -18,7 +18,7 @@ if(!exists('metadata.cg_probes.epic')) {
 # all hq ----
 
 
-data.beta.values.hq_samples <- readRDS("cache/beta.values.HQ_samples.Rds") |> 
+data.beta.values.hq_samples <- readRDS("cache/betavalues_hq/betavalues_hq.Rds") |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
@@ -26,7 +26,7 @@ data.beta.values.hq_samples <- readRDS("cache/beta.values.HQ_samples.Rds") |>
     return(.)
   })()
 
-data.beta.values.mask.hq_samples <- readRDS("cache/detP_masked_values.HQ_samples.Rds") |> 
+data.beta.values.mask.hq_samples <- readRDS("cache/masks_hq/masks_hq.Rds") |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)

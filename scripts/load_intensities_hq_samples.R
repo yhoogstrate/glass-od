@@ -22,7 +22,7 @@ if(!exists('metadata.cg_probes.epic')) {
 # EPIC: all hq ----
 
 
-data.intensities.combined.hq_samples <- readRDS("cache/intensities.HQ_samples.Rds") |> 
+data.intensities.combined.hq_samples <- readRDS("cache/intensities_hq/intensities_hq.Rds") |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == CONST_N_SAMPLES) # 4 replicates still need to be removed still
@@ -31,7 +31,7 @@ data.intensities.combined.hq_samples <- readRDS("cache/intensities.HQ_samples.Rd
   })()
 
 
-data.intensities.methylated.hq_samples <- readRDS("cache/meth_intensities.HQ_samples.Rds") |> 
+data.intensities.methylated.hq_samples <- readRDS("cache/intensities_m_hq/intensities_m_hq.Rds") |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == CONST_N_SAMPLES) # 4 replicates still need to be removed still
@@ -40,7 +40,7 @@ data.intensities.methylated.hq_samples <- readRDS("cache/meth_intensities.HQ_sam
   })()
 
 
-data.intensities.unmethylated.hq_samples <- readRDS("cache/unmeth_intensities.HQ_samples.Rds") |> 
+data.intensities.unmethylated.hq_samples <- readRDS("cache/intensities_um_hq/intensities_um_hq.Rds") |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == CONST_N_SAMPLES) # 4 replicates still need to be removed still
@@ -49,7 +49,7 @@ data.intensities.unmethylated.hq_samples <- readRDS("cache/unmeth_intensities.HQ
   })()
 
 
-data.intensities.mask.hq_samples <- readRDS("cache/detP_masked_values.HQ_samples.Rds") |> 
+data.intensities.mask.hq_samples <- readRDS("cache/masks_hq/masks_hq.Rds") |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == CONST_N_SAMPLES) # 4 replicates still need to be removed still

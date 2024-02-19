@@ -433,7 +433,7 @@ rm(exp)
 
 
 # check if large enough
-dim(readRDS("cache/intensities_m_hq/intensities_um_hq.Rds"))
+# dim(readRDS("cache/intensities_um_hq/intensities_um_hq.Rds"))
 
 
 exp <- all_targets |>
@@ -455,6 +455,10 @@ rm(exp)
 ## m-values ----
 
 
+# check if large enough
+# dim(readRDS("cache/mvalues/mvalues_hq.Rds"))
+
+
 exp <- all_targets |>
   dplyr::mutate(mvalues_cached = file.exists(cache_mvalues)) |> 
   assertr::verify(mvalues_cached) |> 
@@ -472,6 +476,10 @@ rm(exp)
 
 
 ## beta-values ----
+
+
+# check if large enough
+# dim(readRDS("cache/betavalues_hq/betavalues_hq.Rds"))
 
 
 exp <- all_targets |>
