@@ -387,6 +387,7 @@ rm(tmp)
 
 ## A: overall density ----
 
+### 1. gray scale ----
 
 plt <- data.mvalues.probes |> 
   (function(.) {
@@ -394,7 +395,7 @@ plt <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
-  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
@@ -402,7 +403,7 @@ plt <- data.mvalues.probes |>
   })()
 
 
-p_A <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
@@ -414,14 +415,191 @@ p_A <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc_
   
   labs(x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
+ggsave(paste0("output/figures/vis_differential__overall_density.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
 
 
 
-## B: AcCGAP in OD ----
+### 2. EFF1 & EFF2 ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
+                y=DMP__primary_recurrence__pp_nc__t,
+                col = abs(DMP__PCs__pp_nc__PC1_t) - abs(DMP__PCs__pp_nc__PC2_t)
+                )) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1) +
+  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence",col = "Fit to PC1 vs. PC2") +
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col5(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+ggsave(paste0("output/figures/vis_differential__EFF1-PC1_EFF2-PC2.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+
+## B: PC1 - PC8 multivariate ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+plt.expanded <- rbind(
+  plt |> 
+    dplyr::mutate(col = -DMP__PCs__pp_nc__PC1_t) |> 
+    dplyr::mutate(grid_x = 1) |>
+    dplyr::mutate(grid_y = 1)
+  ,
+  plt |> 
+    dplyr::mutate(col = DMP__PCs__pp_nc__PC2_t) |> 
+    dplyr::mutate(grid_x = 2) |>
+    dplyr::mutate(grid_y = 1)
+  ,
+  plt |> 
+    dplyr::mutate(col = DMP__PCs__pp_nc__PC3_t) |> 
+    dplyr::mutate(grid_x = 3) |>
+    dplyr::mutate(grid_y = 1)
+  ,
+  plt |> 
+    dplyr::mutate(col = -DMP__PCs__pp_nc__PC4_t) |> 
+    dplyr::mutate(grid_x = 4) |>
+    dplyr::mutate(grid_y = 1)
+  ,
+  plt |> 
+    dplyr::mutate(col = -DMP__PCs__pp_nc__PC5_t) |> 
+    dplyr::mutate(grid_x = 1) |>
+    dplyr::mutate(grid_y = 2)
+  ,
+  plt |> 
+    dplyr::mutate(col = -DMP__PCs__pp_nc__PC6_t) |> 
+    dplyr::mutate(grid_x = 2) |>
+    dplyr::mutate(grid_y = 2)
+  ,
+  plt |> 
+    dplyr::mutate(col = -DMP__PCs__pp_nc__PC7_t) |> 
+    dplyr::mutate(grid_x = 3) |>
+    dplyr::mutate(grid_y = 2)
+  ,
+  plt |> 
+    dplyr::mutate(col = -DMP__PCs__pp_nc__PC8_t) |> 
+    dplyr::mutate(grid_x = 4) |>
+    dplyr::mutate(grid_y = 2)
+)
+
+
+p_PCs <- ggplot(plt.expanded, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                         color=col)) +
+  facet_grid(cols = vars(grid_x), rows = vars(grid_y)) +
+  
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1) +
+  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrence",
+       col="Association PC1") +
+  
+  #theme_nature +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+p_PCs
+
+corrplot::corrplot(abs(cor(
+  glass_od.metadata.array_samples |> 
+    dplyr::filter(!is.na(array_PC1)) |> 
+    dplyr::filter(!is.na(array_methylation_bins_1p19q_purity)) |> 
+    dplyr::select(array_PC1, array_PC2, array_PC3, array_PC4,
+                  array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
+                  array_percentage.detP.signi,
+                  array_methylation_bins_1p19q_purity,
+                  array_epiTOC2_tnsc
+                  )
+  
+,method="spearman")))
+
+
+plot(
+  glass_od.metadata.array_samples$array_methylation_bins_1p19q_purity,
+  glass_od.metadata.array_samples$array_PC1
+)
+
+plot(
+  glass_od.metadata.array_samples$array_methylation_bins_1p19q_purity,
+  glass_od.metadata.array_samples$array_PC2 # purity?
+)
+
+plot(
+  glass_od.metadata.array_samples$array_methylation_bins_1p19q_purity,
+  glass_od.metadata.array_samples$array_PC3
+)
+
+
+
+
+
+plot(
+  glass_od.metadata.array_samples$array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
+  glass_od.metadata.array_samples$array_PC1
+)
+
+plot(
+  glass_od.metadata.array_samples$array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
+  glass_od.metadata.array_samples$array_PC2 # CGC
+)
+
+plot(
+  glass_od.metadata.array_samples$array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
+  glass_od.metadata.array_samples$array_PC3
+)
+
+
+
+
+## C: AcCGAP in OD ----
 
 
 plt <- data.mvalues.probes |> 
@@ -450,13 +628,13 @@ p_B <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc_
   
   labs(x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence", col="Association A_IDH_LG ~ A_IDH_HG") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
 
 
-## C: GLASS-NL probes ----
+## D: GLASS-NL probes ----
 
 
 plt <- data.mvalues.probes |> 
@@ -486,7 +664,7 @@ p_C <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc_
   
   labs(x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence", col="Significant GLASS-NL\nPrimary ~ Recurrent") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   scale_color_manual(values=c('TRUE'= col3(3)[1], 'FALSE'='gray80'))
 
 
@@ -494,6 +672,578 @@ p_A + p_B + p_C
 
 
 ggsave("/tmp/papbpc.png",width = 8.5*0.975, height=3.2, dpi=600)
+
+
+
+## E: FFPE decay time ----
+### 1. FFPE decay time ----
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::filter(!grepl(" \\? ", probe_type_orientation))
+
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                col=DMP__FFPE_decay_time__pp_nc__t)) +
+  facet_wrap(~probe_type_orientation, ncol=2) + 
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+
+a = plt |> 
+  dplyr::select(CHR_hg38, gc_sequence_context_2, Forward_Sequence, DMP__FFPE_decay_time__pp_nc__t) |> 
+  dplyr::arrange(DMP__FFPE_decay_time__pp_nc__t) 
+
+
+b = plt |> 
+  dplyr::select(CHR_hg38, gc_sequence_context_2, Forward_Sequence,DMP__FFPE_decay_time__pp_nc__t) |> 
+  dplyr::arrange(-DMP__FFPE_decay_time__pp_nc__t)
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                col=DMP__FFPE_decay_time__pp_nc__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white")) # png export
+
+
+ggsave(paste0("output/figures/vis_differential__FFPE_decay_time.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+
+### 2. Freezer decay time ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::filter(!grepl(" \\? ", probe_type_orientation))
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                col=DMP__freezer_decay_time__pp_nc__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white")) # png export
+
+
+ggsave(paste0("output/figures/vis_differential__freezer_decay_time.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+
+
+### 3. FFPE or freezer time ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::filter(!grepl(" \\? ", probe_type_orientation))
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                col=DMP__FFPE_or_freezer_decay_time__pp_nc__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white")) # png export
+
+
+ggsave(paste0("output/figures/vis_differential__FFPE-or-freezer_decay_time.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+
+### 4. FFPE & freezer time multivar ----
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::filter(!grepl(" \\? ", probe_type_orientation))
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
+                y=DMP__primary_recurrence__pp_nc__t,
+                col=DMP__FFPE_and_freezer_decay_time__multivar__pp_nc__t__ffpe)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white")) # png export
+
+
+ggsave(paste0("output/figures/vis_differential__FFPE_and_freezer_decay_time__multivar__ffpe.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
+                y=DMP__primary_recurrence__pp_nc__t,
+                col=DMP__FFPE_and_freezer_decay_time__multivar__pp_nc__t__freezer)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white")) # png export
+
+
+ggsave(paste0("output/figures/vis_differential__FFPE_and_freezer_decay_time__multivar__freezer.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+
+
+
+
+## F: Treatment effects ----
+
+## G: MNP-QC & detP ----
+
+
+varss <- data.mvalues.probes |> 
+  dplyr::select(contains("DMP__pct_detP_signi__pp_nc__t") | contains("_mnp_qc_")) |> 
+  colnames()
+
+
+for(var in varss) {
+  txt <- gsub("^DMP__(.*?)__.+$","\\1", var)
+  print(txt)
+  
+  plt <- data.mvalues.probes |> 
+    data.table::copy() |> # odd hack needed, because setnames also affects the former "glass_od.metadata.array_samples" object...
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+      return(.)
+    })() |> 
+    dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+      return(.)
+    })() |> 
+    dplyr::filter(!grepl(" \\? ", probe_type_orientation)) |> 
+    data.table::setnames(old = c(var), new = c("ewas_covar"))
+  
+  
+  ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
+                  y=DMP__primary_recurrence__pp_nc__t,
+                  color=ewas_covar)
+  ) +
+    
+    geom_vline(xintercept=0, col="red") +
+    geom_hline(yintercept=0, col="red") +
+    
+    geom_point(pch=16, cex=0.001, alpha=0.15) + 
+    
+    geom_vline(xintercept=0, col="red", alpha=0.1) +
+    geom_hline(yintercept=0, col="red", alpha=0.1) +
+    
+    labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+         y="Per probe t-score Primary ~ Recurrence",
+         col="Association PC1",
+         subtitle = paste0("qc: ", txt)) +
+    
+    #theme_nature +
+    theme_nature +
+    theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+    ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+    theme(plot.background = element_rect(fill="white")) # png export
+    
+    
+    ggsave(paste0("output/figures/vis_differential__",txt,".png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+  
+}
+
+
+## H: ewastools ----
+
+
+varss <- data.mvalues.probes |> 
+  dplyr::select(contains("DMP__ewastools_")) |> 
+  colnames()
+
+
+for(var in varss) {
+  txt <- gsub("^DMP__ewastools_(.*?)__.+$","\\1", var)
+  print(txt)
+  
+  plt <- data.mvalues.probes |> 
+    data.table::copy() |> # odd hack needed, because setnames also affects the former "glass_od.metadata.array_samples" object...
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+      return(.)
+    })() |> 
+    dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+      return(.)
+    })() |> 
+    dplyr::filter(!grepl(" \\? ", probe_type_orientation)) |> 
+    data.table::setnames(old = c(var), new = c("ewas_covar"))
+  
+  
+  ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
+                  y=DMP__primary_recurrence__pp_nc__t,
+                  color=ewas_covar)
+         ) +
+
+    geom_vline(xintercept=0, col="red") +
+    geom_hline(yintercept=0, col="red") +
+    
+    geom_point(pch=16, cex=0.001, alpha=0.15) + 
+    
+    geom_vline(xintercept=0, col="red", alpha=0.1) +
+    geom_hline(yintercept=0, col="red", alpha=0.1) +
+    
+    labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+         y="Per probe t-score Primary ~ Recurrence",
+         col="Association PC1",
+         subtitle = paste0("ewastools: ", txt)) +
+    
+    #theme_nature +
+    theme_nature +
+    theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+    ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+    theme(plot.background = element_rect(fill="white"))  # png export
+  
+  
+  ggsave(paste0("output/figures/vis_differential__ewastools_",txt,".png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+  
+}
+
+## I: HOX and PAX ----
+### HOX ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+plt <- plt |> 
+  dplyr::mutate(label = gsub("PHOX","", hg38.manifest.gencode.v36.genesUniq)) |> 
+  dplyr::mutate(label = gsub("PHOX","", label)) |> 
+  dplyr::mutate(label = gsub("SHOX","", label)) |>
+  dplyr::mutate(label = gsub("RHOXF","", label)) |>
+  dplyr::mutate(label = ifelse(grepl("HOX",label), "HOX+", "-"))
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
+                y=DMP__primary_recurrence__pp_nc__t,
+                color=DMP__g2_g3__pp_nc__t)
+) +
+  
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data=subset(plt, label == "-"), pch=16, cex=0.001, alpha=0.15) + 
+  geom_point(data=subset(plt, label == "HOX+"), pch=16, cex=0.001, col="black") + 
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1) +
+  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrence",
+       col="Association PC1",
+       subtitle = paste0("HOX associated probes: ", txt)) +
+  
+  #theme_nature +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white"))  # png export
+
+
+### PAX ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+plt <- plt |> 
+  dplyr::mutate(label = hg38.manifest.gencode.v36.genesUniq) |> 
+  
+  dplyr::mutate(label = gsub("PAXIP1","", label)) |> 
+  dplyr::mutate(label = gsub("PAXBP1","", label)) |>
+  dplyr::mutate(label = gsub("PAXX","", label)) |>
+  
+  dplyr::mutate(label = ifelse(grepl("PAX",label), "PAX+", "-"))
+
+# plt |> 
+#   dplyr::mutate(label = hg38.manifest.gencode.v36.genesUniq) |> 
+#   
+#   dplyr::mutate(label = gsub("PAXIP1","", label)) |> 
+#   dplyr::mutate(label = gsub("PAXBP1","", label)) |>
+#   dplyr::mutate(label = gsub("PAXX","", label)) |>
+#   
+#   dplyr::filter(grepl("PAX", label)) |> 
+#   dplyr::pull(label) |> 
+#   unique()
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
+                y=DMP__primary_recurrence__pp_nc__t,
+                color=DMP__g2_g3__pp_nc__t)
+) +
+  
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data=subset(plt, label == "-"), pch=16, cex=0.001, alpha=0.15) + 
+  geom_point(data=subset(plt, label == "PAX+"), pch=16, cex=0.001, col="black") + 
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1) +
+  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrence",
+       col="Association PC1",
+       subtitle = paste0("HOX associated probes: ", txt)) +
+  
+  #theme_nature +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white"))  # png export
+
+
+
+### TET ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+plt |>
+  dplyr::mutate(label = hg38.manifest.gencode.v36.genesUniq) |>
+
+  dplyr::mutate(label = gsub("PAXIP1","", label)) |>
+
+  dplyr::filter(grepl("IDH", label)) |>
+  dplyr::pull(label) |>
+  unique()
+
+
+
+plt <- plt |> 
+  dplyr::mutate(label = hg38.manifest.gencode.v36.genesUniq) |> 
+  
+  dplyr::mutate(label = dplyr::case_when(
+    grepl("IDH1", label) ~ "IDH1",
+    grepl("IDH2", label) ~ "IDH2",
+    grepl("IDH3", label) ~ "IDH3",
+    T ~ "-"
+  ))
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
+                y=DMP__primary_recurrence__pp_nc__t,
+                color=DMP__g2_g3__pp_nc__t)
+) +
+  
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data=subset(plt, label == "-"), pch=16, cex=0.001, alpha=0.15) + 
+  geom_point(data=subset(plt, label == "IDH2"), pch=16, cex=0.001, col="black") + 
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1) +
+  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrence",
+       col="Association PC1",
+       subtitle = paste0("HOX associated probes: ", txt)) +
+  
+  #theme_nature +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white"))  # png export
+
+
+
+### PAX ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+plt <- plt |> 
+  dplyr::mutate(label = hg38.manifest.gencode.v36.genesUniq) |> 
+  
+  dplyr::mutate(label = gsub("PAXIP1","", label)) |> 
+  dplyr::mutate(label = gsub("PAXBP1","", label)) |>
+  dplyr::mutate(label = gsub("PAXX","", label)) |>
+  
+  dplyr::mutate(label = ifelse(grepl("PAX",label), "PAX+", "-"))
+
+# plt |> 
+#   dplyr::mutate(label = hg38.manifest.gencode.v36.genesUniq) |> 
+#   
+#   dplyr::mutate(label = gsub("PAXIP1","", label)) |> 
+#   dplyr::mutate(label = gsub("PAXBP1","", label)) |>
+#   dplyr::mutate(label = gsub("PAXX","", label)) |>
+#   
+#   dplyr::filter(grepl("PAX", label)) |> 
+#   dplyr::pull(label) |> 
+#   unique()
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
+                y=DMP__primary_recurrence__pp_nc__t,
+                color=DMP__g2_g3__pp_nc__t)
+) +
+  
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data=subset(plt, label == "-"), pch=16, cex=0.001, alpha=0.15) + 
+  geom_point(data=subset(plt, label == "PAX+"), pch=16, cex=0.001, col="black") + 
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1) +
+  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrence",
+       col="Association PC1",
+       subtitle = paste0("HOX associated probes: ", txt)) +
+  
+  #theme_nature +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white"))  # png export
+
+
+
 
 
 
@@ -525,7 +1275,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   geom_point(data = subset(plt, GCIMP_IDHmut_probe == F),pch=16, cex=0.001, alpha=0.15) + 
   geom_point(data = subset(plt, GCIMP_IDHmut_probe == T),pch=16, cex=0.1, alpha=0.35) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
@@ -540,7 +1290,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   geom_point(data = subset(plt, GCIMP_IDHwt_probe == F),pch=16, cex=0.001, alpha=0.15) + 
   geom_point(data = subset(plt, GCIMP_IDHwt_probe == T),pch=16, cex=0.1, alpha=0.35) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
@@ -556,7 +1306,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   geom_point(data = subset(plt, GCIMP_PanGlioma_probe == F),pch=16, cex=0.001, alpha=0.15) + 
   geom_point(data = subset(plt, GCIMP_PanGlioma_probe == T),pch=16, cex=0.1, alpha=0.35) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
@@ -571,7 +1321,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   geom_point(data = subset(plt, GCIMP_low_90 == F),pch=16, cex=0.001, alpha=0.15) + 
   geom_point(data = subset(plt, GCIMP_low_90 == T),pch=16, cex=0.1, alpha=0.35) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
@@ -600,7 +1350,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   geom_point(data = subset(plt, RepliTali_coef == F | is.na(RepliTali_coef)),pch=16, cex=0.001, alpha=0.15) + 
   geom_point(data = subset(plt, RepliTali_coef == T),pch=16, cex=1, alpha=0.35) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
@@ -628,7 +1378,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=RepliTali_coef)) +
   #geom_point(data = subset(plt, RepliTali_coef == T),pch=16, cex=1, alpha=0.35) + 
   geom_point(pch=16, cex=1, alpha=0.35) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines'))  # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines'))  # resize colbox
 
 
 ggplot(plt, aes(x=DMP__primary_recurrence__pp_nc__t, y=RepliTali_coef)) +
@@ -639,7 +1389,7 @@ ggplot(plt, aes(x=DMP__primary_recurrence__pp_nc__t, y=RepliTali_coef)) +
   #geom_point(data = subset(plt, RepliTali_coef == T),pch=16, cex=1, alpha=0.35) + 
   geom_point(pch=16, cex=1, alpha=0.35) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines'))  # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines'))  # resize colbox
 
 
 
@@ -673,7 +1423,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   #ggrepel::geom_text_repel(data = subset(plt, probe_id %in% 
   #                                         c("cg06905155","cg18181703","cg03636183","cg24704287","cg26470501")),nudge_y = 1) +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
@@ -704,63 +1454,10 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   
   geom_point(pch=16, cex=0.001, alpha=0.15) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
-
-
-
-## E: FFPE decay time ----
-
-
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
-    return(.)
-  })() |> 
-  dplyr::filter(detP_good_probe & !MASK_general) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
-    return(.)
-  })() |> 
-  dplyr::filter(!grepl(" \\? ", probe_type_orientation))
-
-
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
-                col=DMP__FFPE_decay_time__pp_nc__t)) +
-  facet_wrap(~probe_type_orientation, ncol=2) + 
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=16, cex=0.001, alpha=0.15) + 
-  
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
-
-
-
-a = plt |> 
-  dplyr::select(CHR_hg38, gc_sequence_context_2, Forward_Sequence, DMP__FFPE_decay_time__pp_nc__t) |> 
-  dplyr::arrange(DMP__FFPE_decay_time__pp_nc__t) 
-
-
-b = plt |> 
-  dplyr::select(CHR_hg38, gc_sequence_context_2, Forward_Sequence,DMP__FFPE_decay_time__pp_nc__t) |> 
-  dplyr::arrange(-DMP__FFPE_decay_time__pp_nc__t)
-
-
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
-                col=DMP__FFPE_decay_time__pp_nc__t)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=16, cex=0.001, alpha=0.15) + 
-  
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
 
@@ -791,7 +1488,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   
   geom_point(pch=16, cex=0.1, alpha=0.75) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
 
 
@@ -802,7 +1499,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   
   geom_point(pch=16, cex=0.1, alpha=0.75) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
 
 
@@ -813,7 +1510,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   
   geom_point(pch=16, cex=0.1, alpha=0.75) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
 
 
@@ -824,7 +1521,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   
   geom_point(pch=16, cex=0.1, alpha=0.75) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
                                  breaks = 0:11,
@@ -841,7 +1538,7 @@ ggplot(plt, aes(x=DMP__FFPE_decay_time__pp_nc__t, y=gc_content, col=probeCpGcnt)
   
   geom_point(pch=16, cex=0.1, alpha=0.75) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
                                  breaks = 0:11,
@@ -858,7 +1555,7 @@ ggplot(plt, aes(x=DMP__FFPE_decay_time__pp_nc__t, y=gc_content, col=probeCpGcnt)
   
   geom_point(pch=16, cex=0.1, alpha=0.75) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
                                  breaks = 0:11,
@@ -873,7 +1570,7 @@ ggplot(plt, aes(x=DMP__FFPE_decay_time__pp_nc__t, y=DMP__primary_recurrence__pp_
   
   geom_point(pch=16, cex=0.1, alpha=0.75) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
                                  breaks = 0:11,
@@ -897,7 +1594,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   
   geom_point(pch=16, cex=0.5, alpha=0.75) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-7, 7), oob = scales::squish)
 
 
@@ -939,7 +1636,7 @@ ggplot(plt, aes(x=probeCpGcnt, y=DMP__primary_recurrence__pp_nc__t, col=gc_conte
   
   geom_point(pch=16, cex=0.1, alpha=0.75) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
 
 
@@ -978,7 +1675,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   
   geom_point(pch=16, cex=0.001, alpha=0.15) + 
 
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
@@ -1006,7 +1703,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   geom_point(data = subset(plt, glass_nl_prim_rec__deep_significant == F),pch=16, cex=0.001, alpha=0.15) + 
   geom_point(data = subset(plt, glass_nl_prim_rec__deep_significant == T),pch=16, cex=0.1, alpha=0.35) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
@@ -1062,7 +1759,7 @@ p1 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   labs(col = "C content on probe (scaled)") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
 
@@ -1121,7 +1818,7 @@ p2 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   labs(col = "C content after probe (scaled)") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
 
@@ -1181,7 +1878,7 @@ p3 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   labs(col = "G content on probe (scaled)") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
 
@@ -1240,7 +1937,7 @@ p4 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   labs(col = "G content after probe (scaled)") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
 
@@ -1304,7 +2001,7 @@ p5 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   labs(col = "GC content on probe (scaled)") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
 
@@ -1363,7 +2060,7 @@ p6 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   labs(col = "GC content after probe (scaled)") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
 
@@ -1404,7 +2101,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   
   labs(col = "CpG's per probe") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
 
@@ -1454,7 +2151,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   
   labs(col = "distance to next CpG (bp)") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
 
@@ -1468,8 +2165,8 @@ ggsave("output/figures/vis_differential__g23_prim-rec__closest_CG.png", width=(8
 
 ggplot(plt, aes(y=DMP__g2_g3__pp_nc__t, x=as.factor(closest_CG))) +
   #geom_point(pch=16, cex=0.001, alpha=0.15, col="darkgray") +
-  ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_cellpress_lwd, col = "darkgray", adjust = 1.95) +
-  theme_cellpress +
+  ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "darkgray", adjust = 1.95) +
+  theme_nature +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 
@@ -1505,7 +2202,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   labs(col = "is solo-WCGW", x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrence") +
   scale_color_manual(values=c('TRUE'= col3(3)[1], 'FALSE'='gray80')) +
 
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white")) +  # png export
   theme(legend.key.size = unit(0.6, 'lines'))
 
@@ -1571,7 +2268,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
                               'other'='gray80',
                               'CG prefix/suffix'= col3(3)[3])) +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white"))
 
 
@@ -1604,7 +2301,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   geom_point(data=subset(plt,  is_1P), pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white"))
 
 
@@ -1634,7 +2331,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   geom_point(data=subset(plt,  is_19Q), pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white"))
 
 
@@ -1699,14 +2396,14 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   labs(col = "CpG's per probe") +
   
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   theme(plot.background = element_rect(fill="white"))
 
 
 ggplot(plt, aes(x = chr, y=DMP__g2_g3__pp_nc__t, fill=col)) +
-  ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_cellpress_lwd, col = "white", adjust = 1.95) +
+  ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "white", adjust = 1.95) +
   scale_fill_manual(values=c('chr1'='red','chr19'='blue','other'='darkgray')) +
-  theme_cellpress +
+  theme_nature +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 
@@ -1745,7 +2442,7 @@ p1 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   labs(col="Methylated probe intensity ~ FFPE decay time") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
 
 
@@ -1759,7 +2456,7 @@ p2 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   labs(col="Unmethylated probe intensity ~ FFPE decay time") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
 
 
@@ -1773,7 +2470,7 @@ p3 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   labs(col="Total probe intensity ~ FFPE decay time") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
 
 
@@ -1787,7 +2484,7 @@ p4 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   labs(col="Probe methylation ratio ~ FFPE decay time") +
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
 
 
@@ -1825,7 +2522,7 @@ p1 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   geom_point(pch=16, cex=0.001, alpha=0.15) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
 
 
@@ -1858,7 +2555,7 @@ p2 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   geom_point(pch=16, cex=0.001, alpha=0.15) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
 
 
@@ -1893,7 +2590,7 @@ p3 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
   
   geom_point(pch=16, cex=0.001, alpha=0.15) + 
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
 
 
@@ -1915,7 +2612,7 @@ plt <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
-  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
@@ -1923,14 +2620,37 @@ plt <- data.mvalues.probes |>
   })()
 
 
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=Infinium_Design_Type)) +
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probe_type)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
-  geom_point(data = subset(plt, Infinium_Design_Type == "II"), pch=16, cex=0.001, alpha=0.15) + 
-  geom_point(data = subset(plt,Infinium_Design_Type == "I"), pch=16, cex=0.001, alpha=0.15) +   
+  geom_point(data = subset(plt, probe_type == "II (ligation Allele-A)"), pch=16, cex=0.001, alpha=0.15) + 
+  geom_point(data = subset(plt, probe_type== "I (red & green)"), pch=16, cex=0.001, alpha=0.15) +   
   
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) 
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) +
+  guides(color = guide_legend(override.aes = list(size = 1, alpha=1) ) )
+
+
+ggsave(paste0("output/figures/vis_differential__probe_type_II_I.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probe_type)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data = subset(plt, probe_type== "I (red & green)"), pch=16, cex=0.001, alpha=0.15) +   
+  geom_point(data = subset(plt, probe_type == "II (ligation Allele-A)"), pch=16, cex=0.001, alpha=0.15) + 
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines'))  +
+  guides(color = guide_legend(override.aes = list(size = 1, alpha=1) ) )
+
+ggsave(paste0("output/figures/vis_differential__probe_type_I_II.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
 
 
 ## Y: per oligo/motifs correlation ----
@@ -1965,11 +2685,11 @@ plt <- plt.motifs |>
 
 ggplot(plt, aes(x=GLASS_OD__DMP__g2_g3__mean, y=`relative de-methylation affinity`, label=oligo_sequence, col=cor_w_GLASS_OD__DMP__g2_g3__mean)) +
   facet_wrap(~enzyme, scales="free",ncol=3) +
-  geom_point(size=theme_cellpress_size / 3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)),  cor.coef.name ="rho", size=theme_cellpress_size, label.x.npc="right", hjust=1, col="black") +
+  geom_point(size=theme_nature_size / 3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)),  cor.coef.name ="rho", size=theme_nature_size, label.x.npc="right", hjust=1, col="black") +
   labs(x = "Mean t-score Grade 2 ~ Grade for probes with given sequence context",
        col = "Spearman correlation enzyme affinity with mean t-score") +
-  theme_cellpress +
+  theme_nature +
   ggplot2::scale_color_gradientn(colours = col4(200), na.value = "grey50", oob = scales::squish, 
                                  limits=c(-1,1),
                                  breaks = c(-1,-0.5,0,0.5,1),
@@ -2054,16 +2774,16 @@ plt <- plt |>
 ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc__t)) +
   #facet_wrap(~reorder(facet_name, -facet_rank), scales="free_x", ncol=length(unique(plt$facet_name))) +
   #ggbeeswarm::geom_quasirandom(size=0.01, alpha=0.65) +
-  #ggplot2::geom_violin(draw_quantiles = c(), linewidth=theme_cellpress_lwd, col = "white", fill="darkgray", adjust = 1.95) +
+  #ggplot2::geom_violin(draw_quantiles = c(), linewidth=theme_nature_lwd, col = "white", fill="darkgray", adjust = 1.95) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-              ,coef=0.5, fill=NA,linewidth=theme_cellpress_lwd) +
+              ,coef=0.5, fill=NA,linewidth=theme_nature_lwd) +
   
   stat_summary(fun.y = median, fun.min = median, fun.max = median,
-               geom = "crossbar", width = 0.5, col="red", width=0.85, linewidth=theme_cellpress_lwd) +
+               geom = "crossbar", width = 0.5, col="red", width=0.85, linewidth=theme_nature_lwd) +
   
   labs(x = NULL, y="Per probe t-score Grade 2 ~ Grade 3") +
   coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
-  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono"))
 
 
@@ -2080,7 +2800,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   
   geom_point(pch=16, cex=0.001, alpha=0.15) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2091,7 +2811,7 @@ stat <- plt |>
   dplyr::select(gc_sequence_context_1, DMP__g2_g3__pp_nc__t)
 
 ggplot(stat, aes(x=gc_sequence_context_1, y=DMP__g2_g3__pp_nc__t)) +
-  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
+  ggbeeswarm::geom_quasirandom(size=theme_nature_size/2) +
   theme_bw()
 
 
@@ -2132,7 +2852,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2179,7 +2899,7 @@ p1 = ggplot(pplt1 , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc
   labs(x = "Per probe t-score Grade 2 ~ Grade 3",
        y = "Per probe t-score Primary ~ Recurrence") +
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2215,7 +2935,7 @@ p2 = ggplot(pplt2 , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc
   labs(x = "Per probe t-score Grade 2 ~ Grade 3",
        y = "Per probe t-score Primary ~ Recurrence") +
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2272,7 +2992,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2292,7 +3012,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2313,7 +3033,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2334,7 +3054,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2354,7 +3074,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2374,7 +3094,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2393,7 +3113,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2413,7 +3133,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2433,7 +3153,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2452,7 +3172,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2474,7 +3194,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2494,7 +3214,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2514,7 +3234,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2534,7 +3254,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2553,7 +3273,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2572,7 +3292,7 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   geom_point(pch=16, cex=0.001, alpha=0.15, show.legend = F) + 
   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
   
-  theme_cellpress + 
+  theme_nature + 
   
   theme(plot.background = element_rect(fill="white")) +  # png export
   
@@ -2606,7 +3326,7 @@ for(clock in clocks) {
     
     labs(col = gsub("_", " ",clock_name)) +
     
-    theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+    theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
     
     theme(plot.background = element_rect(fill="white")) + # png export
     
@@ -2644,7 +3364,7 @@ plt <- data.mvalues.probes |>
 
 ggplot(plt, aes(y= wgEncodeUwRepliSeqBjWaveSignalRep1, x=glass_nl_prim_rec__deep_significant)) +
   ggbeeswarm::geom_quasirandom(size=0.1) +
-  ggpubr::stat_compare_means(aes(group=glass_nl_prim_rec__deep_significant), label.x.npc=0.1, method = "wilcox.test", show.lengend  = FALSE,  size=theme_cellpress_size)
+  ggpubr::stat_compare_means(aes(group=glass_nl_prim_rec__deep_significant), label.x.npc=0.1, method = "wilcox.test", show.lengend  = FALSE,  size=theme_nature_size)
 
 
 wilcox.test(
@@ -2661,130 +3381,130 @@ wilcox.test(
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqBg02esWaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqBg02esWaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqBjWaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqBjWaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqBjWaveSignalRep2, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white"))  # png export
+  theme_nature + theme(plot.background = element_rect(fill="white"))  # png export
   #geom_vline(xintercept=79, col="red", lwd=0.5)
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqBjWaveSignalRep2.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqGm06990WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqGm06990WaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqGm12801WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqGm12801WaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqGm12812WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqGm12812WaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqGm12813WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqGm12813WaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqGm12878WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqGm12878WaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqHelas3WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqHelas3WaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqHepg2WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqHepg2WaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqHuvecWaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqHuvecWaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqImr90WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqImr90WaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqK562WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqK562WaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqMcf7WaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqMcf7WaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqNhekWaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqNhekWaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 
 ggplot(plt, aes(x=wgEncodeUwRepliSeqSknshWaveSignalRep1, y=DMP__g2_g3__pp_nc__t)) +
   geom_point(pch=16,cex=0.0001,alpha=0.10) +
-  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_cellpress_lwd) +
+  geom_smooth(method='lm', formula= y~x, col="red", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  theme_cellpress + theme(plot.background = element_rect(fill="white")) # png export
+  theme_nature + theme(plot.background = element_rect(fill="white")) # png export
 ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqSknshWaveSignalRep1.png",width=8.5/2, height=8.5/2)
 
 

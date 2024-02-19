@@ -422,6 +422,20 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
 rm(tmp)
 
 
+## ewastools ----
+
+
+tmp <- read.table("output/tables/ewastools.txt") |> 
+  assertr::verify(!duplicated(array_sentrix_id)) |> 
+  assertr::verify(glass_od.metadata.array_samples$array_sentrix_id %in% array_sentrix_id)
+
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
+
+rm(tmp)
+
 
 
 

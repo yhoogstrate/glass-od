@@ -34,7 +34,7 @@ tmp <- glass_od.metadata.array_samples |>
   View()
 
 
-# Figure 1a: overview GLASS_OD ----
+# Figure 1A: overview GLASS_OD ----
 
 
 
@@ -143,7 +143,7 @@ ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, 
 
 
 
-# Figure 1b: overview OD-validation ----
+# Figure 1B: overview OD-validation ----
 
 
 plt <- glass_od.metadata.array_samples |> 
@@ -283,6 +283,127 @@ ggsave("output/figures/vis_validation_cohort_overview_MNP_classes.pdf", width=8.
 
 # misclassifications more common further away from Dx & R1 -
 ## no clear timing effect, but clear recurrence effect
+
+
+# Figure 4F ----
+
+
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(!is.na(time_between_resection_and_array)) |> 
+  dplyr::mutate(time_between_resection_and_array = as.numeric(time_between_resection_and_array))
+
+
+plt.exp1 <- rbind(
+  plt |> 
+    dplyr::mutate(panel = "det-P") |> 
+    dplyr::mutate(y = array_percentage.detP.signi)
+  ,
+  plt |>
+    dplyr::mutate(panel = "det-P") |> 
+    dplyr::mutate(y = 0),
+  
+  plt |> 
+    dplyr::mutate(panel = "time") |> 
+    dplyr::mutate(y = time_between_resection_and_array)
+  ,
+  plt |>
+    dplyr::mutate(panel = "time") |> 
+    dplyr::mutate(y = 0),
+  plt |> 
+    dplyr::mutate(panel = "PC") |> 
+    dplyr::mutate(y = array_PC1)
+  ,
+  plt |>
+    dplyr::mutate(panel = "PC") |> 
+    dplyr::mutate(y = 0)
+) |> 
+  dplyr::mutate(isolation_material = ifelse(is.na(isolation_material), "N/A", isolation_material))
+
+
+p1 <- ggplot(plt.exp1, aes(x = reorder(array_sentrix_id, array_PC1),
+                    y = y,
+                    col = isolation_material)) +
+  facet_grid(rows=vars(panel), cols=vars(isolation_material), scales = "free", space="free_x") +
+  geom_line(lwd=1.05) +
+  scale_color_manual(values=c('ffpe'=mixcol('purple', "white", 0.2),
+                     'tissue' = mixcol(mixcol('red','pink',0.3), "white", 0.2),
+                     'N/A'= 'darkgray')) +
+  labs(x="Sample", y=NULL) +
+  theme_nature +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+
+
+
+
+cols <- c('Grade 2' = mixcol( 'lightblue', 'lightgreen'),
+          'Grade 3' = mixcol( 'darkblue', 'darkgreen'),
+          
+          'Yes' = c('#E49E27', '#59B2E6', '#009E74', '#CB75A4')[1],
+          'No' = c('#E49E27', '#59B2E6', '#009E74', '#CB75A4')[2],
+          
+          'Source: FFPE' = mixcol('purple', "white", 0.2),
+          'Source: fresh' = mixcol(mixcol('red','pink',0.3), "white", 0.2),
+          
+          'internal' = 'red',
+          'GLASS-methylome' = '#686ae8', # #7a7be6
+          'GSE147391 Valor' = '#58e0da', 
+          'Oligosarcoma study' = '#5AE82C', #  #A9E82C
+          'PMID:35998208 naive' = '#f5ce42', # #ffdb58
+          'PMID:35998208 trt' = 'orange',
+          
+          'Other' = '#FFAC1C', # 
+          'N/A' = 'darkgray'
+)
+
+
+
+
+plt.exp2 <- rbind(
+  plt |> 
+    dplyr::mutate(value = ifelse(resection_treatment_status_chemo, "Yes", "No")) |> 
+    dplyr::mutate(y = "chemo")
+  ,
+  plt |> 
+    dplyr::mutate(value = ifelse(resection_treatment_status_radio, "Yes", "No")) |> 
+    dplyr::mutate(y = "radio")
+  ,
+  plt |> 
+    dplyr::mutate(value = paste0("Grade ",resection_tumor_grade)) |> 
+    dplyr::mutate(y = "grade")
+  ,
+  plt |> 
+    dplyr::mutate(value = NA) |> 
+    dplyr::mutate(y = "HM")
+) |> 
+  dplyr::mutate(isolation_material = ifelse(is.na(isolation_material), "N/A", isolation_material)) |> 
+  dplyr::mutate(value = ifelse(is.na(value), "N/A", value))
+
+
+p2 <- ggplot(plt.exp2, aes(x = reorder(array_sentrix_id, array_PC1),
+                    y = y,
+                    col = value)) +
+  facet_grid(cols=vars(isolation_material), scales = "free", space="free_x") +
+  geom_point(pch=15,size=0.825,alpha=0.65) +
+  scale_color_manual(values=cols) +
+  labs(x=NULL, y=NULL) +
+  theme_nature +
+    theme(axis.title.x=element_blank(),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank())
+
+
+p2 / p1 + plot_layout(heights = c(1, 4))
+
+ggsave("output/figures/vis_cohort_overview__overview_FFPE-time.png", width=8.5 * 0.975, height = 4)
+
+
+rm(col, p1, p2, plt, plt.exp1, plt.exp2)
+
 
 
 

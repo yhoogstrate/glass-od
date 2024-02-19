@@ -362,6 +362,10 @@ for(target_id in targets$array_sentrix_id) { # yep loop, minor overhead but safe
 ## mask ----
 
 
+# check if large enough
+#dim(readRDS("cache/masks_hq/masks_hq.Rds"))
+
+
 exp <- all_targets |>
   dplyr::mutate(mask_cached = file.exists(cache_mask)) |> 
   assertr::verify(mask_cached) |> 
@@ -379,6 +383,10 @@ rm(exp)
 
 
 ## intensities ----
+
+
+# check if large enough
+#dim(readRDS("cache/intensities_hq/intensities_hq.Rds"))
 
 
 exp <- all_targets |>
@@ -400,6 +408,10 @@ rm(exp)
 ## intensities_m ----
 
 
+# check if large enough
+#dim(readRDS("cache/intensities_m_hq/intensities_m_hq.Rds"))
+
+
 exp <- all_targets |>
   dplyr::mutate(intensities_m_cached = file.exists(cache_intensities_m)) |> 
   assertr::verify(intensities_m_cached) |> 
@@ -418,6 +430,10 @@ rm(exp)
 
 
 ## intensities_um ----
+
+
+# check if large enough
+dim(readRDS("cache/intensities_m_hq/intensities_um_hq.Rds"))
 
 
 exp <- all_targets |>

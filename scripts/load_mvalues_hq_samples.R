@@ -204,6 +204,143 @@ if(file.exists(fn)) {
 rm(fn)
 
 
+### PCs multivariate 1st 8 components ----
+
+
+fn <- "cache/analysis_differential__PCs__partial_paired_nc__stats.Rds"
+
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMP__PCs__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result PCs is missing")
+}
+
+rm(fn)
+
+
+
+### QC ----
+
+
+fns <- c("analysis_differential__pct_detP_signi__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_STAINING_DNP_High_Red_smaller_9000_3000__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_STAINING_DNP_Bkg_Red_larger_750_1500__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5__partial_paired_nc__stats.Rds", 
+         "analysis_differential__array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6__partial_paired_nc__stats.Rds")
+
+
+for (fn in fns) {
+  txt <- gsub("array_qc_","mnp_qc_",gsub("^.+_differential__(.+)__partial_pai.+","\\1",fn))
+  print(txt)
+  
+  fn <- paste0("cache/", fn)
+  
+  if(file.exists(fn)) {
+     
+     tmp <- readRDS(fn) |> 
+       dplyr::rename_with(~paste0("DMP__",txt,"__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+       (function(.) {
+         print(dim(.))
+         assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+         return(.)
+       })()
+     
+     data.mvalues.probes <- data.mvalues.probes |> 
+       dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+     
+    rm(tmp)
+   
+  } else {
+   warning(paste0("DMP result qc: ",txt," is missing"))
+  }
+  
+  rm(fn)
+}
+
+
+
+
+
+### ewastools ----
+
+fns <- c("analysis_differential__ewastools_Restoration__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Staining.Green__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Staining.Red__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Extension.Green__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Extension.Red__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Hybridization.High.Medium__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Hybridization.Medium.Low__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Bisulfite.Conversion.I.Green__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Bisulfite.Conversion.I.Red__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Bisulfite.Conversion.II__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Specificity.I.Green__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Specificity.I.Red__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Non.polymorphic.Green__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Specificity.II__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Non.polymorphic.Red__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Target.Removal.1__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Target.Removal.2__partial_paired_nc__stats.Rds")
+
+for (fn in fns) {
+  txt <- gsub("^.+l__ewastools_(.+)__partial_pai.+","\\1",fn)
+  print(txt)
+  
+  fn <- paste0("cache/", fn)
+  
+  if(file.exists(fn)) {
+    
+    tmp <- readRDS(fn) |> 
+      dplyr::rename_with(~paste0("DMP__ewastools_",txt,"__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+      (function(.) {
+        print(dim(.))
+        assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+        return(.)
+      })()
+    
+    data.mvalues.probes <- data.mvalues.probes |> 
+      dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+    
+    rm(tmp)
+    
+  } else {
+    warning(paste0("DMP result ewastools:",txt," is missing"))
+  }
+  
+  rm(fn)
+}
 
 
 
@@ -263,16 +400,15 @@ rm(fn)
 
 
 
-
-### FFPE Decay time PP ----
-
+### FFPE & Freezer Decay time multivar PP ----
 
 
-fn <- "cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds"
+
+fn <- "cache/analysis_differential__ffpe_freezer_decay-time_multivar__partial_paired_nc__stats.Rds"
 if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
-    dplyr::rename_with(~paste0("DMP__FFPE_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    dplyr::rename_with(~paste0("DMP__FFPE_and_freezer_decay_time__multivar__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
     (function(.) {
       print(dim(.))
       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
@@ -285,10 +421,95 @@ if(file.exists(fn)) {
   rm(tmp)
   
 } else {
-  warning("DMP result FFPE decay PP time is missing")
+  warning("DMP result FFP & Freezer decay multivariate PP time is missing")
 }
 
 rm(fn)
+
+
+
+
+
+
+# ### FFPE or Freezer Decay time PP ----
+# 
+# 
+# fn <- "cache/analysis_differential__tissue-decay-time__partial_paired_nc__stats.Rds"
+# if(file.exists(fn)) {
+#   
+#   tmp <- readRDS(fn) |> 
+#     dplyr::rename_with(~paste0("DMP__FFPE_or_freezer_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+#     (function(.) {
+#       print(dim(.))
+#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+#       return(.)
+#     })()
+#   
+#   data.mvalues.probes <- data.mvalues.probes |> 
+#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+#   
+#   rm(tmp)
+#   
+# } else {
+#   warning("DMP result FFP | Freezer decay PP time is missing")
+# }
+# 
+# rm(fn)
+# 
+# 
+# 
+# 
+# ### Freezer Decay time PP ----
+# 
+# 
+# fn <- "cache/analysis_differential__freezer-decay-time__partial_paired_nc__stats.Rds"
+# if(file.exists(fn)) {
+#   
+#   tmp <- readRDS(fn) |> 
+#     dplyr::rename_with(~paste0("DMP__freezer_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+#     (function(.) {
+#       print(dim(.))
+#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+#       return(.)
+#     })()
+#   
+#   data.mvalues.probes <- data.mvalues.probes |> 
+#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+#   
+#   rm(tmp)
+#   
+# } else {
+#   warning("DMP result Freezer decay PP time is missing")
+# }
+# 
+# rm(fn)
+# 
+# 
+# ### FFPE Decay time PP ----
+# 
+# 
+# 
+# fn <- "cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds"
+# if(file.exists(fn)) {
+#   
+#   tmp <- readRDS(fn) |> 
+#     dplyr::rename_with(~paste0("DMP__FFPE_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+#     (function(.) {
+#       print(dim(.))
+#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+#       return(.)
+#     })()
+#   
+#   data.mvalues.probes <- data.mvalues.probes |> 
+#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+#   
+#   rm(tmp)
+#   
+# } else {
+#   warning("DMP result FFPE decay PP time is missing")
+# }
+# 
+# rm(fn)
 
 
 

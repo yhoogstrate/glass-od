@@ -1320,6 +1320,9 @@ plot(plt2$array_PC5, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor
 plot(plt2$array_PC6, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor(plt2$batch)))
 
 
+
+
+
 # analyses: GLASS-OD PC1-8 ----
 
 
@@ -1363,6 +1366,1646 @@ data.PCs.pp.nc <- data.mvalues.hq_samples |>
 
 
 
+design.PCs.pp.nc <- model.matrix(~factor(patient) + array_PC1 + array_PC2 +
+                                   array_PC3 + array_PC4 + array_PC5 + 
+                                   array_PC6 + array_PC7 + array_PC8 , data=metadata.PCs.pp.nc)
+fit.PCs.pp.nc <- limma::lmFit(data.PCs.pp.nc, design.PCs.pp.nc)
+fit.PCs.pp.nc <- limma::eBayes(fit.PCs.pp.nc, trend=T)
+
+stats.PCs.PC1.pp.nc <- limma::topTable(fit.PCs.pp.nc,
+                                       n=nrow(data.PCs.pp.nc),
+                                       coef="array_PC1",
+                                       sort.by = "none",
+                                       adjust.method="fdr") |> 
+  dplyr::rename_with(~paste0("PC1_", .x)) |> 
+  tibble::rownames_to_column('probe_id') 
+
+stats.PCs.PC2.pp.nc <- limma::topTable(fit.PCs.pp.nc,
+                                       n=nrow(data.PCs.pp.nc),
+                                       coef="array_PC2",
+                                       sort.by = "none",
+                                       adjust.method="fdr") |> 
+  dplyr::rename_with(~paste0("PC2_", .x)) |> 
+  tibble::rownames_to_column('probe_id') 
+
+stats.PCs.PC3.pp.nc <- limma::topTable(fit.PCs.pp.nc,
+                                       n=nrow(data.PCs.pp.nc),
+                                       coef="array_PC3",
+                                       sort.by = "none",
+                                       adjust.method="fdr") |> 
+  dplyr::rename_with(~paste0("PC3_", .x)) |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+stats.PCs.PC4.pp.nc <- limma::topTable(fit.PCs.pp.nc,
+                                       n=nrow(data.PCs.pp.nc),
+                                       coef="array_PC4",
+                                       sort.by = "none",
+                                       adjust.method="fdr") |> 
+  dplyr::rename_with(~paste0("PC4_", .x)) |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+stats.PCs.PC5.pp.nc <- limma::topTable(fit.PCs.pp.nc,
+                                       n=nrow(data.PCs.pp.nc),
+                                       coef="array_PC5",
+                                       sort.by = "none",
+                                       adjust.method="fdr") |> 
+  dplyr::rename_with(~paste0("PC5_", .x)) |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+stats.PCs.PC6.pp.nc <- limma::topTable(fit.PCs.pp.nc,
+                                       n=nrow(data.PCs.pp.nc),
+                                       coef="array_PC6",
+                                       sort.by = "none",
+                                       adjust.method="fdr") |> 
+  dplyr::rename_with(~paste0("PC6_", .x)) |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+stats.PCs.PC7.pp.nc <- limma::topTable(fit.PCs.pp.nc,
+                                       n=nrow(data.PCs.pp.nc),
+                                       coef="array_PC7",
+                                       sort.by = "none",
+                                       adjust.method="fdr") |> 
+  dplyr::rename_with(~paste0("PC7_", .x)) |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+stats.PCs.PC8.pp.nc <- limma::topTable(fit.PCs.pp.nc,
+                                       n=nrow(data.PCs.pp.nc),
+                                       coef="array_PC8",
+                                       sort.by = "none",
+                                       adjust.method="fdr") |> 
+  dplyr::rename_with(~paste0("PC8_", .x)) |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+stats.PCs.pp.nc <- stats.PCs.PC1.pp.nc |> 
+  dplyr::left_join(stats.PCs.PC2.pp.nc, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(stats.PCs.PC3.pp.nc, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(stats.PCs.PC4.pp.nc, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(stats.PCs.PC5.pp.nc, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(stats.PCs.PC6.pp.nc, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(stats.PCs.PC7.pp.nc, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(stats.PCs.PC8.pp.nc, by=c('probe_id'='probe_id'))
+
+
+
+rm(design.PCs.pp.nc)
+rm(stats.PCs.PC1.pp.nc, stats.PCs.PC2.pp.nc, stats.PCs.PC3.pp.nc, stats.PCs.PC4.pp.nc,
+   stats.PCs.PC5.pp.nc, stats.PCs.PC6.pp.nc, stats.PCs.PC7.pp.nc, stats.PCs.PC8.pp.nc)
+
+
+colnames(stats.PCs.pp.nc)
+
+
+
+saveRDS(stats.PCs.pp.nc, file="cache/analysis_differential__PCs__partial_paired_nc__stats.Rds")
+
+
+
+# analysis: QC metrics ----
+
+# array_percentage.detP.signi # log
+
+
+metadata.qc.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |>  # also pairs with n = 3 & n= 4
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
+  
+  dplyr::mutate( `array_qc_BISULFITE_CONVERSION_I_Beta_I-3_Beta_larger_0.12_0.18` = NULL) |> 
+  dplyr::mutate( `array_qc_BISULFITE_CONVERSION_I_Beta_I-6_Beta_larger_0.2_0.3` = NULL) |> 
+  dplyr::mutate(pct_detP_signi = log(array_percentage.detP.signi)) |> 
+  dplyr::rename( array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000 = `array_qc_STAINING_Biotin_(High)_Grn_smaller_6000_2000` ) |> 
+  dplyr::rename( array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000 = `array_qc_STAINING_Biotin_(Bkg)_Grn_larger_500_1000` ) |> 
+  dplyr::rename( array_qc_STAINING_DNP_High_Red_smaller_9000_3000 = `array_qc_STAINING_DNP_(High)_Red_smaller_9000_3000` ) |> 
+  dplyr::rename( array_qc_STAINING_DNP_Bkg_Red_larger_750_1500 = `array_qc_STAINING_DNP_(Bkg)_Red_larger_750_1500` ) |> 
+  dplyr::rename( array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000 = `array_qc_EXTENSION_Extension_(C)_Grn_smaller_20000_10000` ) |> 
+  dplyr::rename( array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000 = `array_qc_EXTENSION_Extension_(G)_Grn_smaller_20000_10000` ) |> 
+  dplyr::rename( array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000 = `array_qc_EXTENSION_Extension_(A)_Red_smaller_30000_15000` ) |> 
+  dplyr::rename( array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000 = `array_qc_EXTENSION_Extension_(T)_Red_smaller_30000_15000` ) |> 
+  dplyr::rename( array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000 = `array_qc_HYBRIDIZATION_Hyb_(High)_Grn_smaller_16000_12000` ) |> 
+  dplyr::rename( array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000 = `array_qc_HYBRIDIZATION_Hyb_(Medium)_Grn_smaller_8000_6000` ) |> 
+  dplyr::rename( array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000 = `array_qc_HYBRIDIZATION_Hyb_(Low)_Grn_smaller_4000_3000` ) |> 
+  dplyr::rename( array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985 = `array_qc_HYBRIDIZATION_Hyb_(Correlation)_Grn_smaller_NA_0.985` ) |> 
+  dplyr::rename( array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15 = `array_qc_BISULFITE_CONVERSION_I_Beta_I-1_Beta_larger_0.1_0.15` ) |> 
+  dplyr::rename( array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12 = `array_qc_BISULFITE_CONVERSION_I_Beta_I-2_Beta_larger_0.08_0.12` ) |> 
+  dplyr::rename( array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15 = `array_qc_BISULFITE_CONVERSION_I_Beta_I-4_Beta_larger_0.1_0.15` ) |> 
+  dplyr::rename( array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3 = `array_qc_BISULFITE_CONVERSION_I_Beta_I-5_Beta_larger_0.2_0.3` ) |> 
+  dplyr::rename( array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3 = `array_qc_BISULFITE_CONVERSION_II_Beta_II-1_Beta_larger_0.2_0.3` ) |> 
+  dplyr::rename( array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12 = `array_qc_BISULFITE_CONVERSION_II_Beta_II-2_Beta_larger_0.08_0.12` ) |> 
+  dplyr::rename( array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24 = `array_qc_BISULFITE_CONVERSION_II_Beta_II-3_Beta_larger_0.16_0.24` ) |> 
+  dplyr::rename( array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12 = `array_qc_BISULFITE_CONVERSION_II_Beta_II-4_Beta_larger_0.08_0.12` ) |> 
+  dplyr::rename( array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2 = `array_qc_SPECIFICITY_I_GT_Mismatch_1_(PM)_Grn_smaller_NA_1.2` ) |> 
+  dplyr::rename( array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1 = `array_qc_SPECIFICITY_I_GT_Mismatch_1_(MM)_Grn_larger_NA_0.1` ) |> 
+  dplyr::rename( array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1 = `array_qc_SPECIFICITY_I_GT_Mismatch_3_(MM)_Grn_larger_NA_0.1` ) |> 
+  dplyr::rename( array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2 = `array_qc_SPECIFICITY_I_GT_Mismatch_4_(PM)_Red_smaller_NA_2` ) |> 
+  dplyr::rename( array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5 = `array_qc_SPECIFICITY_I_GT_Mismatch_5_(PM)_Red_smaller_NA_0.5` ) |> 
+  dplyr::rename( array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5 = `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5` ) |> 
+  dplyr::rename( array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3 = `array_qc_SPECIFICITY_I_GT_Mismatch_5_(MM)_Red_larger_NA_0.3` ) |> 
+  dplyr::rename( array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5 = `array_qc_SPECIFICITY_I_GT_Mismatch_6_(MM)_Red_larger_NA_0.5` ) |> 
+  dplyr::rename( array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6 = `array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1.6` ) |> 
+  dplyr::rename( array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2 = `array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0.2` ) |> 
+  dplyr::rename( array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15 = `array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0.15` ) |> 
+  dplyr::rename( array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15 = `array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0.15` ) |> 
+  dplyr::rename( array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4 = `array_qc_NON-POLYMORPHIC_NP_(A)_Grn_larger_NA_0.4` ) |> 
+  dplyr::rename( array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4 = `array_qc_NON-POLYMORPHIC_NP_(T)_Grn_larger_NA_0.4` ) |> 
+  dplyr::rename( array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5 = `array_qc_NON-POLYMORPHIC_NP_(C)_Grn_smaller_NA_1.5` ) |> 
+  dplyr::rename( array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1 = `array_qc_NON-POLYMORPHIC_NP_(G)_Grn_smaller_NA_1` ) |> 
+  dplyr::rename( array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5 = `array_qc_NON-POLYMORPHIC_NP_(A)_Red_smaller_NA_1.5` ) |> 
+  dplyr::rename( array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5 = `array_qc_NON-POLYMORPHIC_NP_(T)_Red_smaller_NA_1.5` ) |> 
+  dplyr::rename( array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4 = `array_qc_NON-POLYMORPHIC_NP_(C)_Red_larger_NA_0.4` ) |> 
+  dplyr::rename( array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6 = `array_qc_NON-POLYMORPHIC_NP_(G)_Red_larger_NA_0.6` )
+
+
+data.qc.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.qc.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+
+
+## 1. pct_detP_signi ----
+
+design.pct_detP_signi.pp.nc <- model.matrix(~factor(patient) + pct_detP_signi, data=metadata.qc.pp.nc)
+fit.pct_detP_signi.pp.nc <- limma::lmFit(data.qc.pp.nc, design.pct_detP_signi.pp.nc)
+fit.pct_detP_signi.pp.nc <- limma::eBayes(fit.pct_detP_signi.pp.nc, trend=T)
+stats.pct_detP_signi.pp.nc <- limma::topTable(fit.pct_detP_signi.pp.nc,
+                                              n=nrow(data.qc.pp.nc),
+                                              coef="pct_detP_signi",
+                                              sort.by = "none",
+                                              adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.pct_detP_signi.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.pct_detP_signi.pp.nc, file="cache/analysis_differential__pct_detP_signi__partial_paired_nc__stats.Rds")
+
+rm(
+  design.pct_detP_signi.pp.nc,
+  fit.pct_detP_signi.pp.nc,
+  stats.pct_detP_signi.pp.nc
+)
+
+
+
+
+## 2. array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000 ----
+
+design.array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000.pp.nc <- model.matrix(~factor(patient) + array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000, data=metadata.qc.pp.nc)
+fit.array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000.pp.nc)
+fit.array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000.pp.nc <- limma::eBayes(fit.array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000.pp.nc, trend=T)
+stats.array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000.pp.nc <- limma::topTable(fit.array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000.pp.nc,
+                                                                                   n=nrow(data.qc.pp.nc),
+                                                                                   coef="array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000",
+                                                                                   sort.by = "none",
+                                                                                   adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000.pp.nc, file="cache/analysis_differential__array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000.pp.nc,
+  fit.array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000.pp.nc,
+  stats.array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000.pp.nc
+)
+
+
+
+
+## 3. array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000 ----
+
+design.array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000.pp.nc <- model.matrix(~factor(patient) + array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000, data=metadata.qc.pp.nc)
+fit.array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000.pp.nc)
+fit.array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000.pp.nc <- limma::eBayes(fit.array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000.pp.nc, trend=T)
+stats.array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000.pp.nc <- limma::topTable(fit.array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000.pp.nc,
+                                                                                n=nrow(data.qc.pp.nc),
+                                                                                coef="array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000",
+                                                                                sort.by = "none",
+                                                                                adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000.pp.nc, file="cache/analysis_differential__array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000.pp.nc,
+  fit.array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000.pp.nc,
+  stats.array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000.pp.nc
+)
+
+
+
+
+## 4. array_qc_STAINING_DNP_High_Red_smaller_9000_3000 ----
+
+design.array_qc_STAINING_DNP_High_Red_smaller_9000_3000.pp.nc <- model.matrix(~factor(patient) + array_qc_STAINING_DNP_High_Red_smaller_9000_3000, data=metadata.qc.pp.nc)
+fit.array_qc_STAINING_DNP_High_Red_smaller_9000_3000.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_STAINING_DNP_High_Red_smaller_9000_3000.pp.nc)
+fit.array_qc_STAINING_DNP_High_Red_smaller_9000_3000.pp.nc <- limma::eBayes(fit.array_qc_STAINING_DNP_High_Red_smaller_9000_3000.pp.nc, trend=T)
+stats.array_qc_STAINING_DNP_High_Red_smaller_9000_3000.pp.nc <- limma::topTable(fit.array_qc_STAINING_DNP_High_Red_smaller_9000_3000.pp.nc,
+                                                                                n=nrow(data.qc.pp.nc),
+                                                                                coef="array_qc_STAINING_DNP_High_Red_smaller_9000_3000",
+                                                                                sort.by = "none",
+                                                                                adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_STAINING_DNP_High_Red_smaller_9000_3000.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_STAINING_DNP_High_Red_smaller_9000_3000.pp.nc, file="cache/analysis_differential__array_qc_STAINING_DNP_High_Red_smaller_9000_3000__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_STAINING_DNP_High_Red_smaller_9000_3000.pp.nc,
+  fit.array_qc_STAINING_DNP_High_Red_smaller_9000_3000.pp.nc,
+  stats.array_qc_STAINING_DNP_High_Red_smaller_9000_3000.pp.nc
+)
+
+
+
+
+## 5. array_qc_STAINING_DNP_Bkg_Red_larger_750_1500 ----
+
+design.array_qc_STAINING_DNP_Bkg_Red_larger_750_1500.pp.nc <- model.matrix(~factor(patient) + array_qc_STAINING_DNP_Bkg_Red_larger_750_1500, data=metadata.qc.pp.nc)
+fit.array_qc_STAINING_DNP_Bkg_Red_larger_750_1500.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_STAINING_DNP_Bkg_Red_larger_750_1500.pp.nc)
+fit.array_qc_STAINING_DNP_Bkg_Red_larger_750_1500.pp.nc <- limma::eBayes(fit.array_qc_STAINING_DNP_Bkg_Red_larger_750_1500.pp.nc, trend=T)
+stats.array_qc_STAINING_DNP_Bkg_Red_larger_750_1500.pp.nc <- limma::topTable(fit.array_qc_STAINING_DNP_Bkg_Red_larger_750_1500.pp.nc,
+                                                                             n=nrow(data.qc.pp.nc),
+                                                                             coef="array_qc_STAINING_DNP_Bkg_Red_larger_750_1500",
+                                                                             sort.by = "none",
+                                                                             adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_STAINING_DNP_Bkg_Red_larger_750_1500.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_STAINING_DNP_Bkg_Red_larger_750_1500.pp.nc, file="cache/analysis_differential__array_qc_STAINING_DNP_Bkg_Red_larger_750_1500__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_STAINING_DNP_Bkg_Red_larger_750_1500.pp.nc,
+  fit.array_qc_STAINING_DNP_Bkg_Red_larger_750_1500.pp.nc,
+  stats.array_qc_STAINING_DNP_Bkg_Red_larger_750_1500.pp.nc
+)
+
+
+
+
+## 6. array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000 ----
+
+design.array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000.pp.nc <- model.matrix(~factor(patient) + array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000, data=metadata.qc.pp.nc)
+fit.array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000.pp.nc)
+fit.array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000.pp.nc <- limma::eBayes(fit.array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000.pp.nc, trend=T)
+stats.array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000.pp.nc <- limma::topTable(fit.array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000.pp.nc,
+                                                                                      n=nrow(data.qc.pp.nc),
+                                                                                      coef="array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000",
+                                                                                      sort.by = "none",
+                                                                                      adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000.pp.nc, file="cache/analysis_differential__array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000.pp.nc,
+  fit.array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000.pp.nc,
+  stats.array_qc_EXTENSION_Extension_C_Grn_smaller_20000_10000.pp.nc
+)
+
+
+
+
+## 7. array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000 ----
+
+design.array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000.pp.nc <- model.matrix(~factor(patient) + array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000, data=metadata.qc.pp.nc)
+fit.array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000.pp.nc)
+fit.array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000.pp.nc <- limma::eBayes(fit.array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000.pp.nc, trend=T)
+stats.array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000.pp.nc <- limma::topTable(fit.array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000.pp.nc,
+                                                                                      n=nrow(data.qc.pp.nc),
+                                                                                      coef="array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000",
+                                                                                      sort.by = "none",
+                                                                                      adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000.pp.nc, file="cache/analysis_differential__array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000.pp.nc,
+  fit.array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000.pp.nc,
+  stats.array_qc_EXTENSION_Extension_G_Grn_smaller_20000_10000.pp.nc
+)
+
+
+
+
+## 8. array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000 ----
+
+design.array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000.pp.nc <- model.matrix(~factor(patient) + array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000, data=metadata.qc.pp.nc)
+fit.array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000.pp.nc)
+fit.array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000.pp.nc <- limma::eBayes(fit.array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000.pp.nc, trend=T)
+stats.array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000.pp.nc <- limma::topTable(fit.array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000.pp.nc,
+                                                                                      n=nrow(data.qc.pp.nc),
+                                                                                      coef="array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000",
+                                                                                      sort.by = "none",
+                                                                                      adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000.pp.nc, file="cache/analysis_differential__array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000.pp.nc,
+  fit.array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000.pp.nc,
+  stats.array_qc_EXTENSION_Extension_A_Red_smaller_30000_15000.pp.nc
+)
+
+
+
+
+## 9. array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000 ----
+
+design.array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000.pp.nc <- model.matrix(~factor(patient) + array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000, data=metadata.qc.pp.nc)
+fit.array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000.pp.nc)
+fit.array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000.pp.nc <- limma::eBayes(fit.array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000.pp.nc, trend=T)
+stats.array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000.pp.nc <- limma::topTable(fit.array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000.pp.nc,
+                                                                                      n=nrow(data.qc.pp.nc),
+                                                                                      coef="array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000",
+                                                                                      sort.by = "none",
+                                                                                      adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000.pp.nc, file="cache/analysis_differential__array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000.pp.nc,
+  fit.array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000.pp.nc,
+  stats.array_qc_EXTENSION_Extension_T_Red_smaller_30000_15000.pp.nc
+)
+
+
+
+
+## 10. array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000 ----
+
+design.array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000.pp.nc <- model.matrix(~factor(patient) + array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000, data=metadata.qc.pp.nc)
+fit.array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000.pp.nc)
+fit.array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000.pp.nc <- limma::eBayes(fit.array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000.pp.nc, trend=T)
+stats.array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000.pp.nc <- limma::topTable(fit.array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000.pp.nc,
+                                                                                       n=nrow(data.qc.pp.nc),
+                                                                                       coef="array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000",
+                                                                                       sort.by = "none",
+                                                                                       adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000.pp.nc, file="cache/analysis_differential__array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000.pp.nc,
+  fit.array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000.pp.nc,
+  stats.array_qc_HYBRIDIZATION_Hyb_High_Grn_smaller_16000_12000.pp.nc
+)
+
+
+
+
+## 11. array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000 ----
+
+design.array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000.pp.nc <- model.matrix(~factor(patient) + array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000, data=metadata.qc.pp.nc)
+fit.array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000.pp.nc)
+fit.array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000.pp.nc <- limma::eBayes(fit.array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000.pp.nc, trend=T)
+stats.array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000.pp.nc <- limma::topTable(fit.array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000.pp.nc,
+                                                                                       n=nrow(data.qc.pp.nc),
+                                                                                       coef="array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000",
+                                                                                       sort.by = "none",
+                                                                                       adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000.pp.nc, file="cache/analysis_differential__array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000.pp.nc,
+  fit.array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000.pp.nc,
+  stats.array_qc_HYBRIDIZATION_Hyb_Medium_Grn_smaller_8000_6000.pp.nc
+)
+
+
+
+
+## 12. array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000 ----
+
+design.array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000.pp.nc <- model.matrix(~factor(patient) + array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000, data=metadata.qc.pp.nc)
+fit.array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000.pp.nc)
+fit.array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000.pp.nc <- limma::eBayes(fit.array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000.pp.nc, trend=T)
+stats.array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000.pp.nc <- limma::topTable(fit.array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000.pp.nc,
+                                                                                    n=nrow(data.qc.pp.nc),
+                                                                                    coef="array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000",
+                                                                                    sort.by = "none",
+                                                                                    adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000.pp.nc, file="cache/analysis_differential__array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000.pp.nc,
+  fit.array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000.pp.nc,
+  stats.array_qc_HYBRIDIZATION_Hyb_Low_Grn_smaller_4000_3000.pp.nc
+)
+
+
+
+
+## 13. array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985 ----
+
+design.array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985.pp.nc <- model.matrix(~factor(patient) + array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985, data=metadata.qc.pp.nc)
+fit.array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985.pp.nc)
+fit.array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985.pp.nc <- limma::eBayes(fit.array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985.pp.nc, trend=T)
+stats.array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985.pp.nc <- limma::topTable(fit.array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985.pp.nc,
+                                                                                           n=nrow(data.qc.pp.nc),
+                                                                                           coef="array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985",
+                                                                                           sort.by = "none",
+                                                                                           adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985.pp.nc, file="cache/analysis_differential__array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985.pp.nc,
+  fit.array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985.pp.nc,
+  stats.array_qc_HYBRIDIZATION_Hyb_Correlation_Grn_smaller_NA_0_985.pp.nc
+)
+
+
+
+
+## 14. array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15 ----
+
+design.array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15.pp.nc <- model.matrix(~factor(patient) + array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15, data=metadata.qc.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15.pp.nc <- limma::eBayes(fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15.pp.nc, trend=T)
+stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15.pp.nc <- limma::topTable(fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15.pp.nc,
+                                                                                             n=nrow(data.qc.pp.nc),
+                                                                                             coef="array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15",
+                                                                                             sort.by = "none",
+                                                                                             adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15.pp.nc, file="cache/analysis_differential__array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15.pp.nc,
+  fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15.pp.nc,
+  stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_1_Beta_larger_0_1_0_15.pp.nc
+)
+
+
+
+
+## 15. array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12 ----
+
+design.array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12.pp.nc <- model.matrix(~factor(patient) + array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12, data=metadata.qc.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12.pp.nc <- limma::eBayes(fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12.pp.nc, trend=T)
+stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12.pp.nc <- limma::topTable(fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12.pp.nc,
+                                                                                              n=nrow(data.qc.pp.nc),
+                                                                                              coef="array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12",
+                                                                                              sort.by = "none",
+                                                                                              adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12.pp.nc, file="cache/analysis_differential__array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12.pp.nc,
+  fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12.pp.nc,
+  stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_2_Beta_larger_0_08_0_12.pp.nc
+)
+
+
+
+
+## 16. array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15 ----
+
+design.array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15.pp.nc <- model.matrix(~factor(patient) + array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15, data=metadata.qc.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15.pp.nc <- limma::eBayes(fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15.pp.nc, trend=T)
+stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15.pp.nc <- limma::topTable(fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15.pp.nc,
+                                                                                             n=nrow(data.qc.pp.nc),
+                                                                                             coef="array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15",
+                                                                                             sort.by = "none",
+                                                                                             adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15.pp.nc, file="cache/analysis_differential__array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15.pp.nc,
+  fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15.pp.nc,
+  stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_4_Beta_larger_0_1_0_15.pp.nc
+)
+
+
+
+
+## 17. array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3 ----
+
+design.array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3.pp.nc <- model.matrix(~factor(patient) + array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3, data=metadata.qc.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3.pp.nc <- limma::eBayes(fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3.pp.nc, trend=T)
+stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3.pp.nc <- limma::topTable(fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3.pp.nc,
+                                                                                            n=nrow(data.qc.pp.nc),
+                                                                                            coef="array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3",
+                                                                                            sort.by = "none",
+                                                                                            adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3.pp.nc, file="cache/analysis_differential__array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3.pp.nc,
+  fit.array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3.pp.nc,
+  stats.array_qc_BISULFITE_CONVERSION_I_Beta_I_5_Beta_larger_0_2_0_3.pp.nc
+)
+
+
+
+
+## 18. array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3 ----
+
+design.array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3.pp.nc <- model.matrix(~factor(patient) + array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3, data=metadata.qc.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3.pp.nc <- limma::eBayes(fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3.pp.nc, trend=T)
+stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3.pp.nc <- limma::topTable(fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3.pp.nc,
+                                                                                              n=nrow(data.qc.pp.nc),
+                                                                                              coef="array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3",
+                                                                                              sort.by = "none",
+                                                                                              adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3.pp.nc, file="cache/analysis_differential__array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3.pp.nc,
+  fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3.pp.nc,
+  stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_1_Beta_larger_0_2_0_3.pp.nc
+)
+
+
+
+
+## 19. array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12 ----
+
+design.array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12.pp.nc <- model.matrix(~factor(patient) + array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12, data=metadata.qc.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12.pp.nc <- limma::eBayes(fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12.pp.nc, trend=T)
+stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12.pp.nc <- limma::topTable(fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12.pp.nc,
+                                                                                                n=nrow(data.qc.pp.nc),
+                                                                                                coef="array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12",
+                                                                                                sort.by = "none",
+                                                                                                adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12.pp.nc, file="cache/analysis_differential__array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12.pp.nc,
+  fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12.pp.nc,
+  stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_2_Beta_larger_0_08_0_12.pp.nc
+)
+
+
+
+
+## 20. array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24 ----
+
+design.array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24.pp.nc <- model.matrix(~factor(patient) + array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24, data=metadata.qc.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24.pp.nc <- limma::eBayes(fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24.pp.nc, trend=T)
+stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24.pp.nc <- limma::topTable(fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24.pp.nc,
+                                                                                                n=nrow(data.qc.pp.nc),
+                                                                                                coef="array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24",
+                                                                                                sort.by = "none",
+                                                                                                adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24.pp.nc, file="cache/analysis_differential__array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24.pp.nc,
+  fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24.pp.nc,
+  stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_3_Beta_larger_0_16_0_24.pp.nc
+)
+
+
+
+
+## 21. array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12 ----
+
+design.array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12.pp.nc <- model.matrix(~factor(patient) + array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12, data=metadata.qc.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12.pp.nc)
+fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12.pp.nc <- limma::eBayes(fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12.pp.nc, trend=T)
+stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12.pp.nc <- limma::topTable(fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12.pp.nc,
+                                                                                                n=nrow(data.qc.pp.nc),
+                                                                                                coef="array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12",
+                                                                                                sort.by = "none",
+                                                                                                adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12.pp.nc, file="cache/analysis_differential__array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12.pp.nc,
+  fit.array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12.pp.nc,
+  stats.array_qc_BISULFITE_CONVERSION_II_Beta_II_4_Beta_larger_0_08_0_12.pp.nc
+)
+
+
+
+
+## 22. array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2 ----
+
+design.array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2.pp.nc <- model.matrix(~factor(patient) + array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2, data=metadata.qc.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2.pp.nc <- limma::eBayes(fit.array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2.pp.nc, trend=T)
+stats.array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2.pp.nc <- limma::topTable(fit.array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2.pp.nc,
+                                                                                          n=nrow(data.qc.pp.nc),
+                                                                                          coef="array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2",
+                                                                                          sort.by = "none",
+                                                                                          adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2.pp.nc, file="cache/analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2.pp.nc,
+  fit.array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2.pp.nc,
+  stats.array_qc_SPECIFICITY_I_GT_Mismatch_1_PM_Grn_smaller_NA_1_2.pp.nc
+)
+
+
+
+
+## 23. array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1 ----
+
+design.array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1.pp.nc <- model.matrix(~factor(patient) + array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1, data=metadata.qc.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1.pp.nc <- limma::eBayes(fit.array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1.pp.nc, trend=T)
+stats.array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1.pp.nc <- limma::topTable(fit.array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1.pp.nc,
+                                                                                         n=nrow(data.qc.pp.nc),
+                                                                                         coef="array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1",
+                                                                                         sort.by = "none",
+                                                                                         adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1.pp.nc, file="cache/analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1.pp.nc,
+  fit.array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1.pp.nc,
+  stats.array_qc_SPECIFICITY_I_GT_Mismatch_1_MM_Grn_larger_NA_0_1.pp.nc
+)
+
+
+
+
+## 24. array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1 ----
+
+design.array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1.pp.nc <- model.matrix(~factor(patient) + array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1, data=metadata.qc.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1.pp.nc <- limma::eBayes(fit.array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1.pp.nc, trend=T)
+stats.array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1.pp.nc <- limma::topTable(fit.array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1.pp.nc,
+                                                                                         n=nrow(data.qc.pp.nc),
+                                                                                         coef="array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1",
+                                                                                         sort.by = "none",
+                                                                                         adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1.pp.nc, file="cache/analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1.pp.nc,
+  fit.array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1.pp.nc,
+  stats.array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1.pp.nc
+)
+
+
+
+
+## 25. array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2 ----
+
+design.array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2.pp.nc <- model.matrix(~factor(patient) + array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2, data=metadata.qc.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2.pp.nc <- limma::eBayes(fit.array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2.pp.nc, trend=T)
+stats.array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2.pp.nc <- limma::topTable(fit.array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2.pp.nc,
+                                                                                        n=nrow(data.qc.pp.nc),
+                                                                                        coef="array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2",
+                                                                                        sort.by = "none",
+                                                                                        adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2.pp.nc, file="cache/analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2.pp.nc,
+  fit.array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2.pp.nc,
+  stats.array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2.pp.nc
+)
+
+
+
+
+## 26. array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5 ----
+
+design.array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5.pp.nc <- model.matrix(~factor(patient) + array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5, data=metadata.qc.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5.pp.nc <- limma::eBayes(fit.array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5.pp.nc, trend=T)
+stats.array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5.pp.nc <- limma::topTable(fit.array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5.pp.nc,
+                                                                                          n=nrow(data.qc.pp.nc),
+                                                                                          coef="array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5",
+                                                                                          sort.by = "none",
+                                                                                          adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5.pp.nc, file="cache/analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5.pp.nc,
+  fit.array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5.pp.nc,
+  stats.array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5.pp.nc
+)
+
+
+
+
+## 27. array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5 ----
+
+design.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc <- model.matrix(~factor(patient) + array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5, data=metadata.qc.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc <- limma::eBayes(fit.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc, trend=T)
+stats.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc <- limma::topTable(fit.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc,
+                                                                                          n=nrow(data.qc.pp.nc),
+                                                                                          coef="array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5",
+                                                                                          sort.by = "none",
+                                                                                          adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc, file="cache/analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc,
+  fit.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc,
+  stats.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc
+)
+
+
+
+
+## 28. array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3 ----
+
+design.array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3.pp.nc <- model.matrix(~factor(patient) + array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3, data=metadata.qc.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3.pp.nc <- limma::eBayes(fit.array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3.pp.nc, trend=T)
+stats.array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3.pp.nc <- limma::topTable(fit.array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3.pp.nc,
+                                                                                         n=nrow(data.qc.pp.nc),
+                                                                                         coef="array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3",
+                                                                                         sort.by = "none",
+                                                                                         adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3.pp.nc, file="cache/analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3.pp.nc,
+  fit.array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3.pp.nc,
+  stats.array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3.pp.nc
+)
+
+
+
+
+## 29. array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5 ----
+
+design.array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5.pp.nc <- model.matrix(~factor(patient) + array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5, data=metadata.qc.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5.pp.nc)
+fit.array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5.pp.nc <- limma::eBayes(fit.array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5.pp.nc, trend=T)
+stats.array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5.pp.nc <- limma::topTable(fit.array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5.pp.nc,
+                                                                                         n=nrow(data.qc.pp.nc),
+                                                                                         coef="array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5",
+                                                                                         sort.by = "none",
+                                                                                         adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5.pp.nc, file="cache/analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5.pp.nc,
+  fit.array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5.pp.nc,
+  stats.array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5.pp.nc
+)
+
+
+
+
+## 30. array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6 ----
+
+design.array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6.pp.nc <- model.matrix(~factor(patient) + array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6, data=metadata.qc.pp.nc)
+fit.array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6.pp.nc)
+fit.array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6.pp.nc <- limma::eBayes(fit.array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6.pp.nc, trend=T)
+stats.array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6.pp.nc <- limma::topTable(fit.array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6.pp.nc,
+                                                                                        n=nrow(data.qc.pp.nc),
+                                                                                        coef="array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6",
+                                                                                        sort.by = "none",
+                                                                                        adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6.pp.nc, file="cache/analysis_differential__array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6.pp.nc,
+  fit.array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6.pp.nc,
+  stats.array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6.pp.nc
+)
+
+
+
+
+## 31. array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2 ----
+
+design.array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2.pp.nc <- model.matrix(~factor(patient) + array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2, data=metadata.qc.pp.nc)
+fit.array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2.pp.nc)
+fit.array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2.pp.nc <- limma::eBayes(fit.array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2.pp.nc, trend=T)
+stats.array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2.pp.nc <- limma::topTable(fit.array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2.pp.nc,
+                                                                                       n=nrow(data.qc.pp.nc),
+                                                                                       coef="array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2",
+                                                                                       sort.by = "none",
+                                                                                       adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2.pp.nc, file="cache/analysis_differential__array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2.pp.nc,
+  fit.array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2.pp.nc,
+  stats.array_qc_SPECIFICITY_II_Specificity_1_Grn_larger_NA_0_2.pp.nc
+)
+
+
+
+
+## 32. array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15 ----
+
+design.array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15.pp.nc <- model.matrix(~factor(patient) + array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15, data=metadata.qc.pp.nc)
+fit.array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15.pp.nc)
+fit.array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15.pp.nc <- limma::eBayes(fit.array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15.pp.nc, trend=T)
+stats.array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15.pp.nc <- limma::topTable(fit.array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15.pp.nc,
+                                                                                        n=nrow(data.qc.pp.nc),
+                                                                                        coef="array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15",
+                                                                                        sort.by = "none",
+                                                                                        adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15.pp.nc, file="cache/analysis_differential__array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15.pp.nc,
+  fit.array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15.pp.nc,
+  stats.array_qc_SPECIFICITY_II_Specificity_2_Grn_larger_NA_0_15.pp.nc
+)
+
+
+
+
+## 33. array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15 ----
+
+design.array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15.pp.nc <- model.matrix(~factor(patient) + array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15, data=metadata.qc.pp.nc)
+fit.array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15.pp.nc)
+fit.array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15.pp.nc <- limma::eBayes(fit.array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15.pp.nc, trend=T)
+stats.array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15.pp.nc <- limma::topTable(fit.array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15.pp.nc,
+                                                                                        n=nrow(data.qc.pp.nc),
+                                                                                        coef="array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15",
+                                                                                        sort.by = "none",
+                                                                                        adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15.pp.nc, file="cache/analysis_differential__array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15.pp.nc,
+  fit.array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15.pp.nc,
+  stats.array_qc_SPECIFICITY_II_Specificity_3_Grn_larger_NA_0_15.pp.nc
+)
+
+
+
+
+## 34. array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4 ----
+
+design.array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4.pp.nc <- model.matrix(~factor(patient) + array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4, data=metadata.qc.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4.pp.nc <- limma::eBayes(fit.array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4.pp.nc, trend=T)
+stats.array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4.pp.nc <- limma::topTable(fit.array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4.pp.nc,
+                                                                               n=nrow(data.qc.pp.nc),
+                                                                               coef="array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4",
+                                                                               sort.by = "none",
+                                                                               adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4.pp.nc, file="cache/analysis_differential__array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4.pp.nc,
+  fit.array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4.pp.nc,
+  stats.array_qc_NON_POLYMORPHIC_NP_A_Grn_larger_NA_0_4.pp.nc
+)
+
+
+
+
+## 35. array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4 ----
+
+design.array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4.pp.nc <- model.matrix(~factor(patient) + array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4, data=metadata.qc.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4.pp.nc <- limma::eBayes(fit.array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4.pp.nc, trend=T)
+stats.array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4.pp.nc <- limma::topTable(fit.array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4.pp.nc,
+                                                                               n=nrow(data.qc.pp.nc),
+                                                                               coef="array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4",
+                                                                               sort.by = "none",
+                                                                               adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4.pp.nc, file="cache/analysis_differential__array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4.pp.nc,
+  fit.array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4.pp.nc,
+  stats.array_qc_NON_POLYMORPHIC_NP_T_Grn_larger_NA_0_4.pp.nc
+)
+
+
+
+
+## 36. array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5 ----
+
+design.array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5.pp.nc <- model.matrix(~factor(patient) + array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5, data=metadata.qc.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5.pp.nc <- limma::eBayes(fit.array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5.pp.nc, trend=T)
+stats.array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5.pp.nc <- limma::topTable(fit.array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5.pp.nc,
+                                                                                n=nrow(data.qc.pp.nc),
+                                                                                coef="array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5",
+                                                                                sort.by = "none",
+                                                                                adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5.pp.nc, file="cache/analysis_differential__array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5.pp.nc,
+  fit.array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5.pp.nc,
+  stats.array_qc_NON_POLYMORPHIC_NP_C_Grn_smaller_NA_1_5.pp.nc
+)
+
+
+
+
+## 37. array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1 ----
+
+design.array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1.pp.nc <- model.matrix(~factor(patient) + array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1, data=metadata.qc.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1.pp.nc <- limma::eBayes(fit.array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1.pp.nc, trend=T)
+stats.array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1.pp.nc <- limma::topTable(fit.array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1.pp.nc,
+                                                                              n=nrow(data.qc.pp.nc),
+                                                                              coef="array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1",
+                                                                              sort.by = "none",
+                                                                              adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1.pp.nc, file="cache/analysis_differential__array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1.pp.nc,
+  fit.array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1.pp.nc,
+  stats.array_qc_NON_POLYMORPHIC_NP_G_Grn_smaller_NA_1.pp.nc
+)
+
+
+
+
+## 38. array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5 ----
+
+design.array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5.pp.nc <- model.matrix(~factor(patient) + array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5, data=metadata.qc.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5.pp.nc <- limma::eBayes(fit.array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5.pp.nc, trend=T)
+stats.array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5.pp.nc <- limma::topTable(fit.array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5.pp.nc,
+                                                                                n=nrow(data.qc.pp.nc),
+                                                                                coef="array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5",
+                                                                                sort.by = "none",
+                                                                                adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5.pp.nc, file="cache/analysis_differential__array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5.pp.nc,
+  fit.array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5.pp.nc,
+  stats.array_qc_NON_POLYMORPHIC_NP_A_Red_smaller_NA_1_5.pp.nc
+)
+
+
+
+
+## 39. array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5 ----
+
+design.array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5.pp.nc <- model.matrix(~factor(patient) + array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5, data=metadata.qc.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5.pp.nc <- limma::eBayes(fit.array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5.pp.nc, trend=T)
+stats.array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5.pp.nc <- limma::topTable(fit.array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5.pp.nc,
+                                                                                n=nrow(data.qc.pp.nc),
+                                                                                coef="array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5",
+                                                                                sort.by = "none",
+                                                                                adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5.pp.nc, file="cache/analysis_differential__array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5.pp.nc,
+  fit.array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5.pp.nc,
+  stats.array_qc_NON_POLYMORPHIC_NP_T_Red_smaller_NA_1_5.pp.nc
+)
+
+
+
+
+## 40. array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4 ----
+
+design.array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4.pp.nc <- model.matrix(~factor(patient) + array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4, data=metadata.qc.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4.pp.nc <- limma::eBayes(fit.array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4.pp.nc, trend=T)
+stats.array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4.pp.nc <- limma::topTable(fit.array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4.pp.nc,
+                                                                               n=nrow(data.qc.pp.nc),
+                                                                               coef="array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4",
+                                                                               sort.by = "none",
+                                                                               adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4.pp.nc, file="cache/analysis_differential__array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4.pp.nc,
+  fit.array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4.pp.nc,
+  stats.array_qc_NON_POLYMORPHIC_NP_C_Red_larger_NA_0_4.pp.nc
+)
+
+
+
+
+## 41. array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6 ----
+
+design.array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6.pp.nc <- model.matrix(~factor(patient) + array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6, data=metadata.qc.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6.pp.nc <- limma::lmFit(data.qc.pp.nc, design.array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6.pp.nc)
+fit.array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6.pp.nc <- limma::eBayes(fit.array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6.pp.nc, trend=T)
+stats.array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6.pp.nc <- limma::topTable(fit.array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6.pp.nc,
+                                                                               n=nrow(data.qc.pp.nc),
+                                                                               coef="array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6",
+                                                                               sort.by = "none",
+                                                                               adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6.pp.nc, file="cache/analysis_differential__array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6__partial_paired_nc__stats.Rds")
+
+rm(
+  design.array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6.pp.nc,
+  fit.array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6.pp.nc,
+  stats.array_qc_NON_POLYMORPHIC_NP_G_Red_larger_NA_0_6.pp.nc
+)
+
+
+
+
+
+
+
+
+# analyses: GLASS-OD ewastools ----
+
+
+metadata.ewas.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |>  # also pairs with n = 3 & n= 4
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
+  dplyr::select(array_sentrix_id, patient, contains("ewastools")) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Restoration )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Staining.Green )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Staining.Red )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Extension.Green )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Extension.Red )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Hybridization.High.Medium )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Hybridization.Medium.Low )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Target.Removal.1 )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Target.Removal.2 )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Bisulfite.Conversion.I.Green )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Bisulfite.Conversion.I.Red )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Bisulfite.Conversion.II )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Specificity.I.Green )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Specificity.I.Red )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Specificity.II )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Non.polymorphic.Green )) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Non.polymorphic.Red ))
+
+
+data.ewas.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.ewas.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+## 1. Restoration ----
+
+design.ewas_Restoration.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Restoration, data=metadata.ewas.pp.nc)
+fit.ewas_Restoration.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Restoration.pp.nc)
+fit.ewas_Restoration.pp.nc <- limma::eBayes(fit.ewas_Restoration.pp.nc, trend=T)
+stats.ewas_Restoration.pp.nc <- limma::topTable(fit.ewas_Restoration.pp.nc,
+                                                n=nrow(data.ewas.pp.nc),
+                                                coef="array_ewastools_qc_Restoration",
+                                                sort.by = "none",
+                                                adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Restoration: ", sum(stats.ewas_Restoration.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Restoration.pp.nc, file="cache/analysis_differential__ewastools_Restoration__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Restoration.pp.nc,
+  fit.ewas_Restoration.pp.nc,
+  stats.ewas_Restoration.pp.nc
+)
+
+
+
+## 2. Staining.Green ----
+
+design.ewas_Staining.Green.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Staining.Green, data=metadata.ewas.pp.nc)
+fit.ewas_Staining.Green.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Staining.Green.pp.nc)
+fit.ewas_Staining.Green.pp.nc <- limma::eBayes(fit.ewas_Staining.Green.pp.nc, trend=T)
+stats.ewas_Staining.Green.pp.nc <- limma::topTable(fit.ewas_Staining.Green.pp.nc,
+                                                   n=nrow(data.ewas.pp.nc),
+                                                   coef="array_ewastools_qc_Staining.Green",
+                                                   sort.by = "none",
+                                                   adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Staining.Green: ", sum(stats.ewas_Staining.Green.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Staining.Green.pp.nc, file="cache/analysis_differential__ewastools_Staining.Green__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Staining.Green.pp.nc,
+  fit.ewas_Staining.Green.pp.nc,
+  stats.ewas_Staining.Green.pp.nc
+)
+
+
+## 3. Staining.Red ----
+
+design.ewas_Staining.Red.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Staining.Red, data=metadata.ewas.pp.nc)
+fit.ewas_Staining.Red.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Staining.Red.pp.nc)
+fit.ewas_Staining.Red.pp.nc <- limma::eBayes(fit.ewas_Staining.Red.pp.nc, trend=T)
+stats.ewas_Staining.Red.pp.nc <- limma::topTable(fit.ewas_Staining.Red.pp.nc,
+                                                 n=nrow(data.ewas.pp.nc),
+                                                 coef="array_ewastools_qc_Staining.Red",
+                                                 sort.by = "none",
+                                                 adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Staining.Red: ", sum(stats.ewas_Staining.Red.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Staining.Red.pp.nc, file="cache/analysis_differential__ewastools_Staining.Red__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Staining.Red.pp.nc,
+  fit.ewas_Staining.Red.pp.nc,
+  stats.ewas_Staining.Red.pp.nc
+)
+
+
+## 4. Extension.Green ----
+
+design.ewas_Extension.Green.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Extension.Green, data=metadata.ewas.pp.nc)
+fit.ewas_Extension.Green.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Extension.Green.pp.nc)
+fit.ewas_Extension.Green.pp.nc <- limma::eBayes(fit.ewas_Extension.Green.pp.nc, trend=T)
+stats.ewas_Extension.Green.pp.nc <- limma::topTable(fit.ewas_Extension.Green.pp.nc,
+                                                    n=nrow(data.ewas.pp.nc),
+                                                    coef="array_ewastools_qc_Extension.Green",
+                                                    sort.by = "none",
+                                                    adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Extension.Green: ", sum(stats.ewas_Extension.Green.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Extension.Green.pp.nc, file="cache/analysis_differential__ewastools_Extension.Green__partial_paired_nc__stats.Rds")
+
+
+rm(
+  design.ewas_Extension.Green.pp.nc,
+  fit.ewas_Extension.Green.pp.nc,
+  stats.ewas_Extension.Green.pp.nc
+)
+
+
+## 5. Extension.Red ----
+
+design.ewas_Extension.Red.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Extension.Red, data=metadata.ewas.pp.nc)
+fit.ewas_Extension.Red.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Extension.Red.pp.nc)
+fit.ewas_Extension.Red.pp.nc <- limma::eBayes(fit.ewas_Extension.Red.pp.nc, trend=T)
+stats.ewas_Extension.Red.pp.nc <- limma::topTable(fit.ewas_Extension.Red.pp.nc,
+                                                  n=nrow(data.ewas.pp.nc),
+                                                  coef="array_ewastools_qc_Extension.Red",
+                                                  sort.by = "none",
+                                                  adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Extension.Red: ", sum(stats.ewas_Extension.Red.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Extension.Red.pp.nc, file="cache/analysis_differential__ewastools_Extension.Red__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Extension.Red.pp.nc,
+  fit.ewas_Extension.Red.pp.nc,
+  stats.ewas_Extension.Red.pp.nc
+)
+
+
+## 6. Hybridization.High.Medium ----
+
+design.ewas_Hybridization.High.Medium.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Hybridization.High.Medium, data=metadata.ewas.pp.nc)
+fit.ewas_Hybridization.High.Medium.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Hybridization.High.Medium.pp.nc)
+fit.ewas_Hybridization.High.Medium.pp.nc <- limma::eBayes(fit.ewas_Hybridization.High.Medium.pp.nc, trend=T)
+stats.ewas_Hybridization.High.Medium.pp.nc <- limma::topTable(fit.ewas_Hybridization.High.Medium.pp.nc,
+                                                              n=nrow(data.ewas.pp.nc),
+                                                              coef="array_ewastools_qc_Hybridization.High.Medium",
+                                                              sort.by = "none",
+                                                              adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Hybridization.High.Medium: ", sum(stats.ewas_Hybridization.High.Medium.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Hybridization.High.Medium.pp.nc, file="cache/analysis_differential__ewastools_Hybridization.High.Medium__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Hybridization.High.Medium.pp.nc,
+  fit.ewas_Hybridization.High.Medium.pp.nc,
+  stats.ewas_Hybridization.High.Medium.pp.nc
+)
+
+
+## 7. Hybridization.Medium.Low ----
+
+design.ewas_Hybridization.Medium.Low.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Hybridization.Medium.Low, data=metadata.ewas.pp.nc)
+fit.ewas_Hybridization.Medium.Low.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Hybridization.Medium.Low.pp.nc)
+fit.ewas_Hybridization.Medium.Low.pp.nc <- limma::eBayes(fit.ewas_Hybridization.Medium.Low.pp.nc, trend=T)
+stats.ewas_Hybridization.Medium.Low.pp.nc <- limma::topTable(fit.ewas_Hybridization.Medium.Low.pp.nc,
+                                                             n=nrow(data.ewas.pp.nc),
+                                                             coef="array_ewastools_qc_Hybridization.Medium.Low",
+                                                             sort.by = "none",
+                                                             adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Hybridization.Medium.Low: ", sum(stats.ewas_Hybridization.Medium.Low.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Hybridization.Medium.Low.pp.nc, file="cache/analysis_differential__ewastools_Hybridization.Medium.Low__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Hybridization.Medium.Low.pp.nc,
+  fit.ewas_Hybridization.Medium.Low.pp.nc,
+  stats.ewas_Hybridization.Medium.Low.pp.nc
+)
+
+
+
+## 8. Target.Removal.1 ----
+
+design.ewas_Target.Removal.1.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Target.Removal.1, data=metadata.ewas.pp.nc)
+fit.ewas_Target.Removal.1.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Target.Removal.1.pp.nc)
+fit.ewas_Target.Removal.1.pp.nc <- limma::eBayes(fit.ewas_Target.Removal.1.pp.nc, trend=T)
+stats.ewas_Target.Removal.1.pp.nc <- limma::topTable(fit.ewas_Target.Removal.1.pp.nc,
+                                                     n=nrow(data.ewas.pp.nc),
+                                                     coef="array_ewastools_qc_Target.Removal.1",
+                                                     sort.by = "none",
+                                                     adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Target.Removal.1: ", sum(stats.ewas_Target.Removal.1.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Target.Removal.1.pp.nc, file="cache/analysis_differential__ewastools_Target.Removal.1__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Target.Removal.1.pp.nc,
+  fit.ewas_Target.Removal.1.pp.nc,
+  stats.ewas_Target.Removal.1.pp.nc
+)
+
+
+## 9. Target.Removal.2 ----
+
+design.ewas_Target.Removal.2.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Target.Removal.2, data=metadata.ewas.pp.nc)
+fit.ewas_Target.Removal.2.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Target.Removal.2.pp.nc)
+fit.ewas_Target.Removal.2.pp.nc <- limma::eBayes(fit.ewas_Target.Removal.2.pp.nc, trend=T)
+stats.ewas_Target.Removal.2.pp.nc <- limma::topTable(fit.ewas_Target.Removal.2.pp.nc,
+                                                     n=nrow(data.ewas.pp.nc),
+                                                     coef="array_ewastools_qc_Target.Removal.2",
+                                                     sort.by = "none",
+                                                     adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Target.Removal.2: ", sum(stats.ewas_Target.Removal.2.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Target.Removal.2.pp.nc, file="cache/analysis_differential__ewastools_Target.Removal.2__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Target.Removal.2.pp.nc,
+  fit.ewas_Target.Removal.2.pp.nc,
+  stats.ewas_Target.Removal.2.pp.nc
+)
+
+
+
+## 10. Bisulfite.Conversion.I.Green ----
+
+design.ewas_Bisulfite.Conversion.I.Green.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Bisulfite.Conversion.I.Green, data=metadata.ewas.pp.nc)
+fit.ewas_Bisulfite.Conversion.I.Green.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Bisulfite.Conversion.I.Green.pp.nc)
+fit.ewas_Bisulfite.Conversion.I.Green.pp.nc <- limma::eBayes(fit.ewas_Bisulfite.Conversion.I.Green.pp.nc, trend=T)
+stats.ewas_Bisulfite.Conversion.I.Green.pp.nc <- limma::topTable(fit.ewas_Bisulfite.Conversion.I.Green.pp.nc,
+                                                                 n=nrow(data.ewas.pp.nc),
+                                                                 coef="array_ewastools_qc_Bisulfite.Conversion.I.Green",
+                                                                 sort.by = "none",
+                                                                 adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Bisulfite.Conversion.I.Green: ", sum(stats.ewas_Bisulfite.Conversion.I.Green.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Bisulfite.Conversion.I.Green.pp.nc, file="cache/analysis_differential__ewastools_Bisulfite.Conversion.I.Green__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Bisulfite.Conversion.I.Green.pp.nc,
+  fit.ewas_Bisulfite.Conversion.I.Green.pp.nc,
+  stats.ewas_Bisulfite.Conversion.I.Green.pp.nc
+)
+
+
+## 11. Bisulfite.Conversion.I.Red ----
+
+design.ewas_Bisulfite.Conversion.I.Red.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Bisulfite.Conversion.I.Red, data=metadata.ewas.pp.nc)
+fit.ewas_Bisulfite.Conversion.I.Red.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Bisulfite.Conversion.I.Red.pp.nc)
+fit.ewas_Bisulfite.Conversion.I.Red.pp.nc <- limma::eBayes(fit.ewas_Bisulfite.Conversion.I.Red.pp.nc, trend=T)
+stats.ewas_Bisulfite.Conversion.I.Red.pp.nc <- limma::topTable(fit.ewas_Bisulfite.Conversion.I.Red.pp.nc,
+                                                               n=nrow(data.ewas.pp.nc),
+                                                               coef="array_ewastools_qc_Bisulfite.Conversion.I.Red",
+                                                               sort.by = "none",
+                                                               adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Bisulfite.Conversion.I.Red: ", sum(stats.ewas_Bisulfite.Conversion.I.Red.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Bisulfite.Conversion.I.Red.pp.nc, file="cache/analysis_differential__ewastools_Bisulfite.Conversion.I.Red__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Bisulfite.Conversion.I.Red.pp.nc,
+  fit.ewas_Bisulfite.Conversion.I.Red.pp.nc,
+  stats.ewas_Bisulfite.Conversion.I.Red.pp.nc
+)
+
+
+## 12. Bisulfite.Conversion.II ----
+
+design.ewas_Bisulfite.Conversion.II.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Bisulfite.Conversion.II, data=metadata.ewas.pp.nc)
+fit.ewas_Bisulfite.Conversion.II.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Bisulfite.Conversion.II.pp.nc)
+fit.ewas_Bisulfite.Conversion.II.pp.nc <- limma::eBayes(fit.ewas_Bisulfite.Conversion.II.pp.nc, trend=T)
+stats.ewas_Bisulfite.Conversion.II.pp.nc <- limma::topTable(fit.ewas_Bisulfite.Conversion.II.pp.nc,
+                                                            n=nrow(data.ewas.pp.nc),
+                                                            coef="array_ewastools_qc_Bisulfite.Conversion.II",
+                                                            sort.by = "none",
+                                                            adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Bisulfite.Conversion.II: ", sum(stats.ewas_Bisulfite.Conversion.II.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Bisulfite.Conversion.II.pp.nc, file="cache/analysis_differential__ewastools_Bisulfite.Conversion.II__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Bisulfite.Conversion.II.pp.nc,
+  fit.ewas_Bisulfite.Conversion.II.pp.nc,
+  stats.ewas_Bisulfite.Conversion.II.pp.nc
+)
+
+
+## 13. Specificity.I.Green ----
+
+design.ewas_Specificity.I.Green.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Specificity.I.Green, data=metadata.ewas.pp.nc)
+fit.ewas_Specificity.I.Green.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Specificity.I.Green.pp.nc)
+fit.ewas_Specificity.I.Green.pp.nc <- limma::eBayes(fit.ewas_Specificity.I.Green.pp.nc, trend=T)
+stats.ewas_Specificity.I.Green.pp.nc <- limma::topTable(fit.ewas_Specificity.I.Green.pp.nc,
+                                                        n=nrow(data.ewas.pp.nc),
+                                                        coef="array_ewastools_qc_Specificity.I.Green",
+                                                        sort.by = "none",
+                                                        adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Specificity.I.Green: ", sum(stats.ewas_Specificity.I.Green.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Specificity.I.Green.pp.nc, file="cache/analysis_differential__ewastools_Specificity.I.Green__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Specificity.I.Green.pp.nc,
+  fit.ewas_Specificity.I.Green.pp.nc,
+  stats.ewas_Specificity.I.Green.pp.nc
+)
+
+
+## 14. Specificity.I.Red ----
+
+design.ewas_Specificity.I.Red.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Specificity.I.Red, data=metadata.ewas.pp.nc)
+fit.ewas_Specificity.I.Red.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Specificity.I.Red.pp.nc)
+fit.ewas_Specificity.I.Red.pp.nc <- limma::eBayes(fit.ewas_Specificity.I.Red.pp.nc, trend=T)
+stats.ewas_Specificity.I.Red.pp.nc <- limma::topTable(fit.ewas_Specificity.I.Red.pp.nc,
+                                                      n=nrow(data.ewas.pp.nc),
+                                                      coef="array_ewastools_qc_Specificity.I.Red",
+                                                      sort.by = "none",
+                                                      adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Specificity.I.Red: ", sum(stats.ewas_Specificity.I.Red.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Specificity.I.Red.pp.nc, file="cache/analysis_differential__ewastools_Specificity.I.Red__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Specificity.I.Red.pp.nc,
+  fit.ewas_Specificity.I.Red.pp.nc,
+  stats.ewas_Specificity.I.Red.pp.nc
+)
+
+
+## 15. Specificity.II ----
+
+design.ewas_Specificity.II.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Specificity.II, data=metadata.ewas.pp.nc)
+fit.ewas_Specificity.II.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Specificity.II.pp.nc)
+fit.ewas_Specificity.II.pp.nc <- limma::eBayes(fit.ewas_Specificity.II.pp.nc, trend=T)
+stats.ewas_Specificity.II.pp.nc <- limma::topTable(fit.ewas_Specificity.II.pp.nc,
+                                                   n=nrow(data.ewas.pp.nc),
+                                                   coef="array_ewastools_qc_Specificity.II",
+                                                   sort.by = "none",
+                                                   adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Specificity.II: ", sum(stats.ewas_Specificity.II.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Specificity.II.pp.nc, file="cache/analysis_differential__ewastools_Specificity.II__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Specificity.II.pp.nc,
+  fit.ewas_Specificity.II.pp.nc,
+  stats.ewas_Specificity.II.pp.nc
+)
+
+
+## 16. Non.polymorphic.Green ----
+
+design.ewas_Non.polymorphic.Green.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Non.polymorphic.Green, data=metadata.ewas.pp.nc)
+fit.ewas_Non.polymorphic.Green.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Non.polymorphic.Green.pp.nc)
+fit.ewas_Non.polymorphic.Green.pp.nc <- limma::eBayes(fit.ewas_Non.polymorphic.Green.pp.nc, trend=T)
+stats.ewas_Non.polymorphic.Green.pp.nc <- limma::topTable(fit.ewas_Non.polymorphic.Green.pp.nc,
+                                                          n=nrow(data.ewas.pp.nc),
+                                                          coef="array_ewastools_qc_Non.polymorphic.Green",
+                                                          sort.by = "none",
+                                                          adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Non.polymorphic.Green: ", sum(stats.ewas_Non.polymorphic.Green.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Non.polymorphic.Green.pp.nc, file="cache/analysis_differential__ewastools_Non.polymorphic.Green__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Non.polymorphic.Green.pp.nc,
+  fit.ewas_Non.polymorphic.Green.pp.nc,
+  stats.ewas_Non.polymorphic.Green.pp.nc
+)
+
+
+## 17. Non.polymorphic.Red ----
+
+design.ewas_Non.polymorphic.Red.pp.nc <- model.matrix(~factor(patient) + array_ewastools_qc_Non.polymorphic.Red, data=metadata.ewas.pp.nc)
+fit.ewas_Non.polymorphic.Red.pp.nc <- limma::lmFit(data.ewas.pp.nc, design.ewas_Non.polymorphic.Red.pp.nc)
+fit.ewas_Non.polymorphic.Red.pp.nc <- limma::eBayes(fit.ewas_Non.polymorphic.Red.pp.nc, trend=T)
+stats.ewas_Non.polymorphic.Red.pp.nc <- limma::topTable(fit.ewas_Non.polymorphic.Red.pp.nc,
+                                                        n=nrow(data.ewas.pp.nc),
+                                                        coef="array_ewastools_qc_Non.polymorphic.Red",
+                                                        sort.by = "none",
+                                                        adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')  |> 
+  dplyr::select(probe_id, t)
+
+print(paste0("Non.polymorphic.Red: ", sum(stats.ewas_Non.polymorphic.Red.pp.nc$adj.P.Val < 0.01)))
+saveRDS(stats.ewas_Non.polymorphic.Red.pp.nc, file="cache/analysis_differential__ewastools_Non.polymorphic.Red__partial_paired_nc__stats.Rds")
+
+rm(
+  design.ewas_Non.polymorphic.Red.pp.nc,
+  fit.ewas_Non.polymorphic.Red.pp.nc,
+  stats.ewas_Non.polymorphic.Red.pp.nc
+)
+
+
 
 
 # analyses: GLASS-OD AcCGAP ----
@@ -1401,7 +3044,6 @@ data.AccGAP.pp.nc <- data.mvalues.hq_samples |>
 
 
 
-
 design.AccGAP.pp.nc <- model.matrix(~factor(patient) + array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, data=metadata.AccGAP.pp.nc)
 fit.AccGAP.pp.nc <- limma::lmFit(data.AccGAP.pp.nc, design.AccGAP.pp.nc)
 fit.AccGAP.pp.nc <- limma::eBayes(fit.AccGAP.pp.nc, trend=T)
@@ -1410,7 +3052,8 @@ stats.AccGAP.pp.nc <- limma::topTable(fit.AccGAP.pp.nc,
                                       coef="array_A_IDH_HG__A_IDH_LG_lr__lasso_fit",
                                       sort.by = "none",
                                       adjust.method="fdr") |> 
-  tibble::rownames_to_column('probe_id') 
+    tibble::rownames_to_column('probe_id')
+
 
 rm(design.AccGAP.pp.nc)
 
@@ -1419,10 +3062,8 @@ sum(stats.AccGAP.pp.nc$P.Value < 0.01)
 sum(stats.AccGAP.pp.nc$adj.P.Val < 0.01)
 
 
-
 #saveRDS(fit.AccGAP.pp.nc, file="cache/analysis_differential__AcCGAP__partial_paired_nc__fit.Rds")
 saveRDS(stats.AccGAP.pp.nc, file="cache/analysis_differential__AcCGAP__partial_paired_nc__stats.Rds")
-
 
 
 rm(fit.AccGAP.pp.nc, stats.AccGAP.pp.nc)
@@ -1441,7 +3082,7 @@ stats.lgc <- limma::topTable(fit.lgc,
                             coef="as.numeric(A_IDH_HG__A_IDH_LG_lr__lasso_fit)",
                             sort.by = "none",
                             adjust.method="fdr") |> 
-  tibble::rownames_to_column('probe_id') 
+  tibble::rownames_to_column('probe_id')
 
 rm(design.lgc, fit.lgc)
 
@@ -1521,7 +3162,7 @@ rm(fit.ffpe_or_ff.pp.nc, stats.ffpe_or_ff.pp.nc)
 
 # analyses: FFPE-decay predictor ----
 ## data: partially paired [w/o FFPE/frozen batch correct] ----
-
+### 1. time in FFPE ----
 
 metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
@@ -1531,10 +3172,10 @@ metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
   dplyr::ungroup() |> 
-  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
+  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 202) 
+    assertthat::assert_that(nrow(.) == 201) 
     return(.)
   })()
 
@@ -1580,6 +3221,231 @@ saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential__ffpe-decay-ti
 
 rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
 
+
+
+### 2. time in freezer ----
+
+metadata.freezer_decay.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(!is.na(isolation_material)) |> 
+  dplyr::mutate(freezer_decay_time = ifelse(isolation_material == "tissue", -time_between_resection_and_array, 0)) |> 
+  dplyr::filter(!is.na(freezer_decay_time)) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 199) 
+    return(.)
+  })()
+
+
+
+data.freezer_decay.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.freezer_decay.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+design.freezer_decay.pp.nc <- model.matrix(~factor(patient) + freezer_decay_time, data=metadata.freezer_decay.pp.nc)
+fit.freezer_decay.pp.nc <- limma::lmFit(data.freezer_decay.pp.nc, design.freezer_decay.pp.nc)
+fit.freezer_decay.pp.nc <- limma::eBayes(fit.freezer_decay.pp.nc, trend=T)
+
+stats.freezer_decay.pp.nc <- limma::topTable(fit.freezer_decay.pp.nc,
+                                             n=nrow(data.freezer_decay.pp.nc),
+                                             coef="freezer_decay_time",
+                                             sort.by = "none",
+                                             adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+
+
+rm(design.freezer_decay.pp.nc)
+
+
+sum(stats.freezer_decay.pp.nc$P.Value < 0.01)
+sum(stats.freezer_decay.pp.nc$adj.P.Val < 0.01)
+
+
+
+#saveRDS(fit.freezer_decay.pp.nc, file="cache/analysis_differential__freezer-decay-time__partial_paired_nc__fit.Rds")
+saveRDS(stats.freezer_decay.pp.nc, file="cache/analysis_differential__freezer-decay-time__partial_paired_nc__stats.Rds")
+
+
+rm(fit.freezer_decay.pp.nc, stats.freezer_decay.pp.nc, design.freezer_decay.pp.nc, data.freezer_decay.pp.nc)
+
+
+
+
+
+### 3. time in freezer or ffpe ----
+
+
+metadata.tissue_decay.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(!is.na(isolation_material)) |> 
+  dplyr::mutate(tissue_decay_time = -time_between_resection_and_array) |> 
+  dplyr::filter(!is.na(tissue_decay_time)) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 199) 
+    return(.)
+  })()
+
+
+
+data.tissue_decay.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.tissue_decay.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+design.tissue_decay.pp.nc <- model.matrix(~factor(patient) + tissue_decay_time, data=metadata.tissue_decay.pp.nc)
+fit.tissue_decay.pp.nc <- limma::lmFit(data.tissue_decay.pp.nc, design.tissue_decay.pp.nc)
+fit.tissue_decay.pp.nc <- limma::eBayes(fit.tissue_decay.pp.nc, trend=T)
+
+stats.tissue_decay.pp.nc <- limma::topTable(fit.tissue_decay.pp.nc,
+                                            n=nrow(data.tissue_decay.pp.nc),
+                                            coef="tissue_decay_time",
+                                            sort.by = "none",
+                                            adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t)
+
+
+
+rm(design.tissue_decay.pp.nc)
+
+
+sum(stats.tissue_decay.pp.nc$P.Value < 0.01)
+sum(stats.tissue_decay.pp.nc$adj.P.Val < 0.01)
+
+
+
+#saveRDS(fit.tissue_decay.pp.nc, file="cache/analysis_differential__tissue-decay-time__partial_paired_nc__fit.Rds")
+saveRDS(stats.tissue_decay.pp.nc, file="cache/analysis_differential__tissue-decay-time__partial_paired_nc__stats.Rds")
+
+
+
+rm(fit.tissue_decay.pp.nc, stats.tissue_decay.pp.nc, design.tissue_decay.pp.nc, data.tissue_decay.pp.nc)
+
+
+
+### 4. time in freezer & ffpe multivariate ----
+
+
+metadata.ffpe_freezer_multivar.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(!is.na(isolation_material)) |> 
+  
+  dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
+  #dplyr::mutate(ffpe_decay_time = -log((-ffpe_decay_time) + 1)) |> 
+  
+  dplyr::mutate(freezer_decay_time = ifelse(isolation_material == "tissue", -time_between_resection_and_array, 0)) |> 
+  #dplyr::mutate(freezer_decay_time = -log((-freezer_decay_time) + 1)) |> 
+  
+  dplyr::filter(!is.na(ffpe_decay_time) & !is.na(freezer_decay_time)) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 199) 
+    return(.)
+  })()
+
+
+
+data.ffpe_freezer_multivar.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.ffpe_freezer_multivar.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+
+design.ffpe_freezer_multivar.pp.nc <- model.matrix(~factor(patient) + 
+                                                     ffpe_decay_time +
+                                                     freezer_decay_time
+                                                     , data=metadata.ffpe_freezer_multivar.pp.nc)
+fit.ffpe_freezer_multivar.pp.nc <- limma::lmFit(data.ffpe_freezer_multivar.pp.nc, design.ffpe_freezer_multivar.pp.nc)
+fit.ffpe_freezer_multivar.pp.nc <- limma::eBayes(fit.ffpe_freezer_multivar.pp.nc, trend=T)
+
+stats.ffpe_freezer_multivar__ffpe.pp.nc <- limma::topTable(fit.ffpe_freezer_multivar.pp.nc,
+                                                           n=nrow(data.ffpe_freezer_multivar.pp.nc),
+                                                           coef="ffpe_decay_time",
+                                                           sort.by = "none",
+                                                           adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t) |> 
+  dplyr::rename(t__ffpe = t)
+
+
+sum(abs(stats.ffpe_freezer_multivar__ffpe.pp.nc$t) > 1.5)
+
+stats.ffpe_freezer_multivar__freezer.pp.nc <- limma::topTable(fit.ffpe_freezer_multivar.pp.nc,
+                                                           n=nrow(data.ffpe_freezer_multivar.pp.nc),
+                                                           coef="freezer_decay_time",
+                                                           sort.by = "none",
+                                                           adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::select(probe_id, t) |> 
+  dplyr::rename(t__freezer = t)
+
+
+stats.ffpe_freezer_multivar.pp.nc <- stats.ffpe_freezer_multivar__ffpe.pp.nc |> 
+  dplyr::left_join(stats.ffpe_freezer_multivar__freezer.pp.nc, by=c('probe_id'='probe_id'))
+
+
+
+rm(design.ffpe_freezer_multivar.pp.nc)
+
+
+
+
+saveRDS(stats.ffpe_freezer_multivar.pp.nc, file="cache/analysis_differential__ffpe_freezer_decay-time_multivar__partial_paired_nc__stats.Rds")
+
+
+
+rm(fit.ffpe_freezer_multivar.pp.nc,
+   stats.ffpe_freezer_multivar__ffpe.pp.nc,
+   stats.ffpe_freezer_multivar__freezer.pp.nc,
+   stats.ffpe_freezer_multivar.pp.nc,
+   data.ffpe_freezer_multivar.pp.nc)
+
+
+## linear: 436022
+#sum(abs(tmp$DMP__FFPE_and_freezer_decay_time__multivar__pp_nc__t__ffpe) > 1.5)
 
 
 

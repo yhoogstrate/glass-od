@@ -7,6 +7,15 @@ if(!exists('mixcol')) {
 }
 
 
+
+# center with gray - original also used in corrplot and some HI-publications
+col5 <- grDevices::colorRampPalette(c(       mixcol("#4DCB12", mixcol("#FFFFFF","black",0.125),0.10),
+                                             mixcol("#FFFFFF","black",0.125),
+                                             mixcol("#DF1BA7", "white",0.025)
+))
+
+
+
 # center with darker gray - original also used in corrplot and some HI-publications
 col4 <- grDevices::colorRampPalette(c(       "#67001F", 
                                              mixcol("#B2182B","black",0.025*2),
@@ -43,6 +52,7 @@ col3 <- grDevices::colorRampPalette(c(       "#67001F",
                                              
                                              "#053061"
 ))
+
 
 
 
