@@ -351,7 +351,7 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'stainings_KI67') |>
   dplyr::mutate(file_exists = NULL) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (138))
+    assertthat::assert_that(nrow(.) == (135))
     return(.)
   })() |> 
   assertr::verify(sum(resection_id %in% glass_od.metadata.array_samples$resection_id == F) == 1) # 0003-R1
@@ -420,6 +420,22 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
 
 
 rm(tmp)
+
+
+
+## minfi dyeCorrection stats ----
+
+
+tmp <- readRDS("cache/analysis_dyeCorrection_rate.Rds") |> 
+  dplyr::rename(array_sentrix_id = sample) |> 
+  dplyr::rename_with(~paste0("array_minfi_dyeCorrection_", .x), .cols=!matches("^array_sentrix_id$",perl = T))
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
+
+rm(tmp)
+
 
 
 ## ewastools ----

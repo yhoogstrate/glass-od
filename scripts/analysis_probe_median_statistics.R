@@ -17,16 +17,20 @@ if(!exists('glass_od.metadata.array_samples')) {
 
 
 
-
 if(!exists('data.intensities.probes')) {
   source('scripts/load_intensities_hq_samples.R')
 }
 
 
 
-
 if(!exists('data.beta.values.hq_samples')) {
   source('scripts/load_beta.values_hq_samples.R')
+}
+
+
+
+if(!exists('data.mvalues.hq_samples')) {
+  source('scripts/load_mvalues_hq_samples.R')
 }
 
 
@@ -133,6 +137,31 @@ median.unmethylated.intensity.recurrent <- data.intensities.unmethylated.hq_samp
   tibble::rownames_to_column('probe_id') 
 
 
+## m-value ----
+
+
+median.mvalue.primary <- data.mvalues.hq_samples |> 
+  dplyr::select(
+    metadata |> dplyr::filter(pr.status == "primary") |>  dplyr::pull(array_sentrix_id)
+  ) |> 
+  as.matrix() |> 
+  MatrixGenerics::rowMedians(useNames = T) |> 
+  data.frame() |> 
+  dplyr::rename(median.mvalue.primary = 1) |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+median.mvalue.recurrent <- data.mvalues.hq_samples |> 
+  dplyr::select(
+    metadata |> dplyr::filter(pr.status == "recurrence") |>  dplyr::pull(array_sentrix_id)
+  ) |> 
+  as.matrix() |> 
+  MatrixGenerics::rowMedians(useNames = T) |> 
+  data.frame() |> 
+  dplyr::rename(median.mvalue.recurrent = 1) |> 
+  tibble::rownames_to_column('probe_id') 
+
+
 
 ## beta ----
 
@@ -165,6 +194,8 @@ median.beta.recurrent <- data.beta.values.hq_samples |>
 
 tmp <- median.beta.primary |> 
   dplyr::left_join(median.beta.recurrent, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.mvalue.primary, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.mvalue.recurrent, by=c('probe_id'='probe_id')) |> 
   dplyr::left_join(median.combined.intensity.primary, by=c('probe_id'='probe_id')) |> 
   dplyr::left_join(median.combined.intensity.recurrent, by=c('probe_id'='probe_id')) |> 
   dplyr::left_join(median.methylated.intensity.primary, by=c('probe_id'='probe_id')) |> 
@@ -181,6 +212,8 @@ head(tmp)
 
 rm(median.beta.primary)
 rm(median.beta.recurrent)
+rm(median.mvalue.primary)
+rm(median.mvalue.recurrent)
 rm(median.combined.intensity.primary)
 rm(median.combined.intensity.recurrent)
 rm(median.methylated.intensity.primary)

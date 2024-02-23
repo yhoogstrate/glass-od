@@ -91,8 +91,22 @@ data.mvalues.good_probes <- data.mvalues.probes |>
   dplyr::pull(probe_id)
 
 
+## medians across hq samples ----
+
+
+tmp <- readRDS(file="cache/analysis_probe_median_statistics.Rds")
+
+
+data.mvalues.probes <- data.mvalues.probes |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+
+
+rm(tmp)
+
+
 
 ## DMP outcomes ----
+
 
 ### prim rec ----
 
