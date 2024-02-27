@@ -1285,7 +1285,6 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
 ### beta ----
 
 
-
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
@@ -1322,6 +1321,57 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
 
 ggsave(paste0("output/figures/vis_differential__median_beta-value_primary.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
 
+
+## K: quality corrected ----
+### PC1 ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                y=DMP__primary_recurrence__pp_nc_PC1__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +  
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1) +
+  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 7) +
+  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 6) +
+  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 5) +
+  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 4) +
+  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 3) +
+  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 2) +
+  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 1) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
+
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrence"
+       ) +
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white"))  # png export
+
+
+
+ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
 
 
 

@@ -37,9 +37,17 @@ ggplot(plt, aes(
 )) +
   geom_hline(yintercept=0, col="red", lty=2, lwd=theme_nature_lwd) +
   geom_point(size=theme_nature_size) +
-  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col="white", lwd=theme_nature_lwd * 4, alpha=0.25) +
-  geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="darkgreen", lwd=theme_nature_lwd) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="1") + 
+  
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 7) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 6) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 5) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.3), lwd=theme_nature_lwd * 4) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.3), lwd=theme_nature_lwd * 3) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.3), lwd=theme_nature_lwd * 2) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.3), lwd=theme_nature_lwd * 1) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col="#6ba6e5", lwd=theme_nature_lwd) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
+  
   scale_y_continuous(limits=c(-1.9,1.9)) +
   labs(x = "log(detP failed / detP passed)",
        y = "log(Red intensity / Green intensity) ctrl probes\n<- [more green]                         [more red] ->") +

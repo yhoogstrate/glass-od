@@ -134,6 +134,82 @@ if(file.exists(fn)) {
 
 rm(fn)
 
+### prim rec + quality (PC1) ----
+#### pct detP
+# fn <- "cache/analysis_differential__primary_recurrence__pct_detP__partial_paired_nc__stats.Rds"
+# if(file.exists(fn)) {
+#   
+#   tmp <- readRDS(fn) |> 
+#     dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc_pct.detP__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+#     (function(.) {
+#       print(dim(.))
+#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+#       return(.)
+#     })()
+#   
+#   
+#   data.mvalues.probes <- data.mvalues.probes |> 
+#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+#   
+#   rm(tmp)
+#   
+# } else {
+#   warning("DMP result primary - recurrence is missing")
+# }
+# 
+# rm(fn)
+
+
+#### lr pct detP
+# fn <- "cache/analysis_differential__primary_recurrence__lr_pct_detP__partial_paired_nc__stats.Rds"
+# if(file.exists(fn)) {
+#   
+#   tmp <- readRDS(fn) |> 
+#     dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc_lr.pct.detP__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+#     (function(.) {
+#       print(dim(.))
+#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+#       return(.)
+#     })()
+#   
+#   
+#   data.mvalues.probes <- data.mvalues.probes |> 
+#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+#   
+#   rm(tmp)
+#   
+# } else {
+#   warning("DMP result primary - recurrence is missing")
+# }
+# 
+# rm(fn)
+
+
+
+fn <- "cache/analysis_differential__primary_recurrence__PC1__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc_PC1__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result primary - recurrence is missing")
+}
+
+rm(fn)
+
+
 
 
 ### prim rec INTENSITIES ----
@@ -189,6 +265,84 @@ if(file.exists(fn)) {
 }
 
 rm(fn)
+
+
+### g3 g2 + quality (PC1) ----
+#### pct detP
+
+# 
+# fn <- "cache/analysis_differential__g2_g3__pct_detP__partial_paired_nc__stats.Rds"
+# if(file.exists(fn)) {
+#   
+#   tmp <- readRDS(fn) |> 
+#     dplyr::rename_with(~paste0("DMP__g2_g3__pp_nc_pct.detP__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+#     (function(.) {
+#       print(dim(.))
+#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+#       return(.)
+#     })()
+#   
+#   
+#   data.mvalues.probes <- data.mvalues.probes |> 
+#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+#   
+#   rm(tmp)
+#   
+# } else {
+#   warning("DMP result primary - recurrence is missing")
+# }
+# 
+# rm(fn)
+
+
+#### lr pct detP
+# fn <- "cache/analysis_differential__g2_g3__lr_pct_detP__partial_paired_nc__stats.Rds"
+# if(file.exists(fn)) {
+#   
+#   tmp <- readRDS(fn) |> 
+#     dplyr::rename_with(~paste0("DMP__g2_g3__pp_nc_lr.pct.detP__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+#     (function(.) {
+#       print(dim(.))
+#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+#       return(.)
+#     })()
+#   
+#   
+#   data.mvalues.probes <- data.mvalues.probes |> 
+#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+#   
+#   rm(tmp)
+#   
+# } else {
+#   warning("DMP result primary - recurrence is missing")
+# }
+# 
+# rm(fn)
+
+
+fn <- "cache/analysis_differential__g2_g3__PC1__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMP__g2_g3__pp_nc_PC1__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result primary - recurrence is missing")
+}
+
+rm(fn)
+
 
 
 
