@@ -10,3 +10,5 @@ data/epiTOC2/
 .venv
 qcReport.pdf Rplots.pdf
 .nfs*
+.nextflow
+.nextflow*
