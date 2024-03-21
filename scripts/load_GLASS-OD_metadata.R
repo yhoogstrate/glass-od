@@ -43,7 +43,7 @@ rm(tmp)
 glass_od.metadata.patients <- DBI::dbReadTable(metadata.db.con, 'view_patients') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 127 + 57 + 7 + 4 + 25 + 21)
+    assertthat::assert_that(nrow(.) == 127 + 57 + 7 + 4 + 20 + 21)
     return(.)
   })()  |> 
   assertr::verify(is.na(patient_diagnosis_date) | grepl("^[0-9]{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}$", patient_diagnosis_date)) |> 
@@ -71,13 +71,13 @@ glass_od.metadata.patients <- glass_od.metadata.patients |>
   dplyr::filter(patient_id %in% patients_without_array_samples$patient_id == F) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) ==  126 + 57 + 7 + 4 + 25 + 21) # + 10x astro
+    assertthat::assert_that(nrow(.) ==  126 + 57 + 7 + 4 + 20 + 21) # + 10x astro
     return(.)
   })() |> 
   dplyr::filter(is.na(patient_reason_excluded)) |> # 7 non(-canonical) codels
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 126 + 57 + 7 + 4 + 25 + 21) # + 10x astro
+    assertthat::assert_that(nrow(.) == 126 + 57 + 7 + 4 + 20 + 21) # + 10x astro
     return(.)
   })()
 
@@ -345,7 +345,15 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'stainings_KI67') |>
     print(dim(.))
     assertthat::assert_that(nrow(.) == (148))
     return(.)
-  })() |> 
+  })()
+
+
+tmp.verify <- list.files(path = "data/GLASS_OD/Stainings/KI67/", pattern = "*.ndpi$", recursive = TRUE) |> 
+  data.frame(disc.filename = _) |> 
+  assertr::verify(disc.filename %in% tmp$staining_KI67_filename)
+
+
+tmp <- tmp |>
   dplyr::filter(staining_KI67_primary_coupe == "yes" & is.na(staining_KI67_reason_excluded)) |> 
   assertr::verify(!duplicated(resection_id)) |> 
   dplyr::mutate(file_exists = NULL) |> 
@@ -357,11 +365,11 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'stainings_KI67') |>
   assertr::verify(sum(resection_id %in% glass_od.metadata.array_samples$resection_id == F) == 1) # 0003-R1
 
 
-
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('resection_id'='resection_id'), suffix=c('',''))
 
-rm(tmp)
+
+rm(tmp, tmp.verify)
 
 
 
@@ -408,7 +416,7 @@ tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |>
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES))
+    assertthat::assert_that(nrow(.) == 365)
     return(.)
   })()
 
@@ -416,7 +424,9 @@ tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |>
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify((arraychip_version == "EPICv1" &!is.na(array_qc.pca.comp1)) | arraychip_version != "EPICv1" ) |> 
-  assertr::verify((arraychip_version == "EPICv1" &!is.na(array_qc.pca.detP.outlier)) | arraychip_version != "EPICv1" )
+  assertr::verify((arraychip_version == "EPICv1" &!is.na(array_qc.pca.detP.outlier)) | arraychip_version != "EPICv1" ) |> 
+  assertr::verify(ifelse(resection_id == "0002-R1", (!is.na(array_qc.pca.detP.outlier)), T))
+
 
 
 rm(tmp)
@@ -921,7 +931,7 @@ rm(tmp, tmp.ls)
 tmp <- readRDS("cache/analysis_median_methylation.Rds") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 505) # CONST_N_SAMPLES
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES) # CONST_N_SAMPLES
     return(.)
   })() |> 
   dplyr::rename_with( ~ paste0("array_", .x)) |> 
@@ -930,13 +940,14 @@ tmp <- readRDS("cache/analysis_median_methylation.Rds") |>
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 210)  # CONST_N_GLASS_OD_INCLUDED_SAMPLES
+    assertthat::assert_that(nrow(.) == 302)  # CONST_N_GLASS_OD_INCLUDED_SAMPLES
     return(.)
   })()
 
-
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
-  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))  |> 
+  assertr::verify(ifelse(resection_id == "0002-R1", (!is.na(array_median.glass_nl_supervised.methylation)), T))
+
 
 
 rm(tmp)
@@ -964,7 +975,9 @@ tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |>
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
-  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(ifelse(resection_id == "0002-R1", (!is.na(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)), T))
+
 
 
 rm(tmp)
@@ -995,8 +1008,14 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds") |>
   })()
 
 
+tmp$array_sentrix_id[tmp$array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id == F]
+#glass_od.metadata.array_samples$array_sentrix_id[glass_od.metadata.array_samples$array_sentrix_id %in% tmp$array_sentrix_id == F]
+
+
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
-  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(ifelse(resection_id == "0002-R1", (!is.na(array_PC2)), T))
+
 
 rm(tmp)
 
@@ -1048,7 +1067,8 @@ tmp <- readRDS("cache/analysis_EPITOC2.Rds") |>
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
-  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(ifelse(resection_id == "0002-R1", (!is.na(array_epiTOC2_tnsc)), T))
 
 rm(tmp)
 
@@ -1076,7 +1096,8 @@ tmp <- readRDS("cache/analysis_dnaMethyAge.Rds") |>
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
-  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(ifelse(resection_id == "0002-R1", (!is.na(array___name_)), T))
 
 rm(tmp)
 
@@ -1109,7 +1130,8 @@ tmp <- readRDS("cache/analysis_RepliTali.Rds") |>
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
-  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(ifelse(resection_id == "0002-R1", (!is.na(array_RepliTali)), T))
 
 rm(tmp)
 

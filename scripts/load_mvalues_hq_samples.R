@@ -98,7 +98,8 @@ tmp <- readRDS(file="cache/analysis_probe_median_statistics.Rds")
 
 
 data.mvalues.probes <- data.mvalues.probes |> 
-  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
+  assertr::verify(!is.na(median.beta.primary))
 
 
 rm(tmp)
@@ -135,56 +136,6 @@ if(file.exists(fn)) {
 rm(fn)
 
 ### prim rec + quality (PC1) ----
-#### pct detP
-# fn <- "cache/analysis_differential__primary_recurrence__pct_detP__partial_paired_nc__stats.Rds"
-# if(file.exists(fn)) {
-#   
-#   tmp <- readRDS(fn) |> 
-#     dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc_pct.detP__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
-#     (function(.) {
-#       print(dim(.))
-#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
-#       return(.)
-#     })()
-#   
-#   
-#   data.mvalues.probes <- data.mvalues.probes |> 
-#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
-#   
-#   rm(tmp)
-#   
-# } else {
-#   warning("DMP result primary - recurrence is missing")
-# }
-# 
-# rm(fn)
-
-
-#### lr pct detP
-# fn <- "cache/analysis_differential__primary_recurrence__lr_pct_detP__partial_paired_nc__stats.Rds"
-# if(file.exists(fn)) {
-#   
-#   tmp <- readRDS(fn) |> 
-#     dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc_lr.pct.detP__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
-#     (function(.) {
-#       print(dim(.))
-#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
-#       return(.)
-#     })()
-#   
-#   
-#   data.mvalues.probes <- data.mvalues.probes |> 
-#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
-#   
-#   rm(tmp)
-#   
-# } else {
-#   warning("DMP result primary - recurrence is missing")
-# }
-# 
-# rm(fn)
-
-
 
 fn <- "cache/analysis_differential__primary_recurrence__PC1__partial_paired_nc__stats.Rds"
 if(file.exists(fn)) {
@@ -208,6 +159,8 @@ if(file.exists(fn)) {
 }
 
 rm(fn)
+
+
 
 
 
@@ -346,6 +299,10 @@ rm(fn)
 
 
 
+
+
+
+
 ### g3 g2 INTENSITIES ----
 
 
@@ -370,6 +327,125 @@ if(file.exists(fn)) {
 }
 
 rm(fn)
+
+
+### GLASS-NL ----
+#### prim rec naive GLASS-NL ----
+
+
+fn <- "cache/analysis_differential__GLASS-NL__primary_recurrence__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMP__GLASS_NL__prim_rec__pp_nc_naive__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result primary - recurrence is missing")
+}
+
+rm(fn)
+
+
+
+#### prim rec + quality (PC1) GLASS-NL ----
+
+
+fn <- "cache/analysis_differential__GLASS-NL__primary_recurrence__PC1__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMP__GLASS_NL__prim_rec__pp_nc_PC1__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result primary - recurrence is missing")
+}
+
+rm(fn)
+
+
+
+
+
+#### g3,g4 vs g2 + naive GLASS-NL ----
+
+
+fn <- "cache/analysis_differential__GLASS-NL__g2_g3_4__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMP__GLASS_NL__g2_g3.4__pp_nc_naive__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result primary - recurrence is missing")
+}
+
+rm(fn)
+
+
+
+#### g3,g4 vs g2 + quality (PC1) GLASS-NL ----
+
+
+fn <- "cache/analysis_differential__GLASS-NL__g2_g3_4__PC1__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::rename_with(~paste0("DMP__GLASS_NL__g2_g3.4__pp_nc_PC1__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result primary - recurrence is missing")
+}
+
+rm(fn)
+
+
+
+
+
 
 
 ### PCs multivariate 1st 8 components ----

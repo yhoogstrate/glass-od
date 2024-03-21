@@ -128,24 +128,24 @@ rm(tmp)
 
 
 ## QC Purity PCA outlier 2 ----
-#' PCA was performed on only 218 HQ arrays
+#' PCA was performed on only 202 HQ arrays
 #' these outliers in PC3 (val >300) were CONTR_ and sometimes difficultly classifiable
 
-# PC3_low_purity_samples <- c("203175700013_R08C01", "203189480016_R03C01", "203189480016_R05C01", "203986510092_R04C01", "203986510125_R04C01", "203989100024_R08C01",
-#                             "203989100035_R02C01", "203989100096_R03C01", "203989100096_R05C01", "203989100142_R02C01", "203991400003_R01C01", "203991400003_R06C01",
-#                             "204073520032_R07C01", "204073570005_R02C01", "203519500055_R03C01", "203519500055_R05C01")
-# 
-# glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
-#   dplyr::mutate(qc.pca.pc3purity.outlier = sentrix_id %in% PC3_low_purity_samples) |> 
-#   (function(.) {
-#     print(dim(.))
-#     assertthat::assert_that(nrow(.) == 235)
-#     return(.)
-#   })()
-# 
-# rm(PC3_low_purity_samples)
-# 
-# 
+PC3_low_purity_samples <- c("203175700013_R08C01", "203189480016_R03C01", "203189480016_R05C01", "203986510092_R04C01", "203986510125_R04C01", "203989100024_R08C01",
+                            "203989100035_R02C01", "203989100096_R03C01", "203989100096_R05C01", "203989100142_R02C01", "203991400003_R01C01", "203991400003_R06C01",
+                            "204073520032_R07C01", "204073570005_R02C01", "203519500055_R03C01", "203519500055_R05C01")
+
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
+  dplyr::mutate(qc.pca.pc3purity.outlier = array_sentrix_id %in% PC3_low_purity_samples) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 235)
+    return(.)
+  })()
+
+rm(PC3_low_purity_samples)
+
+
 
 
 
@@ -334,7 +334,7 @@ tmp <- readRDS("cache/analysis_median_methylation.Rds") |>
   dplyr::filter(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 218)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_NL_INCLUDED_SAMPLES)
     return(.)
   })()
 
@@ -362,7 +362,7 @@ tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV.Rds"
   dplyr::filter(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 218)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_NL_INCLUDED_SAMPLES)
     return(.)
   })()
 
@@ -376,15 +376,14 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
 
 
 tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-NL_x.Rds") |> 
-  #dplyr::rename_with( ~ paste0("array_", .x)) |> 
   assertr::verify(!is.na(array_PC1)) |> 
   assertr::verify(!is.na(array_PC2)) |> 
   assertr::verify(!is.na(array_PC3)) |> 
-  assertr::verify(!is.na(array_PC218)) |> 
+  assertr::verify(!is.na(array_PC202)) |> 
   dplyr::filter(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 218)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_NL_INCLUDED_SAMPLES)
     return(.)
   })()
 
@@ -393,6 +392,29 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
 
 
+
+# tmp <- glass_nl.metadata.array_samples |> 
+#   dplyr::filter(!is.na(array_PC1))
+# 
+# cor(tmp$array_percentage.detP.signi , tmp$array_PC1, method="spearman")
+# 
+# plot(log1p(tmp$array_percentage.detP.signi) , tmp$array_PC1, cex=0.1)
+# plot(log1p(tmp$array_percentage.detP.signi) , tmp$array_PC2, cex=0.1)
+# plot(log1p(tmp$array_percentage.detP.signi) , tmp$array_PC3, cex=0.1)
+# 
+# 
+# tmp <- glass_nl.metadata.array_samples |> 
+#   dplyr::filter(!is.na(array_PC1)) |> 
+#   dplyr::filter(!is.na(WHO_Classification2021))
+# 
+# #plot(as.factor(tmp$WHO_Classification2021) , tmp$array_PC1, cex=0.1)
+# #plot(as.factor(tmp$WHO_Classification2021) , tmp$array_PC2, cex=0.1)
+# #plot(as.factor(tmp$WHO_Classification2021) , tmp$array_PC3, cex=0.1)
+# #plot(as.factor(tmp$WHO_Classification2021) , tmp$array_PC4, cex=0.1)
+# 
+# cor(log1p(tmp$array_percentage.detP.signi) , tmp$array_PC1, cex=0.1)
+# cor(log1p(tmp$array_percentage.detP.signi) , tmp$array_PC2, cex=0.1)
+# cor(log1p(tmp$array_percentage.detP.signi) , tmp$array_PC3, cex=0.1)
 
 
 ## unsupervised PCA [GLASS-OD + GLASS-NL combi] ----
@@ -403,7 +425,7 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
 #   dplyr::filter(sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
 #   (function(.) {
 #     print(dim(.))
-#     assertthat::assert_that(nrow(.) == 218)
+#     assertthat::assert_that(nrow(.) == CONST_N_GLASS_NL_INCLUDED_SAMPLES)
 #     return(.)
 #   })()
 # 
@@ -412,20 +434,20 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
 #   dplyr::left_join(tmp, by=c('sentrix_id'='array_sentrix_id'), suffix=c('',''))
 # rm(tmp)
 
-tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined_no_1P19Q.Rds") |>
-  dplyr::rename_with( ~ paste0("array_", .x)) |> 
-  dplyr::rename_with(~ gsub("^array_PC","array_PC.GLASS_OD_NL_combined_excl_1P19Q.",.x), .cols = matches("^array_PC[0-9]", perl = T)) |>
-  dplyr::filter(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |>
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 218)
-    return(.)
-  })()
-
-
-glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
-  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
-rm(tmp)
+# tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined_no_1P19Q.Rds") |>
+#   dplyr::rename_with( ~ paste0("array_", .x)) |> 
+#   dplyr::rename_with(~ gsub("^array_PC","array_PC.GLASS_OD_NL_combined_excl_1P19Q.",.x), .cols = matches("^array_PC[0-9]", perl = T)) |>
+#   dplyr::filter(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |>
+#   (function(.) {
+#     print(dim(.))
+#     assertthat::assert_that(nrow(.) == CONST_N_GLASS_NL_INCLUDED_SAMPLES)
+#     return(.)
+#   })()
+# 
+# 
+# glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
+#   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+# rm(tmp)
 
 
 
@@ -436,7 +458,7 @@ tmp <- readRDS("cache/analysis_EPITOC2.Rds") |>
   dplyr::filter(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |>
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 218)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_NL_INCLUDED_SAMPLES)
     return(.)
   })()
 

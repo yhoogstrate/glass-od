@@ -24,6 +24,29 @@ if(!exists('gsam.metadata.array_samples')) {
 
 
 
+ggplot(glass_nl.metadata.array_samples, aes(x=qc.pca.pc3purity.outlier, y=array_PC1)) +
+  geom_boxplot()
+
+
+
+plt <- glass_nl.metadata.array_samples |> 
+  dplyr::select(array_percentage.detP.signi,
+                array_median.overall.methylation,
+                array_qc.pca.comp1,
+                array_epiTOC2_tnsc,
+                array_PC1,
+                array_PC2,
+                array_PC3,
+                array_PC4,
+                array_PC5, 
+                array_A_IDH_HG__A_IDH_LG_lr_v12.8
+                ) |> 
+  dplyr::filter(!is.na(array_PC1))
+
+corrplot::corrplot(abs(cor(plt, method="pearson")), order="hclust", tl.cex=0.75, tl.pos="l")
+
+
+
 # GLASS-OD ----
 
 
@@ -38,7 +61,7 @@ data <- data.mvalues.hq_samples |>
   dplyr::select(metadata$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
     return(.)
   })()
 
@@ -90,7 +113,7 @@ rm(data, metadata, data.pca.glass_od)
 
 
 metadata <- glass_nl.metadata.array_samples |>
-  filter_GLASS_NL_idats(218) |> 
+  filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
   dplyr::select(array_sentrix_id)
 
 
@@ -101,7 +124,7 @@ data <- data.mvalues.hq_samples |>
   dplyr::select(metadata$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (693017))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
     return(.)
   })()
 

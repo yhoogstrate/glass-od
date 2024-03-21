@@ -222,7 +222,7 @@ saveRDS(out, file="cache/unsupervised_qc_outliers_all.Rds")
 # GLASS-NL low purity ----
 
 plt <- glass_nl.metadata.array_samples |> 
-  filter_GLASS_NL_idats(202) |> 
+  filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
   dplyr::left_join(
     readRDS("cache/analysis_unsupervised_PCA_GLASS-NL_x.Rds"),
     by=c('sentrix_id'='sentrix_id'),

@@ -39,7 +39,7 @@ tmp <- glass_od.metadata.array_samples |>
 
 
 plt <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES + 17, exclude.suspected.noncodels = F) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES + 17 + 1, exclude.suspected.noncodels = F) |> 
   dplyr::mutate(Source = dplyr::recode(isolation_material, `ffpe`="Source: FFPE", `tissue`="Source: fresh")) |> 
   dplyr::mutate(resection_treatment_status_chemo = dplyr::recode(as.character(resection_treatment_status_chemo), `TRUE`="Yes", `FALSE`="No")) |> 
   dplyr::mutate(resection_treatment_status_radio = dplyr::recode(as.character(resection_treatment_status_radio), `TRUE`="Yes", `FALSE`="No")) |> 
@@ -134,9 +134,9 @@ ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
   labs(subtitle=format_subtitle("Cohort overview")) +
   ylim(0.5, 5.5) +
   scale_color_manual(values=cols) +
-  theme_cellpress +
+  theme_nature +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
-  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_cellpress_lwd , linetype="solid"))
+  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_nature_lwd , linetype="solid"))
 
 
 ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 4.4)
@@ -271,9 +271,9 @@ ggplot(plt, aes(x = x, y = resection_number, col=col)) +
   labs(subtitle=format_subtitle("Cohort overview")) +
   ylim(0.5, 3.5) +
   scale_color_manual(values=cols) +
-  theme_cellpress +
+  theme_nature +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
-  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_cellpress_lwd , linetype="solid"))
+  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_nature_lwd , linetype="solid"))
 
 
 
@@ -432,7 +432,7 @@ plt <- glass_od.metadata.array_samples |>
 ggplot(plt, aes(x=stage_disease, y = Freq, fill=misclass)) + 
   geom_bar(stat="identity") +
   labs(y= "frequency", x=NULL, col="Oligo misclassified") +
-  theme_cellpress
+  theme_nature
 
 
 ## A_IDH_ratio ----

@@ -48,7 +48,7 @@ data.glass_od <- data.mvalues.hq_samples |>
 
 
 metadata.glass_nl <- glass_nl.metadata.array_samples |> 
-  filter_GLASS_NL_idats(218) |> 
+  filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
   dplyr::mutate(i = 1:dplyr::n()) |> 
   dplyr::mutate(slice = i %% 10, i = NULL)
 

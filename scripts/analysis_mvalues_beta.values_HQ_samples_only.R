@@ -59,12 +59,12 @@ metadata.od_validation <- glass_od.metadata.array_samples |>
 
 
 metadata.glass_nl <- glass_nl.metadata.array_samples |> 
-  filter_GLASS_NL_idats(218) |> 
+  filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
   dplyr::select(array_sentrix_id, array_channel_green, array_percentage.detP.signi)
 
 
 metadata.gsam <- gsam.metadata.array_samples |> 
-  filter_GSAM_idats(77) |> 
+  filter_GSAM_idats(CONST_N_GSAM_INCLUDED_SAMPLES) |> 
   dplyr::select(array_sentrix_id, array_channel_green, array_percentage.detP.signi)
 
 
@@ -72,6 +72,7 @@ metadata.gsam <- gsam.metadata.array_samples |>
 
 
 # integrate & make m-values ----
+
 
 all_targets <- rbind(
   metadata.glass_od |> dplyr::mutate(dataset = "GLASS-OD"),
