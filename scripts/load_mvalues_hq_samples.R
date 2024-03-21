@@ -25,16 +25,16 @@ if(!exists('metadata.cg_probes.epic')) {
 data.mvalues.hq_samples <- readRDS("cache/mvalues/mvalues_hq.Rds") |>  # former "cache/mvalues.HQ_samples.Rds"
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (CONST_N_SAMPLES))
-    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED))
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
     return(.)
   })()
 
 data.mvalues.mask.hq_samples <- readRDS("cache/masks_hq/masks_hq.Rds") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(ncol(.) == (CONST_N_SAMPLES))
-    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED))
+    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
     return(.)
   })()
 
@@ -94,7 +94,12 @@ data.mvalues.good_probes <- data.mvalues.probes |>
 ## medians across hq samples ----
 
 
-tmp <- readRDS(file="cache/analysis_probe_median_statistics.Rds")
+tmp <- readRDS(file="cache/analysis_probe_median_statistics.Rds") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    return(.)
+  })()
 
 
 data.mvalues.probes <- data.mvalues.probes |> 

@@ -89,7 +89,7 @@ data(list='PC-clocks', envir=environment())
 
 
 age_HannumG2013    <- dnaMethyAge::methyAge(dat, clock='HannumG2013')    |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__HannumG2013 = mAge)
-age_HorvathS2013   <- dnaMethyAge::methyAge(dat, clock='HorvathS2013')   |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__HorvathS2013 = mAge)
+age_HorvathS2013   <- dnaMethyAge::methyAge(dat, clock='HorvathS2013', use_cores = 40)   |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__HorvathS2013 = mAge)
 age_LevineM2018    <- dnaMethyAge::methyAge(dat, clock='LevineM2018')    |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__LevineM2018 = mAge)
 age_ZhangQ2019     <- dnaMethyAge::methyAge(dat, clock='ZhangQ2019')     |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__ZhangQ2019 = mAge)
 age_ShirebyG2020   <- dnaMethyAge::methyAge(dat, clock='ShirebyG2020')   |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__ShirebyG2020 = mAge)
