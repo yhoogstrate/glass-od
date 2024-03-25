@@ -79,7 +79,64 @@ ggplot(plt, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-array_PC2, col=col2
 
 ## Figure 2B: PCA ----
 
+### new ----
 
+
+plt.split <- rbind(
+  metadata |>
+    dplyr::mutate(col = as.factor(paste0("Grade ",resection_tumor_grade))) |> 
+    dplyr::mutate(facet = "Histological grade") |> 
+    dplyr::mutate(stat = 'NA')
+  ,
+  metadata |> 
+    dplyr::mutate(col = ifelse(array_mnp_predictBrain_v2.0.1_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", array_mnp_predictBrain_v2.0.1_cal_class)) |> 
+    dplyr::mutate(facet = "MNP CNS Classifier 114b/2.0.1")  |> 
+    dplyr::mutate(stat = 'NA')
+   ,
+   metadata |> 
+     dplyr::mutate(col = ifelse(resection_number == 1, "primary", "recurrent")) |> 
+     dplyr::mutate(facet = "Resection")  |> 
+     dplyr::mutate(stat = 'NA')
+  ,
+  metadata |> 
+    dplyr::mutate(col = ifelse(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", array_mnp_predictBrain_v12.8_cal_class)) |> 
+    dplyr::mutate(facet = "MNP CNS Classifier 12.8")  |> 
+    dplyr::mutate(stat = 'NA')
+  ,
+  metadata |> 
+    dplyr::mutate(col = ifelse(isolation_person_name == "USA / Duke", "Batch [US]", "Batch [EU]")) |> 
+    dplyr::mutate(facet = "Batch")  |> 
+    dplyr::mutate(stat = col)
+)
+
+
+
+# array_PC2 ~ 202 | array_GLASS_NL_g2_g3_sig ~ 218
+ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL_g2_g3_sig, col=col)) + 
+  #facet_grid(cols = vars(facet), scales = "free", space="free") +
+  facet_wrap(~facet, scales="free",ncol=5) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show_guide = FALSE) +
+  geom_point(size=theme_nature_size/3) +
+  scale_color_manual(values=c(
+    "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
+    "Grade 3"="red", "A_IDH_HG"="red", "recurrent"="red",
+    
+    "Batch [EU]"="darkgreen",
+    "OLIGOSARC_IDH" = "orange",
+    "NA" = "gray40",
+    "other" = "purple",
+    "Batch [US]"="brown"
+  )) +
+  labs(x="Astrocytoma CGC Lasso",y = "GLASS-NL signature (supervised primary - recurrent)", col="") +
+  labs(subtitle=format_subtitle("Logit WHO grade")) +
+  theme_nature
+
+
+ggsave("output/figures/vis_LGC_x_PCA__scatter_A.pdf",width=8.5 * 0.975, height = 2.72)
+
+
+
+### old ----
 
 plt.split <- rbind(
   metadata |>
@@ -131,28 +188,6 @@ ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_PC2, col
   theme_cellpress
 
 
-
-ggsave("output/figures/vis_LGC_x_PCA__scatter_A.pdf",width=8.5 * 0.975, height = 2.72)
-
-
-
-ggplot(plt, aes(x=A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-median.overall.methylation)) + 
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", show_guide = FALSE) +
-  geom_point() +
-  theme_bw() 
-
-
-
-ggplot(plt, aes(x=PC2, y=median.overall.methylation, col=isolation_person_name)) + 
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), cor.coef.name ="rho", show_guide = FALSE) +
-  geom_point() +
-  theme_bw() 
-
-
-ggplot(plt, aes(x=PC2, y=median.glass_nl_supervised.methylation, col=isolation_person_name)) + 
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", show_guide = FALSE) +
-  geom_point() +
-  theme_bw() 
 
 
 
