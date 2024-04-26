@@ -1323,8 +1323,33 @@ ggsave(paste0("output/figures/vis_differential__median_beta-value_primary.png"),
 
 
 ## K: quality corrected ----
-### PC1 ----
+### dupli check ----
 
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::select(DMP__g2_g3__pp_nc_PC1__t,
+                DMP__primary_recurrence__pp_nc_PC1__t,
+                DMP__GLASS_NL__g2_g3.4__pp_nc_PC1__t,
+                DMP__GLASS_NL__prim_rec__pp_nc_PC1__t
+                )
+
+corrplot::corrplot(cor(plt), order="hclust", tl.cex=0.75, tl.pos="l")
+
+
+
+
+### GLASS-OD ----
 
 plt <- data.mvalues.probes |> 
   (function(.) {
@@ -1350,20 +1375,13 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   geom_vline(xintercept=0, col="red", alpha=0.1) +
   geom_hline(yintercept=0, col="red", alpha=0.1) +
   
-  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 7) +
-  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 6) +
-  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 5) +
-  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 4) +
-  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 3) +
-  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 2) +
-  # geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.225), lwd=theme_nature_lwd * 1) +
   geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
   geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
   ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
-
+  
   labs(x = "Per probe t-score Grade 2 ~ Grade 3",
        y="Per probe t-score Primary ~ Recurrence"
-       ) +
+  ) +
   
   theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
@@ -1372,6 +1390,187 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
 
 
 ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+### GLASS-NL ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+ggplot(plt, aes(x=DMP__GLASS_NL__g2_g3.4__pp_nc_naive__t,
+                y=DMP__GLASS_NL__prim_rec__pp_nc_naive__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +  
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1) +
+  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3 & 4",
+       y="Per probe t-score Primary ~ Recurrence"
+  ) +
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white"))  # png export
+
+ggsave(paste0("output/figures/vis_differential__GLASS_NL__overall_density__naive.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+ggplot(plt, aes(x=DMP__GLASS_NL__g2_g3.4__pp_nc_PC1__t,
+                y=DMP__GLASS_NL__prim_rec__pp_nc_PC1__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +  
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1) +
+  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3 & 4",
+       y="Per probe t-score Primary ~ Recurrence"
+  ) +
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white"))  # png export
+
+
+
+ggsave(paste0("output/figures/vis_differential__GLASS_NL__overall_density__quality_corrected.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+
+
+
+### GLASS-OD x GLASS-NL ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                y=DMP__GLASS_NL__g2_g3.4__pp_nc_PC1__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.0125, col="black") +  
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1) +
+  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3 OD",
+       y = "Per probe t-score Grade 2 ~ Grade 3 & 4 AC"
+  ) +
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white"))  # png export
+
+
+ggsave(paste0("output/figures/vis_differential__GLASS_OD__x__GLASS_NL__overall_density_grade__quality_corrected.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+
+
+ggplot(plt, aes(x=DMP__primary_recurrence__pp_nc_PC1__t,
+                y=DMP__GLASS_NL__prim_rec__pp_nc_naive__t)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.0125, col="black") +  
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1) +
+  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3 OD",
+       y = "Per probe t-score Grade 2 ~ Grade 3 & 4 AC"
+  ) +
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white"))  # png export
+
+
+
+ggsave(paste0("output/figures/vis_differential__GLASS_OD__x__GLASS_NL__overall_density_prim_rec_corrected.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+#### col chrs ----
+
+
+plt <- plt |> 
+  dplyr::mutate(col = CpG_chrm == "chr19" & is_19Q) |>  # chr2? chr13? chr18? [chr1 vs chr19]
+  dplyr::mutate(col = is_1P | is_19Q)
+
+ggplot(plt, aes(x=DMP__primary_recurrence__pp_nc_PC1__t,
+                y=DMP__GLASS_NL__prim_rec__pp_nc_naive__t,
+                col=col)) +
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(data=subset(plt, col==F), pch=16, cex=0.001, alpha=0.15) + 
+  geom_point(data=subset(plt, col==T), pch=16, cex=0.005, alpha=0.2) + 
+  #geom_point(pch=16, cex=0.001, alpha=0.0125, col="black") +  
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1) +
+  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3 OD",
+       y = "Per probe t-score Grade 2 ~ Grade 3 & 4 AC"
+  ) +
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme(plot.background = element_rect(fill="white"))  # png export
+
 
 
 

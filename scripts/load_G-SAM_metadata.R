@@ -14,7 +14,7 @@ gsam.metadata.array_samples <-  list.files(path = "data/G-SAM/DNA Methylation - 
   dplyr::mutate(filename = paste0("data/G-SAM/DNA Methylation - EPIC arrays/", filename)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 190)# just freeze the number to terminate on unexpected behavior
+    assertthat::assert_that(nrow(.) == 206)# just freeze the number to terminate on unexpected behavior
     return(.)
   })() |> 
   assertr::verify(file.exists(filename)) |>
@@ -26,7 +26,7 @@ gsam.metadata.array_samples <-  list.files(path = "data/G-SAM/DNA Methylation - 
   dplyr::filter(!grepl("/MET2017-126-014/", channel_green)) |> # stored there for historical reasons - IDH-mutant loss study
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 79)
+    assertthat::assert_that(nrow(.) == 87)
     return(.)
   })()  |> 
   dplyr::rename_with( ~ paste0("array_", .x)) 
@@ -60,7 +60,19 @@ tmp <- rbind(
     dplyr::select(array_sentrix_id, resection, patient_id) |> 
     (function(.) {
       print(dim(.))
-      assertthat::assert_that(nrow(.) == 75) # == 75
+      assertthat::assert_that(nrow(.) == 75)
+      return(.)
+    })(),
+  read.csv("data/G-SAM/DNA Methylation - EPIC arrays/EPIC2023-387-plate2/STS/EPIC2023-387.csv", skip=8) |> 
+    dplyr::filter(!is.na(Sentrix_ID)) |> 
+    dplyr::filter(grepl("^GSAM", Sample_Name)) |> 
+    dplyr::mutate(array_sentrix_id = paste0(Sentrix_ID, "_", Sentrix_Position )) |> 
+    dplyr::mutate(resection = paste0("R",gsub("GSAM_...(.)_.+$","\\1",Sample_Name))) |> 
+    dplyr::mutate(patient_id = gsub("GSAM_(...)._.+$","\\1", Sample_Name)) |> 
+    dplyr::select(array_sentrix_id, resection, patient_id) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == 8)
       return(.)
     })()
   ) |> 
@@ -69,7 +81,7 @@ tmp <- rbind(
   assertr::verify(!duplicated(resection_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == nrow(gsam.metadata.array_samples)) # == 75
+    assertthat::assert_that(nrow(.) == nrow(gsam.metadata.array_samples))
     return(.)
   })()
 
@@ -132,8 +144,8 @@ tmp <- read.table("output/tables/percentage_detP_probes.txt") |>
   assertr::verify(gsam.metadata.array_samples$array_sentrix_id %in% array_sentrix_id)
 
 gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
-  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(array_percentage.detP.signi)) 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))  |> 
+  assertr::verify(!is.na(array_percentage.detP.signi))
 
 rm(tmp)
 

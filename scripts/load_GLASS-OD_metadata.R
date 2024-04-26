@@ -43,7 +43,7 @@ rm(tmp)
 glass_od.metadata.patients <- DBI::dbReadTable(metadata.db.con, 'view_patients') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 127 + 57 + 7 + 4 + 20 + 21)
+    assertthat::assert_that(nrow(.) == 127 + 57 + 7 + 4 + 20 + 21 + 7)
     return(.)
   })()  |> 
   assertr::verify(is.na(patient_diagnosis_date) | grepl("^[0-9]{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}$", patient_diagnosis_date)) |> 
@@ -71,13 +71,13 @@ glass_od.metadata.patients <- glass_od.metadata.patients |>
   dplyr::filter(patient_id %in% patients_without_array_samples$patient_id == F) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) ==  126 + 57 + 7 + 4 + 20 + 21) # + 10x astro
+    assertthat::assert_that(nrow(.) ==  126 + 57 + 7 + 4 + 20 + 21 + 7) # + 10x astro
     return(.)
   })() |> 
   dplyr::filter(is.na(patient_reason_excluded)) |> # 7 non(-canonical) codels
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 126 + 57 + 7 + 4 + 20 + 21) # + 10x astro
+    assertthat::assert_that(nrow(.) == 126 + 57 + 7 + 4 + 20 + 21 + 7) # + 10x astro
     return(.)
   })()
 
@@ -102,7 +102,7 @@ glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resectio
   dplyr::mutate(patient_id = as.factor(patient_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 2) # + 57 oligosarcoma-paper + 1x vali + 1x catnon - 2 resections without arrays (to complete db)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 5) # + 57 oligosarcoma-paper + 1x vali + 1x catnon - 3 resections without arrays (to complete db)
     return(.)
   })() |> 
   assertr::verify(is.numeric(resection_number)) |> 
@@ -385,7 +385,7 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'stainings_KI67') |>
   dplyr::mutate(file_exists = NULL) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (151))
+    assertthat::assert_that(nrow(.) == 151)
     return(.)
   })()
 
@@ -426,11 +426,11 @@ tmp <- read.table("output/tables/percentage_detP_probes.txt") |>
   assertr::verify(glass_od.metadata.array_samples$array_sentrix_id %in% array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES  +
+    assertthat::assert_that(nrow(.) == (  (CONST_N_GLASS_OD_ALL_SAMPLES)  +
                                           CONST_N_CATNON_ALL_SAMPLES +
-                                          CONST_N_VALIDATION_ALL_SAMPLES +
-                                          235 +
-                                          79 +
+                                          (CONST_N_VALIDATION_ALL_SAMPLES) +
+                                          CONST_N_GLASS_NL_ALL_SAMPLES +
+                                          (CONST_N_GSAM_ALL_SAMPLES) +
                                           194))
     return(.)
   })()

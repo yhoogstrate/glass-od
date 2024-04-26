@@ -261,8 +261,6 @@ metadata.pp.prim_rec.quality.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"remainder")))) |> 
   dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
 
-  dplyr::mutate(detP.linear = log(array_percentage.detP.signi / (100 - array_percentage.detP.signi))) |> 
-  
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == (177)) 
@@ -284,9 +282,7 @@ data.pp.prim_rec.quality.nc <- data.mvalues.hq_samples |>
 
 
 
-#design.pp.prim_rec.quality.nc <- model.matrix(~array_percentage.detP.signi + factor(patient) + factor(pr.status), data=metadata.pp.prim_rec.quality.nc)
-#design.pp.prim_rec.quality.nc <- model.matrix(~detP.linear + factor(patient) + factor(pr.status), data=metadata.pp.prim_rec.quality.nc)
-design.pp.prim_rec.quality.nc <- model.matrix(~array_PC1 + factor(pr.status), data=metadata.pp.prim_rec.quality.nc)
+design.pp.prim_rec.quality.nc <- model.matrix(~array_PC1 + factor(patient) + factor(pr.status), data=metadata.pp.prim_rec.quality.nc)
 fit.pp.prim_rec.quality.nc <- limma::lmFit(data.pp.prim_rec.quality.nc, design.pp.prim_rec.quality.nc)
 fit.pp.prim_rec.quality.nc <- limma::eBayes(fit.pp.prim_rec.quality.nc, trend=T)
 stats.pp.prim_rec.quality.nc <- limma::topTable(fit.pp.prim_rec.quality.nc,
@@ -304,8 +300,6 @@ sum(stats.pp.prim_rec.quality.nc$adj.P.Val < 0.01)
 
 
 
-#saveRDS(stats.pp.prim_rec.quality.nc, file="cache/analysis_differential__primary_recurrence__pct_detP__partial_paired_nc__stats.Rds")
-#saveRDS(stats.pp.prim_rec.quality.nc, file="cache/analysis_differential__primary_recurrence__lr_pct_detP__partial_paired_nc__stats.Rds")
 saveRDS(stats.pp.prim_rec.quality.nc, file="cache/analysis_differential__primary_recurrence__PC1__partial_paired_nc__stats.Rds")
 
 
@@ -778,6 +772,7 @@ rm(fit.g2g3.pp.nc, stats.g2g3.pp.nc)
 
 ## data: partially paired + quality [w/o FFPE/frozen batch correct] ----
 
+
 metadata.g2g3.quality.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   filter_first_G2_and_last_G3(149) |> 
@@ -789,8 +784,6 @@ metadata.g2g3.quality.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
   assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
   dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2", "Grade3")) |> 
-  
-  dplyr::mutate(detP.linear = log(array_percentage.detP.signi / (100 - array_percentage.detP.signi))) |> 
   
   (function(.) {
     print(dim(.))
@@ -815,8 +808,6 @@ data.g2g3.quality.pp.nc <- data.mvalues.hq_samples |>
 
 
 
-#design.g2g3.quality.pp.nc <- model.matrix(~detP.linear + factor(patient) + factor(gr.status), data=metadata.g2g3.quality.pp.nc)
-#design.g2g3.quality.pp.nc <- model.matrix(~array_percentage.detP.signi + factor(patient) + factor(gr.status), data=metadata.g2g3.quality.pp.nc)
 design.g2g3.quality.pp.nc <- model.matrix(~array_PC1 + factor(patient) + factor(gr.status), data=metadata.g2g3.quality.pp.nc)
 fit.g2g3.quality.pp.nc <- limma::lmFit(data.g2g3.quality.pp.nc, design.g2g3.quality.pp.nc)
 fit.g2g3.quality.pp.nc <- limma::eBayes(fit.g2g3.quality.pp.nc, trend=T)
@@ -835,12 +826,11 @@ rm(design.g2g3.quality.pp.nc)
 
 
 
-#saveRDS(stats.g2g3.quality.pp.nc, file="cache/analysis_differential__g2_g3__pct_detP__partial_paired_nc__stats.Rds")
-#saveRDS(stats.g2g3.quality.pp.nc, file="cache/analysis_differential__g2_g3__lr_pct_detP__partial_paired_nc__stats.Rds")
 saveRDS(stats.g2g3.quality.pp.nc, file="cache/analysis_differential__g2_g3__PC1__partial_paired_nc__stats.Rds")
 
 
 rm(fit.g2g3.quality.pp.nc, stats.g2g3.quality.pp.nc)
+
 
 
 
