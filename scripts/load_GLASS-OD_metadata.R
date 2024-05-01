@@ -532,7 +532,7 @@ tmp <- tmp.ls |>
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 5 +
-                              90 # validation files completed so far
+                              89 # validation files completed so far
                               ) # only one of the validation set so far & 1 CATNON
     return(.)
   })()
@@ -614,7 +614,7 @@ tmp <- tmp.ls |>
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 5+
-                              90 # validaton files completed so far
+                              89 # validaton files completed so far
                             )
     return(.)
   })()
@@ -657,7 +657,7 @@ tmp <- tmp.ls |>
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 5 +
-                              90 # validation files completed so far
+                              89 # validation files completed so far
                             )
     return(.)
   })()
@@ -706,7 +706,7 @@ tmp <- tmp.ls |>
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 5 +
-                              90 # validation files not yet completed
+                              89 # validation files not yet completed
                             )
     return(.)
   })()
@@ -720,7 +720,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   (function(.) {
     print(paste0(sum(!is.na(.$array_mnp_predictBrain_v12.8_cal_class)), "/", nrow(.)))
     assertthat::assert_that(sum(!is.na(.$array_mnp_predictBrain_v12.8_cal_class)) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1  + 5 +
-             90 # validation files not yet completed
+             89 # validation files not yet completed
                                                                       )) # 0118-R4 still failing
     return(.)
   })() 
@@ -753,7 +753,7 @@ tmp <- tmp.ls |>
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 5 +
-                              90) # validation files not yet completed
+                              89) # validation files not yet completed
     return(.)
   })()
 
@@ -778,7 +778,7 @@ rm(tmp.ls, tmp)
 
 tmp <- query_mnp_12.8_CNVP_segment_csv(
   "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/", 
-  CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 90 + 5, 
+  CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 89 + 5, 
   glass_od.metadata.array_samples$array_sentrix_id,
   "array_mnp_CNVP_v12.8_v5.2_"
   )
@@ -811,7 +811,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 90 + 5)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 89 + 5)
     return(.)
   })()
 
@@ -842,7 +842,7 @@ tmp <- readRDS("cache/analysis_tumor_purity_EPIC_bin-based.Rds") |>
   assertr::verify(is.numeric(array_methylation_bins_1p19q_sd)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 90 + 5)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 89 + 5)
     return(.)
   })()
 
@@ -878,7 +878,7 @@ tmp <- tmp.ls |>
   assertr::verify(is.numeric(`array_mnp_CNVP_12.8_CDKN2A/B`)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 90 + 5)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 89 + 5)
     return(.)
   })()
 
@@ -919,7 +919,7 @@ tmp <- tmp.ls |>
   dplyr::mutate(tmp_heidelberg_mgmt_report = NULL) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 90 + 5)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 89 + 5)
     return(.)
   })()
 
@@ -961,7 +961,7 @@ tmp <- tmp.ls |>
   assertr::verify(!is.na(array_mnp_rsGender_12.8_chrYintensity) & is.numeric(array_mnp_rsGender_12.8_chrYintensity)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 90 + 5)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 1 + 89 + 5)
     return(.)
   })()
 
