@@ -141,7 +141,13 @@ rm(tmp)
 
 tmp <- read.table("output/tables/percentage_detP_probes.txt") |> 
   assertr::verify(!is.na(array_percentage.detP.signi) & is.numeric(array_percentage.detP.signi)) |> 
-  assertr::verify(gsam.metadata.array_samples$array_sentrix_id %in% array_sentrix_id)
+  assertr::verify(gsam.metadata.array_samples$array_sentrix_id %in% array_sentrix_id) |> 
+  dplyr::filter(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GSAM_ALL_SAMPLES)
+    return(.)
+  })()
 
 gsam.metadata.array_samples <- gsam.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))  |> 
@@ -193,7 +199,7 @@ tmp <- c(
   tidyr::unnest(tmp) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 79)
+    assertthat::assert_that(nrow(.) == CONST_N_GSAM_ALL_SAMPLES)
     return(.)
   })() |> 
   assertr::verify(!is.na(array_mnp_predictBrain_v12.8_cal_class)) |>  # version is hardcoded here
@@ -210,7 +216,7 @@ gsam.metadata.array_samples <- gsam.metadata.array_samples |>
   assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr_v12.8)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 79)
+    assertthat::assert_that(nrow(.) == CONST_N_GSAM_ALL_SAMPLES)
     return(.)
   })() 
 
@@ -236,7 +242,7 @@ tmp <- list.files(path = "data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS cla
   assertr::verify(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 79)
+    assertthat::assert_that(nrow(.) == CONST_N_GSAM_ALL_SAMPLES)
     return(.)
   })()
 
@@ -247,7 +253,7 @@ gsam.metadata.array_samples <- gsam.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_QC_v12.8_predicted_sample_type)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 79)
+    assertthat::assert_that(nrow(.) == CONST_N_GSAM_ALL_SAMPLES)
     return(.)
   })()
 
@@ -261,7 +267,7 @@ rm(tmp)
 
 tmp <- query_mnp_12.8_CNVP_segment_csv(
   "data/G-SAM/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v12.8_sample_report__v1.1__131/",
-  79,
+  CONST_N_GSAM_ALL_SAMPLES,
   gsam.metadata.array_samples$array_sentrix_id,
   "array_mnp_CNVP_v12.8_v5.2_"
   )
@@ -274,9 +280,10 @@ gsam.metadata.array_samples <- gsam.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_CNVP_v12.8_v5.2_CNVP_version)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 79)
+    assertthat::assert_that(nrow(.) == CONST_N_GSAM_ALL_SAMPLES)
     return(.)
   })()
+
 rm(tmp)
 
 
@@ -295,7 +302,7 @@ tmp <- readRDS("cache/analysis_median_methylation.Rds") |>
   dplyr::filter(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 77) # only HQ samples
+    assertthat::assert_that(nrow(.) == CONST_N_GSAM_INCLUDED_SAMPLES) # only HQ samples
     return(.)
   })()
 
@@ -315,7 +322,7 @@ tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |>
   dplyr::filter(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 77)
+    assertthat::assert_that(nrow(.) == CONST_N_GSAM_INCLUDED_SAMPLES)
     return(.)
   })()
 
@@ -333,7 +340,7 @@ tmp <- readRDS("cache/analysis_EPITOC2.Rds") |>
   dplyr::filter(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |>
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 77)
+    assertthat::assert_that(nrow(.) == CONST_N_GSAM_INCLUDED_SAMPLES)
     return(.)
   })()
 

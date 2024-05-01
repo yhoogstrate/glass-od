@@ -131,7 +131,7 @@ metadata |>
 
 
 metadata |> 
-  dplyr::filer(dataset != "") |> 
+  dplyr::filter(dataset != "") |> 
   dplyr::mutate(array_qc.pca.detP.outlier.new = paste0(array_qc.pca.detP.outlier.new)) |> 
   dplyr::mutate(array_qc.pca.detP.outlier.old = paste0(array_qc.pca.detP.outlier.old)) |> 
   dplyr::select(array_qc.pca.detP.outlier.old, array_qc.pca.detP.outlier.new) |> 

@@ -117,7 +117,7 @@ for(target_id in targets$array_sentrix_id) { # yep loop, minor overhead but safe
   print(target_id)
   
   target <- all_targets |> 
-    dplyr::filter(array_sentrix_id %in% c( "201496850071_R02C01", "203293640061_R08C01", target_id)) |> 
+    dplyr::filter(array_sentrix_id %in% c( "201496850071_R02C01", "203293640061_R08C01", target_id)) |> # those two are needed for consistent output
     (function(.) {
       #print(dim(.))
       assertthat::assert_that(nrow(.) > 1) # we need  to include 2 or more samples. some idats do not have identical file size (force=T), and normalisation will only be conducted on the subset. force=t adds all of them

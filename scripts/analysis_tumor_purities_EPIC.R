@@ -28,16 +28,20 @@ estimate_1p19q_purity_segment_based <- function(fn) {
 
 
 
+
 tpc.estimate = data.frame()
-for(bc in  glass_od.metadata.idat |> dplyr::filter(!is.na(heidelberg_CNV_segments)) |> dplyr::pull(Sentrix_ID) ) {
-  #bc = "204808700074_R05C01"
+for(bc in (glass_od.metadata.array_samples |> 
+           dplyr::filter(arraychip_version != "450k" ) |> 
+           dplyr::filter(!is.na(array_mnp_CNVP_v12.8_v5.2_CNVP_segments)) |> 
+           dplyr::pull(array_array_sentrix_id))) {
+  bc = "204808700074_R05C01"
   print(bc)
   seg <- glass_od.metadata.idat |> 
-    dplyr::filter(`Sentrix_ID` == bc)
+    dplyr::filter(`array_sentrix_id` == bc)
   
   
   segs <- read.delim(seg |> 
-                        dplyr::pull(heidelberg_CNV_segments)) |> 
+                        dplyr::pull(array_mnp_CNVP_v12.8_v5.2_CNVP_segments)) |> 
     dplyr::rename(seg.median.l2fc = seg.median) |> 
     dplyr::rename(seg.mean.l2fc = seg.mean) |> 
     dplyr::filter(num.mark >= 35)
@@ -120,7 +124,7 @@ for(bc in  glass_od.metadata.idat |> dplyr::filter(!is.na(heidelberg_CNV_segment
     dplyr::arrange(dist) |> 
     dplyr::slice(1) |> 
     dplyr::mutate(
-                  Sentrix_ID = bc
+                  array_sentrix_id = bc
                   #sample.short = gsub("^([^-]+-[^-]+-[^-]+-[^-]+).+$","\\1",bc),
                   #portion_barcode = gsub("^([^\\-]+)-([^\\-]+)-([^\\-]+)-([^\\-]+)-([0-9]+).+$$","\\1-\\2-\\3-\\4-\\5",bc),
                   #estimate.purity = p.tpc.estimate,
@@ -326,7 +330,7 @@ pbapply::pblapply(glass_od.metadata.array_samples |>
   assertr::verify(is.numeric(array_methylation_bins_1p19q_sd)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 275)
+    assertthat::assert_that(nrow(.) == 373)
     return(.)
   })()
 

@@ -39,7 +39,7 @@ tmp <- glass_od.metadata.array_samples |>
 
 
 plt <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES + 17 + 1, exclude.suspected.noncodels = F) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES + 17, exclude.suspected.noncodels = F) |> 
   dplyr::mutate(Source = dplyr::recode(isolation_material, `ffpe`="Source: FFPE", `tissue`="Source: fresh")) |> 
   dplyr::mutate(resection_treatment_status_chemo = dplyr::recode(as.character(resection_treatment_status_chemo), `TRUE`="Yes", `FALSE`="No")) |> 
   dplyr::mutate(resection_treatment_status_radio = dplyr::recode(as.character(resection_treatment_status_radio), `TRUE`="Yes", `FALSE`="No")) |> 
@@ -163,7 +163,7 @@ plt <- glass_od.metadata.array_samples |>
   )) |> 
   dplyr::rename(dataset_source = array_notes) |> 
   dplyr::mutate(dataset_source = dplyr::case_when(
-    patient_id == "0106" ~ "internal",
+    patient_id %in% c("0106","0128","0129", "0130", "0132", "0133") ~ "internal",
     dataset_source == "from Oligosarcoma manuscript" ~ "Oligosarcoma study",
     dataset_source == "from GLASS-Methylome" ~ "GLASS-methylome",
     dataset_source == "PMID: 35998208 untreated data" ~ "PMID:35998208 naive",
