@@ -784,7 +784,6 @@ tmp <- query_mnp_12.8_CNVP_segment_csv(
   )
 
 
-
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(array_mnp_CNVP_v12.8_v5.2_CNVP_segments)  | arraychip_version != "EPICv1")  |> 
@@ -794,6 +793,8 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES)
     return(.)
   })()
+
+
 rm(tmp)
 
 
@@ -1022,7 +1023,7 @@ tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |>
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 287) # CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_GSAM_INCLUDED_SAMPLES
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + CONST_N_CATNON_ALL_SAMPLES) # CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_GSAM_INCLUDED_SAMPLES
     return(.)
   })() |>
   assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 

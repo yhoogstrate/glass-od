@@ -34,8 +34,9 @@ tmp <- glass_od.metadata.array_samples |>
   View()
 
 
-# Figure 1A: overview GLASS_OD ----
 
+
+# Figure 1A: overview GLASS_OD ----
 
 
 plt <- glass_od.metadata.array_samples |> 
@@ -43,9 +44,10 @@ plt <- glass_od.metadata.array_samples |>
   dplyr::mutate(Source = dplyr::recode(isolation_material, `ffpe`="Source: FFPE", `tissue`="Source: fresh")) |> 
   dplyr::mutate(resection_treatment_status_chemo = dplyr::recode(as.character(resection_treatment_status_chemo), `TRUE`="Yes", `FALSE`="No")) |> 
   dplyr::mutate(resection_treatment_status_radio = dplyr::recode(as.character(resection_treatment_status_radio), `TRUE`="Yes", `FALSE`="No")) |> 
+  dplyr::mutate(too_low_purity = ifelse(array_methylation_bins_1p19q_purity <= 0.1, "Yes", "No")) |> 
   dplyr::select(patient_id, patient_suspected_noncodel, resection_number, resection_tumor_grade,
                 resection_treatment_status_chemo, resection_treatment_status_radio,
-                Source, contains("_cal_class")) |> 
+                Source, contains("_cal_class"), too_low_purity) |> 
   dplyr::mutate(resection_tumor_grade = dplyr::case_when(
     is.na(resection_tumor_grade) | patient_suspected_noncodel ~ as.character(NA),
      !patient_suspected_noncodel ~ paste0("Grade ", resection_tumor_grade)
@@ -59,7 +61,7 @@ plt <- glass_od.metadata.array_samples |>
                                resection_treatment_status_chemo,
                                resection_treatment_status_radio,
                                
-                               
+                               too_low_purity,
                                Source), names_to = "classifier_version", values_to="class") |> 
   dplyr::mutate(col = as.factor(dplyr::case_when(
     class %in% c("A_IDH", "A_IDH_LG") ~ "A_IDH [_LG]",
@@ -87,9 +89,10 @@ plt <- glass_od.metadata.array_samples |>
     classifier_version == "resection_tumor_grade" ~ "WHO grade",
     classifier_version == "resection_treatment_status_radio" ~ "Radio",
     classifier_version == "resection_treatment_status_chemo" ~ "Chemo",
+    classifier_version == "too_low_purity" ~ "Too low purity",
     T ~ gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version)
   )) |> 
-  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Source")))
+  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Too low purity", "Source")))
 
 
 plt.resection.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
@@ -143,20 +146,26 @@ ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, 
 
 
 
+
 # Figure 1B: overview OD-validation ----
 
 
 plt <- glass_od.metadata.array_samples |> 
-  filter_OD_validation_idats(CONST_N_OD_VALIDATION_INCLUDED_SAMPLES) |> 
+  dplyr::filter(patient_study_name == "OD-validation" & arraychip_version == "EPICv1") |>  # not only include those used, all available to track back to literature
   dplyr::mutate(Source = dplyr::recode(isolation_material, `ffpe`="Source: FFPE", `tissue`="Source: fresh")) |> 
   dplyr::mutate(resection_treatment_status_chemo = dplyr::recode(as.character(resection_treatment_status_chemo), `TRUE`="Yes", `FALSE`="No")) |> 
   dplyr::mutate(resection_treatment_status_radio = dplyr::recode(as.character(resection_treatment_status_radio), `TRUE`="Yes", `FALSE`="No")) |> 
+  dplyr::mutate(insufficient_quality = ifelse(array_qc.pca.detP.outlier, "Yes", "No")) |> 
+  dplyr::mutate(too_low_purity = ifelse(array_methylation_bins_1p19q_purity <= 0.1, "Yes", "No")) |> 
   dplyr::select(patient_id, patient_suspected_noncodel, resection_number, resection_tumor_grade,
                 resection_treatment_status_chemo, resection_treatment_status_radio,
                 
                 array_notes,
+                #array_qc.pca.detP.outlier,
                 
-                Source, contains("_cal_class")) |> 
+                insufficient_quality,
+                too_low_purity,
+                Source, contains("_cal_class"), too_low_purity) |> 
   dplyr::mutate(resection_tumor_grade = dplyr::case_when(
     is.na(resection_tumor_grade) | patient_suspected_noncodel ~ as.character(NA),
     !patient_suspected_noncodel ~ paste0("Grade ", resection_tumor_grade)
@@ -182,6 +191,9 @@ plt <- glass_od.metadata.array_samples |>
                                resection_treatment_status_radio,
                                
                                dataset_source_pivot,
+                               
+                               insufficient_quality,
+                               too_low_purity,
                                
                                Source), names_to = "classifier_version", values_to="class") |> 
   dplyr::mutate(col = as.factor(dplyr::case_when(
@@ -213,10 +225,12 @@ plt <- glass_od.metadata.array_samples |>
     classifier_version == "resection_tumor_grade" ~ "WHO grade",
     classifier_version == "resection_treatment_status_radio" ~ "Radio",
     classifier_version == "resection_treatment_status_chemo" ~ "Chemo",
+    classifier_version == "insufficient_quality" ~ "Low quality",
+    classifier_version == "too_low_purity" ~ "Too low purity",
     classifier_version == "dataset_source_pivot" ~ "Dataset",
     T ~ gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version)
   )) |> 
-  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Dataset", "Source")))
+  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Dataset", "Low quality", "Too low purity", "Source")))
 
 
 plt.resection.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
