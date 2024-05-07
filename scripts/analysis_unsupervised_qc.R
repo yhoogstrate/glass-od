@@ -7,6 +7,8 @@
 library(ggplot2)
 
 
+source('scripts/load_functions.R')
+
 if(!exists('youri_gg_theme')) {
   source('scripts/load_themes.R')
 }
@@ -24,8 +26,6 @@ if(!exists('gsam.metadata.array_samples')) {
   source('scripts/load_G-SAM_metadata.R')
 }
 
-
-source('scripts/load_functions.R')
 
 
 
@@ -140,6 +140,10 @@ metadata |>
   dplyr::mutate(array_qc.pca.detP.outlier.old = paste0(array_qc.pca.detP.outlier.old)) |> 
   dplyr::select(array_qc.pca.detP.outlier.old, array_qc.pca.detP.outlier.new) |> 
   table()
+
+
+metadata |> 
+  dplyr::filter(array_qc.pca.detP.outlier.new != array_qc.pca.detP.outlier.old)
 
 
 metadata |> dplyr::filter(array_qc.pca.detP.outlier.new == "TRUE" & array_qc.pca.detP.outlier.old == "FALSE")

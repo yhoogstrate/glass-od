@@ -107,9 +107,7 @@ rm(tmp)
 
 ## QC PCA outlier ----
 
-
-tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds.bak') |> 
-  dplyr::rename_with( ~ paste0("array_", .x)) |> 
+tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |> 
   assertr::verify(!is.na(array_qc.pca.comp1)) |> 
   assertr::verify(is.numeric(array_qc.pca.comp1)) |> 
   assertr::verify(!is.na(array_qc.pca.detP.outlier)) |> 
