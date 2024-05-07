@@ -35,19 +35,22 @@ source('scripts/load_functions.R')
 metadata <- rbind(
   glass_od.metadata.array_samples |> 
     dplyr::filter(arraychip_version == 'EPICv1') |> 
-    dplyr::select(array_sentrix_id, array_percentage.detP.signi, 
+    dplyr::rename(sid = isolation_id) |> 
+    dplyr::select(sid, array_sentrix_id, array_percentage.detP.signi, 
                   #array_mnp_QC_v12.8_predicted_sample_type,
                   array_qc.pca.comp1, array_qc.pca.detP.outlier) |> 
     dplyr::mutate(dataset = "GLASS-OD") # & CATNON sample -> codels & oligosarcoma's
   ,
   glass_nl.metadata.array_samples |> 
-    dplyr::select(array_sentrix_id, array_percentage.detP.signi,
+    dplyr::mutate(sid = paste0(Sample_Name, ".NL")) |> 
+    dplyr::select(sid, array_sentrix_id, array_percentage.detP.signi,
                   #array_mnp_QC_v12.8_predicted_sample_type,
                   array_qc.pca.comp1, array_qc.pca.detP.outlier) |> 
     dplyr::mutate(dataset = "GLASS-NL") # astro's
   ,
   gsam.metadata.array_samples |> 
-    dplyr::select(array_sentrix_id, array_percentage.detP.signi, 
+    dplyr::rename(sid = resection_id) |> 
+    dplyr::select(sid, array_sentrix_id, array_percentage.detP.signi, 
                   #array_mnp_QC_v12.8_predicted_sample_type,
                   array_qc.pca.comp1, array_qc.pca.detP.outlier) |> 
     dplyr::mutate(dataset = "G-SAM")
@@ -121,7 +124,8 @@ ggplot(metadata, aes(x=array_qc.pca.comp1.old, y=PC1)) +
 
 
 metadata <- metadata |> 
-  dplyr::mutate(array_qc.pca.detP.outlier.new = ifelse(PC1 >= 625 | array_percentage.detP.signi >= 2.5,T,F))
+  dplyr::mutate(array_qc.pca.detP.outlier.new = ifelse(PC1 >= 875 | array_percentage.detP.signi >= 2.5, T, F))
+
 
 metadata |> 
   dplyr::mutate(array_qc.pca.detP.outlier.new = paste0(array_qc.pca.detP.outlier.new)) |> 
@@ -152,12 +156,14 @@ cor(metadata$array_percentage.detP.signi, metadata$PC3, method="spearman")
 cor(metadata$array_percentage.detP.signi, metadata$PC4, method="spearman")
 
 
-ggplot(metadata, aes(x=PC1, y=array_percentage.detP.signi, col=array_qc.pca.detP.outlier.old)) +
+ggplot(metadata, aes(x=PC1, y=array_percentage.detP.signi, col=array_qc.pca.detP.outlier.new, label=sid)) +
+  facet_wrap(~dataset) +
+  #ggrepel::geom_text_repel(data=subset(metadata, is.na(array_qc.pca.detP.outlier.old) | array_qc.pca.detP.outlier.old == T),size=2) +
   geom_point(data=subset(metadata, !is.na(array_qc.pca.detP.outlier.old))) +
   geom_point(data=subset(metadata, is.na(array_qc.pca.detP.outlier.old))) +
   coord_cartesian(ylim = c(0, 25)) +
   geom_hline(yintercept=2.5, col="red", lty=2, lwd=0.5) +
-  geom_vline(xintercept=620, col="red", lty=2, lwd=0.5) +
+  geom_vline(xintercept=875, col="red", lty=2, lwd=0.5) +
   theme_bw()
 
 

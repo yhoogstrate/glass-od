@@ -22,7 +22,7 @@ if(!exists('glass_od.metadata.array_samples')) {
 #' @todo: thumbnail of H&E
 
 cnv_plot <- function(cur_sentrix_id) {
-  #cur_sentrix_id <- "207513910100_R06C01"
+  #cur_sentrix_id <- "204787070003_R07C01"
   print(cur_sentrix_id)
   #cur_sentrix_id <- "201496850071_R02C01"
   #cur_sentrix_id <- "201496850071_R02C01"
@@ -141,13 +141,14 @@ cnv_plot <- function(cur_sentrix_id) {
       array_sentrix_id == cur_sentrix_id ~ isolation_id,
       array_qc.pca.detP.outlier == T ~ "outlier: excluded",
       array_qc.pca.detP.outlier == F ~ "no outlier: good / sufficient quality"
-    ))
+    )) |> 
+    dplyr::filter(arraychip_version == "EPICv1")
   
   p3 <- ggplot(plt, aes(x=array_qc.pca.comp1, y=array_percentage.detP.signi, col = col, label=isolation_id)) +
     scale_y_continuous(trans = "log1p", limits=c(0,100), breaks=c(0,2.5,5,10,25,50,100)) +
     scale_x_continuous(breaks=c(-400,0,400,600,800,1200)) +
     geom_hline(yintercept=2.5, col="red", lty=2, lwd=theme_cellpress_lwd) +
-    geom_vline(xintercept=600, col="red", lty=2, lwd=theme_cellpress_lwd) +
+    geom_vline(xintercept=875, col="red", lty=2, lwd=theme_cellpress_lwd) +
     geom_point(size=1) +
     geom_point(data = subset(plt, array_sentrix_id == cur_sentrix_id), size=2.2, col="black", pch=21) +
     ggrepel::geom_text_repel(data=subset(plt, array_sentrix_id == cur_sentrix_id), show_guide=F, 
@@ -242,7 +243,8 @@ cnv_plot <- function(cur_sentrix_id) {
 
 
 pbapply::pblapply(glass_od.metadata.array_samples |> 
-                    dplyr::filter(grepl("0131", isolation_id)) |> 
+                    #dplyr::filter(grepl("0006.R1", isolation_id)) |> 
+                    #dplyr::filter(grepl("0006.R1|0009.R2.repA|0011.R1.repA|0013.R3|0018.R3|0019.R1|0019.R2|0038.R2|0050.R2|0067.R1|0068.R1|0105.R1|0107.R2|0127.R4|GLSS.HF.F922.R1|GLSS.LX.0015.R1|GLSS.LX.0015.R2|GLSS.LX.0170.R1|GLSS.LX.0170.TP|GSM4429900.R1|GSM4429901.R1|GSM5720542|GSM5720549|GSM5720551|GSM5720564", isolation_id)) |> 
                     #dplyr::filter(patient_study_name == "OD-validation") |> 
                     dplyr::filter(!is.na(array_heidelberg_cnvp_bins)) |> 
                     dplyr::filter(!is.na(array_mnp_predictBrain_v12.8_cal_class)) |> 

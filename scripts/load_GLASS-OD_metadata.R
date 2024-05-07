@@ -98,7 +98,11 @@ glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resectio
     patient_suspected_noncodel == "false" ~ FALSE,
     TRUE ~ as.logical(NA)
   )) |> 
-  assertr::verify((patient_id %in% c('0026','0063','0027', '0056', '0076', '0093', '0096', '0097', '0098', '0085') & patient_suspected_noncodel == T) | (patient_suspected_noncodel == F)) |> 
+  assertr::verify((patient_id %in% c(
+    "0026", "0027", "0056", "0063", "0076", "0085", "0093", "0096", "0097",
+    "0098", "0131", "0132", "0133", "GLSS-LX-0170"
+    
+  ) & patient_suspected_noncodel == T) | (patient_suspected_noncodel == F)) |> 
   dplyr::mutate(patient_id = as.factor(patient_id)) |> 
   (function(.) {
     print(dim(.))
@@ -458,7 +462,7 @@ tmp <- readRDS('cache/unsupervised_qc_outliers_all.Rds') |>
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 365+8)
+    assertthat::assert_that(nrow(.) == 373)
     return(.)
   })()
 
@@ -508,7 +512,6 @@ rm(tmp)
 
 
 
-
 ## Heidelberg 11b4[+12.5] QC full ----
 
 # quite some of these files contain odd N/A's
@@ -516,6 +519,7 @@ rm(tmp)
 
 
 tmp.ls <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", pattern = "_qc_full.txt", recursive = TRUE)
+
 
 tmp <- tmp.ls |> 
   data.frame(array_mnp_qc_report_full = _) |> 
@@ -575,6 +579,7 @@ tmp.ls <- c(list.files(
   path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", pattern = "*_scores_cal.csv", recursive = TRUE)
 )
 
+
 tmp <- tmp.ls |> 
   data.frame(tmp_filename = _) |>
   dplyr::mutate(array_mnp_predictBrain_filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS classifier/brain_classifier_v11b4_sample_report__v3.3__125/", tmp_filename)) |>
@@ -621,7 +626,6 @@ tmp <- tmp.ls |>
 
 
 
-
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(!is.na(array_A_IDH_HG__A_IDH_lr_v2.0.1) | arraychip_version != "EPICv1") |> 
@@ -633,6 +637,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
 
 
 rm(tmp, tmp.ls)
+
 
 
 
