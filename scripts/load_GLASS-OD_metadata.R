@@ -1028,14 +1028,14 @@ tmp <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds") |>
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + CONST_N_CATNON_ALL_SAMPLES) # CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_GSAM_INCLUDED_SAMPLES
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + CONST_N_GSAM_INCLUDED_SAMPLES + CONST_N_CATNON_ALL_SAMPLES)
     return(.)
   })() |>
   assertr::verify(!is.na(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) |> 
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 210) # CONST_N_GLASS_OD_INCLUDED_SAMPLES - only HQ samples - should become 210 CONST_N_GLASS_OD_INCLUDED_SAMPLES?
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + CONST_N_CATNON_ALL_SAMPLES)
     return(.)
   })()
 
@@ -1057,7 +1057,7 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds") |>
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 210) # CONST_N_GLASS_OD_INCLUDED_SAMPLES
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
     return(.)
   })() |>
 
@@ -1065,17 +1065,16 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds") |>
   assertr::verify(!is.na(array_PC2)) |> 
   assertr::verify(!is.na(array_PC3)) |> 
   assertr::verify(!is.na(array_PC163)) |> 
-  assertr::verify(!is.na(array_PC210)) |> 
+  assertr::verify(!is.na(array_PC212)) |> 
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 210) # CONST_N_GLASS_OD_INCLUDED_SAMPLES
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES) # CONST_N_GLASS_OD_INCLUDED_SAMPLES
     return(.)
   })()
 
 
 tmp$array_sentrix_id[tmp$array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id == F]
-#glass_od.metadata.array_samples$array_sentrix_id[glass_od.metadata.array_samples$array_sentrix_id %in% tmp$array_sentrix_id == F]
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
@@ -1084,6 +1083,9 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
 
 
 rm(tmp)
+
+
+
 
 
 

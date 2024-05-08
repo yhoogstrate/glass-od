@@ -31,9 +31,9 @@ if(!exists('gsam.metadata.array_samples')) {
 
 
 
+
 metadata.glass_od <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES)
-
 
 data.glass_od <- data.mvalues.hq_samples |>
   tibble::rownames_to_column('probe_id') |> 
@@ -42,9 +42,31 @@ data.glass_od <- data.mvalues.hq_samples |>
   dplyr::select(metadata.glass_od$array_sentrix_id)  |> 
   (function(.) {
     print(dim(.))
+    assertthat::assert_that(ncol(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
+
+
+
+
+metadata.od_validation <- glass_od.metadata.array_samples |> 
+  filter_OD_validation_idats(CONST_N_OD_VALIDATION_INCLUDED_SAMPLES)
+
+data.od_validation <- data.mvalues.hq_samples |>
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata.od_validation$array_sentrix_id)  |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(ncol(.) == CONST_N_OD_VALIDATION_INCLUDED_SAMPLES) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
 
 
 metadata.glass_nl <- glass_nl.metadata.array_samples |> 
@@ -60,14 +82,18 @@ data.glass_nl <- data.mvalues.hq_samples |>
   dplyr::select(metadata.glass_nl$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
+    assertthat::assert_that(ncol(.) == CONST_N_GLASS_NL_INCLUDED_SAMPLES) 
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
 
 
+
+
+
 metadata.gsam <- gsam.metadata.array_samples |> 
-  filter_GSAM_idats(77)
+  filter_GSAM_idats(CONST_N_GSAM_INCLUDED_SAMPLES)
 
 data.gsam <- data.mvalues.hq_samples |>
   tibble::rownames_to_column('probe_id') |> 
@@ -76,9 +102,31 @@ data.gsam <- data.mvalues.hq_samples |>
   dplyr::select(metadata.gsam$array_sentrix_id)  |> 
   (function(.) {
     print(dim(.))
+    assertthat::assert_that(ncol(.) == CONST_N_GSAM_INCLUDED_SAMPLES)
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+    return(.)
+  })()
+
+
+
+
+metadata.catnon <- glass_od.metadata.array_samples |> 
+  dplyr::filter(patient_study_name == "CATNON")
+
+data.catnon <- data.mvalues.hq_samples |>
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata.catnon$array_sentrix_id)  |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(ncol(.) == CONST_N_CATNON_ALL_SAMPLES)
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
+
+
+
 
 
 
@@ -112,8 +160,9 @@ cv_model_probe_based <- glmnet::cv.glmnet(
 saveRDS(cv_model_probe_based, file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__probe_based__train_paramters.Rds")
 
 # @todo export & ggplot
+pdf("output/figures/analysis_A_IDH_HG__A_IDH_LG_l__prediction_err.pdf", width = (8.5/3) * 0.95, height = 2.80)
 plot(cv_model_probe_based)
-
+dev.off()
 
 
 
@@ -303,8 +352,28 @@ data.1 <- data.glass_od |>
   as.matrix()
 
 
+data.2 <- data.od_validation  |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% rownames(classifier$beta)) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  t() |>
+  as.data.frame() |> 
+  dplyr::select(readRDS("cache/LGC_predictor_probe_based_ordered_probes.Rds")) |> 
+  as.matrix()
 
-data.2 <- data.gsam |> 
+
+data.3 <- data.gsam |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% rownames(classifier$beta)) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  t() |>
+  as.data.frame() |> 
+  dplyr::select(readRDS("cache/LGC_predictor_probe_based_ordered_probes.Rds")) |> 
+  as.matrix()
+
+
+
+data.4 <- data.catnon |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% rownames(classifier$beta)) |> 
   tibble::column_to_rownames('probe_id') |> 
@@ -315,7 +384,9 @@ data.2 <- data.gsam |>
 
 
 stopifnot(colnames(data.1) == colnames(data.2))
-data <- rbind(data.1, data.2)
+stopifnot(colnames(data.1) == colnames(data.3))
+stopifnot(colnames(data.1) == colnames(data.4))
+data <- rbind(data.1, data.2, data.3, data.4)
 
 
 
@@ -331,7 +402,9 @@ p <- predict(classifier, data) |>
 
 saveRDS(p, file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit.Rds")
 
-rm(p)
+
+
+rm(p, data, data.1, data.2, data.3, data.4)
 
 
 
