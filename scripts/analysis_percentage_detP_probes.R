@@ -60,7 +60,7 @@ tmp <- rbind(
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES  +
-                                        CONST_N_VALIDATION_ALL_SAMPLES +
+                                        CONST_N_OD_VALIDATION_ALL_SAMPLES +
                                         CONST_N_CATNON_ALL_SAMPLES +
                                         CONST_N_GLASS_NL_ALL_SAMPLES +
                                         CONST_N_GSAM_ALL_SAMPLES +
@@ -96,7 +96,7 @@ exp <- rbind(old, tmp |> dplyr::mutate(array_sentrix_path = NULL)) |>
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES  +
-                                          CONST_N_VALIDATION_ALL_SAMPLES +
+                                          CONST_N_OD_VALIDATION_ALL_SAMPLES +
                                           CONST_N_CATNON_ALL_SAMPLES +
                                           CONST_N_GLASS_NL_ALL_SAMPLES +
                                           CONST_N_GSAM_ALL_SAMPLES +

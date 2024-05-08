@@ -106,7 +106,7 @@ glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resectio
   dplyr::mutate(patient_id = as.factor(patient_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 6) # + 57 oligosarcoma-paper + 1x vali + 1x catnon - 3 resections without arrays (to complete db)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + 6) # + 57 oligosarcoma-paper + 1x vali + 1x catnon - 3 resections without arrays (to complete db)
     return(.)
   })() |> 
   assertr::verify(is.numeric(resection_number)) |> 
@@ -168,7 +168,7 @@ glass_od.metadata.array_samples <- list.files(path = "data/GLASS_OD/DNA Methylat
   dplyr::mutate(array_filename = paste0("data/GLASS_OD/DNA Methylation - EPIC arrays/", array_filename)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (2 * (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES)))
+    assertthat::assert_that(nrow(.) == (2 * (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES)))
     return(.)
   })() |> # equals in-pipe stopifnot(nrow(.) == 404)
   assertr::verify(file.exists(array_filename)) |>
@@ -182,7 +182,7 @@ glass_od.metadata.array_samples <- list.files(path = "data/GLASS_OD/DNA Methylat
   dplyr::mutate(array_channel_red_filesize   = file.info(array_channel_red)$size) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES))
     return(.)
   })() |>
   assertr::verify(!is.na(array_channel_green)) |>
@@ -264,13 +264,13 @@ stopifnot(length(setdiff(tmp$array_sentrix_id, glass_od.metadata.array_samples$a
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES))
     return(.)
   })() |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id' = 'array_sentrix_id'), suffix=c('','')) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES))
     return(.)
   })() |> 
   assertr::verify(!is.na(resection_id)) |> 
@@ -433,7 +433,7 @@ tmp <- read.table("output/tables/percentage_detP_probes.txt") |>
     print(dim(.))
     assertthat::assert_that(nrow(.) == (  (CONST_N_GLASS_OD_ALL_SAMPLES)  +
                                           CONST_N_CATNON_ALL_SAMPLES +
-                                          (CONST_N_VALIDATION_ALL_SAMPLES) +
+                                          (CONST_N_OD_VALIDATION_ALL_SAMPLES) +
                                           CONST_N_GLASS_NL_ALL_SAMPLES +
                                           (CONST_N_GSAM_ALL_SAMPLES) +
                                           194))
@@ -561,7 +561,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_qc_report_full) | arraychip_version != "EPICv1") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES) # only one of the validation set so far & 1 CATNON
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES) # only one of the validation set so far & 1 CATNON
     return(.)
   })() |> 
   dplyr::mutate(array_mnp_qc_report_full = NULL)
@@ -631,7 +631,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_A_IDH_HG__A_IDH_lr_v2.0.1) | arraychip_version != "EPICv1") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES) # only one of the validation set so far & 1 CATNON
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES) # only one of the validation set so far & 1 CATNON
     return(.)
   })()
 
@@ -769,7 +769,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_QC_v12.8_predicted_sample_type) | arraychip_version != "EPICv1" ) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES  )
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES  )
     return(.)
   })()
 
@@ -795,7 +795,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_CNVP_v12.8_v5.2_CNVP_version) | arraychip_version != "EPICv1" ) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES)
     return(.)
   })()
 
@@ -827,7 +827,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_heidelberg_cnvp_bins) | arraychip_version != "EPICv1") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES)
     return(.)
   })()
 
@@ -894,7 +894,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(`array_mnp_CNVP_12.8_CDKN2A/B`) | arraychip_version != "EPICv1") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES)
     return(.)
   })()
 
@@ -935,7 +935,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_MGMT_Estimated)| arraychip_version != "EPICv1") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES)
     return(.)
   })()
 
@@ -978,7 +978,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   assertr::verify(!is.na(array_mnp_rsGender_12.8_dist)| arraychip_version != "EPICv1") |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_VALIDATION_ALL_SAMPLES)
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES)
     return(.)
   })()
 
@@ -1088,28 +1088,23 @@ rm(tmp)
 ## unsupervised PCA [GL-OD + OD-vali] ----
 
 
-tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_AND_VALIDATION_x.Rds_x.Rds") |> 
+tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_AND_VALIDATION_x.Rds") |> 
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES)
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES))
     return(.)
   })() |>
   
-  assertr::verify(!is.na(array_PC1)) |> 
-  assertr::verify(!is.na(array_PC2)) |> 
-  assertr::verify(!is.na(array_PC3)) |> 
-  assertr::verify(!is.na(array_PC163)) |> 
-  assertr::verify(!is.na(array_PC212)) |> 
+  assertr::verify(!is.na(array_GLASS-OD_OD-VALIDATION_PC1)) |> 
+  assertr::verify(!is.na(array_GLASS-OD_OD-VALIDATION_PC2)) |> 
+  assertr::verify(!is.na(array_GLASS-OD_OD-VALIDATION_PC298)) |> 
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES) # CONST_N_GLASS_OD_INCLUDED_SAMPLES
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES))
     return(.)
   })()
-
-
-tmp$array_sentrix_id[tmp$array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id == F]
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
