@@ -1060,7 +1060,42 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds") |>
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
     return(.)
   })() |>
+  
+  assertr::verify(!is.na(array_PC1)) |> 
+  assertr::verify(!is.na(array_PC2)) |> 
+  assertr::verify(!is.na(array_PC3)) |> 
+  assertr::verify(!is.na(array_PC163)) |> 
+  assertr::verify(!is.na(array_PC212)) |> 
+  dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES) # CONST_N_GLASS_OD_INCLUDED_SAMPLES
+    return(.)
+  })()
 
+
+tmp$array_sentrix_id[tmp$array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id == F]
+
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(ifelse(resection_id == "0002-R1", (!is.na(array_PC2)), T))
+
+
+rm(tmp)
+
+
+## unsupervised PCA [GL-OD + OD-vali] ----
+
+
+tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_AND_VALIDATION_x.Rds_x.Rds") |> 
+  assertr::verify(!duplicated(array_sentrix_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES)
+    return(.)
+  })() |>
+  
   assertr::verify(!is.na(array_PC1)) |> 
   assertr::verify(!is.na(array_PC2)) |> 
   assertr::verify(!is.na(array_PC3)) |> 
