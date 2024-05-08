@@ -139,7 +139,7 @@ data.pca.glass_od_and_validation <- data |>
 data.pca.glass_od_and_validation.x <- data.pca.glass_od_and_validation |> 
   purrr::pluck('x') |> 
   as.data.frame(stringsAsFactors=F) |> 
-  dplyr::rename_with(~ paste0("array_GLASS-OD_OD-VALIDATION_", .x)) |> 
+  dplyr::rename_with(~ paste0("array_GLASS_OD_VALIDATION_", .x)) |> 
   tibble::rownames_to_column('array_sentrix_id')
 
 

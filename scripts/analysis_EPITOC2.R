@@ -19,12 +19,12 @@ if(!exists('data.beta.values.hq_samples')) {
 
 
 dat <- data.beta.values.hq_samples |> 
-  tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% data.beta.values.good_probes) |> 
-  tibble::column_to_rownames('probe_id') |> 
+  #tibble::rownames_to_column('probe_id') |> 
+  #dplyr::filter(probe_id %in% data.beta.values.good_probes) |> 
+  #tibble::column_to_rownames('probe_id') |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)  # CONST_N_PROBES_UNMASKED_AND_DETP
     assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
     return(.)
   })()
@@ -82,14 +82,14 @@ gc()
 # run dnaMethyAge package ----
 # devtools::install_github("yiluyucheng/dnaMethyAge")
 
-
+Sys.setenv(R_REMOTES_NO_ERRORS_FROM_WARNINGS="true")
 dnaMethyAge::availableClock()
 library(dnaMethyAge)
 data(list='PC-clocks', envir=environment())
 
 
+options(warn=0)
 age_HannumG2013    <- dnaMethyAge::methyAge(dat, clock='HannumG2013')    |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__HannumG2013 = mAge)
-age_HorvathS2013   <- dnaMethyAge::methyAge(dat, clock='HorvathS2013', use_cores = 40)   |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__HorvathS2013 = mAge)
 age_LevineM2018    <- dnaMethyAge::methyAge(dat, clock='LevineM2018')    |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__LevineM2018 = mAge)
 age_ZhangQ2019     <- dnaMethyAge::methyAge(dat, clock='ZhangQ2019')     |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__ZhangQ2019 = mAge)
 age_ShirebyG2020   <- dnaMethyAge::methyAge(dat, clock='ShirebyG2020')   |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__ShirebyG2020 = mAge)
@@ -110,6 +110,9 @@ age_LuA2023p2      <- dnaMethyAge::methyAge(dat, clock='LuA2023p2')      |> asse
 age_LuA2023p3      <- dnaMethyAge::methyAge(dat, clock='LuA2023p3')      |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__LuA2023p3 = mAge)
 age_YangZ2016      <- dnaMethyAge::methyAge(dat, clock='YangZ2016')      |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__YangZ2016 = mAge)
 
+# issues with mem - and errors out
+#age_HorvathS2013   <- dnaMethyAge::methyAge(dat, clock='HorvathS2013', use_cores = 40)   |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__HorvathS2013 = mAge)
+
 # The following fail/errr out
 #age_DunedinPACE    <- dnaMethyAge::methyAge(dat, clock='DunedinPACE') |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__DunedinPACE = mAge)
 #age_PCGrimAge      <- dnaMethyAge::methyAge(dat, clock='PCGrimAge') |> assertr::verify(is.numeric(mAge) & !is.na(mAge)) |> dplyr::rename(dnaMethyAge__PCGrimAge = mAge)
@@ -118,7 +121,7 @@ age_YangZ2016      <- dnaMethyAge::methyAge(dat, clock='YangZ2016')      |> asse
 
 
 out <- age_HannumG2013 |> 
-  dplyr::left_join(age_HorvathS2013   , by=c('Sample'='Sample'), suffix=c('',''))  |> 
+  #dplyr::left_join(age_HorvathS2013   , by=c('Sample'='Sample'), suffix=c('',''))  |> 
   dplyr::left_join(age_LevineM2018    , by=c('Sample'='Sample'), suffix=c('',''))  |> 
   dplyr::left_join(age_ZhangQ2019     , by=c('Sample'='Sample'), suffix=c('',''))  |> 
   dplyr::left_join(age_ShirebyG2020   , by=c('Sample'='Sample'), suffix=c('',''))  |> 
@@ -159,6 +162,7 @@ saveRDS(out, file="cache/analysis_dnaMethyAge.Rds")
 
 
 rm(out)
+
 
 
 # run RepliTali - Endicott NatCom 2022 ----

@@ -1095,10 +1095,9 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_AND_VALIDATION_x.R
     assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_OD_VALIDATION_INCLUDED_SAMPLES))
     return(.)
   })() |>
-  
-  assertr::verify(!is.na(array_GLASS-OD_OD-VALIDATION_PC1)) |> 
-  assertr::verify(!is.na(array_GLASS-OD_OD-VALIDATION_PC2)) |> 
-  assertr::verify(!is.na(array_GLASS-OD_OD-VALIDATION_PC298)) |> 
+  assertr::verify(!is.na(array_GLASS_OD_VALIDATION_PC1)) |> 
+  assertr::verify(!is.na(array_GLASS_OD_VALIDATION_PC2)) |> 
+  assertr::verify(!is.na(array_GLASS_OD_VALIDATION_PC298)) |> 
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
@@ -1113,7 +1112,6 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
 
 
 rm(tmp)
-
 
 
 
