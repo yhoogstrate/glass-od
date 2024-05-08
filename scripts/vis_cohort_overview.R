@@ -138,7 +138,7 @@ ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
   ylim(0.5, 5.5) +
   scale_color_manual(values=cols) +
   theme_nature +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_nature_lwd , linetype="solid"))
 
 
@@ -152,11 +152,32 @@ ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, 
 
 plt <- glass_od.metadata.array_samples |> 
   dplyr::filter(patient_study_name == "OD-validation" & arraychip_version == "EPICv1") |>  # not only include those used, all available to track back to literature
+  dplyr::mutate(resection_number = ifelse(resection_number == 0, 4, resection_number)) |> 
   dplyr::mutate(Source = dplyr::recode(isolation_material, `ffpe`="Source: FFPE", `tissue`="Source: fresh")) |> 
-  dplyr::mutate(resection_treatment_status_chemo = dplyr::recode(as.character(resection_treatment_status_chemo), `TRUE`="Yes", `FALSE`="No")) |> 
-  dplyr::mutate(resection_treatment_status_radio = dplyr::recode(as.character(resection_treatment_status_radio), `TRUE`="Yes", `FALSE`="No")) |> 
-  dplyr::mutate(insufficient_quality = ifelse(array_qc.pca.detP.outlier, "Yes", "No")) |> 
-  dplyr::mutate(too_low_purity = ifelse(array_methylation_bins_1p19q_purity <= 0.1, "Yes", "No")) |> 
+  dplyr::mutate(resection_treatment_status_chemo = dplyr::case_when(
+    patient_suspected_noncodel ~ as.character(NA),
+    as.character(resection_treatment_status_chemo) == "TRUE" ~ "Yes",
+    as.character(resection_treatment_status_chemo) == "FALSE" ~ "No",
+    T ~ as.character(NA))
+    ) |> 
+  dplyr::mutate(resection_treatment_status_radio = dplyr::case_when(
+    patient_suspected_noncodel ~ as.character(NA),
+    as.character(resection_treatment_status_radio) == "TRUE" ~ "Yes",
+    as.character(resection_treatment_status_radio) == "FALSE" ~ "No",
+    T ~ as.character(NA))
+  ) |> 
+  dplyr::mutate(insufficient_quality = dplyr::case_when(
+    patient_suspected_noncodel ~ as.character(NA),
+    array_qc.pca.detP.outlier == T ~ "Yes",
+    array_qc.pca.detP.outlier == F ~ "No",
+    T ~ as.character(NA)
+  )) |> 
+  dplyr::mutate(insufficient_purity = dplyr::case_when(
+    patient_suspected_noncodel ~ as.character(NA),
+    array_methylation_bins_1p19q_purity <= 0.1 ~ "Yes",
+    array_methylation_bins_1p19q_purity > 0.1 ~ "No",
+    T ~ as.character(NA)
+  )) |> 
   dplyr::select(patient_id, patient_suspected_noncodel, resection_number, resection_tumor_grade,
                 resection_treatment_status_chemo, resection_treatment_status_radio,
                 
@@ -164,8 +185,8 @@ plt <- glass_od.metadata.array_samples |>
                 #array_qc.pca.detP.outlier,
                 
                 insufficient_quality,
-                too_low_purity,
-                Source, contains("_cal_class"), too_low_purity) |> 
+                insufficient_purity,
+                Source, contains("_cal_class")) |> 
   dplyr::mutate(resection_tumor_grade = dplyr::case_when(
     is.na(resection_tumor_grade) | patient_suspected_noncodel ~ as.character(NA),
     !patient_suspected_noncodel ~ paste0("Grade ", resection_tumor_grade)
@@ -193,7 +214,7 @@ plt <- glass_od.metadata.array_samples |>
                                dataset_source_pivot,
                                
                                insufficient_quality,
-                               too_low_purity,
+                               insufficient_purity,
                                
                                Source), names_to = "classifier_version", values_to="class") |> 
   dplyr::mutate(col = as.factor(dplyr::case_when(
@@ -225,12 +246,12 @@ plt <- glass_od.metadata.array_samples |>
     classifier_version == "resection_tumor_grade" ~ "WHO grade",
     classifier_version == "resection_treatment_status_radio" ~ "Radio",
     classifier_version == "resection_treatment_status_chemo" ~ "Chemo",
-    classifier_version == "insufficient_quality" ~ "Low quality",
-    classifier_version == "too_low_purity" ~ "Too low purity",
+    classifier_version == "insufficient_quality" ~ "Insuff. quality",
+    classifier_version == "insufficient_purity" ~ "Insuff. purity",
     classifier_version == "dataset_source_pivot" ~ "Dataset",
     T ~ gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version)
   )) |> 
-  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Dataset", "Low quality", "Too low purity", "Source")))
+  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Dataset", "Insuff. quality", "Insuff. purity", "Source")))
 
 
 plt.resection.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
@@ -245,7 +266,7 @@ plt.patient.counts <- plt |>
 
 
 plt <- plt |>
-  dplyr::mutate(patient_suspected_noncodel = paste0(patient_suspected_noncodel, "\n",plt.resection.counts[plt$patient_suspected_noncodel], " resections\n",plt.patient.counts[plt$patient_suspected_noncodel], " patients" ) ) |>
+  dplyr::mutate(patient_suspected_noncodel = paste0(patient_suspected_noncodel, "\n", plt.resection.counts[plt$patient_suspected_noncodel], " resections\n",plt.patient.counts[plt$patient_suspected_noncodel], " patients" ) ) |>
   dplyr::arrange(dplyr::desc(dataset_source), patient_id) |> 
   dplyr::mutate(x = factor(patient_id, levels=unique(patient_id))) |> 
   dplyr::mutate()
@@ -281,12 +302,14 @@ cols <- c('A_IDH [_LG]' = 'lightblue',
 ggplot(plt, aes(x = x, y = resection_number, col=col)) +
   facet_grid(cols=vars(patient_suspected_noncodel),  rows=vars(classifier_version_txt), scales = "free", space="free") +
   geom_point(pch=15,size=1.4,alpha=0.65) +
+  geom_point(data=plt |> dplyr::filter(classifier_version_txt == "Insuff. purity" & col == "Yes"),pch=0,size=1.4 * 1.3, col="red") +
   labs(x = "patient", y="resection #", col="",fill="") +
   labs(subtitle=format_subtitle("Cohort overview")) +
-  ylim(0.5, 3.5) +
+  #ylim(0.5, 4.5) +
   scale_color_manual(values=cols) +
+  scale_y_continuous(limits = c(0.5, 4.5),breaks = c(1,2,3,4), labels = c(1,2,3,"N/A")) +
   theme_nature +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_nature_lwd , linetype="solid"))
 
 
