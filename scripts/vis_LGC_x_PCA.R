@@ -284,19 +284,11 @@ abline(h=0, col="red")
 ## Figure 2C: logit ----
 
 
-
 stats <- metadata |> 
   dplyr::filter(resection_tumor_grade %in% c(2,3)) |> 
   dplyr::mutate(resection_tumor_grade__hg = ifelse(resection_tumor_grade == 3, 1 , 0)) |> 
   dplyr::mutate(resection = ifelse(resection_number == 1, "primary", "recurrent")) |> 
   dplyr::mutate(resection_recurrent = ifelse(resection == "primary", 0 , 1))
-
-
-stats <- metadata |> 
-  dplyr::filter(resection_tumor_grade %in% c(2,3)) |> 
-  dplyr::mutate(resection_tumor_grade__hg = ifelse(resection_tumor_grade == 3, 1 , 0)) |> 
-  dplyr::mutate(resection = NULL) |> 
-  dplyr::mutate(resection_recurrent = NULL)
 
 
 ### logistic GLASS-NL x grade ----
@@ -321,9 +313,6 @@ expnd <- (max(stats$covar)-min(stats$covar)) * 0.075
 Predicted_data <- data.frame(covar=modelr::seq_range(c(min(stats$covar) - expnd, max(stats$covar) + expnd), 500))
 Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
 
-
-
-#### simplistic ----
 
 
 plt.logit.simplistic <- rbind(
@@ -368,9 +357,9 @@ p1 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   scale_color_gradientn(colours = rev(col3(200)),, na.value = "grey50", limits = c(0, 1), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
   theme_nature +
   annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
-  labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "GLASS-NL MedMeth x Resection") +
+  labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "GLASS-NL MedMeth x WHO grade") +
   scale_x_continuous(breaks = c(0,1),
-                     labels=c("Primary", "Recurrent")) + 
+                     labels=c("Grade 2", "Grade 3")) + 
   theme(legend.box = "vertical") + # space dependent
   theme(legend.key.size = unit(0.6, 'lines'))
 p1
@@ -378,9 +367,7 @@ p1
 
 
 
-#### complex ----
-
-
+# complex color variant:
 # plt.logit.restyled <- rbind(
 #   stats |>  # left point line:
 #     dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class, resection_recurrent) |> 
@@ -458,49 +445,19 @@ Predicted_data <- data.frame(covar=modelr::seq_range(c(min(stats$covar) - expnd,
 Predicted_data$resection_recurrent = predict(model, Predicted_data, type="response")
 
 
-plt.logit.restyled <- rbind(
-  stats |>  # left point line:
-    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class, resection_recurrent) |> 
-    dplyr::mutate(col = resection_tumor_grade__hg + 2) |> 
-    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
-    dplyr::mutate(type = "data") |> 
-    dplyr::mutate(x = resection_recurrent - 0.06 ) |> 
-    dplyr::rename(y = covar)
-  ,
-  stats |>  # right point line:
-    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class, resection_recurrent) |> 
-    dplyr::mutate(col = resection_tumor_grade__hg + 2) |> 
-    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
-    dplyr::mutate(type = "data") |> 
-    dplyr::mutate(x = resection_recurrent + 0.06 ) |> 
-    dplyr::rename(y = covar)
-  ,
-  Predicted_data |> # logit fit
-    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
-    dplyr::mutate(resection_tumor_grade__hg = 0) |> 
-    dplyr::mutate(group = "logit fit") |> 
-    dplyr::mutate(type = "fit") |> 
-    dplyr::rename(y = covar) |> 
-    dplyr::mutate(x = resection_recurrent) |> 
-    dplyr::mutate(col = resection_recurrent)
-)
 
-
-p2 <- ggplot(plt.logit.restyled, aes(x=x, y=y, group=group, col=col)) +
-  geom_line(data = plt.logit.restyled |> dplyr::filter(type == "fit") ,
+p2 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
             lwd=2) +
-  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1), breaks=c(0, 1), labels=c("Primary", "Recurrent"), oob = scales::squish) +
-  labs(col=NULL) +
-  ggnewscale::new_scale_colour() +
-  geom_line(data = plt.logit.restyled |> dplyr::filter(type == "data"),
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="white",
             lwd=theme_nature_lwd * 2, alpha=0.65
   ) +
-  geom_line(data = plt.logit.restyled |> dplyr::filter(type == "data"),
-            aes(col=col),
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+            col="gray",
             lwd=theme_nature_lwd) +
-  scale_color_gradientn(colours = c("aquamarine3","aquamarine3","#d34394ff","#d34394ff"), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
+  scale_color_gradientn(colours = rev(col3(200)),, na.value = "grey50", limits = c(0, 1), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
   theme_nature +
   annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
   labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "GLASS-NL MedMeth x Resection") +
@@ -508,7 +465,61 @@ p2 <- ggplot(plt.logit.restyled, aes(x=x, y=y, group=group, col=col)) +
                      labels=c("Primary", "Recurrent")) + 
   theme(legend.box = "vertical") + # space dependent
   theme(legend.key.size = unit(0.6, 'lines'))
-p2 
+p2
+
+
+# complex color variant:
+# plt.logit.restyled <- rbind(
+#   stats |>  # left point line:
+#     dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class, resection_recurrent) |> 
+#     dplyr::mutate(col = resection_tumor_grade__hg + 2) |> 
+#     dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+#     dplyr::mutate(type = "data") |> 
+#     dplyr::mutate(x = resection_recurrent - 0.06 ) |> 
+#     dplyr::rename(y = covar)
+#   ,
+#   stats |>  # right point line:
+#     dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class, resection_recurrent) |> 
+#     dplyr::mutate(col = resection_tumor_grade__hg + 2) |> 
+#     dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+#     dplyr::mutate(type = "data") |> 
+#     dplyr::mutate(x = resection_recurrent + 0.06 ) |> 
+#     dplyr::rename(y = covar)
+#   ,
+#   Predicted_data |> # logit fit
+#     dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+#     dplyr::mutate(resection_tumor_grade__hg = 0) |> 
+#     dplyr::mutate(group = "logit fit") |> 
+#     dplyr::mutate(type = "fit") |> 
+#     dplyr::rename(y = covar) |> 
+#     dplyr::mutate(x = resection_recurrent) |> 
+#     dplyr::mutate(col = resection_recurrent)
+# )
+# 
+# 
+# p2 <- ggplot(plt.logit.restyled, aes(x=x, y=y, group=group, col=col)) +
+#   geom_line(data = plt.logit.restyled |> dplyr::filter(type == "fit") ,
+#             aes(col=col),
+#             lwd=2) +
+#   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1), breaks=c(0, 1), labels=c("Primary", "Recurrent"), oob = scales::squish) +
+#   labs(col=NULL) +
+#   ggnewscale::new_scale_colour() +
+#   geom_line(data = plt.logit.restyled |> dplyr::filter(type == "data"),
+#             col="white",
+#             lwd=theme_nature_lwd * 2, alpha=0.65
+#   ) +
+#   geom_line(data = plt.logit.restyled |> dplyr::filter(type == "data"),
+#             aes(col=col),
+#             lwd=theme_nature_lwd) +
+#   scale_color_gradientn(colours = c("aquamarine3","aquamarine3","#d34394ff","#d34394ff"), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
+#   theme_nature +
+#   annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
+#   labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "GLASS-NL MedMeth x Resection") +
+#   scale_x_continuous(breaks = c(0,1),
+#                      labels=c("Primary", "Recurrent")) + 
+#   theme(legend.box = "vertical") + # space dependent
+#   theme(legend.key.size = unit(0.6, 'lines'))
+# p2
 
 
 
@@ -534,10 +545,6 @@ expnd <- (max(stats$covar)-min(stats$covar)) * 0.075
 Predicted_data <- data.frame(covar=modelr::seq_range(c(min(stats$covar) - expnd, max(stats$covar) + expnd), 500))
 Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
 
-
-
-
-#### simplistic ----
 
 
 plt.logit.simplistic <- rbind(
@@ -582,7 +589,7 @@ p3 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   scale_color_gradientn(colours = rev(col3(200)),, na.value = "grey50", limits = c(0, 1), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
   theme_nature +
   annotate("text", y = modelr::seq_range(stats$covar, 8)[7], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
-  labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "GLASS-NL MedMeth x Resection") +
+  labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "CGC[Ac] x Resection") +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Primary", "Recurrent")) + 
   theme(legend.box = "vertical") + # space dependent
@@ -591,59 +598,57 @@ p3
 
 
 
-#### complex ----
-
-
-plt.logit.restyled <- rbind(
-  stats |>  # left point line:
-    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class, resection_recurrent) |> 
-    dplyr::mutate(col = resection_recurrent + 1) |> 
-    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
-    dplyr::mutate(type = "data") |> 
-    dplyr::mutate(x = ifelse(resection_tumor_grade__hg == 0, resection_tumor_grade__hg, resection_tumor_grade__hg - 0.175)) |> 
-    dplyr::rename(y = covar),
-  
-  stats |>  # right point line:
-    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class, resection_recurrent) |> 
-    dplyr::mutate(col = resection_recurrent + 1) |> 
-    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
-    dplyr::mutate(type = "data") |> 
-    dplyr::mutate(x = ifelse(resection_tumor_grade__hg == 1, resection_tumor_grade__hg, resection_tumor_grade__hg + 0.175)) |> 
-    dplyr::rename(y = covar),
-  
-  Predicted_data |> # logit fit
-    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
-    dplyr::mutate(resection_recurrent = 0) |> 
-    dplyr::mutate(group = "logit fit") |> 
-    dplyr::mutate(type = "fit") |> 
-    dplyr::rename(y = covar) |> 
-    dplyr::mutate(x = resection_tumor_grade__hg) |> 
-    dplyr::mutate(col = resection_tumor_grade__hg)
-)
-
-
-plt.logit.restyled.grade <- plt.logit.restyled
-
-
-p3 <- ggplot(plt.logit.restyled, aes(x=x, y=y, group=group, col=col)) +
-  geom_line(data = plt.logit.restyled |> dplyr::filter(type == "data"),
-            aes(col=col),
-            lwd=theme_nature_lwd) +
-  scale_color_gradientn(colours = c("aquamarine3","aquamarine3","#d34394ff","#d34394ff"), na.value = "grey50", limits = c(1, 2), breaks=c(1, 1.50, 1.50, 2), labels=c("primary","","", "recurrent"), oob = scales::squish) +
-  labs(col=NULL) +
-  ggnewscale::new_scale_colour() +
-  geom_line(data = plt.logit.restyled |> dplyr::filter(type == "fit") ,
-            aes(col=col),
-            lwd=1.0) +
-  theme_nature +
-  scale_fill_manual(values = palette_mnp_12.8_6) +
-  annotate("text", y = modelr::seq_range(stats$covar, 16)[15], x = 0.375, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
-  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1), breaks=c(0, 1), labels=c("Grade 2", "Grade 3"), oob = scales::squish) +
-  labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "CGC Lasso x WHO Grade") +
-  scale_x_continuous(breaks = c(0,1), labels=c("Grade 2", "Grade 3")) + 
-  theme(legend.box = "vertical") + # space dependent
-  theme(legend.key.size = unit(0.6, 'lines')) # resize colbox
-p3
+# complex color variant:
+# plt.logit.restyled <- rbind(
+#   stats |>  # left point line:
+#     dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class, resection_recurrent) |> 
+#     dplyr::mutate(col = resection_recurrent + 1) |> 
+#     dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+#     dplyr::mutate(type = "data") |> 
+#     dplyr::mutate(x = ifelse(resection_tumor_grade__hg == 0, resection_tumor_grade__hg, resection_tumor_grade__hg - 0.175)) |> 
+#     dplyr::rename(y = covar),
+#   
+#   stats |>  # right point line:
+#     dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class, resection_recurrent) |> 
+#     dplyr::mutate(col = resection_recurrent + 1) |> 
+#     dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+#     dplyr::mutate(type = "data") |> 
+#     dplyr::mutate(x = ifelse(resection_tumor_grade__hg == 1, resection_tumor_grade__hg, resection_tumor_grade__hg + 0.175)) |> 
+#     dplyr::rename(y = covar),
+#   
+#   Predicted_data |> # logit fit
+#     dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+#     dplyr::mutate(resection_recurrent = 0) |> 
+#     dplyr::mutate(group = "logit fit") |> 
+#     dplyr::mutate(type = "fit") |> 
+#     dplyr::rename(y = covar) |> 
+#     dplyr::mutate(x = resection_tumor_grade__hg) |> 
+#     dplyr::mutate(col = resection_tumor_grade__hg)
+# )
+# 
+# 
+# plt.logit.restyled.grade <- plt.logit.restyled
+# 
+# 
+# p3 <- ggplot(plt.logit.restyled, aes(x=x, y=y, group=group, col=col)) +
+#   geom_line(data = plt.logit.restyled |> dplyr::filter(type == "data"),
+#             aes(col=col),
+#             lwd=theme_nature_lwd) +
+#   scale_color_gradientn(colours = c("aquamarine3","aquamarine3","#d34394ff","#d34394ff"), na.value = "grey50", limits = c(1, 2), breaks=c(1, 1.50, 1.50, 2), labels=c("primary","","", "recurrent"), oob = scales::squish) +
+#   labs(col=NULL) +
+#   ggnewscale::new_scale_colour() +
+#   geom_line(data = plt.logit.restyled |> dplyr::filter(type == "fit") ,
+#             aes(col=col),
+#             lwd=1.0) +
+#   theme_nature +
+#   scale_fill_manual(values = palette_mnp_12.8_6) +
+#   annotate("text", y = modelr::seq_range(stats$covar, 16)[15], x = 0.375, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+#   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1), breaks=c(0, 1), labels=c("Grade 2", "Grade 3"), oob = scales::squish) +
+#   labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "CGC Lasso x WHO Grade") +
+#   scale_x_continuous(breaks = c(0,1), labels=c("Grade 2", "Grade 3")) + 
+#   theme(legend.box = "vertical") + # space dependent
+#   theme(legend.key.size = unit(0.6, 'lines')) # resize colbox
+# p3
 
 
 
