@@ -535,6 +535,65 @@ Predicted_data <- data.frame(covar=modelr::seq_range(c(min(stats$covar) - expnd,
 Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
 
 
+
+
+#### simplistic ----
+
+
+plt.logit.simplistic <- rbind(
+  stats |>  # left point line:
+    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = resection_tumor_grade__hg + 2) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_tumor_grade__hg - 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  stats |>  # right point line:
+    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = resection_tumor_grade__hg + 2) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_tumor_grade__hg + 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  Predicted_data |> # logit fit
+    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+    dplyr::mutate(group = "logit fit") |> 
+    dplyr::mutate(type = "fit") |> 
+    dplyr::rename(y = covar) |> 
+    dplyr::mutate(x = resection_tumor_grade__hg) |> 
+    dplyr::mutate(col = resection_tumor_grade__hg)
+)
+
+
+
+p3 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
+            aes(col=col),
+            lwd=2) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+            col="white",
+            lwd=theme_nature_lwd * 2, alpha=0.65
+  ) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+            col="gray",
+            lwd=theme_nature_lwd) +
+  scale_color_gradientn(colours = rev(col3(200)),, na.value = "grey50", limits = c(0, 1), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
+  theme_nature +
+  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
+  labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "GLASS-NL MedMeth x Resection") +
+  scale_x_continuous(breaks = c(0,1),
+                     labels=c("Primary", "Recurrent")) + 
+  theme(legend.box = "vertical") + # space dependent
+  theme(legend.key.size = unit(0.6, 'lines'))
+p3
+
+
+
+#### complex ----
+
+
 plt.logit.restyled <- rbind(
   stats |>  # left point line:
     dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class, resection_recurrent) |> 
