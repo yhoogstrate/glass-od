@@ -21,7 +21,7 @@ if(!exists('glass_od.metadata.array_samples')) {
 
 
 metadata <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(210)
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES)
 
 
 
@@ -118,7 +118,7 @@ plt.split <- rbind(
 # array_PC2 ~ 202 | array_GLASS_NL_g2_g3_sig ~ 218
 ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL_g2_g3_sig, col=col)) + 
   facet_wrap(~facet, scales="free",ncol=5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show_guide = FALSE, label.y.npc = "bottom") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
   geom_point(size=theme_nature_size/3) +
   scale_color_manual(values=c(
     "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
@@ -135,7 +135,34 @@ ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL
   theme_nature
 
 
-ggsave("output/figures/vis_LGC_x_PCA__scatter_A.pdf",width=8.5 * 0.975, height = 2.72)
+ggsave("output/figures/vis_LGC_x_PCA__scatter_A1.pdf",width=8.5 * 0.975, height = 2.72)
+
+
+# array_PC2 ~ 202 | array_GLASS_NL_g2_g3_sig ~ 218
+ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_PC2, col=col)) + 
+  facet_wrap(~facet, scales="free",ncol=5) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
+  geom_point(size=theme_nature_size/3) +
+  scale_color_manual(values=c(
+    "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
+    "Grade 3"="red", "A_IDH_HG"="red", "recurrent"="red",
+    
+    "FFPE"="darkgreen",
+    "OLIGOSARC_IDH" = "orange",
+    "NA" = "gray40",
+    "other" = "purple",
+    "Tissue"="brown"
+  )) +
+  labs(x="Astrocytoma CGC Lasso",y = "GLASS-NL signature (supervised primary - recurrent)", col="") +
+  labs(subtitle=format_subtitle("Logit WHO grade")) +
+  theme_nature
+
+
+ggsave("output/figures/vis_LGC_x_PCA__scatter_A2.pdf",width=8.5 * 0.975, height = 2.72)
+
+
+
+
 
 
 
