@@ -346,7 +346,8 @@ plt.logit.simplistic <- rbind(
     dplyr::rename(y = covar) |> 
     dplyr::mutate(x = resection_tumor_grade__hg) |> 
     dplyr::mutate(col = resection_tumor_grade__hg)
-)
+) |> 
+  dplyr::mutate(col = col  + 2)
 
 
 
@@ -578,7 +579,8 @@ plt.logit.simplistic <- rbind(
     dplyr::rename(y = covar) |> 
     dplyr::mutate(x = resection_tumor_grade__hg) |> 
     dplyr::mutate(col = resection_tumor_grade__hg)
-)
+) |> 
+  dplyr::mutate(col = col  + 2)
 
 
 
@@ -593,10 +595,10 @@ p3 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="gray",
             lwd=theme_nature_lwd) +
-  scale_color_gradientn(colours = rev(col3(200)),, na.value = "grey50", limits = c(0, 1), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
+  scale_color_gradientn(colours = rev(col3(200)),, na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
   theme_nature +
   annotate("text", y = modelr::seq_range(stats$covar, 8)[7], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
-  labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
+  labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Primary", "Recurrent")) + 
   theme(legend.box = "vertical") + # space dependent
