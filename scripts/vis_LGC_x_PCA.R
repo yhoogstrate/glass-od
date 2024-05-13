@@ -581,7 +581,7 @@ p3 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
             lwd=theme_nature_lwd) +
   scale_color_gradientn(colours = rev(col3(200)),, na.value = "grey50", limits = c(0, 1), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
+  annotate("text", y = modelr::seq_range(stats$covar, 8)[7], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
   labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "GLASS-NL MedMeth x Resection") +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Primary", "Recurrent")) + 
