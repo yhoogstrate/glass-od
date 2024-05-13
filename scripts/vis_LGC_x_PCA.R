@@ -284,7 +284,7 @@ abline(h=0, col="red")
 ## Figure 2C: logit ----
 
 
-### logistic CGC[Ac] x WHO grade ----
+### logistic GLASS-NL MM sig x WHO grade ----
 
 
 stats <- metadata |> 
@@ -295,7 +295,7 @@ stats <- metadata |>
   dplyr::mutate(resection_recurrent = NULL) |> 
 
   dplyr::mutate(covar = array_GLASS_NL_g2_g3_sig) |> 
-  dplyr::mutate(covar_name = "GLASS-NL p-r median methylation signature")
+  dplyr::mutate(covar_name = "GLASS-NL signature")
 
 
 model <- glm(resection_tumor_grade__hg ~ covar, data = stats, family = binomial)
@@ -354,12 +354,13 @@ p1 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="gray",
             lwd=theme_nature_lwd) +
-  scale_color_gradientn(colours = rev(col3(200)),, na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
+  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
+  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
+  scale_y_reverse() + 
   theme(legend.box = "vertical") + # space dependent
   theme(legend.key.size = unit(0.6, 'lines'))
 p1
@@ -422,7 +423,7 @@ p1
 
 
 
-### logistic CGC[Ac] x resection ----
+### logistic GLASS-NL MM sig x resection ----
 
 
 stats <- metadata |> 
@@ -433,7 +434,7 @@ stats <- metadata |>
   dplyr::mutate(resection_recurrent = ifelse(resection == "primary", 0 , 1)) |> 
 
   dplyr::mutate(covar = array_GLASS_NL_g2_g3_sig) |> 
-  dplyr::mutate(covar_name = "GLASS-NL p-r median methylation signature")
+  dplyr::mutate(covar_name = "GLASS-NL signature")
 
 
 model <- glm(resection_recurrent ~ covar, data = stats, family = binomial)
@@ -493,10 +494,11 @@ p2 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
             lwd=theme_nature_lwd) +
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1), breaks=c(0, 0.50, 1), labels=c("Primary","", "Recurrent"), oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
+  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Primary", "Recurrent")) + 
+  scale_y_reverse() + 
   theme(legend.box = "vertical") + # space dependent
   theme(legend.key.size = unit(0.6, 'lines'))
 p2
@@ -628,9 +630,9 @@ p3 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="gray",
             lwd=theme_nature_lwd) +
-  scale_color_gradientn(colours = rev(col3(200)),, na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
+  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[7], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
+  annotate("text", y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
@@ -767,10 +769,10 @@ p4 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
                         breaks=c(0, 0.50, 1), labels=c("Primary","","Recurrent"),
                         oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[7], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
+  annotate("text", y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
   scale_x_continuous(breaks = c(0,1),
-                     labels=c("Grade 2", "Grade 3")) + 
+                     labels=c("Primary", "Recurrent")) + 
   theme(legend.box = "vertical") + # space dependent
   theme(legend.key.size = unit(0.6, 'lines'))
 p4
@@ -893,7 +895,7 @@ plt.logit.simplistic <- rbind(
 
 
 
-p1 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+p5 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
             lwd=2) +
@@ -904,19 +906,17 @@ p1 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="gray",
             lwd=theme_nature_lwd) +
-  scale_color_gradientn(colours = rev(col3(200)),, na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
+  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
+  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
+  scale_y_reverse() + 
   theme(legend.box = "vertical") + # space dependent
   theme(legend.key.size = unit(0.6, 'lines'))
-p1
+p5
 
-
-
-#### t-test ----
 
 
 t.test(
@@ -928,6 +928,88 @@ t.test(
     dplyr::pull(covar)
 )
 
+
+### logistic PC2 x resection ----
+
+
+stats <- metadata |> 
+  dplyr::mutate(resection_tumor_grade = NULL) |> 
+  dplyr::mutate(resection_tumor_grade__hg = NULL) |> 
+  
+  dplyr::mutate(resection = ifelse(resection_number == 1, "primary", "recurrent")) |> 
+  dplyr::mutate(resection_recurrent = ifelse(resection == "primary", 0 , 1)) |> 
+  
+  dplyr::mutate(covar = array_PC2) |> 
+  dplyr::mutate(covar_name = "PC2 (unsupervised)")
+
+
+
+model <- glm(resection_recurrent ~ covar, data = stats, family = binomial)
+pval <- model |>
+  summary() |> 
+  purrr::pluck('coefficients') |>
+  as.data.frame() |>  
+  tibble::rownames_to_column('coef') |>
+  dplyr::filter(coef == "covar") |> 
+  dplyr::pull(`Pr(>|z|)`)
+
+
+expnd <- (max(stats$covar)-min(stats$covar)) * 0.075
+Predicted_data <- data.frame(covar=modelr::seq_range(c(min(stats$covar) - expnd, max(stats$covar) + expnd), 500))
+Predicted_data$resection_recurrent = predict(model, Predicted_data, type="response")
+
+
+
+plt.logit.simplistic <- rbind(
+  stats |>  # left point line:
+    dplyr::select(resection_recurrent, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1 ) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_recurrent - 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  stats |>  # right point line:
+    dplyr::select(resection_recurrent, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1 ) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_recurrent + 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  Predicted_data |> # logit fit
+    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+    dplyr::mutate(group = "logit fit") |> 
+    dplyr::mutate(type = "fit") |> 
+    dplyr::rename(y = covar) |> 
+    dplyr::mutate(x = resection_recurrent) |> 
+    dplyr::mutate(col = resection_recurrent)
+)
+
+
+p6 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
+            aes(col=col),
+            lwd=2) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+            col="white",
+            lwd=theme_nature_lwd * 2, alpha=0.65
+  ) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+            col="gray",
+            lwd=theme_nature_lwd) +
+  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1),
+                        breaks=c(0, 0.50, 1), labels=c("Primary","","Recurrent"),
+                        oob = scales::squish) +
+  theme_nature +
+  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
+  labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
+  scale_x_continuous(breaks = c(0,1),
+                     labels=c("Primary", "Recurrent")) + 
+  scale_y_reverse() + 
+  theme(legend.box = "vertical") + # space dependent
+  theme(legend.key.size = unit(0.6, 'lines'))
+p6
 
 
 
@@ -935,23 +1017,9 @@ t.test(
 ### export ----
 
 library(patchwork)
-p1 + p2 + p3 + p4 + plot_layout(ncol=2)
+p1 + p3 + p5 + p2 + p4 + p6 + plot_layout(ncol=3)
 
-ggsave("output/figures/vis_LGC_PCA_logistic.pdf", width=(8.5*0.95)*(1/3), height=3)
-
-
-
-
-#### t-test ----
-
-t.test(
-  stats |>
-    dplyr::filter(resection_tumor_grade == 2) |> 
-    dplyr::pull(covar),
-  stats |>
-    dplyr::filter(resection_tumor_grade == 3) |> 
-    dplyr::pull(covar)
-)
+ggsave("output/figures/vis_LGC_PCA_logistic.pdf", width=(8.5*0.975)*(2/3), height=4.5)
 
 
 
