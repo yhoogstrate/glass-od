@@ -317,7 +317,7 @@ Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="
 plt.logit.simplistic <- rbind(
   stats |>  # left point line:
     dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
-    dplyr::mutate(col = resection_tumor_grade__hg + 2) |> 
+    dplyr::mutate(col = -1) |> 
     dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
     dplyr::mutate(type = "data") |> 
     dplyr::mutate(x = resection_tumor_grade__hg - 0.06 ) |> 
@@ -325,7 +325,7 @@ plt.logit.simplistic <- rbind(
   ,
   stats |>  # right point line:
     dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
-    dplyr::mutate(col = resection_tumor_grade__hg + 2) |> 
+    dplyr::mutate(col = -1) |> 
     dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
     dplyr::mutate(type = "data") |> 
     dplyr::mutate(x = resection_tumor_grade__hg + 0.06 ) |> 
@@ -591,7 +591,7 @@ Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="
 plt.logit.simplistic <- rbind(
   stats |>  # left point line:
     dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
-    dplyr::mutate(col = resection_tumor_grade__hg + 2) |> 
+    dplyr::mutate(col = -1) |> 
     dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
     dplyr::mutate(type = "data") |> 
     dplyr::mutate(x = resection_tumor_grade__hg - 0.06 ) |> 
@@ -599,7 +599,7 @@ plt.logit.simplistic <- rbind(
   ,
   stats |>  # right point line:
     dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
-    dplyr::mutate(col = resection_tumor_grade__hg + 2) |> 
+    dplyr::mutate(col = -1) |> 
     dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
     dplyr::mutate(type = "data") |> 
     dplyr::mutate(x = resection_tumor_grade__hg + 0.06 ) |> 
@@ -701,8 +701,10 @@ p3
 stats <- metadata |> 
   dplyr::mutate(resection_tumor_grade = NULL) |> 
   dplyr::mutate(resection_tumor_grade__hg = NULL) |> 
+  
   dplyr::mutate(resection = ifelse(resection_number == 1, "primary", "recurrent")) |> 
   dplyr::mutate(resection_recurrent = ifelse(resection == "primary", 0 , 1)) |> 
+  
   dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
   dplyr::mutate(covar_name = "Astrocytoma CGC Lasso")
 
@@ -831,6 +833,105 @@ p4
 # p4
 
 
+### logistic PC2 x WHO grade ----
+
+
+stats <- metadata |> 
+  assertr::verify(resection_tumor_grade %in% c(2, 3)) |> 
+  dplyr::mutate(resection_tumor_grade__hg = ifelse(resection_tumor_grade == 3, 1 , 0)) |> 
+  
+  dplyr::mutate(resection = NULL) |> 
+  dplyr::mutate(resection_recurrent = NULL) |> 
+  
+  dplyr::mutate(covar = array_PC2) |> 
+  dplyr::mutate(covar_name = "PC2 (unsupervised)")
+
+
+
+model <- glm(resection_tumor_grade__hg ~ covar, data = stats, family = binomial)
+pval <- model |>
+  summary() |> 
+  purrr::pluck('coefficients') |>
+  as.data.frame() |>  
+  tibble::rownames_to_column('coef') |>
+  dplyr::filter(coef == "covar") |> 
+  dplyr::pull(`Pr(>|z|)`)
+
+
+expnd <- (max(stats$covar)-min(stats$covar)) * 0.075
+Predicted_data <- data.frame(covar=modelr::seq_range(c(min(stats$covar) - expnd, max(stats$covar) + expnd), 500))
+Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
+
+
+
+plt.logit.simplistic <- rbind(
+  stats |>  # left point line:
+    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_tumor_grade__hg - 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  stats |>  # right point line:
+    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_tumor_grade__hg + 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  Predicted_data |> # logit fit
+    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+    dplyr::mutate(group = "logit fit") |> 
+    dplyr::mutate(type = "fit") |> 
+    dplyr::rename(y = covar) |> 
+    dplyr::mutate(x = resection_tumor_grade__hg) |> 
+    dplyr::mutate(col = resection_tumor_grade__hg)
+) |> 
+  dplyr::mutate(col = col  + 2)
+
+
+
+p1 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
+            aes(col=col),
+            lwd=2) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+            col="white",
+            lwd=theme_nature_lwd * 2, alpha=0.65
+  ) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+            col="gray",
+            lwd=theme_nature_lwd) +
+  scale_color_gradientn(colours = rev(col3(200)),, na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
+  theme_nature +
+  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
+  labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
+  scale_x_continuous(breaks = c(0,1),
+                     labels=c("Grade 2", "Grade 3")) + 
+  theme(legend.box = "vertical") + # space dependent
+  theme(legend.key.size = unit(0.6, 'lines'))
+p1
+
+
+
+#### t-test ----
+
+
+t.test(
+  stats |>
+    dplyr::filter(resection_tumor_grade == 2) |> 
+    dplyr::pull(covar),
+  stats |>
+    dplyr::filter(resection_tumor_grade == 3) |> 
+    dplyr::pull(covar)
+)
+
+
+
+
+
 ### export ----
 
 library(patchwork)
@@ -853,76 +954,6 @@ t.test(
 )
 
 
-
-
-### logistic PC2 ----
-
-
-
-scaling_factor_x <- 0.0185 * 50 * (0.5/0.26)
-stats <- stats |> 
-  dplyr::mutate(covar = array_PC2) |> 
-  dplyr::mutate(covar_name = "PC2")
-
-
-
-model <- glm(resection_tumor_grade__hg ~ covar, data = stats, family = binomial)
-pval <- model |>
-  summary() |> 
-  purrr::pluck('coefficients') |>
-  as.data.frame() |>  
-  tibble::rownames_to_column('coef') |>
-  dplyr::filter(coef == "covar") |> 
-  dplyr::pull(`Pr(>|z|)`)
-
-
-Predicted_data <- data.frame(covar=modelr::seq_range(stats$covar, 500))
-Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
-
-
-plt.logit <- rbind(
-  stats |> 
-    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
-    dplyr::mutate(type = "data"),
-  Predicted_data |> 
-    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
-    dplyr::mutate(type = "fit")
-) |> 
-  dplyr::mutate(`resection tumor grade` = resection_tumor_grade__hg + 2) |> 
-  dplyr::mutate(xmin=covar - scaling_factor_x,
-                xmax=covar + scaling_factor_x,
-                xmin_wash = covar - (2.25 * scaling_factor_x), 
-                xmax_wash = covar + (2.25 * scaling_factor_x), 
-                ymin=`resection tumor grade` - 0.06,
-                ymax=`resection tumor grade` + 0.06)
-
-
-
-p2 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
-  geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
-  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin_wash,xmax=xmax_wash,ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
-  geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
-  annotate("text", x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
-  scale_y_continuous(breaks = c(2,3)) + 
-  labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
-  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
-  scale_fill_manual(values = palette_mnp_12.8_6) +
-  theme_cellpress +
-  theme(legend.key.size = unit(0.6, 'lines')) # resize colbox
-p2
-
-
-#### t-test ----
-
-
-t.test(
-  stats |>
-    dplyr::filter(resection_tumor_grade == 2) |> 
-    dplyr::pull(covar),
-  stats |>
-    dplyr::filter(resection_tumor_grade == 3) |> 
-    dplyr::pull(covar)
-)
 
 
 
