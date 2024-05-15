@@ -339,14 +339,10 @@ tmp <- readRDS("cache/analysis_median_methylation.Rds") |>
 
 glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
-  assertr::verify(
-    (array_qc.pca.detP.outlier == F & !is.na(array_median.overall.methylation)) |
-    (array_qc.pca.detP.outlier == T & is.na(array_median.overall.methylation))
-  ) |>
-  assertr::verify(
-    (array_qc.pca.detP.outlier == F & !is.na(array_median.glass_nl_supervised.methylation)) |
-    (array_qc.pca.detP.outlier == T & is.na(array_median.glass_nl_supervised.methylation))
-  )
+  assertr::verify(qc.pca.pc3purity.outlier == T | array_qc.pca.detP.outlier == T | !is.na(array_median.overall.methylation)) |> 
+  assertr::verify(qc.pca.pc3purity.outlier == T | array_qc.pca.detP.outlier == T | !is.na(array_median.overall.methylation))
+
+
 
 rm(tmp)
 

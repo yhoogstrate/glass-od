@@ -23,4 +23,5 @@ filter_GLASS_NL_idats <- function(metadata, nrow.check = 0) {
   return (out)
 }
 
+# table(glass_nl.metadata.array_samples$qc.pca.pc3purity.outlier, glass_nl.metadata.array_samples$array_qc.pca.detP.outlier)
 

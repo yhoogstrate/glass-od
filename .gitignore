@@ -12,3 +12,4 @@ qcReport.pdf Rplots.pdf
 .nfs*
 .nextflow
 .nextflow*
+*.idat

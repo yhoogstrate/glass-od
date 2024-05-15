@@ -29,6 +29,7 @@ if(!exists('glass_nl.metadata.array_samples')) {
 
 
 cv_model_probe_based <- readRDS("cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__probe_based__train_paramters.Rds")
+#cv_model_probe_based  <- readRDS("cache/LGC_predictor_probe_based_lm.Rds")
 
 plot(cv_model_probe_based)
 # @todo export & ggplot
@@ -53,8 +54,10 @@ ggplot(plt, aes(x=log(lambda), y=cvm, label=nzero)) +
   geom_point(cex=0.4, col="red") +
   geom_text(data=subset(plt, show_label == T),y=50, size=theme_cellpress_size) +
   scale_y_continuous(limits = c(0, 50)) +
-  labs(x = expression(Log(lambda)), y="Mean-Squared Error") +
-  theme_cellpress
+  labs(x = expression(Log(lambda)), y="Mean-Squared Error",
+       subtitle=format_subtitle("LASSO parameter fit")
+       ) +
+  theme_nature
 
 
 ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_training.pdf", width=(8.5*0.95)/3, height=2.5)
@@ -111,9 +114,10 @@ ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_scatter_obser
 
 # plot training (AC) vs predicted (OLI) ----
 
+
 plt <- rbind(
   glass_od.metadata.array_samples |>
-    filter_GLASS_OD_idats(163) |>
+    filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |>
     dplyr::select(
       array_sentrix_id,
       array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
@@ -121,11 +125,12 @@ plt <- rbind(
     ) |>
     dplyr::rename(AcCGAP_score = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |>
     dplyr::mutate(
-      type = "full AcCGAP model",
+      type = "LASSO full",
       dataset = "GLASS-OD"
-    ),
+    )
+  ,
   glass_nl.metadata.array_samples |>
-    filter_GLASS_NL_idats(218) |>
+    filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |>
     dplyr::select(
       array_sentrix_id,
       `array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV_v12.8`,
@@ -133,24 +138,38 @@ plt <- rbind(
     ) |>
     dplyr::rename(AcCGAP_score = `array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV_v12.8`) |>
     dplyr::mutate(
-      type = "10xCV AcCGAP model",
+      type = "LASSO 10xCV",
+      dataset = "GLASS-NL"
+    ) ,
+  glass_nl.metadata.array_samples |>
+    filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |>
+    dplyr::select(
+      array_sentrix_id,
+      `array_A_IDH_HG__A_IDH_LG_lr_v12.8`,
+      array_mnp_predictBrain_v12.8_cal_class
+    ) |>
+    dplyr::rename(AcCGAP_score = `array_A_IDH_HG__A_IDH_LG_lr_v12.8`) |>
+    dplyr::mutate(
+      type = "CGC",
       dataset = "GLASS-NL"
     ) 
-)|> 
+  )|> 
   dplyr::mutate(class = paste0(dataset, ":\n", type))
 
 
 ggplot(plt, aes(x=class, y=AcCGAP_score, fill=class, col=class)) +
-  ggbeeswarm::geom_quasirandom(pch=21, show_guide = FALSE) +
-  ggpubr::stat_compare_means(label.x.npc=0.4, size=theme_cellpress_size, show_guide = FALSE) +
-  labs(col="", fill="",x = "", y="AcCGAP score") +
-  scale_fill_manual(values = c('GLASS-NL:\n10xCV AcCGAP model'='lightblue',
-                                'GLASS-OD:\nfull AcCGAP model'='lightgreen')) +
-  scale_color_manual(values = c('GLASS-NL:\n10xCV AcCGAP model'='darkblue',
-                                'GLASS-OD:\nfull AcCGAP model'='darkgreen')) +
-  theme_cellpress
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/3, show_guide = FALSE) +
+  ggpubr::stat_compare_means(comparisons=list(c('GLASS-NL:\nLASSO 10xCV','GLASS-OD:\nLASSO full')),method="wilcox.test",
+    label.x.npc=theme_nature_lwd, size=theme_cellpress_size, show_guide = FALSE) +
+  labs(col="", fill="",x = "", y="AcCGAP score", subtitle=format_subtitle("CGC LASSO"),caption=paste0(
+    "GLASS-NL: n=",CONST_N_GLASS_NL_INCLUDED_SAMPLES, "  --  GLASS-OD: n=",CONST_N_GLASS_OD_INCLUDED_SAMPLES, "  --  p: wilcox test"
+  )) +
+  scale_color_manual(values = c('GLASS-NL:\nLASSO 10xCV'='darkblue',
+                                'GLASS-OD:\nLASSO full'='darkgreen',
+                                'GLASS-NL:\nCGC' = '#888888')) +
+  theme_nature
 
 
-ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_AC_OLI_wilcox.pdf", width=(8.5*0.95)/3, height=2.5)
+ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_AC_OLI_wilcox.pdf", width=(8.5*0.95)/3, height=2.65)
 
 

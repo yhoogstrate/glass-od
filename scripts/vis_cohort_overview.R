@@ -331,7 +331,7 @@ ggplot(plt, aes(x = x, y = resection_number, col=col)) +
 
 
 
-ggsave("output/figures/vis_validation_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 5)
+ggsave("output/figures/vis_validation_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 5.75)
 
 
 

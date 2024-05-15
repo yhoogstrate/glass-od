@@ -183,7 +183,7 @@ for(cv in 0:9) {
       t(),
     metadata.train$array_A_IDH_HG__A_IDH_LG_lr_v12.8,
     alpha = 1, # 1 = lasso; 0 = ridge
-    lambda = 0.01 # cv_model_probe_based$lambda.min
+    lambda = cv_model_probe_based$lambda.min # 0.01
     )
   
   
@@ -222,7 +222,8 @@ lm.full.probe_based <- glmnet::glmnet(data.glass_nl |>
                                       dplyr::select(metadata.glass_nl$array_sentrix_id) |>
                                       t(),
                                     metadata.glass_nl$array_A_IDH_HG__A_IDH_LG_lr_v12.8,
-                                    alpha = 1, lambda = cv_model_probe_based$lambda.min)
+                                    alpha = 1,
+                                    lambda = cv_model_probe_based$lambda.min)
 
 
 ### export final AC-trained classifier ----

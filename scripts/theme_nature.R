@@ -64,8 +64,8 @@ theme_nature <- theme_bw() +
     legend.box.background = element_blank(),
     
     plot.title =      element_text(size = 6, family = "Droid Sans", face = "plain", color="black"), # `title` covers both title and subtitle
-    plot.subtitle =   element_text(size = 6, family = "Droid Sans", face = "italic", color="darkgray"),
-    plot.caption =    element_text(size = 6, family = "Droid Sans", face = "italic", color="black"),
+    plot.subtitle =   element_text(size = 6, family = "Droid Sans", face = "italic", color="#777777"),
+    plot.caption =    element_text(size = 6, family = "Droid Sans", face = "italic", color="#777777"),
     plot.background = element_blank(),
     
     panel.grid.major.x = element_blank(),
