@@ -388,59 +388,11 @@ rm(tmp)
 ## 00 statistical power plot ----
 
 
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
-    return(.)
-  })() |> 
-  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
-    return(.)
-  })()
-
-
-plot(sort(data.mvalues.probes$DMP__g2_g3__pp_nc__adj.P.Val),type="l")
-plot(sort(data.mvalues.probes$DMP__primary_recurrence__pp_nc__adj.P.Val),type="l")
-
-plot(sort(data.mvalues.probes$DMP__g2_g3__pp_nc__P.Value),type="l")
-lines(sort(data.mvalues.probes$DMP__primary_recurrence__pp_nc__P.Value),type="l")
-
-
-
-plt <- rbind(
-  data.mvalues.probes |> 
-    dplyr::filter(!is.na(DMP__g2_g3__pp_nc__P.Value)) |> 
-    dplyr::select(DMP__g2_g3__pp_nc__P.Value) |> 
-    dplyr::rename(pvalue = DMP__g2_g3__pp_nc__P.Value) |> 
-    dplyr::mutate(test = "WHO Grade") |> 
-    dplyr::mutate(order = rank(rank(pvalue))) |> 
-    dplyr::mutate(order.f = (order - 1) / (dplyr::n() - 1))
-
-  ,
-
-  data.mvalues.probes |> 
-    dplyr::filter(!is.na(DMP__primary_recurrence__pp_nc__P.Value)) |> 
-    dplyr::select(DMP__primary_recurrence__pp_nc__P.Value) |> 
-    dplyr::rename(pvalue = DMP__primary_recurrence__pp_nc__P.Value) |> 
-    dplyr::mutate(test = "Resection") |> 
-    dplyr::mutate(order = rank(rank(pvalue))) |> 
-    dplyr::mutate(order.f = (order - 1) / (dplyr::n() - 1))
-)
-
-
-
-ggplot(plt, aes(x=order.f, y=pvalue, col=test, group=test)) +
-  geom_line()
-
 data.mvalues.probes |> 
   dplyr::filter(!is.na(DMP__primary_recurrence__pp_nc__adj.P.Val)) |> 
   dplyr::mutate(significant = DMP__primary_recurrence__pp_nc__adj.P.Val < 0.01) |> 
   dplyr::pull(significant) |> 
   table()
-
 
 data.mvalues.probes |> 
   dplyr::filter(!is.na(DMP__g2_g3__pp_nc__P.Value)) |> 
@@ -449,6 +401,8 @@ data.mvalues.probes |>
   table()
 
 (193478 / (193478  + 491687))   /    (44375 / ( 640790 + 44375  ))
+
+
 
 
 plt <- rbind(
@@ -467,12 +421,15 @@ plt <- rbind(
   dplyr::mutate(significant = ifelse(significant, "< 0.01" , ">= 0.01"))
 
 
+
 ggplot(plt, aes(fill=significant, x=type)) +
-  geom_bar() +
+  geom_bar() + 
+  scale_y_continuous(labels = scales::unit_format(unit = "K", scale = 1e-3)) +
+  scale_fill_manual(values=c('< 0.01'=mixcol( 'darkblue', 'darkgreen'), ">= 0.01"=mixcol( 'lightblue', 'lightgreen'))) +
   theme_nature +
-  labs(fill="Probe's adj. P-value")
+  labs(fill="adj. P-value", y = "tested probes", x="", format_subtitle("DMP power"))
 
-
+ggsave("output/figures/vis_differential__DMP_power.pdf", width=8.5 * 0.975 / 6, height = 1.4)
 
 
 ## A: overall density ----
