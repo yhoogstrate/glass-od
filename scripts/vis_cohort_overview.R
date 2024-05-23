@@ -67,7 +67,7 @@ plt <- glass_od.metadata.array_samples |>
                 Source, contains("_cal_class"), too_low_purity) |> 
   dplyr::mutate(resection_tumor_grade = dplyr::case_when(
     is.na(resection_tumor_grade) | patient_suspected_noncodel ~ as.character(NA),
-     !patient_suspected_noncodel ~ paste0("Grade ", resection_tumor_grade)
+    !patient_suspected_noncodel ~ paste0("Grade ", resection_tumor_grade)
   )) |> 
   tidyr::pivot_longer(cols = c(resection_tumor_grade,
                                
@@ -135,7 +135,7 @@ cols = c('A_IDH [_LG]' = 'lightblue',
          
          'Grade 2' = mixcol( 'lightblue', 'lightgreen'),
          'Grade 3' = mixcol( 'darkblue', 'darkgreen'),
-          
+         
          'Yes' = c('#E49E27', '#59B2E6', '#009E74', '#CB75A4')[1],
          'No' = c('#E49E27', '#59B2E6', '#009E74', '#CB75A4')[2],
          
@@ -144,7 +144,7 @@ cols = c('A_IDH [_LG]' = 'lightblue',
          
          'Other' = '#FFAC1C',
          'N/A' = 'darkgray'
-         )
+)
 
 
 ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
@@ -160,6 +160,97 @@ ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
 
 
 ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 4.4)
+
+
+
+# Figure S5A: GLASS_OD DMP selection ----
+
+
+plt.selection.grade <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3(152) |> 
+  dplyr::mutate(DMP_grade_class = ifelse(resection_tumor_grade == 2, "first Grade 2", "last Grade 3")) |> 
+  dplyr::select(array_sentrix_id, DMP_grade_class)
+
+
+plt.selection.resection <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_primaries_and_last_recurrences(180) |> 
+  dplyr::mutate(DMP_resection_class = ifelse(resection_number == 1, "primary", "last recurrent")) |> 
+  dplyr::select(array_sentrix_id, DMP_resection_class)
+
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES, exclude.suspected.noncodels = T) |> 
+  
+  dplyr::left_join(plt.selection.grade, by=c('array_sentrix_id'='array_sentrix_id')) |> 
+  dplyr::left_join(plt.selection.resection, by=c('array_sentrix_id'='array_sentrix_id')) |> 
+  
+  dplyr::select(patient_id, resection_number, resection_tumor_grade,
+                DMP_grade_class, DMP_resection_class) |> 
+  tidyr::pivot_longer(cols = c(DMP_grade_class,
+                               DMP_resection_class
+                               ), names_to = "classifier_version", values_to="class") |> 
+  dplyr::mutate(col = as.factor(dplyr::case_when(
+    class %in% c("first Grade 2", "last Grade 3") ~ class,
+    
+    class %in% c("primary", "last recurrent") ~ class,
+    
+    T ~ "Other"
+  ))) |> 
+  dplyr::mutate(classifier_version_txt = dplyr::case_when(
+    classifier_version == "DMP_grade_class" ~ "WHO Grade\n(Pathology)",
+    classifier_version == "DMP_resection_class" ~ "Resection\n(Time)",
+    T ~ gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version)
+  )) |> 
+  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO Grade\n(Pathology)", "Resection\n(Time)")))
+
+
+plt.resection.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
+  dplyr::pull("patient_suspected_noncodel") |>
+  table()
+plt.patient.counts <- plt |>
+  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
+  dplyr::select(patient_id, patient_suspected_noncodel) |> 
+  dplyr::distinct() |> 
+  dplyr::pull("patient_suspected_noncodel") |>
+  table()
+
+
+
+cols = c('primary' = 'lightblue',
+         'last recurrent' = 'darkblue',
+         
+         'O_IDH' = 'lightgreen',
+         'OLIGOSARC_IDH' = 'darkgreen',
+         
+         'first Grade 2' = mixcol( 'lightblue', 'lightgreen'),
+         'last Grade 3' = mixcol( 'darkblue', 'darkgreen'),
+         
+         'Yes' = c('#E49E27', '#59B2E6', '#009E74', '#CB75A4')[1],
+         'No' = c('#E49E27', '#59B2E6', '#009E74', '#CB75A4')[2],
+         
+         'Source: FFPE' = mixcol('purple', "white", 0.2),
+         'Source: fresh' = mixcol(mixcol('red','pink',0.3), "white", 0.2),
+         
+         'Other' = 'darkgray',
+         'N/A' = 'darkgray'
+)
+
+
+ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
+  facet_grid(rows=vars(classifier_version_txt), scales = "free", space="free") +
+  geom_point(pch=15,size=1.4,alpha=0.65) +
+  labs(x = "patient", y="resection #", col="",fill="") +
+  labs(subtitle=format_subtitle("Cohort overview")) +
+  ylim(0.5, 5.5) +
+  scale_color_manual(values=cols) +
+  theme_nature +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_nature_lwd , linetype="solid"))
+
+
+ggsave("output/figures/vis_cohort_overview_MNP_classes__DMP_sample_selection.pdf", width=8.5 * 0.975 , height = 1.65)
 
 
 
