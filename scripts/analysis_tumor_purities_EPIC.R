@@ -6,7 +6,7 @@ source('scripts/load_chrom_sizes.R')
 
 # CNV based purity estimation
 
-# type 1: segment based ----
+# type 1: segment based [excl] ----
 
 estimate_1p19q_purity_segment_based <- function(fn) {
   #fn = glass_od.metadata.array_samples$heidelberg_cnvp_segments[1]
@@ -336,6 +336,51 @@ pbapply::pblapply(glass_od.metadata.array_samples |>
 
 
 saveRDS(purities.bin, file="cache/analysis_tumor_purity_EPIC_bin-based.Rds")
+
+
+
+
+
+# mixed-in cortex: bin based ----
+
+
+
+
+
+
+glass_od.data.1p_19q_purity_most_informative_bins <- readRDS("cache/1p_19q_purity_most_informative_bins.Rds")
+
+
+
+
+
+
+
+purities.bin <- do.call(
+  rbind,
+  pbapply::pblapply(rbind(
+    normal_cortex.metadata.array_samples |> dplyr::select(array_mnp_CNVP_v12.8_v5.2_CNVP_bins),
+    cortex_dilution.metadata.array_samples |> dplyr::select(array_mnp_CNVP_v12.8_v5.2_CNVP_bins)
+  ) |> 
+                      dplyr::pull(array_mnp_CNVP_v12.8_v5.2_CNVP_bins)
+                    , estimate_1p19q_purity_bin_based)
+) |> 
+  assertr::verify(!duplicated(array_sentrix_id)) |> 
+  assertr::verify(is.numeric(array_methylation_bins_1p19q_median.lfc)) |> 
+  assertr::verify(is.numeric(array_methylation_bins_1p19q_purity)) |> 
+  assertr::verify(is.numeric(array_methylation_bins_1p19q_sd)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 14+148)
+    return(.)
+  })()
+
+
+saveRDS(purities.bin, file="cache/analysis_tumor_purity_EPIC_bin-based__normal_cortex.Rds")
+
+
+
+
 
 
 

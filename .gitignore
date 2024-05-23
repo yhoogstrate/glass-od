@@ -13,3 +13,5 @@ qcReport.pdf Rplots.pdf
 .nextflow
 .nextflow*
 *.idat
+Meting(Sheet1).csv
+lengths.R

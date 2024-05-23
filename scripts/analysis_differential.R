@@ -189,7 +189,7 @@ plot(coef$conditionc2, -log(pval$conditionc2))
 
 metadata.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_primaries_and_last_recurrences(178) |> 
+  filter_primaries_and_last_recurrences(180) |> 
   
   
   dplyr::group_by(patient_id) |> 
@@ -202,7 +202,7 @@ metadata.pp.nc <- glass_od.metadata.array_samples |>
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (178)) 
+    assertthat::assert_that(nrow(.) == 180) 
     return(.)
   })()
 
@@ -215,7 +215,7 @@ data.pp.nc <- data.mvalues.hq_samples |>
   dplyr::select(metadata.pp.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED_AND_DETP)) 
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
 
@@ -251,7 +251,7 @@ rm(fit.pp.nc, stats.pp.nc)
 
 metadata.pp.prim_rec.quality.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_primaries_and_last_recurrences(177) |> 
+  filter_primaries_and_last_recurrences(180) |> 
   
   
   dplyr::group_by(patient_id) |> 
@@ -263,7 +263,7 @@ metadata.pp.prim_rec.quality.nc <- glass_od.metadata.array_samples |>
 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (177)) 
+    assertthat::assert_that(nrow(.) == 180) 
     return(.)
   })()
 
@@ -710,7 +710,7 @@ ggsave("/tmp/volcano_g3g2.png", width=8.5/2,height=8.5/2)
 
 metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(150) |> 
+  filter_first_G2_and_last_G3(152) |> 
   
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() == 2) |> 
@@ -722,7 +722,7 @@ metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |>
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (150)) 
+    assertthat::assert_that(nrow(.) == 152) 
     return(.)
   })()
 
@@ -775,7 +775,7 @@ rm(fit.g2g3.pp.nc, stats.g2g3.pp.nc)
 
 metadata.g2g3.quality.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(149) |> 
+  filter_first_G2_and_last_G3(152) |> 
   
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() == 2) |> 
@@ -787,7 +787,7 @@ metadata.g2g3.quality.pp.nc <- glass_od.metadata.array_samples |>
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (149)) 
+    assertthat::assert_that(nrow(.) == 152) 
     return(.)
   })()
 
