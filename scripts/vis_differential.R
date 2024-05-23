@@ -385,6 +385,25 @@ rm(tmp)
 
 # plots ----
 
+## 00 statistical power plot ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+
 ## A: overall density ----
 
 ### 1. gray scale ----

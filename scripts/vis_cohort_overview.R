@@ -165,10 +165,33 @@ ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, 
 
 # Figure S5A: GLASS_OD DMP selection ----
 
+glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(patient_id %in% c("0018")) |>
+  dplyr::select(patient_id, resection_id, resection_number, isolation_id, resection_tumor_grade) |> 
+  
+  dplyr::mutate(LG_HG_status = dplyr::case_when(
+    resection_tumor_grade %in% c(2) ~ "LG",
+    resection_tumor_grade %in% c(3) ~ "HG",
+    T ~ as.character(NA),
+  )) |> 
+  
+  dplyr::group_by(patient_id, LG_HG_status) |> 
+  dplyr::mutate(first_LG = 
+                  !is.na(LG_HG_status) & 
+                  LG_HG_status == "LG" &
+                  resection_number == min(resection_number)) |>
+  dplyr::mutate(last_HG = 
+                  !is.na(LG_HG_status) & 
+                  LG_HG_status == "HG" &
+                  resection_number == max(resection_number)) |>
+  dplyr::ungroup() 
+
+
 
 plt.selection.grade <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(152) |> 
+  filter_first_G2_and_last_G3(156) |> 
   dplyr::mutate(DMP_grade_class = ifelse(resection_tumor_grade == 2, "first Grade 2", "last Grade 3")) |> 
   dplyr::select(array_sentrix_id, DMP_grade_class)
 
@@ -205,16 +228,6 @@ plt <- glass_od.metadata.array_samples |>
   )) |> 
   dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO Grade\n(Pathology)", "Resection\n(Time)")))
 
-
-plt.resection.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
-  dplyr::pull("patient_suspected_noncodel") |>
-  table()
-plt.patient.counts <- plt |>
-  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
-  dplyr::select(patient_id, patient_suspected_noncodel) |> 
-  dplyr::distinct() |> 
-  dplyr::pull("patient_suspected_noncodel") |>
-  table()
 
 
 
