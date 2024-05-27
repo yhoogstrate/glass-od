@@ -1667,7 +1667,7 @@ data.qc.pp.nc <- data.mvalues.hq_samples |>
 
 ## 1. pct_detP_signi ----
 
-design.pct_detP_signi.pp.nc <- model.matrix(~factor(patient) + pct_detP_signi, data=metadata.qc.pp.nc)
+design.pct_detP_signi.pp.nc <- model.matrix(~factor(patient) + pct_detP_signi, data=metadata.qc.pp.nc |> dplyr::mutate(pct_detP_signi=scale(pct_detP_signi)))
 fit.pct_detP_signi.pp.nc <- limma::lmFit(data.qc.pp.nc, design.pct_detP_signi.pp.nc)
 fit.pct_detP_signi.pp.nc <- limma::eBayes(fit.pct_detP_signi.pp.nc, trend=T)
 stats.pct_detP_signi.pp.nc <- limma::topTable(fit.pct_detP_signi.pp.nc,
@@ -1678,7 +1678,6 @@ stats.pct_detP_signi.pp.nc <- limma::topTable(fit.pct_detP_signi.pp.nc,
   tibble::rownames_to_column('probe_id') |> 
   dplyr::select(probe_id, t)
 
-print(paste0("Restoration: ", sum(stats.pct_detP_signi.pp.nc$adj.P.Val < 0.01)))
 saveRDS(stats.pct_detP_signi.pp.nc, file="cache/analysis_differential__pct_detP_signi__partial_paired_nc__stats.Rds")
 
 rm(

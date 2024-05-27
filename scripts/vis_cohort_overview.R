@@ -255,7 +255,7 @@ ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
   facet_grid(rows=vars(classifier_version_txt), scales = "free", space="free") +
   geom_point(pch=15,size=1.4,alpha=0.65) +
   labs(x = "patient", y="resection #", col="",fill="") +
-  labs(subtitle=format_subtitle("Cohort overview")) +
+  labs(subtitle=format_subtitle("DMP sample selection")) +
   ylim(0.5, 5.5) +
   scale_color_manual(values=cols) +
   theme_nature +

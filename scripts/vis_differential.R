@@ -438,7 +438,7 @@ ggsave("output/figures/vis_differential__DMP_power.pdf", width=8.5 * 0.975 / 6, 
 
 n_samples_grade <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(152) |> 
+  filter_first_G2_and_last_G3(156) |> 
   nrow()
 
 n_samples_prim_rec <- glass_od.metadata.array_samples |> 
@@ -469,7 +469,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
   
   geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +
   
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="darkgray", size=theme_nature_size) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size, label.x=5) +
   
   
   labs(x="Per probe t-score Grade 2 ~ Grade 3",
@@ -483,7 +483,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
-ggsave(paste0("output/figures/vis_differential__overall_density.png"), width=(8.5 * 0.975 * (2/5)), height=3.48)
+ggsave(paste0("output/figures/vis_differential__overall_density.png"), width=(8.5 * 0.975 * (2/5)), height=3.48, dpi=300)
 
 
 
@@ -525,6 +525,69 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
 
 
 ggsave(paste0("output/figures/vis_differential__EFF1-PC1_EFF2-PC2.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
+
+
+## B: detP fraction ----
+
+
+
+n_samples_grade <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3(156) |> 
+  nrow()
+
+n_samples_prim_rec <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_primaries_and_last_recurrences(180) |> 
+  nrow()
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::mutate(col = DMP__pct_detP_signi__pp_nc__t)
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                color=col)) +
+  #geom_vline(xintercept=0, col="red") +
+  #geom_hline(yintercept=0, col="red") +
+  #geom_vline(xintercept=0, col="red", alpha=0.1) + # do in illustrator
+  #geom_hline(yintercept=0, col="red", alpha=0.1) + # do in illustrator
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  #ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size, label.x=5) +
+  
+  
+  labs(x="Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrence",
+       col="",
+       caption=paste0("Inclusted samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")) +
+  
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
+  
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+
+# 871 x 872
+# 436 x 436
+ggsave(paste0("output/figures/vis_differential__detP.png"), width=(8.5 * 0.975 * (1/5) * 1.12425), height=2.428, dpi=300)
+
 
 
 
