@@ -775,7 +775,7 @@ rm(fit.g2g3.pp.nc, stats.g2g3.pp.nc)
 
 metadata.g2g3.quality.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(152) |> 
+  filter_first_G2_and_last_G3(156) |> 
   
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() == 2) |> 
@@ -787,7 +787,7 @@ metadata.g2g3.quality.pp.nc <- glass_od.metadata.array_samples |>
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 152) 
+    assertthat::assert_that(nrow(.) == 156) 
     return(.)
   })()
 

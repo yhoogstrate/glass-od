@@ -443,7 +443,7 @@ ggsave("output/figures/vis_validation_cohort_overview_MNP_classes.pdf", width=8.
 ## no clear timing effect, but clear recurrence effect
 
 
-# Figure 4F ----
+# Figure 5F ----
 
 
 
@@ -464,7 +464,7 @@ plt.exp1 <- rbind(
   
   plt |> 
     dplyr::mutate(panel = "time") |> 
-    dplyr::mutate(y = time_between_resection_and_array)
+    dplyr::mutate(y = time_between_resection_and_array / 365.25)
   ,
   plt |>
     dplyr::mutate(panel = "time") |> 
@@ -546,7 +546,7 @@ p2 <- ggplot(plt.exp2, aes(x = reorder(array_sentrix_id, array_PC1),
                     y = y,
                     col = value)) +
   facet_grid(cols=vars(isolation_material), scales = "free", space="free_x") +
-  geom_point(pch=15,size=0.825,alpha=0.65) +
+  geom_point(pch=15,size=theme_nature_size / 3, alpha=0.65) +
   scale_color_manual(values=cols) +
   labs(x=NULL, y=NULL) +
   theme_nature +
@@ -557,10 +557,11 @@ p2 <- ggplot(plt.exp2, aes(x = reorder(array_sentrix_id, array_PC1),
 
 p2 / p1 + plot_layout(heights = c(1, 4))
 
-ggsave("output/figures/vis_cohort_overview__overview_FFPE-time.png", width=8.5 * 0.975, height = 4)
+
+ggsave("output/figures/vis_cohort_overview__overview_FFPE-time.pdf", width=8.5 * 0.975, height = 2.5)
 
 
-rm(col, p1, p2, plt, plt.exp1, plt.exp2)
+rm(cols, p1, p2, plt, plt.exp1, plt.exp2)
 
 
 
