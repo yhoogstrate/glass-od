@@ -218,12 +218,65 @@ rm(tmp)
 
 
 
+
+### adds: per probe outcomes (DMP etc.) ----
+
+
+tmp <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |>
+  dplyr::tibble() |> 
+  dplyr::filter(!is.na(gc_sequence_context_2_new)) |> 
+  dplyr::mutate(sequence_5p = toupper(gsub("[^a-zA-Z]","",gc_sequence_context_2_new))) |> 
+  dplyr::select(sequence_5p, DMP__g2_g3__pp_nc__t, DMP__primary_recurrence__pp_nc__t) |> 
+  dplyr::group_by(sequence_5p) |>
+  dplyr::summarise(GLASS_OD__DMP__g2_g3__mean = mean(DMP__g2_g3__pp_nc__t),
+                   GLASS_OD__DMP__g2_g3__median = median(DMP__g2_g3__pp_nc__t),
+                   GLASS_OD__DMP__primary_recurrence__mean = mean(DMP__primary_recurrence__pp_nc__t),
+                   GLASS_OD__DMP__primary_recurrence__median = median(DMP__primary_recurrence__pp_nc__t)
+  ) |> 
+  dplyr::ungroup()  |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == 256)
+    return(.)
+  })() |> 
+  assertr::verify(sequence_5p %in% plt.motifs.stranded$sequence_5p)
+
+
+
+plt.motifs.stranded <- plt.motifs.stranded |> 
+  dplyr::left_join(tmp, by=c('sequence_5p'='sequence_5p')) |> 
+  assertr::verify(!is.na(GLASS_OD__DMP__g2_g3__mean)) |> 
+  assertr::verify(!is.na(GLASS_OD__DMP__g2_g3__median)) |> 
+  assertr::verify(!is.na(GLASS_OD__DMP__primary_recurrence__mean)) |> 
+  assertr::verify(!is.na(GLASS_OD__DMP__primary_recurrence__median))
+
+
+rm(tmp)
+
+
+
+
 ## plt.motifs.unstranded [palindrom correction] ----
 
 
 
 plt.motifs.unstranded <- plt.motifs.stranded |> 
-  dplyr::select(-c(sequence_5p, sequence_3p, palindromic)) |> 
+  dplyr::select(
+    `oligo_sequence`, `DNMT1_Adam_NatCom_2020_stranded`, `DNMT1_Adam_NAR_2023_stranded`,
+    `DNMT3A_Gao_NatCom_2020_stranded`, `DNMT3B_Gao_NatCom_2020_stranded`, `TET1_5mC_Adam_NatCom_2022_stranded`,
+    `TET1_5hmC_Adam_NatCom_2022_stranded`, `TET2_5mC_Adam_NatCom_2022_stranded`, `TET2_5hmC_Adam_NatCom_2022_stranded`,
+    `TET3_Ravichandran_SciAdv_2022_stranded`
+  ) |> 
   dplyr::group_by(oligo_sequence) |> 
   dplyr::summarise_all(mean) |> # all, except the one used to group_by
   dplyr::rename_with(~ gsub("_stranded$","_unstranded",.x))  |> 
@@ -236,7 +289,7 @@ plt.motifs.unstranded <- plt.motifs.stranded |>
 
 
 
-### x adds: DMP outcomes GLASS-OD, GLASS-NL ----
+### adds: per probe outcomes (DMP etc.) ----
 
 
 tmp <- data.mvalues.probes |> 
@@ -294,9 +347,6 @@ plt.motifs <- tmp |>
 
 rm(tmp)
 
-
-
-### x adds: DMP outcomes GLASS-NL ----
 
 
 
