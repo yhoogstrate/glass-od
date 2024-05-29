@@ -21,16 +21,10 @@ if(!exists('data.mvalues.probes')) {
 }
 
 
-if(!exists('data.intensities.probes')) {
-  source('scripts/load_intensities_hq_samples.R')
-}
+#if(!exists('data.intensities.probes')) {
+#  source('scripts/load_intensities_hq_samples.R')
+#}
 
-
-data.mvalues.probes |>  dplyr::arrange(DPI__FFPE_decay_time__pp_nc__t) |> head(n=25) |> 
-  dplyr::select(probe_id,  orientation_mapped ,sequence_pre, AlleleA_ProbeSeq,
-                
-                #sequence_post, AlleleB_ProbeSeq, 
-                DPI__FFPE_decay_time__pp_nc__t)
 
 
 
@@ -74,7 +68,7 @@ plt.motifs.stranded <- data.frame(# R way of thinking
 
 tmp <- readxl::read_xlsx('data/DNMT1_Adam_et_al_2020_N2_data.xlsx') |> 
   (function(.) {
-    assertthat::assert_that(nrow(.) == (256))
+    assertthat::assert_that(nrow(.) == 256)
     return(.)
   })() |> 
   dplyr::rename(sequence = D1) |> 
@@ -100,7 +94,7 @@ rm(tmp)
 
 tmp <- readxl::read_xlsx('data/DNMT1_Adam_NAR_2023_HM_combi_N2.xlsx') |> 
   (function(.) {
-    assertthat::assert_that(nrow(.) == (256))
+    assertthat::assert_that(nrow(.) == 256)
     return(.)
   })() |> 
   dplyr::rename(sequence = Site) |> 
@@ -165,7 +159,7 @@ rm(tmp)
 
 tmp <- readxl::read_xlsx('data/42003_2022_3033_MOESM4_ESM.xlsx', skip=3) |> 
   (function(.) {
-    assertthat::assert_that(nrow(.) == (256))
+    assertthat::assert_that(nrow(.) == 256)
     return(.)
   })() |> 
   dplyr::rename(sequence = 1) |> 
@@ -221,6 +215,24 @@ plt.motifs.stranded <- plt.motifs.stranded |>
 
 
 rm(tmp)
+
+
+
+## plt.motifs.unstranded [palindrom correction] ----
+
+
+
+plt.motifs.unstranded <- plt.motifs.stranded |> 
+  dplyr::select(-c(sequence_5p, sequence_3p, palindromic)) |> 
+  dplyr::group_by(oligo_sequence) |> 
+  dplyr::summarise_all(mean) |> # all, except the one used to group_by
+  dplyr::rename_with(~ gsub("_stranded$","_unstranded",.x))  |> 
+  dplyr::filter(!duplicated(oligo_sequence)) |> 
+  (function(.) {
+    assertthat::assert_that(nrow(.) == 136)
+    return(.)
+  })()
+
 
 
 
@@ -284,24 +296,6 @@ plt.motifs <- plt.motifs |>
 
 
 rm(tmp)
-
-
-
-## plt.motifs.unstranded ----
-
-
-
-plt.motifs.unstranded <- plt.motifs.stranded |> 
-  dplyr::select(-c(sequence_5p, sequence_3p, palindromic)) |> 
-  dplyr::group_by(oligo_sequence) |> 
-  dplyr::summarise_all(mean) |> # all, except the one used to group_by
-  dplyr::rename_with(~ gsub("_stranded$","_unstranded",.x))  |> 
-  dplyr::filter(!duplicated(oligo_sequence)) |> 
-  (function(.) {
-    assertthat::assert_that(nrow(.) == (136))
-    return(.)
-  })()
-
 
 
 
