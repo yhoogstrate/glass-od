@@ -443,9 +443,7 @@ ggsave("output/figures/vis_validation_cohort_overview_MNP_classes.pdf", width=8.
 ## no clear timing effect, but clear recurrence effect
 
 
-# Figure 5F ----
-
-
+# Figure 5F [var1] ----
 
 plt <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
@@ -481,13 +479,13 @@ plt.exp1 <- rbind(
 
 
 p1 <- ggplot(plt.exp1, aes(x = reorder(array_sentrix_id, array_PC1),
-                    y = y,
-                    col = isolation_material)) +
+                           y = y,
+                           col = isolation_material)) +
   facet_grid(rows=vars(panel), cols=vars(isolation_material), scales = "free", space="free_x") +
   geom_line(lwd=1.05) +
   scale_color_manual(values=c('ffpe'=mixcol('purple', "white", 0.2),
-                     'tissue' = mixcol(mixcol('red','pink',0.3), "white", 0.2),
-                     'N/A'= 'darkgray')) +
+                              'tissue' = mixcol(mixcol('red','pink',0.3), "white", 0.2),
+                              'N/A'= 'darkgray')) +
   labs(x="Sample", y=NULL) +
   theme_nature +
   theme(axis.title.x=element_blank(),
@@ -543,22 +541,83 @@ plt.exp2 <- rbind(
 
 
 p2 <- ggplot(plt.exp2, aes(x = reorder(array_sentrix_id, array_PC1),
-                    y = y,
-                    col = value)) +
+                           y = y,
+                           col = value)) +
   facet_grid(cols=vars(isolation_material), scales = "free", space="free_x") +
   geom_point(pch=15,size=theme_nature_size / 3, alpha=0.65) +
   scale_color_manual(values=cols) +
   labs(x=NULL, y=NULL) +
   theme_nature +
-    theme(axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank())
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
 
 
-p2 / p1 + plot_layout(heights = c(1, 4))
+p2 / p1 + plot_layout(heights = c(1, 8))
 
 
 ggsave("output/figures/vis_cohort_overview__overview_FFPE-time.pdf", width=8.5 * 0.975, height = 2.5)
+
+
+rm(cols, p1, p2, plt, plt.exp1, plt.exp2)
+
+
+
+
+# Figure 5F [var2] ----
+
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(!is.na(time_between_resection_and_array)) |> 
+  dplyr::mutate(time_between_resection_and_array = as.numeric(time_between_resection_and_array))
+
+
+plt.exp1 <- rbind(
+  plt |> 
+    dplyr::mutate(panel = "det-P") |> 
+    dplyr::mutate(y = array_percentage.detP.signi)
+  ,
+  plt |>
+    dplyr::mutate(panel = "det-P") |> 
+    dplyr::mutate(y = 0),
+  
+  plt |> 
+    dplyr::mutate(panel = "time") |> 
+    dplyr::mutate(y = time_between_resection_and_array / 365.25)
+  ,
+  plt |>
+    dplyr::mutate(panel = "time") |> 
+    dplyr::mutate(y = 0),
+  plt |> 
+    dplyr::mutate(panel = "PC") |> 
+    dplyr::mutate(y = array_PC1)
+  ,
+  plt |>
+    dplyr::mutate(panel = "PC") |> 
+    dplyr::mutate(y = 0)
+) |> 
+  dplyr::mutate(isolation_material = ifelse(is.na(isolation_material), "N/A", isolation_material)) |> 
+  dplyr::mutate(isolation_material = factor(isolation_material, levels=c("tissue", "ffpe", "N/A")))
+
+
+ggplot(plt.exp1, aes(x = reorder(array_sentrix_id, array_PC1),
+                           y = y,
+                           col = isolation_material)) +
+  facet_grid(rows=vars(panel), cols=vars(isolation_material), scales = "free", space="free_x") +
+  geom_line(lwd=theme_nature_lwd * 2.4) +
+  scale_color_manual(values=c('ffpe'=mixcol('purple', "white", 0.2),
+                              'tissue' = mixcol(mixcol('red','pink',0.3), "white", 0.2),
+                              'N/A'= 'darkgray')) +
+  labs(x="Sample", y=NULL) +
+  theme_nature +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+
+
+ggsave("output/figures/vis_cohort_overview__overview_FFPE-time.pdf", width=8.5 * 0.975 / 2 , height = 2.5)
 
 
 rm(cols, p1, p2, plt, plt.exp1, plt.exp2)

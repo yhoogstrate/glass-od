@@ -474,7 +474,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
   
   labs(x="Per probe t-score Grade 2 ~ Grade 3",
        y="Per probe t-score Primary ~ Recurrence",
-                caption=paste0("Inclusted samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")) +
+                caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")) +
   
   theme_nature +
   theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
@@ -527,6 +527,61 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
 ggsave(paste0("output/figures/vis_differential__EFF1-PC1_EFF2-PC2.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
 
 
+### 3. PC1 / qual corrected ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                y=DMP__primary_recurrence__pp_nc_PC1__t)) +
+  
+  #geom_vline(xintercept=0, col="red") +
+  #geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +
+  
+  #geom_vline(xintercept=0, col="red", alpha=0.1) +
+  #geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size, label.x=5) +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrence",
+       caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")
+  ) +
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
+  
+  ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
+  #theme(plot.background = element_rect(fill="white"))  # png export
+
+
+
+ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected.png"), width=(8.5 * 0.975 * (2/5)), height=3.48, dpi=300)
+
+
+#ggsave(paste0("output/figures/vis_differential__overall_density.png"), width=(8.5 * 0.975 * (2/5)), height=3.48, dpi=300)
+
+
+
 
 ## B: detP fraction ----
 
@@ -573,7 +628,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
   labs(x="Per probe t-score Grade 2 ~ Grade 3",
        y="Per probe t-score Primary ~ Recurrence",
        col="",
-       caption=paste0("Inclusted samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")) +
+       caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")) +
   
   theme_nature +
   theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
@@ -1518,6 +1573,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
 
 
 ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+
 
 
 ### GLASS-NL ----
