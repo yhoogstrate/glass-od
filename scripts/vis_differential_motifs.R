@@ -236,9 +236,7 @@ plt.motifs.unstranded <- plt.motifs.stranded |>
 
 
 
-### x adds: DMP outcomes GLASS-OD ----
-### x adds: DMP outcomes GLASS-NL ----
-
+### x adds: DMP outcomes GLASS-OD, GLASS-NL ----
 
 
 tmp <- data.mvalues.probes |> 
@@ -254,7 +252,7 @@ tmp <- data.mvalues.probes |>
     return(.)
   })() |>
   dplyr::tibble() |> 
-  dplyr::filter(!is.na(gc_sequence_context_2_new)) |> 
+  assertr::verify(!is.na(gc_sequence_context_2_new)) |> 
   dplyr::select(gc_sequence_context_2_new, DMP__g2_g3__pp_nc__t, DMP__primary_recurrence__pp_nc__t) |> 
   dplyr::mutate(sequence_5p = gsub("[CG]","CG",gc_sequence_context_2_new, fixed=T), gc_sequence_context_2_new=NULL) |> 
   dplyr::mutate(sequence_3p = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(sequence_5p)))) |> 
@@ -271,24 +269,23 @@ tmp <- data.mvalues.probes |>
       sequence_5p > sequence_3p ~ paste0(sequence_3p,"/",sequence_5p),
       palindromic ~ paste0("*",sequence_5p,"/",sequence_3p)
     ))) |> 
+  
   dplyr::group_by(oligo_sequence) |>
-  dplyr::mutate(GLASS_OD__DMP__g2_g3__mean = mean(DMP__g2_g3__pp_nc__t)) |> 
-  dplyr::mutate(GLASS_OD__DMP__g2_g3__median = median(DMP__g2_g3__pp_nc__t)) |>
-  dplyr::mutate(GLASS_OD__DMP__primary_recurrence__mean = mean(DMP__primary_recurrence__pp_nc__t)) |> 
-  dplyr::mutate(GLASS_OD__DMP__primary_recurrence__median = median(DMP__primary_recurrence__pp_nc__t)) |> 
-  dplyr::ungroup() |> 
-  dplyr::select(oligo_sequence, GLASS_OD__DMP__g2_g3__mean, GLASS_OD__DMP__g2_g3__median, GLASS_OD__DMP__primary_recurrence__mean, GLASS_OD__DMP__primary_recurrence__median) |> 
-  dplyr::distinct() |> 
+  dplyr::summarise(GLASS_OD__DMP__g2_g3__mean = mean(DMP__g2_g3__pp_nc__t),
+                   GLASS_OD__DMP__g2_g3__median = median(DMP__g2_g3__pp_nc__t),
+                   GLASS_OD__DMP__primary_recurrence__mean = mean(DMP__primary_recurrence__pp_nc__t),
+                   GLASS_OD__DMP__primary_recurrence__median = median(DMP__primary_recurrence__pp_nc__t)
+                   ) |> 
+  dplyr::ungroup()  |> 
   (function(.) {
-    assertthat::assert_that(nrow(.) == (136))
+    assertthat::assert_that(nrow(.) == 136)
     return(.)
   })() |> 
   assertr::verify(oligo_sequence %in% plt.motifs.stranded$oligo_sequence)
 
 
 
-plt.motifs <- plt.motifs |> 
-  dplyr::left_join(tmp, by=c('oligo_sequence'='oligo_sequence'), suffix=c('','')) |> 
+plt.motifs <- tmp |> 
   assertr::verify(!is.na(GLASS_OD__DMP__g2_g3__mean)) |> 
   assertr::verify(!is.na(GLASS_OD__DMP__g2_g3__median)) |> 
   assertr::verify(!is.na(GLASS_OD__DMP__primary_recurrence__mean)) |> 
@@ -296,6 +293,10 @@ plt.motifs <- plt.motifs |>
 
 
 rm(tmp)
+
+
+
+### x adds: DMP outcomes GLASS-NL ----
 
 
 
