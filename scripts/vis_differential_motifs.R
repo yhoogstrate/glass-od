@@ -236,7 +236,7 @@ tmp <- data.mvalues.probes |>
   })() |>
   dplyr::tibble() |> 
   dplyr::filter(!is.na(gc_sequence_context_2_new)) |> 
-  dplyr::mutate(sequence_5p = toupper(gsub("[^a-zA-Z]","",gc_sequence_context_2_new))) |> 
+  dplyr::mutate(sequence_5p = toupper(gsub("[^a-zA-Z]","", gc_sequence_context_2_new))) |> 
   dplyr::select(sequence_5p, DMP__g2_g3__pp_nc__t, DMP__primary_recurrence__pp_nc__t) |> 
   dplyr::group_by(sequence_5p) |>
   dplyr::summarise(GLASS_OD__DMP__g2_g3__mean = mean(DMP__g2_g3__pp_nc__t),
@@ -338,7 +338,8 @@ tmp <- data.mvalues.probes |>
 
 
 
-plt.motifs <- tmp |> 
+plt.motifs.unstranded <- plt.motifs.unstranded |> 
+  dplyr::left_join(tmp, by=c('oligo_sequence'='oligo_sequence')) |> 
   assertr::verify(!is.na(GLASS_OD__DMP__g2_g3__mean)) |> 
   assertr::verify(!is.na(GLASS_OD__DMP__g2_g3__median)) |> 
   assertr::verify(!is.na(GLASS_OD__DMP__primary_recurrence__mean)) |> 
@@ -394,9 +395,11 @@ plt <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |>
-  dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
-  dplyr::filter(!is.na(sequence_context_stranded)) |> 
-  dplyr::left_join(plt.motifs.stranded, by=c('sequence_context_stranded'='sequence_5p'),suffix=c('',''))
+  #dplyr::mutate(sequence_5p = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
+  dplyr::mutate(sequence_5p = gsub("[^a-zA-Z]","",gc_sequence_context_2_new)) |> 
+  dplyr::filter(!is.na(sequence_5p)) |> 
+  dplyr::left_join(plt.motifs.stranded, by=c('sequence_5p'='sequence_5p'),suffix=c('',''))
+
 
 
 
@@ -451,9 +454,11 @@ plt <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |>
-  dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
-  dplyr::filter(!is.na(sequence_context_stranded)) |> 
-  dplyr::left_join(plt.motifs.stranded |> dplyr::select(sequence_5p, oligo_sequence), by=c('sequence_context_stranded'='sequence_5p'), suffix=c('','')) |> 
+  #dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
+  #dplyr::filter(!is.na(sequence_context_stranded)) |> 
+  dplyr::mutate(sequence_5p = gsub("[^a-zA-Z]","",gc_sequence_context_2_new)) |> 
+  dplyr::filter(!is.na(sequence_5p)) |> 
+  dplyr::left_join(plt.motifs.stranded |> dplyr::select(sequence_5p, oligo_sequence), by=c('sequence_5p'='sequence_5p'), suffix=c('','')) |> 
   dplyr::left_join(plt.motifs.unstranded, by=c('oligo_sequence'='oligo_sequence'),suffix=c('',''))
 
 
@@ -624,58 +629,14 @@ ggplot(plt, aes(y=TET3_Ravichandran_SciAdv_2022_stranded, x=DMP__g2_g3__pp_nc__t
 
 
 
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
-    return(.)
-  })() |> 
-  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
-    return(.)
-  })() |>
-  dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
-  dplyr::filter(!is.na(sequence_context_stranded)) |> 
-  dplyr::left_join(plt.motifs.stranded |> dplyr::select(sequence_5p, oligo_sequence), by=c('sequence_context_stranded'='sequence_5p'), suffix=c('','')) |> 
-  dplyr::left_join(plt.motifs.unstranded, by=c('oligo_sequence'='oligo_sequence'),suffix=c('','')) |> 
-  assertr::verify(is.numeric(TET1_5mC_Adam_NatCom_2022_unstranded)) |> 
-  
-  dplyr::group_by(sequence_context_stranded) |> 
-  dplyr::summarise(DMP__PCs__pp_nc__PC1_t = mean(DMP__PCs__pp_nc__PC1_t),
-                   DMP__PCs__pp_nc__PC2_t = mean(DMP__PCs__pp_nc__PC2_t),
-                   DMP__g2_g3__pp_nc_PC1__t = mean(DMP__g2_g3__pp_nc_PC1__t),
-                   DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
-                   TET1_5mC_Adam_NatCom_2022_unstranded = mean(TET1_5mC_Adam_NatCom_2022_unstranded),
-                   oligo_sequence = unique(oligo_sequence)) |> 
-  dplyr::ungroup() |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 256) 
-    return(.)
-  })() |> 
-  
-  dplyr::group_by(oligo_sequence) |> 
-  dplyr::summarise(DMP__PCs__pp_nc__PC1_t = mean(DMP__PCs__pp_nc__PC1_t),
-                   DMP__PCs__pp_nc__PC2_t = mean(DMP__PCs__pp_nc__PC2_t),
-                   DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
-                   DMP__g2_g3__pp_nc_PC1__t = mean(DMP__g2_g3__pp_nc_PC1__t),
-                   TET1_5mC_Adam_NatCom_2022_unstranded = mean(TET1_5mC_Adam_NatCom_2022_unstranded),
-                   oligo_sequence = unique(oligo_sequence)) |> 
-  dplyr::ungroup() |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 136) 
-    return(.)
-  })() |> 
+plt <- plt.motifs.unstranded |> 
   dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
 
 
 # DMP__g2_g3__pp_nc__t
 # DMP__g2_g3__pp_nc_PC1__t
 # DMP__PCs__pp_nc__PC1_t
-ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=DMP__g2_g3__pp_nc__t, col=adjacent_cg, label=oligo_sequence)) +
+ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=GLASS_OD__DMP__g2_g3__median, col=adjacent_cg, label=oligo_sequence)) +
   geom_point(size=theme_nature_size/3) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
                    label.x=-0.85) +
@@ -704,51 +665,9 @@ ggsave("output/figures/vis_differential_motifs__TET1_x_grade__unstranded.pdf", w
 ## motif: xx[CG]xx violin(s) unstranded x TET2----
 
 
-
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
-    return(.)
-  })() |> 
-  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
-    return(.)
-  })() |>
-  dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
-  dplyr::filter(!is.na(sequence_context_stranded)) |> 
-  dplyr::left_join(plt.motifs.stranded |> dplyr::select(sequence_5p, oligo_sequence), by=c('sequence_context_stranded'='sequence_5p'), suffix=c('','')) |> 
-  dplyr::left_join(plt.motifs.unstranded, by=c('oligo_sequence'='oligo_sequence'),suffix=c('','')) |> 
-  assertr::verify(is.numeric(TET2_5mC_Adam_NatCom_2022_unstranded)) |> 
-  
-  dplyr::group_by(sequence_context_stranded) |> 
-  dplyr::summarise(DMP__PCs__pp_nc__PC2_t = mean(DMP__PCs__pp_nc__PC2_t),
-                   DMP__g2_g3__pp_nc_PC1__t = mean(DMP__g2_g3__pp_nc_PC1__t),
-                   DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
-                   TET2_5mC_Adam_NatCom_2022_unstranded = mean(TET2_5mC_Adam_NatCom_2022_unstranded),
-                   oligo_sequence = unique(oligo_sequence)) |> 
-  dplyr::ungroup() |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 256) 
-    return(.)
-  })() |> 
-  
-  dplyr::group_by(oligo_sequence) |> 
-  dplyr::summarise(DMP__PCs__pp_nc__PC2_t = mean(DMP__PCs__pp_nc__PC2_t),
-                   DMP__g2_g3__pp_nc_PC1__t = mean(DMP__g2_g3__pp_nc_PC1__t),
-                   DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
-                   TET2_5mC_Adam_NatCom_2022_unstranded = mean(TET2_5mC_Adam_NatCom_2022_unstranded),
-                   oligo_sequence = unique(oligo_sequence)) |> 
-  dplyr::ungroup() |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 136) 
-    return(.)
-  })() |> 
+plt <- plt.motifs.unstranded |> 
   dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
+
 
 
 
@@ -756,7 +675,7 @@ plt <- data.mvalues.probes |>
 # DMP__g2_g3__pp_nc_PC1__t
 # DMP__PCs__pp_nc__PC2_t = mean(DMP__PCs__pp_nc__PC2_t),
 ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded,
-                x=DMP__g2_g3__pp_nc__t,
+                x=GLASS_OD__DMP__g2_g3__median,
                 col=adjacent_cg, label=oligo_sequence)) +
   geom_point(size=theme_nature_size/3) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
@@ -788,54 +707,15 @@ ggsave("output/figures/vis_differential_motifs__TET2_x_grade__unstranded.pdf", w
 
 
 
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
-    return(.)
-  })() |> 
-  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
-    return(.)
-  })() |>
-  dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
-  dplyr::filter(!is.na(sequence_context_stranded)) |> 
-  dplyr::left_join(plt.motifs.stranded |> dplyr::select(sequence_5p, oligo_sequence), by=c('sequence_context_stranded'='sequence_5p'), suffix=c('','')) |> 
-  dplyr::left_join(plt.motifs.unstranded, by=c('oligo_sequence'='oligo_sequence'),suffix=c('','')) |> 
-  assertr::verify(is.numeric(TET3_Ravichandran_SciAdv_2022_unstranded)) |> 
-  
-  dplyr::group_by(sequence_context_stranded) |> 
-  dplyr::summarise(DMP__g2_g3__pp_nc_PC1__t = mean(DMP__g2_g3__pp_nc_PC1__t),
-                   DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
-                   TET3_Ravichandran_SciAdv_2022_unstranded = mean(TET3_Ravichandran_SciAdv_2022_unstranded),
-                   oligo_sequence = unique(oligo_sequence)) |> 
-  dplyr::ungroup() |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 256) 
-    return(.)
-  })() |> 
-  
-  dplyr::group_by(oligo_sequence) |> 
-  dplyr::summarise(DMP__g2_g3__pp_nc_PC1__t = mean(DMP__g2_g3__pp_nc_PC1__t),
-                   DMP__g2_g3__pp_nc__t = mean(DMP__g2_g3__pp_nc__t),
-                   TET3_Ravichandran_SciAdv_2022_unstranded = mean(TET3_Ravichandran_SciAdv_2022_unstranded),
-                   oligo_sequence = unique(oligo_sequence)) |> 
-  dplyr::ungroup() |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 136) 
-    return(.)
-  })() |> 
+plt <- plt.motifs.unstranded |> 
   dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
+
 
 
 
 # DMP__g2_g3__pp_nc__t
 # DMP__g2_g3__pp_nc_PC1__t
-ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded, x=DMP__g2_g3__pp_nc__t, col=adjacent_cg, label=oligo_sequence)) +
+ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded, x=GLASS_OD__DMP__g2_g3__median, col=adjacent_cg, label=oligo_sequence)) +
   geom_point(size=theme_nature_size/3) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
                    label.x=-0.85) +
