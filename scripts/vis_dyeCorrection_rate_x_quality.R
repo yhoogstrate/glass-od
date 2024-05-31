@@ -15,6 +15,13 @@ source('scripts/load_palette.R')
 source('scripts/load_themes.R')
 
 
+
+if(!exists('glass_od.metadata.array_samples')) {
+  source('scripts/load_GLASS-OD_metadata.R')
+}
+
+
+
 # plt ----
 
 
