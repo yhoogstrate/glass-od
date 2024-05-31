@@ -1615,6 +1615,7 @@ ggplot(plt, aes(x=DMP__GLASS_NL__g2_g3.4__pp_nc_naive__t,
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
   theme(plot.background = element_rect(fill="white"))  # png export
 
+
 ggsave(paste0("output/figures/vis_differential__GLASS_NL__overall_density__naive.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
 
 
