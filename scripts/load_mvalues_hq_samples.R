@@ -347,7 +347,7 @@ fn <- "cache/analysis_differential__GLASS-NL__primary_recurrence__PC3__partial_p
 if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
-    dplyr::rename_with(~paste0("DMP__GLASS_NL__prim_rec__pp_nc_PC1__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    dplyr::rename_with(~paste0("DMP__GLASS_NL__prim_rec__pp_nc_PC3__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
     (function(.) {
       print(dim(.))
       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
@@ -376,7 +376,7 @@ fn <- "cache/analysis_differential__GLASS-NL__primary_recurrence__PC1_PC3__parti
 if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
-    dplyr::rename_with(~paste0("DMP__GLASS_NL__prim_rec__pp_nc_PC1__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    dplyr::rename_with(~paste0("DMP__GLASS_NL__prim_rec__pp_nc_PC1_PC3__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
     (function(.) {
       print(dim(.))
       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)

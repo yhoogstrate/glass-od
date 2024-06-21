@@ -169,6 +169,7 @@ dev.off()
 
 ## test predicted vs real ----
 
+cv_model_probe_based <- readRDS(file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__probe_based__train_paramters.Rds")
 
 out.probe_based <- data.frame()
 for(cv in 0:9) {

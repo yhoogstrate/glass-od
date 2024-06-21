@@ -834,7 +834,7 @@ library(cvAUC)
 
 
 lda.data <- metadata.combi |> 
-  dplyr::select(array_sentrix_id, dataset, paste0("array_PC.GLASS_OD_NL_combined_excl_1P19Q.",1:50))  |>  # avoid curse of dimension
+  dplyr::select(array_sentrix_id, dataset, paste0("array_PC.GLASS_OD_NL_combined_excl_1P19Q.", 1:50))  |>  # avoid curse of dimension
   dplyr::mutate(dataset = as.factor(dataset)) |> 
   dplyr::mutate(i = 1:dplyr::n()) |> 
   dplyr::mutate(slice = (i %% 10) + 1) |> 

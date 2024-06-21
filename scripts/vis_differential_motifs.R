@@ -538,6 +538,8 @@ ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_stranded, x=DMP__g2_g3__pp_nc__t)) +
   theme(plot.background = element_rect(fill="white")) # png export
 
 
+
+
 ## motif: xx[CG]xx violin(s) stranded x TET2----
 
 
@@ -620,6 +622,111 @@ ggplot(plt, aes(y=TET3_Ravichandran_SciAdv_2022_stranded, x=DMP__g2_g3__pp_nc__t
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
   theme_cellpress +
   theme(plot.background = element_rect(fill="white")) # png export
+
+
+
+## motif: xx[CG]xx violin(s) unstranded x DNMT1 ----
+
+
+plt <- plt.motifs.unstranded |> 
+  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
+
+
+# DMP__g2_g3__pp_nc__t
+# DMP__g2_g3__pp_nc_PC1__t
+# DMP__PCs__pp_nc__PC1_t
+ggplot(plt, aes(y=DNMT1_Adam_NAR_2023_unstranded, x=GLASS_OD__DMP__g2_g3__median, col=adjacent_cg, label=oligo_sequence)) +
+  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
+                   label.x=-0.85) +
+  scale_color_manual(
+    values=c(
+      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
+      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
+    )
+  ) +
+  theme_nature +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
+  #coord_cartesian(ylim=c(0, NA))  +
+  labs(x="T-score\nWHO grade 2 <> WHO grade 3",
+       y="DNMT1 (Adam NAR 2023)",
+       col="",
+       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
+       subtitle=format_subtitle("TET1 x t-score WHO grade")
+  )
+
+
+ggsave("output/figures/vis_differential_motifs__DNMT1_x_grade__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
+
+
+
+## motif: xx[CG]xx violin(s) unstranded x DNMT3A ----
+
+
+plt <- plt.motifs.unstranded |> 
+  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
+
+
+# DMP__g2_g3__pp_nc__t
+# DMP__g2_g3__pp_nc_PC1__t
+# DMP__PCs__pp_nc__PC1_t
+ggplot(plt, aes(y=DNMT3A_Gao_NatCom_2020_unstranded, x=GLASS_OD__DMP__g2_g3__median, col=adjacent_cg, label=oligo_sequence)) +
+  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
+                   label.x=-0.85) +
+  scale_color_manual(
+    values=c(
+      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
+      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
+    )
+  ) +
+  theme_nature +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
+  #coord_cartesian(ylim=c(0, NA))  +
+  labs(x="T-score\nWHO grade 2 <> WHO grade 3",
+       y="DNMT3A (Gao NatCom 2020)",
+       col="",
+       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
+       subtitle=format_subtitle("TET1 x t-score WHO grade")
+  )
+
+
+ggsave("output/figures/vis_differential_motifs__DNMT3A_x_grade__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
+
+
+
+## motif: xx[CG]xx violin(s) unstranded x DNMT3B ----
+
+
+plt <- plt.motifs.unstranded |> 
+  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
+
+
+# DMP__g2_g3__pp_nc__t
+# DMP__g2_g3__pp_nc_PC1__t
+# DMP__PCs__pp_nc__PC1_t
+ggplot(plt, aes(y=DNMT3B_Gao_NatCom_2020_unstranded, x=GLASS_OD__DMP__g2_g3__median, col=adjacent_cg, label=oligo_sequence)) +
+  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
+                   label.x=-0.85) +
+  scale_color_manual(
+    values=c(
+      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
+      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
+    )
+  ) +
+  theme_nature +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
+  #coord_cartesian(ylim=c(0, NA))  +
+  labs(x="T-score\nWHO grade 2 <> WHO grade 3",
+       y="DNMT3B (Gao NatCom 2020)",
+       col="",
+       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
+       subtitle=format_subtitle("TET1 x t-score WHO grade")
+  )
+
+
+ggsave("output/figures/vis_differential_motifs__DNMT3B_x_grade__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
 
 
 

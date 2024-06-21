@@ -18,7 +18,7 @@ tmp <- DBI::dbListTables(metadata.db.con) |>
   dplyr::filter(grepl("^view_", table)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) >= 4)
+    assertthat::assert_that(nrow(.) >= 5)
     return(.)
   })()
 
@@ -115,52 +115,9 @@ glass_od.metadata.resections <- DBI::dbReadTable(metadata.db.con, 'view_resectio
 
 
 
-# 3. proteomics level ----
 
-
-glass_od.metadata.proteomics <- readxl::read_xlsx('data/GLASS_OD/Protein - Tobias Weiss/Oligodendroglioma_protein matrices.xlsx') |> 
-  dplyr::mutate(raw.file = NULL) |> 
-  dplyr::mutate(Subject_ = NULL) |> 
-  dplyr::mutate(Group_ = NULL) |> 
-  dplyr::mutate(isotopeLabel = NULL) |>  # all same value
-  dplyr::mutate(proteomics_QC_sample = CONTROL == "QC") |>
-  dplyr::mutate(CONTROL = NULL) |> 
-  dplyr::rename(proteomics_protein_Id = protein_Id) |> 
-  dplyr::rename(proteomics_id = Name)
-
-
-tmp <- readxl::read_xlsx('data/GLASS_OD/Protein - Tobias Weiss/Broad overview samples sent to Tobias Weiss.xlsx') |> 
-  dplyr::rename(proteomics_id = `Sample ID`) |> 
-  dplyr::filter(!is.na(proteomics_id)) |> # two empty rows
-  dplyr::rename(proteomics_box_location__box_row_column = `Box location\r\n(Box, Row, Column)`) |> 
-  dplyr::rename(proteomics_notes_zurich = `Note`) |> 
-  dplyr::rename(proteomics_material_source = `Type of starting material`) |> 
-  dplyr::select(proteomics_id, proteomics_box_location__box_row_column, proteomics_material_source, proteomics_notes_zurich) |> 
-  assertr::verify(proteomics_id %in% glass_od.metadata.proteomics$proteomics_id)
-
-glass_od.metadata.proteomics <- glass_od.metadata.proteomics |> 
-  dplyr::left_join(tmp, by=c('proteomics_id'='proteomics_id'), suffix=c('',''))
-
-rm(tmp)
-
-
-
-
-tmp <- DBI::dbReadTable(metadata.db.con, 'view_proteomics') |> 
-  assertr::verify(proteomics_id %in% glass_od.metadata.proteomics$proteomics_id)
-
-glass_od.metadata.proteomics <- glass_od.metadata.proteomics |> 
-  dplyr::left_join(tmp, by=c('proteomics_id'='proteomics_id'), suffix=c('',''))
-
-rm(tmp)
-
-
-
-
-
-# 4. idat level ----
+# 3. idat level ----
 ## a. load all idat files ----
-
 
 
 glass_od.metadata.array_samples <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |>
@@ -1281,6 +1238,49 @@ rm(tmp)
 #   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
 # 
 # rm(tmp)
+
+
+
+
+# 4. proteomics level ----
+
+
+glass_od.metadata.proteomics <- DBI::dbReadTable(metadata.db.con, 'view_proteomics') |> 
+  assertr::verify(resection_id %in% glass_od.metadata.array_samples$resection_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_PROTEOMICS)
+    return(.)
+  })()
+
+
+
+tmp <-
+  readxl::read_xlsx('data/GLASS_OD/Protein - Tobias Weiss/Broad overview samples sent to Tobias Weiss.xlsx') |>
+  dplyr::rename(proteomics_id = `Sample ID`) |> 
+  dplyr::filter(!is.na(proteomics_id)) |> # two empty rows
+  dplyr::rename(proteomics_box_location__box_row_column = `Box location\r\n(Box, Row, Column)`) |> 
+  dplyr::rename(proteomics_notes_zurich = `Note`) |> 
+  dplyr::rename(proteomics_material_source = `Type of starting material`) |> 
+  dplyr::select(proteomics_id, proteomics_box_location__box_row_column, proteomics_material_source, proteomics_notes_zurich) |> 
+  assertr::verify(proteomics_id %in% glass_od.metadata.proteomics$proteomics_id) |> 
+  assertr::verify(glass_od.metadata.proteomics$proteomics_id %in% proteomics_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_PROTEOMICS)
+    return(.)
+  })()
+
+
+
+glass_od.metadata.proteomics <- glass_od.metadata.proteomics |> 
+  dplyr::left_join(tmp, by=c('proteomics_id'='proteomics_id'), suffix=c('',''))
+
+rm(tmp)
+
+
+# not needed
+#tmp <- readxl::read_xlsx('data/GLASS_OD/Protein - Tobias Weiss/Oligodendroglioma_protein matrices.xlsx')
 
 
 
