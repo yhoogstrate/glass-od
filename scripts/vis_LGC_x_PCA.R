@@ -24,6 +24,11 @@ metadata <- glass_od.metadata.array_samples |>
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES)
 
 
+metadata.validation <- glass_od.metadata.array_samples |> 
+  dplyr::filter(array_methylation_bins_1p19q_purity > 0.1) |> # discard those with near flat CNV profile
+  filter_OD_validation_idats(CONST_N_OD_VALIDATION_INCLUDED_SAMPLES) |> 
+  dplyr::mutate(resection_number = ifelse(resection_number == 0, as.numeric(NA), resection_number))
+
 
 ## x-check batch effect isolation(s) ----
 
@@ -162,6 +167,78 @@ ggsave("output/figures/vis_LGC_x_PCA__scatter_A2.pdf",width=8.5 * 0.975, height 
 
 
 
+
+
+### new validationset ----
+
+
+plt.split <- rbind(
+  metadata.validation |> 
+    dplyr::mutate(col = dplyr::case_when(
+      patient_id %in% c("0106","0128","0129", "0130", "0132", "0133") ~ "internal",
+      array_notes == "from Oligosarcoma manuscript" ~ "Oligosarcoma study",
+      array_notes == "from GLASS-Methylome" ~ "GLASS-methylome",
+      array_notes == "PMID: 35998208 untreated data" ~ "PMID:35998208 naive",
+      array_notes == "PMID: 35998208 treated data" ~ "PMID:35998208 trt",
+      array_notes == "from Valor LGG x GBM" ~ "GSE147391 Valor",
+      T ~ array_notes
+    )) |> 
+    dplyr::mutate(facet = "A) Dataset")  |> 
+    dplyr::mutate(stat = col)
+  ,
+  metadata.validation |> 
+    dplyr::mutate(col = ifelse(resection_number == 1, "primary", "recurrent")) |> 
+    dplyr::mutate(facet = "B) Resection")  |> 
+    dplyr::mutate(stat = 'NA')
+  ,
+  metadata.validation |>
+    dplyr::mutate(col = as.factor(paste0("Grade ",resection_tumor_grade))) |> 
+    dplyr::mutate(facet = "C) Histological grade") |> 
+    dplyr::mutate(stat = 'NA')
+  ,
+  metadata.validation |> 
+    dplyr::mutate(col = ifelse(array_mnp_predictBrain_v2.0.1_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", array_mnp_predictBrain_v2.0.1_cal_class)) |> 
+    dplyr::mutate(facet = "D) MNP CNS Classifier 114b/2.0.1")  |> 
+    dplyr::mutate(stat = 'NA')
+  ,
+  metadata.validation |> 
+    dplyr::mutate(col = ifelse(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", array_mnp_predictBrain_v12.8_cal_class)) |> 
+    dplyr::mutate(facet = "E) MNP CNS Classifier 12.8")  |> 
+    dplyr::mutate(stat = 'NA')
+) 
+#dplyr::filter(grepl("PMID", array_notes))
+
+
+
+# array_PC2 ~ 202 | array_GLASS_NL_g2_g3_sig ~ 218
+ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL_g2_g3_sig, col=col)) + 
+  facet_wrap(~facet, scales="free",ncol=5) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
+  geom_point(size=theme_nature_size/3) +
+  scale_color_manual(values=c(
+    "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
+    "Grade 3"="red", "A_IDH_HG"="red", "recurrent"="red",
+    
+    "FFPE"="darkgreen",
+    "OLIGOSARC_IDH" = "orange",
+    "NA" = "gray40",
+    "other" = "purple",
+    "Tissue"="brown",
+    
+    'internal' = 'red',
+    'GLASS-methylome' = '#686ae8', # #7a7be6
+    'GSE147391 Valor' = '#58e0da', 
+    'Oligosarcoma study' = '#5AE82C', #  #A9E82C
+    'PMID:35998208 naive' = '#f5ce42', # #ffdb58
+    'PMID:35998208 trt' = 'orange'
+    
+  )) +
+  labs(x="Astrocytoma CGC Lasso",y = "GLASS-NL signature (supervised primary - recurrent)", col="") +
+  labs(subtitle=format_subtitle("Logit WHO grade")) +
+  theme_nature
+
+
+ggsave("output/figures/vis_LGC_x_PCA__scatter_A1__validationset.pdf",width=8.5 * 0.975, height = 2.72)
 
 
 
@@ -427,6 +504,101 @@ p1
 #   theme(legend.box = "vertical") + # space dependent
 #   theme(legend.key.size = unit(0.6, 'lines'))
 # p1
+
+
+
+
+### logistic GLASS-NL MM sig x WHO grade validation ----
+# 
+
+
+stats <- metadata.validation |> 
+#  dplyr::filter(!grepl("PMID: 35998208 treated", metadata.validation$array_notes)) |> # s.t.h. is odd about this data
+  
+  dplyr::filter(!is.na(resection_tumor_grade)) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(resection_tumor_grade__hg = ifelse(resection_tumor_grade == 3, 1, 0)) |> 
+  
+  dplyr::mutate(resection = NULL) |> 
+  dplyr::mutate(resection_recurrent = NULL) |> 
+  
+  dplyr::mutate(covar = array_GLASS_NL_g2_g3_sig) |> 
+  dplyr::mutate(covar_name = "GLASS-NL signature")
+
+
+model <- glm(resection_tumor_grade__hg ~ covar, data = stats, family = binomial)
+pval <- model |>
+  summary() |> 
+  purrr::pluck('coefficients') |>
+  as.data.frame() |>  
+  tibble::rownames_to_column('coef') |>
+  dplyr::filter(coef == "covar") |> 
+  dplyr::pull(`Pr(>|z|)`)
+
+
+expnd <- (max(stats$covar)-min(stats$covar)) * 0.175
+Predicted_data <- data.frame(covar=modelr::seq_range(c(min(stats$covar) - expnd, max(stats$covar) + expnd), 500))
+Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
+
+
+
+plt.logit.simplistic <- rbind(
+  stats |>  # left point line:
+    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_tumor_grade__hg - 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  stats |>  # right point line:
+    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_tumor_grade__hg + 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  Predicted_data |> # logit fit
+    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+    dplyr::mutate(group = "logit fit") |> 
+    dplyr::mutate(type = "fit") |> 
+    dplyr::rename(y = covar) |> 
+    dplyr::mutate(x = resection_tumor_grade__hg) |> 
+    dplyr::mutate(col = resection_tumor_grade__hg)
+) |> 
+  dplyr::mutate(col = col  + 2)
+
+
+
+ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
+            aes(col=col),
+            lwd=theme_nature_lwd * 5) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+            col="white",
+            lwd=theme_nature_lwd * 2, alpha=0.65
+  ) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
+            col="gray",
+            lwd=theme_nature_lwd) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
+            col="darkblue",
+            lwd=theme_nature_lwd) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
+            col="#3e9e8b",
+            lwd=theme_nature_lwd) +
+  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
+  theme_nature +
+  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
+  scale_x_continuous(breaks = c(0,1),
+                     labels=c("Grade 2", "Grade 3")) + 
+  scale_y_reverse() + 
+  theme(legend.box = "vertical",
+        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.title =  element_text(vjust=1))
+
 
 
 

@@ -7,6 +7,7 @@ tmp <- readxl::read_xlsx('data/GLASS_OD/Protein - Tobias Weiss/GLODprot_raw_prot
 
 metadata.proteomics.proteins <- tmp |> 
   dplyr::select(Precursor.Id, Protein.Group, Protein.Ids,  Protein.Names, Genes,  First.Protein.Description, Proteotypic,  Stripped.Sequence, Modified.Sequence,  Precursor.Charge) |> 
+  dplyr::mutate(peptide_id = Precursor.Id) |> 
   tibble::column_to_rownames("Precursor.Id")|> 
   tibble::tibble()
 
