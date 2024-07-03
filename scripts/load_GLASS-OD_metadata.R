@@ -945,6 +945,25 @@ rm(tmp, tmp.ls)
 
 
 
+## RFpurity ----
+
+
+tmp <- readRDS("cache/analysis_RFpurity.Rds") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 373) # CONST_N_SAMPLES
+    return(.)
+  })() |> 
+  assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id)
+
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) 
+
+rm(tmp)
+
+
+
 
 ## ++ below: re-build because mvalue normalisation ++ ----
 

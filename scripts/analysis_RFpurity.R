@@ -17,9 +17,9 @@ if(!exists('glass_od.metadata.array_samples')) {
 
 
 
-#library(IlluminaHumanMethylationEPICmanifest)
-#library(IlluminaHumanMethylation450kmanifest)
-#library(tidyverse)
+library(IlluminaHumanMethylationEPICmanifest)
+data(IlluminaHumanMethylationEPICmanifest)
+data('IlluminaHumanMethylationEPICmanifest')
 library(minfi)
 library(RFpurify)
 data('IlluminaHumanMethylationEPICmanifest')
@@ -41,38 +41,58 @@ devtools::install_github('mwsill/RFpurify')
 
 
 
-fun <- function(idat_red, idat_grn) {
+fun <- function(idat_red, idat_grn, Basename) {
   
   df = data.frame(
     sample_red = idat_red,
-    sample_grn = idat_grn
+    sample_grn = idat_grn,
+    Basename = Basename
   )
+
+  # df = data.frame(
+  #   sample_red = sel$array_channel_red,
+  #   sample_grn = sel$array_channel_green,
+  #   Basename = sel$Basename
+  # ) |> 
+  #   head(n=1)
   
-  RGset <- read.metharray.exp(targets = df)
-  MsetEx <- preprocessRaw(RGset)
+  #print(df)
   
-  abs <- predict_purity(MsetEx,method="ABSOLUTE")
+  RGset <- minfi::read.metharray.exp(targets = df, force=T)
+  MsetEx <- minfi::preprocessRaw(RGset)
+  
+  abs <- predict_purity(MsetEx, method="ABSOLUTE")
   #print(abs)
   
-  est <- predict_purity(MsetEx,method="ESTIMATE")
+  est <- predict_purity(MsetEx, method="ESTIMATE")
   #print(est)
   
   
-  out <- rbind(out, slice %>% dplyr::mutate(absolute=abs,estimate=est))
+  out = data.frame(array_RFpurity_absolute=abs, array_RFpurity_estimate=est)
+  
+  
+  return(out)
 }
 
 
 
+# 50 werkt
 sel <- glass_od.metadata.array_samples |> 
-  head(n=3) |> 
-  dplyr::mutate(Basename = gsub("^(.+)_(Grn|Red).idat$","\\1",fn)) |> 
-  dplyr::mutate(Slide = gsub("^.+/([^/_]+)_.+$","\\1",fn)) |> 
-  dplyr::mutate(Array = gsub("^.+/[^_]+_([^_]+).+$","\\1",fn))
+  dplyr::filter(arraychip_version == "EPICv1") |> 
+  #head(n=105) |> 
+  dplyr::mutate(Basename = gsub("^(.+)_(Grn|Red).idat$","\\1", array_channel_red)) |> 
+  dplyr::mutate(Slide = gsub("^.+/([^/_]+)_.+$","\\1", array_channel_red)) |> 
+  dplyr::mutate(Array = gsub("^.+/[^_]+_([^_]+).+$","\\1", array_channel_red))
+
+sel2 <- sel |> 
+  dplyr::rowwise() |> 
+  dplyr::mutate(tmp = fun(array_channel_red, array_channel_green, Basename)) |> 
+  dplyr::ungroup() |> 
+  dplyr::select(array_sentrix_id, tmp) |> 
+  tidyr::unnest(tmp)
 
 
 
-df <- do.call(
-  rbind,
-  pbapply::pblapply(sel |> dplyr::pull(array_channel_red),
-                    sel |> dplyr::pull(array_channel_green), FUN = fun)
-) 
+saveRDS(sel2, file="cache/analysis_RFpurity.Rds")
+
+
