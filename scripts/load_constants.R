@@ -1,14 +1,16 @@
 #!/usr/bin/env R
 
 
+# DNA methylation array data ----
+
 CONST_N_PROBES                   <- 865859
 CONST_N_PROBES_UNMASKED          <- 760405
 CONST_N_PROBES_UNMASKED_AND_DETP <- 685165
 
 
 CONST_N_GLASS_OD_ALL_SAMPLES      <- 273 + 4 # CATNON ook niet
-CONST_N_OD_VALIDATION_ALL_SAMPLES <- 129 # 1 non pair plus oligosarcoma paper
-CONST_N_CATNON_ALL_SAMPLES        <- 1   # not used for analysis yet, but idat is on server
+CONST_N_OD_VALIDATION_ALL_SAMPLES <- 129
+CONST_N_CATNON_ALL_SAMPLES        <- 1   # not used for analysis yet, but idat is on the server
 CONST_N_GLASS_NL_ALL_SAMPLES      <- 235
 CONST_N_GSAM_ALL_SAMPLES          <- 87
 
@@ -21,14 +23,17 @@ CONST_N_CATNON_INCLUDED_SAMPLES        <- 1
 
 
 
-CONST_N_GLASS_OD_ALL_PROTEOMICS        <- 145
-
-
-
 CONST_N_SAMPLES <- CONST_N_GLASS_OD_INCLUDED_SAMPLES +
   CONST_N_OD_VALIDATION_INCLUDED_SAMPLES +
   CONST_N_GLASS_NL_INCLUDED_SAMPLES +
   CONST_N_GSAM_INCLUDED_SAMPLES +
   CONST_N_CATNON_ALL_SAMPLES
+
+
+
+# proteomics data ----
+
+
+CONST_N_GLASS_OD_ALL_PROTEOMICS        <- 145
 
 

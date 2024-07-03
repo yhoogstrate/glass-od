@@ -312,10 +312,9 @@ rm(fit.pp.prim_rec.quality.nc, stats.pp.prim_rec.quality.nc)
 ## data: partially paired INTENSITY [w/o FFPE/frozen batch correct] ----
 
 
-
 metadata.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_primaries_and_last_recurrences(178) |> 
+  filter_primaries_and_last_recurrences(180) |> 
   
   
   dplyr::group_by(patient_id) |> 
@@ -328,9 +327,10 @@ metadata.pp.nc <- glass_od.metadata.array_samples |>
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (178)) 
+    assertthat::assert_that(nrow(.) == 180) 
     return(.)
   })()
+
 
 
 
@@ -345,6 +345,8 @@ data.pp.nc <- data.intensities.combined.hq_samples |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
+
+
 
 
 
@@ -370,7 +372,76 @@ sum(stats.pp.nc$adj.P.Val < 0.01)
 saveRDS(stats.pp.nc, file="cache/analysis_differential_intensities__primary_recurrence__partial_paired_nc__stats.Rds")
 
 
-rm(fit.pp.nc, stats.pp.nc)
+rm(fit.pp.nc, stats.pp.nc, data.pp.nc)
+
+
+
+## data: partially paired INTENSITY [w/o FFPE/frozen batch correct] ----
+
+
+metadata.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_primaries_and_last_recurrences(180) |> 
+  
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"remainder")))) |> 
+  dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
+  dplyr::select(array_sentrix_id, patient, pr.status) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 180) 
+    return(.)
+  })()
+
+
+
+
+data.pp.nc <- data.intensities.combined.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.intensities.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+data.pp.nc <- exp(data.pp.nc) - 1
+
+
+design.pp.nc <- model.matrix(~factor(patient) + factor(pr.status), data=metadata.pp.nc)
+fit.pp.nc <- limma::lmFit(data.pp.nc, design.pp.nc)
+fit.pp.nc <- limma::eBayes(fit.pp.nc, trend=T)
+stats.pp.nc <- limma::topTable(fit.pp.nc,
+                               n=nrow(data.pp.nc),
+                               coef="factor(pr.status)recurrence",
+                               sort.by = "none",
+                               adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.pp.nc)
+
+
+sum(stats.pp.nc$P.Value < 0.01)
+sum(stats.pp.nc$adj.P.Val < 0.01)
+
+
+
+#saveRDS(fit.pp.nc, file="cache/analysis_differential_intensities__primary_recurrence__partial_paired_nc__fit.Rds")
+saveRDS(stats.pp.nc, file="cache/analysis_differential_intensities__primary_recurrence__partial_paired_nc__non_log__stats.Rds")
+
+
+rm(fit.pp.nc, stats.pp.nc, data.pp.nc)
+
 
 
 
@@ -840,7 +911,7 @@ rm(fit.g2g3.quality.pp.nc, stats.g2g3.quality.pp.nc)
 
 metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(150) |> 
+  filter_first_G2_and_last_G3(156) |> 
   
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() == 2) |> 
@@ -852,7 +923,7 @@ metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |>
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (150)) 
+    assertthat::assert_that(nrow(.) == 156) 
     return(.)
   })()
 
@@ -869,8 +940,6 @@ data.g2g3.pp.nc <- data.intensities.combined.hq_samples |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
-
-
 
 
 
@@ -896,7 +965,73 @@ sum(stats.g2g3.pp.nc$adj.P.Val < 0.01)
 saveRDS(stats.g2g3.pp.nc, file="cache/analysis_differential_intensities__g2_g3__partial_paired_nc__stats.Rds")
 
 
-rm(fit.g2g3.pp.nc, stats.g2g3.pp.nc)
+rm(fit.g2g3.pp.nc, stats.g2g3.pp.nc, data.g2g3.pp.nc)
+
+
+## data: partially paired INTENSITIES [w/o FFPE/frozen batch correct] ----
+
+
+metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3(156) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2", "Grade3")) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 156) 
+    return(.)
+  })()
+
+
+
+data.g2g3.pp.nc <- data.intensities.combined.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.intensities.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.g2g3.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+data.g2g3.pp.nc <- exp(data.g2g3.pp.nc) - 1
+
+
+
+design.g2g3.pp.nc <- model.matrix(~factor(patient) + factor(gr.status), data=metadata.g2g3.pp.nc)
+fit.g2g3.pp.nc <- limma::lmFit(data.g2g3.pp.nc, design.g2g3.pp.nc)
+fit.g2g3.pp.nc <- limma::eBayes(fit.g2g3.pp.nc, trend=T)
+stats.g2g3.pp.nc <- limma::topTable(fit.g2g3.pp.nc,
+                                    n=nrow(data.g2g3.pp.nc),
+                                    coef="factor(gr.status)Grade3",
+                                    sort.by = "none",
+                                    adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.g2g3.pp.nc)
+
+
+sum(stats.g2g3.pp.nc$P.Value < 0.01)
+sum(stats.g2g3.pp.nc$adj.P.Val < 0.01)
+
+
+
+#saveRDS(fit.g2g3.pp.nc, file="cache/analysis_differential_intensities__g2_g3__partial_paired_nc__fit.Rds")
+saveRDS(stats.g2g3.pp.nc, file="cache/analysis_differential_intensities__g2_g3__partial_paired_nc__non_log__stats.Rds")
+
+
+rm(fit.g2g3.pp.nc, stats.g2g3.pp.nc, data.g2g3.pp.nc)
 
 
 

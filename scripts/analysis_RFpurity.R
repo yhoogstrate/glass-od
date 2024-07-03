@@ -18,13 +18,12 @@ if(!exists('glass_od.metadata.array_samples')) {
 
 
 library(IlluminaHumanMethylationEPICmanifest)
-data(IlluminaHumanMethylationEPICmanifest)
-data('IlluminaHumanMethylationEPICmanifest')
 library(minfi)
 library(RFpurify)
+data(IlluminaHumanMethylationEPICmanifest)
 data('IlluminaHumanMethylationEPICmanifest')
-data('RFpurify_ABSOLUTE')
-data('RFpurify_ESTIMATE')
+#data('RFpurify_ABSOLUTE')
+#data('RFpurify_ESTIMATE')
 
 
 # if(!require(minfiData)){
@@ -33,7 +32,7 @@ data('RFpurify_ESTIMATE')
 #   BiocManager::install("minfiData")
 # }
 
-devtools::install_github('mwsill/RFpurify')
+# devtools::install_github('mwsill/RFpurify')
 
 
 # analysis ----
@@ -49,15 +48,7 @@ fun <- function(idat_red, idat_grn, Basename) {
     Basename = Basename
   )
 
-  # df = data.frame(
-  #   sample_red = sel$array_channel_red,
-  #   sample_grn = sel$array_channel_green,
-  #   Basename = sel$Basename
-  # ) |> 
-  #   head(n=1)
-  
-  #print(df)
-  
+
   RGset <- minfi::read.metharray.exp(targets = df, force=T)
   MsetEx <- minfi::preprocessRaw(RGset)
   
@@ -76,10 +67,9 @@ fun <- function(idat_red, idat_grn, Basename) {
 
 
 
-# 50 werkt
+
 sel <- glass_od.metadata.array_samples |> 
   dplyr::filter(arraychip_version == "EPICv1") |> 
-  #head(n=105) |> 
   dplyr::mutate(Basename = gsub("^(.+)_(Grn|Red).idat$","\\1", array_channel_red)) |> 
   dplyr::mutate(Slide = gsub("^.+/([^/_]+)_.+$","\\1", array_channel_red)) |> 
   dplyr::mutate(Array = gsub("^.+/[^_]+_([^_]+).+$","\\1", array_channel_red))

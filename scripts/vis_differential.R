@@ -486,6 +486,9 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
 ggsave(paste0("output/figures/vis_differential__overall_density.png"), width=(8.5 * 0.975 * (2/5)), height=3.48, dpi=300)
 
 
+rm(n_samples_grade, n_samples_prim_rec)
+
+
 
 
 ### 2. EFF1 & EFF2 ----
@@ -527,7 +530,24 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
 ggsave(paste0("output/figures/vis_differential__EFF1-PC1_EFF2-PC2.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
 
 
+
+rm(n_samples_grade, n_samples_prim_rec)
+
+
+
 ### 3. PC1 / qual corrected ----
+
+
+n_samples_grade <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3(156) |> 
+  nrow()
+
+n_samples_prim_rec <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_primaries_and_last_recurrences(180) |> 
+  nrow()
+
 
 
 plt <- data.mvalues.probes |> 
@@ -568,17 +588,19 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   
   coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
-  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
   
   ggplot2::scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
   #theme(plot.background = element_rect(fill="white"))  # png export
 
 
 
+
 ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected.png"), width=(8.5 * 0.975 * (2/5)), height=3.48, dpi=300)
 
 
-#ggsave(paste0("output/figures/vis_differential__overall_density.png"), width=(8.5 * 0.975 * (2/5)), height=3.48, dpi=300)
+
+rm(n_samples_grade, n_samples_prim_rec)
 
 
 
