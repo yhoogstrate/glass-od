@@ -96,7 +96,9 @@ oligo_data_pseudobulked <- data.frame(
   dplyr::mutate(ATAC_oligo_size = ATAC_oligo_end - ATAC_oligo_start) |> 
   dplyr::mutate(ATAC_oligo_counts_per_bin_per_base = ATAC_oligo_counts_per_bin / ATAC_oligo_size) |> 
   dplyr::mutate(ATAC_oligo_data_per_bin_per_base = ATAC_oligo_data_per_bin / ATAC_oligo_size) |> 
-  tibble::remove_rownames()
+  tibble::remove_rownames() |> 
+  
+  dplyr::filter(ATAC_oligo_size > 35) # odd outliers
 
 rm(oligo_data_tumorcells)
 gc()
@@ -116,7 +118,9 @@ astro_data_pseudobulked <- data.frame(
   dplyr::mutate(ATAC_astro_size = ATAC_astro_end - ATAC_astro_start) |> 
   dplyr::mutate(ATAC_astro_counts_per_bin_per_base = ATAC_astro_counts_per_bin / ATAC_astro_size) |> 
   dplyr::mutate(ATAC_astro_data_per_bin_per_base = ATAC_astro_data_per_bin / ATAC_astro_size) |> 
-  tibble::remove_rownames()
+  tibble::remove_rownames() |> 
+  
+  dplyr::filter(ATAC_astro_size > 35) # odd outliers
 
 rm(astro_data_tumorcells)
 gc()

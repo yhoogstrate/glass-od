@@ -493,6 +493,84 @@ ggsave("output/figures/vis_differential_motifs__t_stat_grade_per_motif__unstrand
 
 
 
+## motif: xx[CG]xx violin(s) unstranded + ATAC ----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |>
+  #dplyr::mutate(sequence_context_stranded = toupper(paste0(gsub("^.+(..)$","\\1", sequence_pre), "CG", gsub("^(..).+$","\\1", sequence_post)))) |> 
+  #dplyr::filter(!is.na(sequence_context_stranded)) |> 
+  dplyr::mutate(sequence_5p = gsub("[^a-zA-Z]","",gc_sequence_context_2_new)) |> 
+  dplyr::filter(!is.na(sequence_5p)) |> 
+  dplyr::left_join(plt.motifs.stranded |> dplyr::select(sequence_5p, oligo_sequence), by=c('sequence_5p'='sequence_5p'), suffix=c('','')) |> 
+  dplyr::left_join(plt.motifs.unstranded, by=c('oligo_sequence'='oligo_sequence'),suffix=c('',''))
+
+
+
+
+plt <- plt |> 
+  dplyr::group_by(oligo_sequence) |> 
+  dplyr::mutate(facet_rank = median(DMP__g2_g3__pp_nc__t)) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(facet_name = tolower(oligo_sequence))
+
+
+plt <- plt |> 
+  dplyr::filter(!is.na(ATAC_counts_per_bin_per_base)) |> 
+  dplyr::mutate(rank = order(order(ATAC_counts_per_bin_per_base))) |> 
+  dplyr::mutate(rank_fraction = (rank - 1) / max(rank - 1)) |> 
+  dplyr::mutate(col = log1p(ATAC_counts_per_bin_per_base)) |> 
+  #dplyr::mutate(col = ifelse(col > 1.45, 1.45, col)) |> 
+  
+  dplyr::filter(ATAC_size > 35)
+
+
+ggplot(data.mvalues.probes, aes(x=median.beta.primary, y=log1p(ATAC_counts_per_bin_per_base))) +
+  geom_point(pch=19, cex=0.1, alpha=0.1) +
+  theme_nature
+
+
+
+
+
+ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc__t, col=col)) +
+  ggbeeswarm::geom_quasirandom(size=0.01, pch=19, alpha=0.5) + 
+  labs(x = NULL,
+       y="Per probe t-score Grade 2 ~ Grade 3",
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  #theme(legend.key.size = unit(1.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview")) +
+   scale_color_gradientn(colors=rev(col3(200)),
+                        breaks = c(0,1.45),
+                        limits = c(0,1.45),
+                        na.value = "grey50",
+                        oob = scales::squish
+                        ) +
+  labs(col = "log1p s[c/n]ATAC per-bin base density (red: open, blue: closed chromatin)")
+
+
+
+#ggsave("output/figures/vis_differential_motifs__t_stat_grade_per_motif__unstranded.pdf", width=11 * 0.975, height=3.8)
+
+
+
+plt |> dplyr::select(probe_id, CHR_hg38, Start_hg38, contains("rank_") | contains("ATAC_")) |> View()
+
+
 
 
 ## motif: xx[CG]xx violin(s) stranded x TET1----

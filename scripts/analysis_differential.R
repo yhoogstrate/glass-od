@@ -1741,7 +1741,7 @@ metadata.qc.pp.nc <- glass_od.metadata.array_samples |>
   
   dplyr::mutate( `array_qc_BISULFITE_CONVERSION_I_Beta_I-3_Beta_larger_0.12_0.18` = NULL) |> 
   dplyr::mutate( `array_qc_BISULFITE_CONVERSION_I_Beta_I-6_Beta_larger_0.2_0.3` = NULL) |> 
-  dplyr::mutate(pct_detP_signi = log(array_percentage.detP.signi)) |> 
+  dplyr::mutate(pct_detP_signi = scale(log(array_percentage.detP.signi))) |> 
   dplyr::rename( array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000 = `array_qc_STAINING_Biotin_(High)_Grn_smaller_6000_2000` ) |> 
   dplyr::rename( array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000 = `array_qc_STAINING_Biotin_(Bkg)_Grn_larger_500_1000` ) |> 
   dplyr::rename( array_qc_STAINING_DNP_High_Red_smaller_9000_3000 = `array_qc_STAINING_DNP_(High)_Red_smaller_9000_3000` ) |> 
@@ -1812,6 +1812,7 @@ stats.pct_detP_signi.pp.nc <- limma::topTable(fit.pct_detP_signi.pp.nc,
                                               adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::select(probe_id, t)
+
 
 saveRDS(stats.pct_detP_signi.pp.nc, file="cache/analysis_differential__pct_detP_signi__partial_paired_nc__stats.Rds")
 
@@ -2826,8 +2827,6 @@ rm(
 
 
 
-
-
 # analyses: GLASS-OD ewastools ----
 
 
@@ -2838,23 +2837,23 @@ metadata.ewas.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::ungroup() |> 
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
   dplyr::select(array_sentrix_id, patient, contains("ewastools")) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Restoration )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Staining.Green )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Staining.Red )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Extension.Green )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Extension.Red )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Hybridization.High.Medium )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Hybridization.Medium.Low )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Target.Removal.1 )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Target.Removal.2 )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Bisulfite.Conversion.I.Green )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Bisulfite.Conversion.I.Red )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Bisulfite.Conversion.II )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Specificity.I.Green )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Specificity.I.Red )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Specificity.II )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Non.polymorphic.Green )) |> 
-  assertr::verify(!is.na( array_ewastools_qc_Non.polymorphic.Red ))
+  assertr::verify(!is.na( array_ewastools_qc_Restoration)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Staining.Green)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Staining.Red)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Extension.Green)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Extension.Red)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Hybridization.High.Medium)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Hybridization.Medium.Low)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Target.Removal.1)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Target.Removal.2)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Bisulfite.Conversion.I.Green)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Bisulfite.Conversion.I.Red)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Bisulfite.Conversion.II)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Specificity.I.Green)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Specificity.I.Red)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Specificity.II)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Non.polymorphic.Green)) |> 
+  assertr::verify(!is.na( array_ewastools_qc_Non.polymorphic.Red))
 
 
 data.ewas.pp.nc <- data.mvalues.hq_samples |> 
@@ -3370,7 +3369,7 @@ metadata.ffpe_or_ff.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (202)) 
+    assertthat::assert_that(nrow(.) == 205)
     return(.)
   })()
 
@@ -3424,18 +3423,20 @@ rm(fit.ffpe_or_ff.pp.nc, stats.ffpe_or_ff.pp.nc)
 ## data: partially paired [w/o FFPE/frozen batch correct] ----
 ### 1. time in FFPE ----
 
+
 metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   dplyr::filter(!is.na(isolation_material)) |> 
   dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
   dplyr::filter(!is.na(ffpe_decay_time)) |> 
+  dplyr::mutate(ffpe_decay_time = scale(ffpe_decay_time)) |> 
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
   dplyr::ungroup() |> 
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 201) 
+    assertthat::assert_that(nrow(.) == 205) 
     return(.)
   })()
 
@@ -3479,11 +3480,12 @@ sum(stats.ffpe_decay.pp.nc$adj.P.Val < 0.01)
 saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds")
 
 
-rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
+rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc, metadata.ffpe_decay.pp.nc)
 
 
 
 ### 2. time in freezer ----
+
 
 metadata.freezer_decay.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
@@ -3496,7 +3498,7 @@ metadata.freezer_decay.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 199) 
+    assertthat::assert_that(nrow(.) == 203) 
     return(.)
   })()
 
@@ -3542,7 +3544,11 @@ sum(stats.freezer_decay.pp.nc$adj.P.Val < 0.01)
 saveRDS(stats.freezer_decay.pp.nc, file="cache/analysis_differential__freezer-decay-time__partial_paired_nc__stats.Rds")
 
 
-rm(fit.freezer_decay.pp.nc, stats.freezer_decay.pp.nc, design.freezer_decay.pp.nc, data.freezer_decay.pp.nc)
+rm(fit.freezer_decay.pp.nc,
+   stats.freezer_decay.pp.nc,
+   design.freezer_decay.pp.nc,
+   data.freezer_decay.pp.nc,
+   metadata.freezer_decay.pp.nc)
 
 
 
@@ -3562,7 +3568,7 @@ metadata.tissue_decay.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 199) 
+    assertthat::assert_that(nrow(.) == 203) 
     return(.)
   })()
 
@@ -3609,7 +3615,11 @@ saveRDS(stats.tissue_decay.pp.nc, file="cache/analysis_differential__tissue-deca
 
 
 
-rm(fit.tissue_decay.pp.nc, stats.tissue_decay.pp.nc, design.tissue_decay.pp.nc, data.tissue_decay.pp.nc)
+rm(fit.tissue_decay.pp.nc,
+   stats.tissue_decay.pp.nc,
+   data.tissue_decay.pp.nc,
+   metadata.tissue_decay.pp.nc)
+
 
 
 
@@ -3633,7 +3643,7 @@ metadata.ffpe_freezer_multivar.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 199) 
+    assertthat::assert_that(nrow(.) == 203) 
     return(.)
   })()
 
@@ -3701,11 +3711,10 @@ rm(fit.ffpe_freezer_multivar.pp.nc,
    stats.ffpe_freezer_multivar__ffpe.pp.nc,
    stats.ffpe_freezer_multivar__freezer.pp.nc,
    stats.ffpe_freezer_multivar.pp.nc,
-   data.ffpe_freezer_multivar.pp.nc)
+   data.ffpe_freezer_multivar.pp.nc,
+   metadata.ffpe_freezer_multivar.pp.nc
+   )
 
-
-## linear: 436022
-#sum(abs(tmp$DMP__FFPE_and_freezer_decay_time__multivar__pp_nc__t__ffpe) > 1.5)
 
 
 
@@ -3775,6 +3784,8 @@ ggplot(tmp, aes(y=DMP__FFPE_decay_time__pp_nc__t, x=indep_c_frac)) +
 
 
 
+
+
 ## data: partially paired COMBINED INTENSITIES [w/o FFPE/frozen batch correct] ----
 
 
@@ -3789,7 +3800,7 @@ metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (202)) 
+    assertthat::assert_that(nrow(.) == 205) 
     return(.)
   })()
 
@@ -3811,7 +3822,6 @@ data.ffpe_decay.pp.nc <- data.intensities.combined.hq_samples |>
 design.ffpe_decay.pp.nc <- model.matrix(~factor(patient) + ffpe_decay_time, data=metadata.ffpe_decay.pp.nc)
 fit.ffpe_decay.pp.nc <- limma::lmFit(data.ffpe_decay.pp.nc, design.ffpe_decay.pp.nc)
 fit.ffpe_decay.pp.nc <- limma::eBayes(fit.ffpe_decay.pp.nc, trend=T)
-
 stats.ffpe_decay.pp.nc <- limma::topTable(fit.ffpe_decay.pp.nc,
                                           n=nrow(data.ffpe_decay.pp.nc),
                                           coef="ffpe_decay_time",
@@ -3829,11 +3839,12 @@ sum(stats.ffpe_decay.pp.nc$adj.P.Val < 0.01)
 
 
 
-#saveRDS(fit.ffpe_decay.pp.nc, file="cache/analysis_differential_intensities__ffpe-decay-time__partial_paired_nc__fit.Rds")
 saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds")
 
 
-rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
+
+rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc, metadata.ffpe_decay.pp.nc)
+
 
 
 
@@ -3852,7 +3863,7 @@ metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_", ifelse(is.paired,patient_id, "remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (202)) 
+    assertthat::assert_that(nrow(.) == 205) 
     return(.)
   })()
 
@@ -3874,7 +3885,6 @@ data.ffpe_decay.pp.nc <- data.intensities.methylated.hq_samples |>
 design.ffpe_decay.pp.nc <- model.matrix(~factor(patient) + ffpe_decay_time, data=metadata.ffpe_decay.pp.nc)
 fit.ffpe_decay.pp.nc <- limma::lmFit(data.ffpe_decay.pp.nc, design.ffpe_decay.pp.nc)
 fit.ffpe_decay.pp.nc <- limma::eBayes(fit.ffpe_decay.pp.nc, trend=T)
-
 stats.ffpe_decay.pp.nc <- limma::topTable(fit.ffpe_decay.pp.nc,
                                           n=nrow(data.ffpe_decay.pp.nc),
                                           coef="ffpe_decay_time",
@@ -3892,11 +3902,12 @@ sum(stats.ffpe_decay.pp.nc$adj.P.Val < 0.01)
 
 
 
-#saveRDS(fit.ffpe_decay.pp.nc, file="cache/analysis_differential_methylated_intensities__ffpe-decay-time__partial_paired_nc__fit.Rds")
 saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential_methylated_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds")
 
 
-rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
+rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc, metadata.ffpe_decay.pp.nc)
+
+
 
 
 
@@ -3915,7 +3926,7 @@ metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_", ifelse(is.paired,patient_id, "remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (202)) 
+    assertthat::assert_that(nrow(.) == 205) 
     return(.)
   })()
 
@@ -3937,7 +3948,6 @@ data.ffpe_decay.pp.nc <- data.intensities.unmethylated.hq_samples |>
 design.ffpe_decay.pp.nc <- model.matrix(~factor(patient) + ffpe_decay_time, data=metadata.ffpe_decay.pp.nc)
 fit.ffpe_decay.pp.nc <- limma::lmFit(data.ffpe_decay.pp.nc, design.ffpe_decay.pp.nc)
 fit.ffpe_decay.pp.nc <- limma::eBayes(fit.ffpe_decay.pp.nc, trend=T)
-
 stats.ffpe_decay.pp.nc <- limma::topTable(fit.ffpe_decay.pp.nc,
                                           n=nrow(data.ffpe_decay.pp.nc),
                                           coef="ffpe_decay_time",
@@ -3954,12 +3964,12 @@ sum(stats.ffpe_decay.pp.nc$P.Value < 0.01)
 sum(stats.ffpe_decay.pp.nc$adj.P.Val < 0.01)
 
 
-
-#saveRDS(fit.ffpe_decay.pp.nc, file="cache/analysis_differential_unmethylated_intensities__ffpe-decay-time__partial_paired_nc__fit.Rds")
 saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential_unmethylated_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds")
 
 
-rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc)
+rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc, metadata.ffpe_decay.pp.nc)
+
+
 
 
 
@@ -3973,7 +3983,7 @@ metadata.ffpe_decay.up.nc <- glass_od.metadata.array_samples |>
   dplyr::filter(!is.na(ffpe_decay_time)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 202) 
+    assertthat::assert_that(nrow(.) == 205) 
     return(.)
   })()
 
@@ -4011,12 +4021,12 @@ sum(stats.ffpe_decay.up.nc$P.Value < 0.01)
 sum(stats.ffpe_decay.up.nc$adj.P.Val < 0.01)
 
 
-
-#saveRDS(fit.ffpe_decay.up.nc, file="cache/analysis_differential__ffpe-decay-time__unpaired_nc__fit.Rds")
 saveRDS(stats.ffpe_decay.up.nc, file="cache/analysis_differential__ffpe-decay-time__unpaired_nc__stats.Rds")
 
 
-rm(fit.ffpe_decay.up.nc, stats.ffpe_decay.up.nc)
+rm(fit.ffpe_decay.up.nc, stats.ffpe_decay.up.nc, metadata.ffpe_decay.up.nc)
+
+
 
 
 
@@ -4084,9 +4094,10 @@ for(clock in clocks) {
   saveRDS(stats.current_clock.up.nc, file=paste0("cache/analysis_differential__",gsub("array_","", clock),"__unpaired_nc__stats.Rds"))
   
   
-  rm(fit.current_clock.up.nc)
-  rm(stats.current_clock.up.nc)
-  rm(clock)
+  rm(fit.current_clock.up.nc,
+     stats.current_clock.up.nc,
+     clock,
+     metadata.current_clock.up.nc)
 }
 
 

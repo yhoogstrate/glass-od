@@ -678,6 +678,7 @@ for (fn in fns) {
 
 ### ewastools ----
 
+
 fns <- c("analysis_differential__ewastools_Restoration__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Staining.Green__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Staining.Red__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Extension.Green__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Extension.Red__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Hybridization.High.Medium__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Hybridization.Medium.Low__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Bisulfite.Conversion.I.Green__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Bisulfite.Conversion.I.Red__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Bisulfite.Conversion.II__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Specificity.I.Green__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Specificity.I.Red__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Non.polymorphic.Green__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Specificity.II__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Non.polymorphic.Red__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Target.Removal.1__partial_paired_nc__stats.Rds","analysis_differential__ewastools_Target.Removal.2__partial_paired_nc__stats.Rds")
 
 for (fn in fns) {
@@ -766,6 +767,8 @@ rm(fn)
 
 
 
+
+
 ### FFPE & Freezer Decay time multivar PP ----
 
 
@@ -794,88 +797,59 @@ rm(fn)
 
 
 
+### Freezer Decay time PP ----
+
+
+fn <- "cache/analysis_differential__freezer-decay-time__partial_paired_nc__stats.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |>
+    dplyr::rename_with(~paste0("DMP__freezer_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |>
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  data.mvalues.probes <- data.mvalues.probes |>
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result Freezer decay PP time is missing")
+}
+
+rm(fn)
 
 
 
-# ### FFPE or Freezer Decay time PP ----
-# 
-# 
-# fn <- "cache/analysis_differential__tissue-decay-time__partial_paired_nc__stats.Rds"
-# if(file.exists(fn)) {
-#   
-#   tmp <- readRDS(fn) |> 
-#     dplyr::rename_with(~paste0("DMP__FFPE_or_freezer_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
-#     (function(.) {
-#       print(dim(.))
-#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
-#       return(.)
-#     })()
-#   
-#   data.mvalues.probes <- data.mvalues.probes |> 
-#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
-#   
-#   rm(tmp)
-#   
-# } else {
-#   warning("DMP result FFP | Freezer decay PP time is missing")
-# }
-# 
-# rm(fn)
-# 
-# 
-# 
-# 
-# ### Freezer Decay time PP ----
-# 
-# 
-# fn <- "cache/analysis_differential__freezer-decay-time__partial_paired_nc__stats.Rds"
-# if(file.exists(fn)) {
-#   
-#   tmp <- readRDS(fn) |> 
-#     dplyr::rename_with(~paste0("DMP__freezer_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
-#     (function(.) {
-#       print(dim(.))
-#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
-#       return(.)
-#     })()
-#   
-#   data.mvalues.probes <- data.mvalues.probes |> 
-#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
-#   
-#   rm(tmp)
-#   
-# } else {
-#   warning("DMP result Freezer decay PP time is missing")
-# }
-# 
-# rm(fn)
-# 
-# 
-# ### FFPE Decay time PP ----
-# 
-# 
-# 
-# fn <- "cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds"
-# if(file.exists(fn)) {
-#   
-#   tmp <- readRDS(fn) |> 
-#     dplyr::rename_with(~paste0("DMP__FFPE_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
-#     (function(.) {
-#       print(dim(.))
-#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
-#       return(.)
-#     })()
-#   
-#   data.mvalues.probes <- data.mvalues.probes |> 
-#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
-#   
-#   rm(tmp)
-#   
-# } else {
-#   warning("DMP result FFPE decay PP time is missing")
-# }
-# 
-# rm(fn)
+
+### FFPE Decay time PP ----
+
+
+fn <- "cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds"
+
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |>
+    dplyr::rename_with(~paste0("DMP__FFPE_decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |>
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  data.mvalues.probes <- data.mvalues.probes |>
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result FFPE decay PP time is missing")
+}
+
+rm(fn)
 
 
 
@@ -963,31 +937,6 @@ rm(fn)
 
 
 
-### FFPE Decay time UP ----
-
-
-fn <- "cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds"
-if(file.exists(fn)) {
-  
-  tmp <- readRDS(fn) |> 
-    dplyr::rename_with(~paste0("DMP__FFPE_decay_time__up_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
-    (function(.) {
-      print(dim(.))
-      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
-      return(.)
-    })()
-  
-  data.mvalues.probes <- data.mvalues.probes |> 
-    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
-  
-  rm(tmp)
-  
-} else {
-  warning("DMP result FFPE decay UP time is missing")
-}
-
-rm(fn)
-
 
 
 ### epiTOC2 & dnaMethyAge epiGenetic clocks ----
@@ -1022,6 +971,89 @@ for(clock in clocks) {
 }
 
 rm(clocks)
+
+
+
+
+## s[c/n]ATAC-seq bins ----
+
+
+tmp <- readRDS(file="cache/analysis_ATAC_oligo.Rds")
+data.mvalues.probes <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  
+  dplyr::mutate(center = (Start_hg38 + End_hg38) / 2) |> 
+  dplyr::left_join(tmp,
+                   by=dplyr::join_by(CHR_hg38 == ATAC_oligo_chr,
+                                     dplyr::closest(center >= ATAC_oligo_start),
+                                     dplyr::closest(center <= ATAC_oligo_end)
+                   ))  |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::mutate(center = NULL)
+rm(tmp)
+
+
+
+
+
+tmp <- readRDS(file="cache/analysis_ATAC_astro.Rds")
+data.mvalues.probes <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  
+  dplyr::mutate(center = (Start_hg38 + End_hg38) / 2) |> 
+  dplyr::left_join(tmp,
+                   by=dplyr::join_by(CHR_hg38 == ATAC_astro_chr,
+                                     dplyr::closest(center >= ATAC_astro_start),
+                                     dplyr::closest(center <= ATAC_astro_end)
+                   ))  |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::mutate(center = NULL)
+rm(tmp)
+
+
+
+
+
+data.mvalues.probes |> 
+  dplyr::mutate(exp = !is.na(ATAC_oligo_data_per_bin_per_base)) |> 
+  dplyr::pull(exp) |> 
+  table()
+
+data.mvalues.probes |> 
+  dplyr::mutate(exp = !is.na(ATAC_astro_data_per_bin_per_base)) |> 
+  dplyr::pull(exp) |> 
+  table()
+
+data.mvalues.probes |> 
+  dplyr::mutate(exp = !is.na(ATAC_astro_data_per_bin_per_base) &  !is.na(ATAC_oligo_data_per_bin_per_base)) |> 
+  dplyr::pull(exp) |> 
+  table()
+
+
+
+
+
+
+#ggplot(plt |> dplyr::filter(ATAC_data_per_bin_per_base < 3.2), aes(x=DMP__g2_g3__pp_nc_PC1__t, y=log1p(ATAC_counts_per_bin_per_base))) +
+#  geom_point(pch=19, cex=0.01)
+
+
 
 
 
