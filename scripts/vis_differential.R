@@ -26,11 +26,9 @@ if(!exists('data.intensities.probes')) {
 }
 
 
-data.mvalues.probes |>  dplyr::arrange(DPI__FFPE_decay_time__pp_nc__t) |> head(n=25) |> 
-  dplyr::select(probe_id,  orientation_mapped ,sequence_pre, AlleleA_ProbeSeq,
-                
-                #sequence_post, AlleleB_ProbeSeq, 
-                DPI__FFPE_decay_time__pp_nc__t)
+if(!exists('glass_od.metadata.array_samples')) {
+  source('scripts/load_GLASS-OD_metadata.R')
+}
 
 
 
@@ -254,6 +252,23 @@ ggsave(paste0("output/figures/vis_differential__overall_density__quality_correct
 rm(n_samples_grade, n_samples_prim_rec)
 
 
+### 4. PC1 / qual corrected HOX CC etc. ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
 
 
 ## B: detP fraction ----
@@ -289,15 +304,10 @@ plt <- data.mvalues.probes |>
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
                 color=col)) +
-  #geom_vline(xintercept=0, col="red") +
-  #geom_hline(yintercept=0, col="red") +
   #geom_vline(xintercept=0, col="red", alpha=0.1) + # do in illustrator
   #geom_hline(yintercept=0, col="red", alpha=0.1) + # do in illustrator
   
   geom_point(pch=16, cex=0.001 , alpha=0.15) + 
-  
-  #ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size, label.x=5) +
-  
   
   labs(x="Per probe t-score Grade 2 ~ Grade 3",
        y="Per probe t-score Primary ~ Recurrent",
@@ -314,6 +324,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
   
   theme(axis.line =     element_line(linewidth = theme_nature_lwd / 2)) # somehow w/ png export
+
 
 
 
@@ -551,29 +562,7 @@ plt <- data.mvalues.probes |>
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
-  })() |> 
-  dplyr::filter(!grepl(" \\? ", probe_type_orientation))
-
-
-
-
-
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
-                col=DMP__FFPE_decay_time__pp_nc__t)) +
-  facet_wrap(~probe_type_orientation, ncol=2) + 
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=16, cex=0.001, alpha=0.15) + 
-  
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
-
-
-
-
-
-
+  })()
 
 
 
@@ -584,6 +573,11 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
   
   geom_point(pch=16, cex=0.001 , alpha=0.15) + 
   
+  labs(x="Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrent",
+       col="",
+       caption=paste0("todo")) +
+  
   theme_nature +
   theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
@@ -591,7 +585,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
   
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
   
-  theme(axis.line = element_line(linewidth = theme_nature_lwd / 2)) # somehow w/ high-res png export
+  theme(axis.line = element_line(linewidth = theme_nature_lwd))
 
 
 
@@ -599,7 +593,24 @@ ggsave(paste0("output/figures/vis_differential__FFPE_decay_time.png"), width=(8.
 
 
 
+
+ggplot(plt |> dplyr::filter(!grepl(" \\? ", probe_type_orientation)),
+       aes(x=DMP__g2_g3__pp_nc__t,
+           y=DMP__primary_recurrence__pp_nc__t,
+           col=DMP__FFPE_decay_time__pp_nc__t)) +
+  facet_wrap(~probe_type_orientation, ncol=2) + 
+  geom_vline(xintercept=0, col="red") +
+  geom_hline(yintercept=0, col="red") +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
 rm(plt)
+
+
 
 
 
@@ -618,9 +629,7 @@ plt <- data.mvalues.probes |>
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
-  })() |> 
-  dplyr::filter(!grepl(" \\? ", probe_type_orientation))
-
+  })()
 
 
 
@@ -633,6 +642,11 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
   
   geom_point(pch=16, cex=0.001 , alpha=0.15) + 
   
+  labs(x="Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrent",
+       col="",
+       caption=paste0("todo")) +
+  
   theme_nature +
   theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
@@ -640,7 +654,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
   
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
   
-  theme(axis.line = element_line(linewidth = theme_nature_lwd / 2)) # somehow w/ high-res png export
+  theme(axis.line = element_line(linewidth = theme_nature_lwd )) # somehow w/ high-res png export
 
 
 
@@ -648,9 +662,13 @@ ggsave(paste0("output/figures/vis_differential__freezer_decay_time.png"), width=
 
 
 
+rm(plt)
 
 
-### 3. FFPE or freezer time ----
+
+
+
+### 3. FFPE & freezer time multivar ----
 
 
 plt <- data.mvalues.probes |> 
@@ -664,88 +682,76 @@ plt <- data.mvalues.probes |>
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
-  })() |> 
-  dplyr::filter(!grepl(" \\? ", probe_type_orientation))
-
-
-
-
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
-                y=DMP__primary_recurrence__pp_nc__t,
-              col=DMP__FFPE_or_freezer_decay_time__pp_nc__t)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=16, cex=0.001, alpha=0.15) + 
-  
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
-  theme(plot.background = element_rect(fill="white", colour=NA)) # png export
-
-
-ggsave(paste0("output/figures/vis_differential__FFPE-or-freezer_decay_time.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
-
-
-
-
-### 4. FFPE & freezer time multivar ----
-
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
-    return(.)
-  })() |> 
-  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
-    return(.)
-  })() |> 
-  dplyr::filter(!grepl(" \\? ", probe_type_orientation))
-
+  })() 
 
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
                 y=DMP__primary_recurrence__pp_nc__t,
-                col=DMP__FFPE_and_freezer_decay_time__multivar__pp_nc__t__ffpe)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
+              col=DMP__FFPE_and_freezer_decay_time__multivar__pp_nc__t__ffpe)) +
   
-  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  #geom_vline(xintercept=0, col="red") +
+  #geom_hline(yintercept=0, col="red") +
   
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  geom_point(pch=16, cex=0.001 , alpha=0.15) + 
+  
+  labs(x="Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrent",
+       col="",
+       caption=paste0("todo")) +
+  
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
+  
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
-  theme(plot.background = element_rect(fill="white", colour=NA)) # png export
+  
+  theme(axis.line = element_line(linewidth = theme_nature_lwd)) # somehow w/ high-res png export
 
 
-ggsave(paste0("output/figures/vis_differential__FFPE_and_freezer_decay_time__multivar__ffpe.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+ggsave(paste0("output/figures/vis_differential__FFPE_and_freezer_decay_time__multivar__ffpe.png"), width=(8.5 * 0.975 * (1/5) * 1.12425), height=2.428, dpi=600)
+
 
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
                 y=DMP__primary_recurrence__pp_nc__t,
                 col=DMP__FFPE_and_freezer_decay_time__multivar__pp_nc__t__freezer)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
   
-  geom_point(pch=16, cex=0.001, alpha=0.15) + 
+  #geom_vline(xintercept=0, col="red") +
+  #geom_hline(yintercept=0, col="red") +
   
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  geom_point(pch=16, cex=0.001 , alpha=0.15) + 
+  
+  labs(x="Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrent",
+       col="",
+       caption=paste0("todo")) +
+  
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
+  
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
-  theme(plot.background = element_rect(fill="white", colour=NA)) # png export
+  
+  theme(axis.line = element_line(linewidth = theme_nature_lwd)) # somehow w/ high-res png export
 
 
-ggsave(paste0("output/figures/vis_differential__FFPE_and_freezer_decay_time__multivar__freezer.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
-
-
-
-
+ggsave(paste0("output/figures/vis_differential__FFPE_and_freezer_decay_time__multivar__freezer.png"), width=(8.5 * 0.975 * (1/5) * 1.12425), height=2.428, dpi=600)
 
 
 
-## F: Treatment effects ----
+
+
+
+
+## F: Treatment effect(s) ----
+
+
+
+
 
 ## G: MNP-QC & detP ----
 
@@ -2816,38 +2822,74 @@ ggplot(plt, aes(x = chr, y=DMP__g2_g3__pp_nc__t, fill=col)) +
 ## N: decay methy unmethy + unmethylated combined ----
 ### FFPE decay ----
 
+
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
     return(.)
   })() |> 
-  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id) & !MASK_general) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })() |> 
-  dplyr::filter(!is.na(DPI__FFPE_decay_time__pp_nc__t)) |> 
-  dplyr::filter(!is.na(DMPI__FFPE_decay_time__pp_nc__t)) |> 
-  dplyr::filter(!is.na(DUPI__FFPE_decay_time__pp_nc__t))
+  assertr::verify(!is.na(DPI__FFPE_decay_time__pp_nc__t)) |> 
+  assertr::verify(!is.na(DMPI__FFPE_decay_time__pp_nc__t)) |> 
+  assertr::verify(!is.na(DUPI__FFPE_decay_time__pp_nc__t))
 
 
-p1 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
-                     col=DMPI__FFPE_decay_time__pp_nc__t)) +
+
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+                col=DPI__FFPE_decay_time__pp_nc__t)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
   geom_point(pch=16, cex=0.001, alpha=0.15) + 
   
-  labs(col="Methylated probe intensity ~ FFPE decay time") +
+  labs(col="Total probe intensity ~ FFPE decay time") +
   
   theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
 
 
 
-p2 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
+                y=DMP__primary_recurrence__pp_nc__t,
+              col=DMPI__FFPE_decay_time__pp_nc__t)) +
+  geom_point(pch=16, cex=0.001 , alpha=0.15) + 
+  
+  labs(x="Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrent",
+       col="",
+       caption=paste0("todo")) +
+  
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
+  
+  #theme(plot.background = element_rect(fill="white", colour = NA)) + # png export
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  
+  theme(axis.line =     element_line(linewidth = theme_nature_lwd)) # somehow w/ png export
+
+
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
                      col=DUPI__FFPE_decay_time__pp_nc__t)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
@@ -2861,21 +2903,8 @@ p2 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t
 
 
 
-p3 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
-                     col=DPI__FFPE_decay_time__pp_nc__t)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=16, cex=0.001, alpha=0.15) + 
-  
-  labs(col="Total probe intensity ~ FFPE decay time") +
-  
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
 
-
-
-p4 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
                      col=DMP__FFPE_decay_time__pp_nc__t)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
@@ -2913,7 +2942,7 @@ plt <- data.mvalues.probes |>
   dplyr::filter(!is.na(DPI__FFPE_decay_time__pp_nc__t))
 
 
-p1 = ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
                 col=DPI__FFPE_decay_time__pp_nc__t)) +
   #facet_wrap(~probe_type, scales="free",ncol=2) +
   #facet_wrap(~map, scales="free",ncol=2) +
@@ -3837,14 +3866,22 @@ ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqSknshWaveSignalR
 
 plt <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::mutate(`age_at_diagnosis_days` = as.Date(patient_diagnosis_date) - as.Date(patient_birth_date)) |> 
+  dplyr::filter(!is.na(age_at_diagnosis_days)) |> 
+  dplyr::mutate(age_at_diagnosis_days = age_at_diagnosis_days - min(na.omit(age_at_diagnosis_days))) |> 
+  dplyr::mutate(age_at_diagnosis_days = as.numeric(age_at_diagnosis_days)) |> 
   dplyr::mutate(time_tissue_in_ffpe =  ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> 
-  dplyr::select(array_epiTOC2_tnsc, array_epiTOC2_hypoSC, contains("array_dnaMethyAge"), array_RepliTali,
+  dplyr::select(resection_id,
+
+                array_epiTOC2_tnsc, array_epiTOC2_hypoSC, contains("array_dnaMethyAge"), array_RepliTali,
                 array_percentage.detP.signi, array_PC1, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`,
                 time_tissue_in_ffpe,
                 array_GLASS_NL_g2_g3_sig, array_PC2, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
                 
-                array_PC3
+                array_PC3,
+                age_at_diagnosis_days
   ) |> 
+  tibble::column_to_rownames('resection_id') |> 
   dplyr::filter(!is.na(time_tissue_in_ffpe)) |> 
   
   dplyr::mutate(array_GLASS_OD_g2_g3_sig2 = NULL) |> 
@@ -3855,8 +3892,9 @@ plt <- glass_od.metadata.array_samples |>
   dplyr::mutate(array_GLASS_OD_prim_rec_sig4 = NULL) |> 
   
   dplyr::mutate(array_PC3 = -1 * array_PC3) |> 
+  dplyr::mutate(array_percentage.detP.signi = log(array_percentage.detP.signi)) |> 
   
-  dplyr::mutate(AcCGAP = -1 * array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit = NULL) |> 
+  dplyr::mutate(`CGC[Ac]` = -1 * array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit = NULL) |> 
   dplyr::mutate(`-1 * array_dnaMethyAge__ZhangY2017` = -1 * array_dnaMethyAge__ZhangY2017 , array_dnaMethyAge__ZhangY2017 = NULL) |> 
   dplyr::mutate(`-1 * array_epiTOC2_hypoSC` = -1 * array_epiTOC2_hypoSC, array_epiTOC2_hypoSC = NULL) |>  # seems at inversed scale
   dplyr::mutate(`-1 * array_dnaMethyAge__LuA2019` = -1 * array_dnaMethyAge__LuA2019, array_dnaMethyAge__LuA2019 = NULL) |>  # seems at inversed scale
@@ -3864,14 +3902,146 @@ plt <- glass_od.metadata.array_samples |>
   dplyr::select(-array_dnaMethyAge__YangZ2016) |>  # epiTOC1, near identical to epiTOC2
   dplyr::select(-array_dnaMethyAge__PCHorvathS2013) |>  # very similar to its 2018 equivalent
   dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-3_Beta_larger_0.12_0.18` = NULL) |> # contains N/A's
-  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-6_Beta_larger_0.2_0.3` = NULL)# contains N/A's
+  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-6_Beta_larger_0.2_0.3` = NULL) |> # contains N/A's
+  dplyr::rename(`% detP significant probes (log)` = array_percentage.detP.signi) |> 
+  
+  dplyr::mutate(`-1 * CGC[Ac]` = -1 * `CGC[Ac]`, `CGC[Ac]`= NULL) |> 
+  dplyr::mutate(`array_dnaMethyAge__ZhangY2017` = -1 * `-1 * array_dnaMethyAge__ZhangY2017`, `-1 * array_dnaMethyAge__ZhangY2017`=NULL) |>
+  dplyr::mutate(`-1 * array_GLASS_NL_g2_g3_sig` = -1 * array_GLASS_NL_g2_g3_sig, array_GLASS_NL_g2_g3_sig = NULL) |>
+  dplyr::mutate(`-1 * array_PC2` = -1 * array_PC2, array_PC2 = NULL)
 
 
 colnames(plt) <- gsub("array_","",colnames(plt))
-colnames(plt) <- gsub("_"," ",colnames(plt))
 
 corrplot::corrplot(cor(plt, method="spearman"), order="hclust", tl.cex=0.75, tl.pos="l")
-#h = corrplot::corrplot(cor(plt, method="spearman"), order="hclust", tl.cex=0.75, tl.pos="l")
+h = corrplot::corrplot(cor(plt, method="spearman"), order="hclust", tl.cex=0.75, tl.pos="l")
+
+
+ggsave("output/figures/vis_differential__corrplot_dnaMethyAge.pdf", width= 8.5 * 0.975 / 2 , height = 4)
+
+
+
+
+## en daarnaast een forest ----
+
+
+tmp <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::mutate(`age_at_diagnosis_days` = as.Date(patient_diagnosis_date) - as.Date(patient_birth_date)) |> 
+  dplyr::filter(!is.na(age_at_diagnosis_days)) |> 
+  dplyr::mutate(age_at_diagnosis_days = age_at_diagnosis_days - min(na.omit(age_at_diagnosis_days))) |> 
+  dplyr::mutate(age_at_diagnosis_days = as.numeric(age_at_diagnosis_days)) |> 
+  dplyr::mutate(time_tissue_in_ffpe =  ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> 
+  dplyr::select(resection_id,
+                resection_tumor_grade,
+                
+                array_epiTOC2_tnsc, array_epiTOC2_hypoSC, contains("array_dnaMethyAge"), array_RepliTali,
+                array_percentage.detP.signi, array_PC1, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`,
+                time_tissue_in_ffpe,
+                array_GLASS_NL_g2_g3_sig, array_PC2, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
+                
+                array_PC3,
+                age_at_diagnosis_days
+  ) |> 
+  tibble::column_to_rownames('resection_id') |> 
+  dplyr::filter(!is.na(time_tissue_in_ffpe)) |> 
+  
+  dplyr::mutate(array_GLASS_OD_g2_g3_sig2 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_prim_rec_sig2 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_g2_g3_sig3 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_prim_rec_sig3 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_g2_g3_sig4 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_prim_rec_sig4 = NULL) |> 
+  
+  dplyr::mutate(array_PC3 = -1 * array_PC3) |> 
+  dplyr::mutate(array_percentage.detP.signi = log(array_percentage.detP.signi)) |> 
+  
+  dplyr::mutate(`CGC[Ac]` = -1 * array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit = NULL) |> 
+  dplyr::mutate(`-1 * array_dnaMethyAge__ZhangY2017` = -1 * array_dnaMethyAge__ZhangY2017 , array_dnaMethyAge__ZhangY2017 = NULL) |> 
+  dplyr::mutate(`-1 * array_epiTOC2_hypoSC` = -1 * array_epiTOC2_hypoSC, array_epiTOC2_hypoSC = NULL) |>  # seems at inversed scale
+  dplyr::mutate(`-1 * array_dnaMethyAge__LuA2019` = -1 * array_dnaMethyAge__LuA2019, array_dnaMethyAge__LuA2019 = NULL) |>  # seems at inversed scale
+  dplyr::mutate(`-1 * QC: SPECIFICITY I GT MM 6` = -1 * `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`=NULL) |> 
+  dplyr::select(-array_dnaMethyAge__YangZ2016) |>  # epiTOC1, near identical to epiTOC2
+  dplyr::select(-array_dnaMethyAge__PCHorvathS2013) |>  # very similar to its 2018 equivalent
+  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-3_Beta_larger_0.12_0.18` = NULL) |> # contains N/A's
+  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-6_Beta_larger_0.2_0.3` = NULL) |> # contains N/A's
+  dplyr::rename(`% detP significant probes (log)` = array_percentage.detP.signi) |> 
+
+  dplyr::mutate(resection_tumor_grade = factor(paste0("Grade",resection_tumor_grade), levels=c("Grade2","Grade3"))) |> 
+  
+  dplyr::mutate(`-1 * CGC[Ac]` = -1 * `CGC[Ac]`, `CGC[Ac]`= NULL) |> 
+  dplyr::mutate(`array_dnaMethyAge__ZhangY2017` = -1 * `-1 * array_dnaMethyAge__ZhangY2017`, `-1 * array_dnaMethyAge__ZhangY2017`=NULL) |>
+  dplyr::mutate(`-1 * array_GLASS_NL_g2_g3_sig` = -1 * array_GLASS_NL_g2_g3_sig, array_GLASS_NL_g2_g3_sig = NULL) |>
+  dplyr::mutate(`-1 * array_PC2` = -1 * array_PC2, array_PC2 = NULL)
+
+colnames(tmp) <- gsub("array_","",colnames(tmp))
+
+
+data <- tmp |>
+  dplyr::mutate(`resection_tumor_grade` = NULL) |> 
+  as.data.frame() |> 
+  #scale(center=T, scale=T) |> 
+  t() |>
+  as.data.frame() 
+
+
+design <- model.matrix(~age_at_diagnosis_days + factor(resection_tumor_grade), data=tmp)
+#design <- model.matrix(~factor(resection_tumor_grade), data=tmp)
+fit <- limma::lmFit(data, design)
+fit <- limma::eBayes(fit, trend=T)
+stats <- limma::topTable(fit,
+                            n=nrow(data),
+                            coef="factor(resection_tumor_grade)Grade3",
+                            sort.by = "none",
+                            confint=T,
+                            adjust.method="fdr") |> 
+  tibble::rownames_to_column('covar') 
+
+
+
+plt <- h$corr |>
+  as.data.frame() |>
+  tibble::rownames_to_column("covar") |>
+  dplyr::select("covar") |> 
+  assertr::verify(covar %in% stats$covar) |> 
+  dplyr::left_join(stats, by=c('covar'='covar')) |> 
+  dplyr::mutate(y = dplyr::n():1)
+
+
+plt <- rbind(
+  plt |>
+    dplyr::mutate(logFC = 0) |> 
+    dplyr::mutate(t = 0) |> 
+    dplyr::mutate(type = "zero")
+,
+  plt |>
+    dplyr::mutate(type = "datapoint")
+,
+plt |>
+  dplyr::mutate(logFC = CI.L) |> 
+  dplyr::mutate(type = "CI")
+,
+plt |>
+  dplyr::mutate(logFC = CI.R) |> 
+  dplyr::mutate(type = "CI")
+)
+
+
+ggplot(plt, aes(x = logFC, y=y, label=covar, group=covar)) +
+  geom_line(data=subset(plt, type %in% c("datapoint", "zero")),lwd=theme_nature_lwd) + 
+  #geom_line(data=subset(plt, type %in% c("CI")),lwd=theme_nature_lwd*3) + 
+  geom_point(data=subset(plt, type == "datapoint"), size=theme_nature_size/3) +
+  geom_text(data=subset(plt, type %in% c("datapoint")), x = 2, size=theme_nature_size) + 
+  xlim(-1,3) + 
+  theme_nature
+
+
+# https://support.bioconductor.org/p/37524/
+# https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/forest.html
+# https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/metareg.html
+
+
+# corr qc ----
 
 #p1 = ggcorrplot2::ggcorrplot(h$corr) +
 #  theme(axis.title.x=element_blank(),
@@ -3920,4 +4090,106 @@ colnames(plt) <- gsub("array_","",colnames(plt))
 colnames(plt) <- gsub("_"," ",colnames(plt))
 
 corrplot::corrplot(abs(cor(plt, method="spearman")), order="hclust", tl.cex=0.75, tl.pos="l")
+
+
+
+
+
+# AD alzheimer disease ----
+
+
+tmp <- readRDS("cache/analysis_differential__ad_co__stats.Rds") |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::rename_with( ~ paste0("DMP__ad_brain__", .x)) |> 
+  tibble::rownames_to_column('probe_id')
+  
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id')) |> 
+  dplyr::filter(!is.na(DMP__ad_brain__t))
+
+
+
+source("scripts/load_gene_annotations.R")
+
+
+
+polycomb_tfs <- plt |> 
+  dplyr::rename(gene = GencodeCompV12_NAME) |> 
+  dplyr::select(probe_id, gene) |>
+  tibble::tibble() |> 
+  tidyr::separate_longer_delim(gene, delim = ";") |> 
+  dplyr::filter(gene != "") |> 
+  dplyr::distinct() |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 323685)
+    return(.)
+  })() |> 
+  dplyr::mutate(polycomb_homeobox = 
+    gene %in% c(genes_polycomb_suz12_homeobox, genes_polycomb_eed_homeobox, genes_polycomb_h3k27_homeobox, genes_polycomb_prc2_homeobox)
+  ) |> 
+  dplyr::filter(polycomb_homeobox) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 3105)
+    return(.)
+  })()
+
+
+
+plt <- plt |> 
+  dplyr::mutate(polycomb_homeobox_tf = probe_id %in% polycomb_tfs$probe_id )
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                y=DMP__ad_brain__t,
+                col=polycomb_homeobox_tf,
+                alpha=polycomb_homeobox_tf,
+                size=polycomb_homeobox_tf
+                )) +
+  
+  geom_point(pch=16) +
+  
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size, label.x=5) +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y = "Per probe t-score Alzheimer - Control",
+       caption=paste0("Included samples per test: ")
+  ) +
+  
+  theme_nature + 
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__ad_brain__t)), max(abs(plt$DMP__ad_brain__t)))) +
+  
+  scale_color_manual(values=c("darkgray","red")) +
+  scale_size_manual(values=c(0.001, 0.2)) +
+  scale_alpha_manual(values=c(`TRUE`=1.0, `FALSE`=0.6)) + 
+  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+
+
+
+
+
+ggsave(paste0("output/figures/vis_differential__grade_PC1__alzheimer_disease.png"), width=(8.5 * 0.975 * (2/5)), height=3.48, dpi=300)
+
+
+
+
 

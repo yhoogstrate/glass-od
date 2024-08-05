@@ -21,7 +21,22 @@ if(!exists('glass_od.metadata.array_samples')) {
 
 
 metadata <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES)
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::mutate(chemo = dplyr::case_when(
+    is.na(resection_treatment_status_chemo) ~ as.character(NA),
+    grepl("TMZ",resection_treatment_status_summary) & grepl("PCV",resection_treatment_status_summary) ~ "TMZ & PCV",
+    grepl("TMZ",resection_treatment_status_summary) ~ "TMZ",
+    grepl("PCV",resection_treatment_status_summary) ~ "PCV",
+    resection_treatment_status_chemo ~ "other",
+    T ~ "No"
+  )) |> 
+  dplyr::mutate(radio = dplyr::case_when(
+    resection_treatment_status_radio == T ~ "Yes",
+    resection_treatment_status_radio == F ~ "No",
+    T ~ as.character(NA)
+  ))
+
+
 
 
 metadata.validation <- glass_od.metadata.array_samples |> 
@@ -94,27 +109,37 @@ plt.split <- rbind(
       isolation_material == "ffpe" ~ "FFPE",
       isolation_material == "tissue" ~ "Tissue"
     )) |> 
-    dplyr::mutate(facet = "A) Material")  |> 
+    dplyr::mutate(facet = "a. Material")  |> 
     dplyr::mutate(stat = col)
   ,
   metadata |> 
     dplyr::mutate(col = ifelse(resection_number == 1, "primary", "recurrent")) |> 
-    dplyr::mutate(facet = "B) Resection")  |> 
+    dplyr::mutate(facet = "b. Resection")  |> 
     dplyr::mutate(stat = 'NA')
   ,
   metadata |>
     dplyr::mutate(col = as.factor(paste0("Grade ",resection_tumor_grade))) |> 
-    dplyr::mutate(facet = "C) Histological grade") |> 
+    dplyr::mutate(facet = "c. Histological grade") |> 
     dplyr::mutate(stat = 'NA')
   ,
   metadata |> 
     dplyr::mutate(col = ifelse(array_mnp_predictBrain_v2.0.1_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", array_mnp_predictBrain_v2.0.1_cal_class)) |> 
-    dplyr::mutate(facet = "D) MNP CNS Classifier 114b/2.0.1")  |> 
+    dplyr::mutate(facet = "d. MNP CNS Classifier 114b/2.0.1")  |> 
     dplyr::mutate(stat = 'NA')
-   ,
+  ,
   metadata |> 
     dplyr::mutate(col = ifelse(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","O_IDH","OLIGOSARC_IDH") == F, "other", array_mnp_predictBrain_v12.8_cal_class)) |> 
-    dplyr::mutate(facet = "E) MNP CNS Classifier 12.8")  |> 
+    dplyr::mutate(facet = "e. MNP CNS Classifier 12.8")  |> 
+    dplyr::mutate(stat = 'NA')
+  ,
+  metadata |> 
+    dplyr::mutate(col = radio) |> 
+    dplyr::mutate(facet = "f. Radio")  |> 
+    dplyr::mutate(stat = 'NA')
+  ,
+  metadata |> 
+    dplyr::mutate(col = chemo) |> 
+    dplyr::mutate(facet = "g. Chemo")  |> 
     dplyr::mutate(stat = 'NA')
 )
 
@@ -129,6 +154,13 @@ ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL
     "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
     "Grade 3"="red", "A_IDH_HG"="red", "recurrent"="red",
     
+    "No"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
+    "Yes"="red", "A_IDH_HG"="red", "recurrent"="red",
+    
+    "TMZ"="red",
+    "PCV"="darkgreen",
+    "TMZ & PCV" = "orange",
+    
     "FFPE"="darkgreen",
     "OLIGOSARC_IDH" = "orange",
     "NA" = "gray40",
@@ -140,7 +172,9 @@ ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL
   theme_nature
 
 
-ggsave("output/figures/vis_LGC_x_PCA__scatter_A1.pdf",width=8.5 * 0.975, height = 2.72)
+ggsave("output/figures/vis_LGC_x_PCA__scatter_A1.pdf",width=8.5 * 0.975, height = 4.42)
+
+
 
 
 # array_PC2 ~ 202 | array_GLASS_NL_g2_g3_sig ~ 218

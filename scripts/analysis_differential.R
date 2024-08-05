@@ -321,8 +321,8 @@ metadata.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(is.paired = dplyr::n() == 2) |> 
   dplyr::ungroup() |> 
   
-  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"remainder")))) |> 
-  dplyr::mutate(pr.status = factor(ifelse(resection_number == 1,"primary","recurrence"),levels=c("primary","recurrence"))) |> 
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired, patient_id, "remainder")))) |> 
+  dplyr::mutate(pr.status = factor(ifelse(resection_number == 1, "primary", "recurrence"),levels=c("primary","recurrence"))) |> 
   dplyr::select(array_sentrix_id, patient, pr.status) |> 
   
   (function(.) {
@@ -368,11 +368,12 @@ sum(stats.pp.nc$adj.P.Val < 0.01)
 
 
 
-#saveRDS(fit.pp.nc, file="cache/analysis_differential_intensities__primary_recurrence__partial_paired_nc__fit.Rds")
 saveRDS(stats.pp.nc, file="cache/analysis_differential_intensities__primary_recurrence__partial_paired_nc__stats.Rds")
 
 
 rm(fit.pp.nc, stats.pp.nc, data.pp.nc)
+
+
 
 
 
@@ -968,7 +969,7 @@ saveRDS(stats.g2g3.pp.nc, file="cache/analysis_differential_intensities__g2_g3__
 rm(fit.g2g3.pp.nc, stats.g2g3.pp.nc, data.g2g3.pp.nc)
 
 
-## data: partially paired INTENSITIES [w/o FFPE/frozen batch correct] ----
+## data: partially paired INTENSITIES nonlog [w/o FFPE/frozen batch correct] ----
 
 
 metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |> 
@@ -1032,6 +1033,101 @@ saveRDS(stats.g2g3.pp.nc, file="cache/analysis_differential_intensities__g2_g3__
 
 
 rm(fit.g2g3.pp.nc, stats.g2g3.pp.nc, data.g2g3.pp.nc)
+
+
+## data: only non-FFPE samples ----
+
+
+## data: partially paired [w/o FFPE/frozen batch correct] ----
+
+
+metadata.g2g3.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3(156) |> 
+  dplyr::filter(isolation_material == "tissue") |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2", "Grade3")) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 37) 
+    return(.)
+  })() |> 
+  dplyr::mutate(array_PC1 = scale(array_PC1, scale=F, center=T)) |> 
+  dplyr::mutate(array_PC2 = scale(array_PC2, scale=F, center=T))
+
+
+
+data.g2g3.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.g2g3.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (CONST_N_PROBES_UNMASKED_AND_DETP)) 
+    return(.)
+  })()
+
+
+
+
+
+design.g2g3.pp.nc <- model.matrix(~factor(patient) + 
+                                    array_PC1 + 
+                                    #array_PC2
+                                  array_A_IDH_HG__A_IDH_LG_lr__lasso_fit
+                                    #+  
+                                    #factor(gr.status)
+                                  , data=metadata.g2g3.pp.nc)
+fit.g2g3.pp.nc <- limma::lmFit(data.g2g3.pp.nc, design.g2g3.pp.nc)
+fit.g2g3.pp.nc <- limma::eBayes(fit.g2g3.pp.nc, trend=T)
+stats.g2g3.pp.nc <- limma::topTable(fit.g2g3.pp.nc,
+                                    n=nrow(data.g2g3.pp.nc),
+                                    #coef="factor(gr.status)Grade3",
+                                    #coef="array_PC1",
+                                    #coef="array_PC2",
+                                    coef="array_A_IDH_HG__A_IDH_LG_lr__lasso_fit",
+                                    sort.by = "none",
+                                    adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+rm(design.g2g3.pp.nc)
+
+
+sum(stats.g2g3.pp.nc$P.Value < 0.01)
+sum(stats.g2g3.pp.nc$adj.P.Val < 0.01)
+
+ggplot(stats.g2g3.pp.nc, aes(x= logFC, y= -log(`P.Value`))) +
+  
+  geom_hline(yintercept=0,          col="black", lwd=theme_nature_lwd, lty=1) +
+#  geom_hline(yintercept=-log(0.01), col="black", lwd=theme_nature_lwd, lty=2) +
+  #geom_hline(yintercept=-log(0.05), col="gray", lwd=theme_nature_lwd) +
+  
+  geom_vline(xintercept=0,        col="black", lwd=theme_nature_lwd, lty=2) +
+
+  geom_point(pch=19, cex=0.5) +
+  theme_nature
+
+
+
+
+
+
+
+#saveRDS(stats.g2g3.pp.nc, file="cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds")
+
+
+rm(fit.g2g3.pp.nc, stats.g2g3.pp.nc)
+
+
 
 
 
@@ -1582,6 +1678,444 @@ plot(plt2$array_PC6, plt2$prim_rec_secondary_effect_PC, col=as.numeric(as.factor
 
 
 
+
+
+# analyses: Treatment(s) ----
+## data ----
+
+
+
+metadata.trtmnt.quality.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(!is.na(resection_treatment_status_chemo)) |> 
+  dplyr::filter(!is.na(resection_treatment_status_radio)) |> 
+  filter_first_G2_and_last_G3(155) |> 
+  
+  dplyr::mutate(in_ffpe = isolation_material == "ffpe") |> 
+  dplyr::filter(!is.na(in_ffpe)) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2", "Grade3")) |>
+  dplyr::mutate(TMZ = grepl("TMZ", resection_treatment_status_summary)) |> 
+  dplyr::mutate(PCV = grepl("PCV", resection_treatment_status_summary)) |> 
+  
+  dplyr::mutate(chemo = ifelse(resection_treatment_status_chemo, "Yes", "No")) |> 
+  dplyr::mutate(TMZ = ifelse(TMZ, "Yes", "No")) |> 
+  dplyr::mutate(PCV = ifelse(PCV, "Yes", "No")) |> 
+  dplyr::mutate(radio = ifelse(resection_treatment_status_radio, "Yes", "No")) |> 
+  dplyr::mutate(treated = ifelse(resection_treatment_status_chemo | resection_treatment_status_radio, "Yes", "No")) |> 
+  
+  dplyr::mutate(chemo = factor(chemo, levels=c("No", "Yes"))) |> 
+  dplyr::mutate(radio = factor(radio, levels=c("No", "Yes"))) |> 
+  dplyr::mutate(TMZ = factor(TMZ, levels=c("No", "Yes"))) |> 
+  dplyr::mutate(PCV = factor(PCV, levels=c("No", "Yes"))) |> 
+  dplyr::mutate(treated = factor(treated, levels=c("No", "Yes"))) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 149) 
+    return(.)
+  })() 
+
+
+data.trtmnt.quality.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.trtmnt.quality.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+
+## test: PC1 + pat + trt1 + trt2 ----
+
+
+
+design.trtmnt.quality.pp.nc <- model.matrix(~
+                                              array_PC1 +
+                                              factor(patient) +
+                                              factor(gr.status) *
+                                              factor(TMZ)
+                                              #factor(treated)
+                                              #factor(radio)
+                                            , data=metadata.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::lmFit(data.trtmnt.quality.pp.nc, design.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::eBayes(fit.trtmnt.quality.pp.nc, trend=T)
+
+
+
+colnames(fit.trtmnt.quality.pp.nc$coefficients)
+
+
+tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+                       n=nrow(data.trtmnt.quality.pp.nc),
+                       coef="factor(gr.status)Grade3",
+                       sort.by = "none",
+                       adjust.method="fdr") |> 
+  dplyr::select(t, adj.P.Val) |> 
+  tibble::rownames_to_column('probe_id') 
+
+sum(tmp$adj.P.Val < 0.01)
+
+
+
+
+tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+                       n=nrow(data.trtmnt.quality.pp.nc),
+                       coef="factor(TMZ)Yes",
+                       sort.by = "none",
+                       adjust.method="fdr") |> 
+  dplyr::select(t, adj.P.Val) |> 
+  tibble::rownames_to_column('probe_id') 
+
+sum(tmp$adj.P.Val < 0.01)
+
+
+
+tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+                       n=nrow(data.trtmnt.quality.pp.nc),
+                       coef="factor(gr.status)Grade3:factor(TMZ)Yes",
+                       sort.by = "none",
+                       adjust.method="fdr") |> 
+  dplyr::select(t, adj.P.Val) |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+sum(tmp$adj.P.Val < 0.01)
+
+
+
+
+## test: PC1 + pat + grade + trt1 + trt2 ----
+
+
+## grade in non-treated ----
+
+
+
+metadata.trtmnt.quality.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(!is.na(resection_treatment_status_chemo)) |> 
+  dplyr::filter(!is.na(resection_treatment_status_radio)) |> 
+  filter_first_G2_and_last_G3(155) |> 
+  
+  #dplyr::filter(!is.na(resection_treatment_status_summary != "no") & resection_treatment_status_summary != "no") |> 
+  #dplyr::filter(resection_tumor_grade == 2) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2", "Grade3")) |>
+  dplyr::mutate(TMZ = grepl("TMZ", resection_treatment_status_summary)) |> 
+  dplyr::mutate(PCV = grepl("PCV", resection_treatment_status_summary)) |> 
+  
+  dplyr::mutate(chemo = ifelse(resection_treatment_status_chemo, "Yes", "No")) |> 
+  dplyr::mutate(TMZ = ifelse(TMZ, "Yes", "No")) |> 
+  dplyr::mutate(PCV = ifelse(PCV, "Yes", "No")) |> 
+  dplyr::mutate(radio = ifelse(resection_treatment_status_radio, "Yes", "No")) |> 
+  dplyr::mutate(treated = ifelse(resection_treatment_status_chemo | resection_treatment_status_radio, "Yes", "No")) |> 
+  
+  dplyr::mutate(condition = ifelse(gr.status == "Grade3" & chemo == "Yes", "G3TRT","other")) |> 
+  
+  dplyr::mutate(chemo = factor(chemo, levels=c("No", "Yes"))) |> 
+  dplyr::mutate(radio = factor(radio, levels=c("No", "Yes"))) |> 
+  dplyr::mutate(TMZ = factor(TMZ, levels=c("No", "Yes"))) |> 
+  dplyr::mutate(PCV = factor(PCV, levels=c("No", "Yes"))) |> 
+  dplyr::mutate(treated = factor(treated, levels=c("No", "Yes"))) |> 
+  dplyr::mutate(condition = factor(condition, levels=c("other", "G3TRT"))) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 155) 
+    return(.)
+  })() 
+
+
+data.trtmnt.quality.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.trtmnt.quality.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+table(metadata.trtmnt.quality.pp.nc$condition)
+
+
+design.trtmnt.quality.pp.nc <- model.matrix(~
+                                              array_PC1 +
+                                              #factor(in_ffpe) +
+                                              factor(patient) +
+                                              #factor(gr.status)
+                                              factor(condition)
+                                              #factor(radio)
+                                            , data=metadata.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::lmFit(data.trtmnt.quality.pp.nc, design.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::eBayes(fit.trtmnt.quality.pp.nc, trend=T)
+
+
+colnames(fit.trtmnt.quality.pp.nc)
+
+
+tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+     n=nrow(data.trtmnt.quality.pp.nc),
+     coef="factor(condition)G3TRT",
+     sort.by = "none",
+     adjust.method="fdr") |> 
+  dplyr::select(t, adj.P.Val) |> 
+  dplyr::rename_with( ~ paste0("DMP_trt__grade_", .x)) |>
+  tibble::rownames_to_column('probe_id') 
+
+
+sum(tmp$DMP_trt__grade_adj.P.Val < 0.01)
+
+
+
+
+## chemo ----
+
+
+design.trtmnt.quality.pp.nc <- model.matrix(~
+                                              #array_PC1 +
+                                              factor(patient) +
+                                              factor(chemo)
+                                            , data=metadata.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::lmFit(data.trtmnt.quality.pp.nc, design.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::eBayes(fit.trtmnt.quality.pp.nc, trend=T)
+
+
+
+tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+                       n=nrow(data.trtmnt.quality.pp.nc),
+                       coef="factor(chemo)Yes",
+                       sort.by = "none",
+                       adjust.method="fdr") |> 
+  dplyr::select(t, adj.P.Val) |> 
+  dplyr::rename_with( ~ paste0("DMP_trt__chemo_", .x)) |>
+  tibble::rownames_to_column('probe_id') 
+
+
+sum(tmp$DMP_trt__chemo_adj.P.Val < 0.01)
+
+
+# plot
+
+
+plt <- data.mvalues.probes |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'))
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP_trt__chemo_t)) + 
+  geom_point(pch=19,cex=0.01, alpha=0.1)
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t, y=DMP_trt__chemo_t)) + 
+  geom_point(pch=19,cex=0.01, alpha=0.1)
+
+
+ggplot(plt, aes(x=DMP__PCs__pp_nc__PC1_t, y=DMP_trt__chemo_t)) +  # DMP__g2_g3__pp_nc_PC1__t
+  geom_point(pch=19,cex=0.01, alpha=0.1)
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) + 
+  geom_point(pch=19,cex=0.01, alpha=0.1)
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=DMP_trt__chemo_t)) + 
+  geom_point(pch=19,cex=0.01, alpha=0.1) +
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
+
+
+
+
+## chemo + grade ----
+
+
+design.trtmnt.quality.pp.nc <- model.matrix(~
+                                              array_PC1 +
+                                              #factor(in_ffpe) +
+                                              factor(patient) +
+                                              factor(gr.status) + factor(chemo)
+                                            #factor(radio)
+                                            , data=metadata.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::lmFit(data.trtmnt.quality.pp.nc, design.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::eBayes(fit.trtmnt.quality.pp.nc, trend=T)
+
+
+tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+                       n=nrow(data.trtmnt.quality.pp.nc),
+                       coef="factor(chemo)Yes",
+                       sort.by = "none",
+                       adjust.method="fdr") |> 
+  dplyr::select(t, adj.P.Val) |> 
+  tibble::rownames_to_column('probe_id') 
+
+sum(tmp$adj.P.Val < 0.01)
+
+
+tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+                       n=nrow(data.trtmnt.quality.pp.nc),
+                       coef="factor(gr.status)Grade3",
+                       sort.by = "none",
+                       adjust.method="fdr") |> 
+  dplyr::select(t, adj.P.Val) |> 
+  tibble::rownames_to_column('probe_id') 
+
+sum(tmp$adj.P.Val < 0.01)
+
+
+
+
+## TMZ ----
+
+
+design.trtmnt.quality.pp.nc <- model.matrix(~
+                                              array_PC1 +
+                                              #factor(in_ffpe) +
+                                              factor(patient) +
+                                              factor(gr.status) +
+                                              factor(TMZ)
+                                            , data=metadata.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::lmFit(data.trtmnt.quality.pp.nc, design.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::eBayes(fit.trtmnt.quality.pp.nc, trend=T)
+
+
+tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+                       n=nrow(data.trtmnt.quality.pp.nc),
+                       coef="factor(TMZ)Yes",
+                       sort.by = "none",
+                       adjust.method="fdr") |> 
+  dplyr::select(t, adj.P.Val) |> 
+  tibble::rownames_to_column('probe_id') 
+
+sum(tmp$adj.P.Val < 0.01)
+
+
+tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+                       n=nrow(data.trtmnt.quality.pp.nc),
+                       coef="factor(gr.status)Grade3",
+                       sort.by = "none",
+                       adjust.method="fdr") |> 
+  dplyr::select(t, adj.P.Val) |> 
+  tibble::rownames_to_column('probe_id') 
+
+sum(tmp$adj.P.Val < 0.01)
+
+
+
+## PCV ----
+
+
+design.trtmnt.quality.pp.nc <- model.matrix(~
+                                              array_PC1 +
+                                              #factor(in_ffpe) +
+                                              factor(patient) +
+                                              factor(gr.status) +
+                                              factor(PCV) +
+                                              factor(TMZ)
+                                            , data=metadata.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::lmFit(data.trtmnt.quality.pp.nc, design.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::eBayes(fit.trtmnt.quality.pp.nc, trend=T)
+
+
+tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+                       n=nrow(data.trtmnt.quality.pp.nc),
+                       coef="factor(PCV)Yes",
+                       sort.by = "none",
+                       adjust.method="fdr") |> 
+  dplyr::select(t, adj.P.Val) |> 
+  tibble::rownames_to_column('probe_id') 
+
+sum(tmp$adj.P.Val < 0.01)
+
+tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+                       n=nrow(data.trtmnt.quality.pp.nc),
+                       coef="factor(TMZ)Yes",
+                       sort.by = "none",
+                       adjust.method="fdr") |> 
+  dplyr::select(t, adj.P.Val) |> 
+  tibble::rownames_to_column('probe_id') 
+
+sum(tmp$adj.P.Val < 0.01)
+
+
+tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+                       n=nrow(data.trtmnt.quality.pp.nc),
+                       coef="factor(gr.status)Grade3",
+                       sort.by = "none",
+                       adjust.method="fdr") |> 
+  dplyr::select(t, adj.P.Val) |> 
+  tibble::rownames_to_column('probe_id') 
+
+sum(tmp$adj.P.Val < 0.01)
+
+
+
+
+## radio ----
+
+
+design.trtmnt.quality.pp.nc <- model.matrix(~
+                                              array_PC1 +
+                                              #factor(in_ffpe) +
+                                              factor(patient) +
+                                              #factor(gr.status) +
+                                              #factor(chemo)
+                                              factor(radio)
+                                            , data=metadata.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::lmFit(data.trtmnt.quality.pp.nc, design.trtmnt.quality.pp.nc)
+fit.trtmnt.quality.pp.nc <- limma::eBayes(fit.trtmnt.quality.pp.nc, trend=T)
+
+
+
+tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+                                                     n=nrow(data.trtmnt.quality.pp.nc),
+                                                     coef="factor(radio)Yes",
+                                                     sort.by = "none",
+                                                     adjust.method="fdr") |> 
+  dplyr::select(t, adj.P.Val) |> 
+  dplyr::rename_with( ~ paste0("DMP_trt__radio_", .x)) |>
+  tibble::rownames_to_column('probe_id') 
+
+
+sum(tmp$DMP_trt__radio_adj.P.Val < 0.01)
+
+
+## tables ----
+
+
+metadata.trtmnt.quality.pp.nc |> 
+  dplyr::select(chemo, gr.status) |> 
+  table()
+
+
+metadata.trtmnt.quality.pp.nc |> 
+  dplyr::select(radio, gr.status) |> 
+  table()
+
+
+metadata.trtmnt.quality.pp.nc |> 
+  dplyr::select(chemo, radio) |> 
+  table()
 
 
 # analyses: GLASS-OD PC1-8 ----
@@ -3267,8 +3801,8 @@ rm(
 
 
 
-# analyses: GLASS-OD AcCGAP ----
-## data: partially paired [w/o FFPE/frozen batch correct] ----
+# analyses: GLASS-OD AcCGAP CGC & GLASSNL sig ----
+## data: CGC partially paired [w/o FFPE/frozen batch correct] ----
 
 
 metadata.AccGAP.pp.nc <- glass_od.metadata.array_samples |> 
@@ -3326,6 +3860,74 @@ saveRDS(stats.AccGAP.pp.nc, file="cache/analysis_differential__AcCGAP__partial_p
 
 
 rm(fit.AccGAP.pp.nc, stats.AccGAP.pp.nc)
+
+
+
+
+
+
+
+## data: GLASS-NL sig ----
+
+
+
+
+metadata.GLASS_NL_sig.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  assertr::verify(!is.na(array_GLASS_NL_g2_g3_sig)) |> 
+  assertr::verify(is.numeric(array_GLASS_NL_g2_g3_sig)) |> 
+  dplyr::mutate(array_GLASS_NL_g2_g3_sig = scale(array_GLASS_NL_g2_g3_sig)) |> 
+  #dplyr::mutate( = as.numeric(array_GLASS_NL_g2_g3_sig)) |> 
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() >= 2) |>  # also pairs with n = 3 & n= 4
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired,patient_id,"remainder")))) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_INCLUDED_SAMPLES)) 
+    return(.)
+  })()
+
+
+
+data.GLASS_NL_sig.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.GLASS_NL_sig.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+
+design.GLASS_NL_sig.pp.nc <- model.matrix(~factor(patient) + array_GLASS_NL_g2_g3_sig, data=metadata.GLASS_NL_sig.pp.nc)
+fit.GLASS_NL_sig.pp.nc <- limma::lmFit(data.GLASS_NL_sig.pp.nc, design.GLASS_NL_sig.pp.nc)
+fit.GLASS_NL_sig.pp.nc <- limma::eBayes(fit.GLASS_NL_sig.pp.nc, trend=T)
+stats.GLASS_NL_sig.pp.nc <- limma::topTable(fit.GLASS_NL_sig.pp.nc,
+                                            n=nrow(data.GLASS_NL_sig.pp.nc),
+                                            coef="array_GLASS_NL_g2_g3_sig",
+                                            sort.by = "none",
+                                            adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id')
+
+
+rm(design.GLASS_NL_sig.pp.nc)
+
+
+sum(stats.GLASS_NL_sig.pp.nc$P.Value < 0.01)
+sum(stats.GLASS_NL_sig.pp.nc$adj.P.Val < 0.01)
+
+
+saveRDS(stats.GLASS_NL_sig.pp.nc, file="cache/analysis_differential__GLASS_NL_sig__partial_paired_nc__stats.Rds")
+
+
+rm(fit.GLASS_NL_sig.pp.nc, stats.GLASS_NL_sig.pp.nc)
+
 
 
 
@@ -3427,9 +4029,10 @@ rm(fit.ffpe_or_ff.pp.nc, stats.ffpe_or_ff.pp.nc)
 metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   dplyr::filter(!is.na(isolation_material)) |> 
+  #dplyr::filter(!is.na(time_between_resection_and_array)) |> # may remove NA's which are non-ffpe
   dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
   dplyr::filter(!is.na(ffpe_decay_time)) |> 
-  dplyr::mutate(ffpe_decay_time = scale(ffpe_decay_time)) |> 
+  dplyr::mutate(ffpe_decay_time = scale(ffpe_decay_time, center=F)) |> 
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
   dplyr::ungroup() |> 
@@ -3481,6 +4084,7 @@ saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential__ffpe-decay-ti
 
 
 rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc, metadata.ffpe_decay.pp.nc)
+
 
 
 
@@ -3546,7 +4150,6 @@ saveRDS(stats.freezer_decay.pp.nc, file="cache/analysis_differential__freezer-de
 
 rm(fit.freezer_decay.pp.nc,
    stats.freezer_decay.pp.nc,
-   design.freezer_decay.pp.nc,
    data.freezer_decay.pp.nc,
    metadata.freezer_decay.pp.nc)
 
@@ -3554,76 +4157,9 @@ rm(fit.freezer_decay.pp.nc,
 
 
 
-### 3. time in freezer or ffpe ----
 
 
-metadata.tissue_decay.pp.nc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  dplyr::filter(!is.na(isolation_material)) |> 
-  dplyr::mutate(tissue_decay_time = -time_between_resection_and_array) |> 
-  dplyr::filter(!is.na(tissue_decay_time)) |> 
-  dplyr::group_by(patient_id) |> 
-  dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
-  dplyr::ungroup() |> 
-  dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 203) 
-    return(.)
-  })()
-
-
-
-data.tissue_decay.pp.nc <- data.mvalues.hq_samples |> 
-  tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
-  tibble::column_to_rownames('probe_id') |> 
-  
-  dplyr::select(metadata.tissue_decay.pp.nc$array_sentrix_id) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
-    return(.)
-  })()
-
-
-
-design.tissue_decay.pp.nc <- model.matrix(~factor(patient) + tissue_decay_time, data=metadata.tissue_decay.pp.nc)
-fit.tissue_decay.pp.nc <- limma::lmFit(data.tissue_decay.pp.nc, design.tissue_decay.pp.nc)
-fit.tissue_decay.pp.nc <- limma::eBayes(fit.tissue_decay.pp.nc, trend=T)
-
-stats.tissue_decay.pp.nc <- limma::topTable(fit.tissue_decay.pp.nc,
-                                            n=nrow(data.tissue_decay.pp.nc),
-                                            coef="tissue_decay_time",
-                                            sort.by = "none",
-                                            adjust.method="fdr") |> 
-  tibble::rownames_to_column('probe_id') |> 
-  dplyr::select(probe_id, t)
-
-
-
-rm(design.tissue_decay.pp.nc)
-
-
-sum(stats.tissue_decay.pp.nc$P.Value < 0.01)
-sum(stats.tissue_decay.pp.nc$adj.P.Val < 0.01)
-
-
-
-#saveRDS(fit.tissue_decay.pp.nc, file="cache/analysis_differential__tissue-decay-time__partial_paired_nc__fit.Rds")
-saveRDS(stats.tissue_decay.pp.nc, file="cache/analysis_differential__tissue-decay-time__partial_paired_nc__stats.Rds")
-
-
-
-rm(fit.tissue_decay.pp.nc,
-   stats.tissue_decay.pp.nc,
-   data.tissue_decay.pp.nc,
-   metadata.tissue_decay.pp.nc)
-
-
-
-
-### 4. time in freezer & ffpe multivariate ----
+### 3. time in freezer & ffpe multivariate ----
 
 
 metadata.ffpe_freezer_multivar.pp.nc <- glass_od.metadata.array_samples |> 
@@ -3786,14 +4322,17 @@ ggplot(tmp, aes(y=DMP__FFPE_decay_time__pp_nc__t, x=indep_c_frac)) +
 
 
 
-## data: partially paired COMBINED INTENSITIES [w/o FFPE/frozen batch correct] ----
+## data: COMBINED INTENSITIES ----
 
 
-metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
+metadata.ffpe_decay.intensities.total <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  
   dplyr::filter(!is.na(isolation_material)) |> 
-  dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> # don't change sign here (!!)
-  dplyr::filter(!is.na(ffpe_decay_time)) |> 
+  #dplyr::filter(!is.na(time_between_resection_and_array)) |> 
+  dplyr::mutate(in_ffpe = isolation_material == "ffpe") |> 
+  dplyr::mutate(ffpe_decay_time = ifelse(in_ffpe, time_between_resection_and_array, 0)) |> # don't change sign here (!!)
+  #dplyr::filter(in_ffpe) |> 
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
   dplyr::ungroup() |> 
@@ -3802,57 +4341,105 @@ metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |>
     print(dim(.))
     assertthat::assert_that(nrow(.) == 205) 
     return(.)
-  })()
+  })() 
+#dplyr::mutate(ffpe_decay_time = scale(ffpe_decay_time, center=F, scale=T))
 
 
-data.ffpe_decay.pp.nc <- data.intensities.combined.hq_samples |> 
+data.ffpe_decay.intensities.total <- data.intensities.combined.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.intensities.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
   
-  dplyr::select(metadata.ffpe_decay.pp.nc$array_sentrix_id) |> 
+  dplyr::select(metadata.ffpe_decay.intensities.total$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
+#t() |> 
+#scale(center = TRUE) |> 
+#t()
 
 
 
-design.ffpe_decay.pp.nc <- model.matrix(~factor(patient) + ffpe_decay_time, data=metadata.ffpe_decay.pp.nc)
-fit.ffpe_decay.pp.nc <- limma::lmFit(data.ffpe_decay.pp.nc, design.ffpe_decay.pp.nc)
-fit.ffpe_decay.pp.nc <- limma::eBayes(fit.ffpe_decay.pp.nc, trend=T)
-stats.ffpe_decay.pp.nc <- limma::topTable(fit.ffpe_decay.pp.nc,
-                                          n=nrow(data.ffpe_decay.pp.nc),
-                                          coef="ffpe_decay_time",
-                                          sort.by = "none",
-                                          adjust.method="fdr") |> 
+design.ffpe_decay.intensities.total <- model.matrix(~factor(patient) + 
+                                                      ffpe_decay_time, data=metadata.ffpe_decay.intensities.total)
+fit.ffpe_decay.intensities.total <- limma::lmFit(data.ffpe_decay.intensities.total, design.ffpe_decay.intensities.total)
+fit.ffpe_decay.intensities.total <- limma::eBayes(fit.ffpe_decay.intensities.total, trend=T)
+stats.ffpe_decay.intensities.total <- limma::topTable(fit.ffpe_decay.intensities.total,
+                                                      n=nrow(data.ffpe_decay.intensities.total),
+                                                      coef="ffpe_decay_time",
+                                                      sort.by = "none",
+                                                      adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id')
 
 
 
-rm(design.ffpe_decay.pp.nc)
-
-
-sum(stats.ffpe_decay.pp.nc$P.Value < 0.01)
-sum(stats.ffpe_decay.pp.nc$adj.P.Val < 0.01)
-
-
-
-saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds")
+#plot(sort(metadata.ffpe_decay.intensities.total$ffpe_decay_time ), pch=16, type="l")
+plot(sort(stats.ffpe_decay.intensities.total$t), pch=16, type="l")
+abline(h=0, col="red")
+#abline(h= -3.258864, col="red")
 
 
 
-rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc, metadata.ffpe_decay.pp.nc)
+rm(design.ffpe_decay.intensities.total)
+
+
+sum(stats.ffpe_decay.intensities.total$P.Value < 0.01)
+sum(stats.ffpe_decay.intensities.total$adj.P.Val < 0.01)
 
 
 
+saveRDS(stats.ffpe_decay.intensities.total, file="cache/analysis_differential_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds")
 
 
-## data: partially paired METHYLATED INTENSITIES [w/o FFPE/frozen batch correct] ----
+
+rm(fit.ffpe_decay.intensities.total, stats.ffpe_decay.intensities.total, metadata.ffpe_decay.intensities.total)
 
 
-metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
+
+# top3
+
+# stats.ffpe_decay.pp.nc |> 
+#   dplyr::arrange(P.Value) |> 
+#   head(n=650000) |> 
+#   tail(n=3)
+# 
+# 
+# plt <- data.ffpe_decay.pp.nc |> 
+#   as.data.frame() |> 
+#   dplyr::select(metadata.ffpe_decay.pp.nc$array_sentrix_id) |> 
+#   tibble::rownames_to_column("probe_id") |> 
+#   dplyr::filter(probe_id  %in% c("cg16405174")) |> 
+#   tibble::column_to_rownames("probe_id") |> 
+#   t() |> 
+#   as.data.frame() |> 
+#   tibble::rownames_to_column("array_sentrix_id") |> 
+#   dplyr::left_join(metadata.ffpe_decay.pp.nc, by=c('array_sentrix_id'='array_sentrix_id'))
+# 
+# 
+# ggplot(plt, aes(x=ffpe_decay_time, y=cg16405174, label=resection_id, col=in_ffpe)) +  
+#   ggrepel::geom_text_repel(size=2) +
+#   geom_point(cex=0.5) +
+#   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho")
+# 
+# 
+# 
+# ggplot(data = cats, aes(x = life_years, y = happy_years, color = cat_type)) +
+#   # facet_wrap(~ cat_type) +
+#   stat_poly_line(formula = y ~ x) +
+#   stat_poly_eq(formula = y ~ x, aes(label = after_stat(f.value))) +
+#   #stat_poly_eq(formula = y ~ x, aes(label = after_stat(coef.ls))) +
+#   geom_point()
+
+
+# https://www.rdocumentation.org/packages/ggpmisc/versions/0.6.0/topics/stat_poly_eq
+
+## data: METHYLATED INTENSITIES ----
+
+
+
+metadata.ffpe_decay.intensities.methylated <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   dplyr::filter(!is.na(isolation_material)) |> 
   dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> # don't change sign here (!!)
@@ -3868,12 +4455,12 @@ metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |>
   })()
 
 
-data.ffpe_decay.pp.nc <- data.intensities.methylated.hq_samples |> 
+data.ffpe_decay.intensities.methylated <- data.intensities.methylated.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.intensities.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
   
-  dplyr::select(metadata.ffpe_decay.pp.nc$array_sentrix_id) |> 
+  dplyr::select(metadata.ffpe_decay.intensities.methylated$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
@@ -3882,40 +4469,44 @@ data.ffpe_decay.pp.nc <- data.intensities.methylated.hq_samples |>
 
 
 
-design.ffpe_decay.pp.nc <- model.matrix(~factor(patient) + ffpe_decay_time, data=metadata.ffpe_decay.pp.nc)
-fit.ffpe_decay.pp.nc <- limma::lmFit(data.ffpe_decay.pp.nc, design.ffpe_decay.pp.nc)
-fit.ffpe_decay.pp.nc <- limma::eBayes(fit.ffpe_decay.pp.nc, trend=T)
-stats.ffpe_decay.pp.nc <- limma::topTable(fit.ffpe_decay.pp.nc,
-                                          n=nrow(data.ffpe_decay.pp.nc),
-                                          coef="ffpe_decay_time",
-                                          sort.by = "none",
-                                          adjust.method="fdr") |> 
+design.ffpe_decay.intensities.methylated <- model.matrix(~factor(patient) + ffpe_decay_time, data=metadata.ffpe_decay.intensities.methylated)
+fit.ffpe_decay.intensities.methylated <- limma::lmFit(data.ffpe_decay.intensities.methylated, design.ffpe_decay.intensities.methylated)
+fit.ffpe_decay.intensities.methylated <- limma::eBayes(fit.ffpe_decay.intensities.methylated, trend=T)
+stats.ffpe_decay.intensities.methylated <- limma::topTable(fit.ffpe_decay.intensities.methylated,
+                                                           n=nrow(data.ffpe_decay.intensities.methylated),
+                                                           coef="ffpe_decay_time",
+                                                           sort.by = "none",
+                                                           adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id')
 
 
 
-rm(design.ffpe_decay.pp.nc)
+rm(design.ffpe_decay.intensities.methylated)
 
 
-sum(stats.ffpe_decay.pp.nc$P.Value < 0.01)
-sum(stats.ffpe_decay.pp.nc$adj.P.Val < 0.01)
+plot(sort(stats.ffpe_decay.intensities.methylated$t), pch=16, type="l")
+abline(h=0, col="red")
 
 
-
-saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential_methylated_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds")
-
-
-rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc, metadata.ffpe_decay.pp.nc)
+sum(stats.ffpe_decay.intensities.methylated$P.Value < 0.01)
+sum(stats.ffpe_decay.intensities.methylated$adj.P.Val < 0.01)
 
 
 
+saveRDS(stats.ffpe_decay.intensities.methylated, file="cache/analysis_differential_methylated_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds")
+
+
+rm(fit.ffpe_decay.intensities.methylated, stats.ffpe_decay.intensities.methylated, metadata.ffpe_decay.intensities.methylated)
 
 
 
-## data: partially paired UNMETHYLATED INTENSITIES [w/o FFPE/frozen batch correct] ----
 
 
-metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |> 
+
+## data: UNMETHYLATED INTENSITIES ----
+
+
+metadata.ffpe_decay.intensities.unmethylated <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   dplyr::filter(!is.na(isolation_material)) |> 
   dplyr::mutate(ffpe_decay_time = ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> # don't change sign here (!!)
@@ -3931,12 +4522,12 @@ metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |>
   })()
 
 
-data.ffpe_decay.pp.nc <- data.intensities.unmethylated.hq_samples |> 
+data.ffpe_decay.intensities.unmethylated <- data.intensities.unmethylated.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.intensities.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
   
-  dplyr::select(metadata.ffpe_decay.pp.nc$array_sentrix_id) |> 
+  dplyr::select(metadata.ffpe_decay.intensities.unmethylated$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
@@ -3945,29 +4536,29 @@ data.ffpe_decay.pp.nc <- data.intensities.unmethylated.hq_samples |>
 
 
 
-design.ffpe_decay.pp.nc <- model.matrix(~factor(patient) + ffpe_decay_time, data=metadata.ffpe_decay.pp.nc)
-fit.ffpe_decay.pp.nc <- limma::lmFit(data.ffpe_decay.pp.nc, design.ffpe_decay.pp.nc)
-fit.ffpe_decay.pp.nc <- limma::eBayes(fit.ffpe_decay.pp.nc, trend=T)
-stats.ffpe_decay.pp.nc <- limma::topTable(fit.ffpe_decay.pp.nc,
-                                          n=nrow(data.ffpe_decay.pp.nc),
-                                          coef="ffpe_decay_time",
-                                          sort.by = "none",
-                                          adjust.method="fdr") |> 
+design.ffpe_decay.intensities.unmethylated <- model.matrix(~factor(patient) + ffpe_decay_time, data=metadata.ffpe_decay.intensities.unmethylated)
+fit.ffpe_decay.intensities.unmethylated <- limma::lmFit(data.ffpe_decay.intensities.unmethylated, design.ffpe_decay.intensities.unmethylated)
+fit.ffpe_decay.intensities.unmethylated <- limma::eBayes(fit.ffpe_decay.intensities.unmethylated, trend=T)
+stats.ffpe_decay.intensities.unmethylated <- limma::topTable(fit.ffpe_decay.intensities.unmethylated,
+                                                             n=nrow(data.ffpe_decay.intensities.unmethylated),
+                                                             coef="ffpe_decay_time",
+                                                             sort.by = "none",
+                                                             adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id')
 
 
 
-rm(design.ffpe_decay.pp.nc)
+rm(design.ffpe_decay.intensities.unmethylated)
 
 
-sum(stats.ffpe_decay.pp.nc$P.Value < 0.01)
-sum(stats.ffpe_decay.pp.nc$adj.P.Val < 0.01)
+sum(stats.ffpe_decay.intensities.unmethylated$P.Value < 0.01)
+sum(stats.ffpe_decay.intensities.unmethylated$adj.P.Val < 0.01)
 
 
-saveRDS(stats.ffpe_decay.pp.nc, file="cache/analysis_differential_unmethylated_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds")
+saveRDS(stats.ffpe_decay.intensities.unmethylated, file="cache/analysis_differential_unmethylated_intensities__ffpe-decay-time__partial_paired_nc__stats.Rds")
 
 
-rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc, metadata.ffpe_decay.pp.nc)
+rm(fit.ffpe_decay.intensities.unmethylated, stats.ffpe_decay.intensities.unmethylated, metadata.ffpe_decay.intensities.unmethylated)
 
 
 
@@ -4035,7 +4626,7 @@ rm(fit.ffpe_decay.up.nc, stats.ffpe_decay.up.nc, metadata.ffpe_decay.up.nc)
 
 
 clocks <- glass_od.metadata.array_samples |> 
-  dplyr::select(contains("epiTOC") | contains("dnaMethyAge_")) |> 
+  dplyr::select(contains("epiTOC") | contains("dnaMethyAge_") | contains("_RepliTali")) |> 
   colnames()
 
 
@@ -4048,6 +4639,14 @@ for(clock in clocks) {
     data.table::copy() |> # odd hack needed, because setnames also affects the former "glass_od.metadata.array_samples" object...
     data.table::setnames(old = c(clock), new = c("array_current_clock")) |> 
     dplyr::filter(!is.na(array_current_clock)) |> 
+    
+    dplyr::mutate(array_current_clock = scale(array_current_clock)) |> 
+    
+    dplyr::group_by(patient_id) |> 
+    dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
+    dplyr::ungroup() |> 
+    dplyr::mutate(patient = as.factor(paste0("p_", ifelse(is.paired,patient_id, "remainder")))) |> 
+    
     (function(.) {
       print(dim(.))
       assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES) 
@@ -4070,7 +4669,7 @@ for(clock in clocks) {
   
   
   
-  design.current_clock.up.nc <- model.matrix(~array_current_clock, data=metadata.current_clock.up.nc)
+  design.current_clock.up.nc <- model.matrix(~factor(patient) + array_current_clock, data=metadata.current_clock.up.nc)
   fit.current_clock.up.nc <- limma::lmFit(data.current_clock.up.nc, design.current_clock.up.nc)
   fit.current_clock.up.nc <- limma::eBayes(fit.current_clock.up.nc, trend=T)
   
@@ -4404,7 +5003,7 @@ data.ad <- data.mvalues.alzheimer.dirty |>
   dplyr::select(metadata.ad$DNAm_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (470392)) #470691
+    assertthat::assert_that(nrow(.) == 470392) #470691
     return(.)
   })()
 
@@ -4429,8 +5028,12 @@ sum(stats.ad$adj.P.Val < 0.01)
 
 
 
-saveRDS(fit.ad, file="cache/analysis_differential__ad_co__fit.Rds")
+#saveRDS(fit.ad, file="cache/analysis_differential__ad_co__fit.Rds")
 saveRDS(stats.ad, file="cache/analysis_differential__ad_co__stats.Rds")
+
+
+rm(fit.ad, stats.ad)
+
 
 
 ## check plot ----
@@ -4681,5 +5284,30 @@ ggplot(plt, aes(x=t.c.hg_ac, y=t.c.hg_od, col=col5)) +
   xlim(-12,12) +
   ylim(-12,12) +
   theme_bw()
+
+
+# sandbox ----
+
+
+d = data.frame(
+  status=c(
+    rep("g2",25),
+    rep("g2+tmz",4),
+    rep("g3+tmz",18),
+    rep("g3",17)
+  )
+) |> 
+  dplyr::mutate(grade = gsub("^(..).+$","\\1",status)) |> 
+  dplyr::mutate(tmz = grepl("tmz", status)) |> 
+  dplyr::mutate(dat1 = runif(dplyr::n()) + (runif(dplyr::n()) * (grade == "g3") * 0.8)) |> 
+  dplyr::mutate(dat1 = runif(dplyr::n()) + (runif(dplyr::n()) * (grade == "g3") * 0.8)) |> 
+  dplyr::mutate(dat1 = runif(dplyr::n()) + (runif(dplyr::n()) * (grade == "g3") * 0.8) + (runif(dplyr::n()) * (status == "g2+tmz") * 0.4))
+
+
+summary(lm(dat1 ~ grade , data=d))$coefficients
+summary(lm(dat1 ~ tmz , data=d))$coefficients
+summary(lm(dat1 ~ grade + tmz, data=d))$coefficients
+
+
 
 
