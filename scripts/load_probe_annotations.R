@@ -40,12 +40,37 @@ if(file.exists(fn)) {
   tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/EPIC/EPIC.hg38.manifest.tsv", header=T) |> 
     dplyr::rename(probe_id = Probe_ID) |> 
     dplyr::mutate(probe_type = dplyr::recode(type, "I"="I (red & green)", "II"="II (ligation Allele-A)")) |>  # II is 1 (probe) and I is 2 probes.. ugh!
+    dplyr::mutate(probe_type = factor(probe_type, levels=c("I (red & green)","II (ligation Allele-A)"))) |> 
+    dplyr::mutate(type = NULL) |> 
     assertr::verify(!duplicated(probe_id)) |> 
     dplyr::mutate(pos = round((CpG_beg + CpG_end )/2)) |> 
     dplyr::mutate(is_1P = CpG_chrm == 'chr1' & pos < 130 * 1000000) |> # rough margin
     dplyr::mutate(is_19Q = CpG_chrm == 'chr19' & pos > 23.5 * 1000000 ) |>  # rough margin
     dplyr::rename(target_hg38 = target) # noticed an example where target == 'CA' - while in hg19 ref genome it should have been actually 'CG'
 
+  # Save mem...
+  tmp <- tmp |> 
+    dplyr::mutate(nextBase = NULL) |> 
+    dplyr::mutate(target_hg38 = NULL) |> 
+    dplyr::mutate(address_A = NULL) |> 
+    dplyr::mutate(address_B = NULL) |> 
+    dplyr::mutate(mapCigar_A = NULL) |> 
+    dplyr::mutate(mapNM_A = NULL) |> 
+    dplyr::mutate(mapNM_B = NULL) |> 
+    dplyr::mutate(mapAS_A = NULL) |> 
+    dplyr::mutate(mapAS_B = NULL) |> 
+    dplyr::mutate(mapCigar_B = NULL) |> 
+    dplyr::mutate(mapPos_A = NULL) |> 
+    dplyr::mutate(mapPos_B = NULL) |> 
+    dplyr::mutate(mapChrm_A = NULL) |> 
+    dplyr::mutate(mapChrm_B = NULL) |> 
+    dplyr::mutate(mapYD_A = NULL) |> 
+    dplyr::mutate(mapYD_B = NULL) |> 
+    dplyr::mutate(mapFlag_A = NULL) |> 
+    dplyr::mutate(mapFlag_B = NULL) |> 
+    dplyr::mutate(mapQ_A = NULL) |> 
+    dplyr::mutate(mapQ_B = NULL)
+  
   saveRDS(tmp, file=fn)
 
 }
@@ -55,10 +80,12 @@ metadata.cg_probes.epic <- tmp
 rm(tmp, fn)
 
 
+sort(colnames(metadata.cg_probes.epic))
 
 
 
-# old manifest for probeCpGcnt & context35 ----
+
+## old manifest for probeCpGcnt & context35 ----
 # these variables are only found in some strange files, presumably an old version of the manifest
 # probeCpGcnt: the number of CpG in the probe.
 # context35: the number of CpG in the [-35bp, +35bp] window.
@@ -94,7 +121,7 @@ rm(tmp, fn)
 
 
 
-fn <- "cache/EPIC.hg38.manifest.tsv.Rds" # unlink(fn)
+fn <- "cache/EPIC.hg38.manifest.tsv.Rds" # ; unlink(fn)
 
 if(file.exists(fn)) {
   
@@ -105,6 +132,19 @@ if(file.exists(fn)) {
   
   tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/EPIC/EPIC.hg38.mask.tsv", header=T) |> 
     dplyr::rename(probe_id = probeID)
+  
+  # save mem ...
+  tmp <- tmp |> 
+    dplyr::mutate(MASK_mapping = NULL) |> 
+    dplyr::mutate(MASK_typeINextBaseSwitch = NULL) |> 
+    dplyr::mutate(MASK_rmsk15 = NULL) |> 
+    dplyr::mutate(MASK_sub40_copy = NULL) |> 
+    dplyr::mutate(MASK_sub35_copy = NULL) |> 
+    dplyr::mutate(MASK_sub30_copy = NULL) |> 
+    dplyr::mutate(MASK_sub25_copy = NULL) |> 
+    dplyr::mutate(MASK_snp5_common = NULL) |> 
+    dplyr::mutate(MASK_snp5_GMAF1p = NULL) |> 
+    dplyr::mutate(MASK_extBase = NULL)
   
   stopifnot(intersect(colnames(tmp) , colnames(metadata.cg_probes.epic)) == c("probe_id"))
   

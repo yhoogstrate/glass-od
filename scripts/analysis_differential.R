@@ -2345,10 +2345,11 @@ stats.pct_detP_signi.pp.nc <- limma::topTable(fit.pct_detP_signi.pp.nc,
                                               sort.by = "none",
                                               adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id') |> 
-  dplyr::select(probe_id, t)
+  dplyr::select(probe_id, t, adj.P.Val)
 
 
 saveRDS(stats.pct_detP_signi.pp.nc, file="cache/analysis_differential__pct_detP_signi__partial_paired_nc__stats.Rds")
+
 
 rm(
   design.pct_detP_signi.pp.nc,
@@ -2995,7 +2996,7 @@ stats.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc <- limma:
                                                                                           sort.by = "none",
                                                                                           adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id') |> 
-  dplyr::select(probe_id, t)
+  dplyr::select(probe_id, t, adj.P.Val)
 
 print(paste0("Restoration: ", sum(stats.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc$adj.P.Val < 0.01)))
 saveRDS(stats.array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5.pp.nc, file="cache/analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5__partial_paired_nc__stats.Rds")

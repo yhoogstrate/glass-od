@@ -252,6 +252,7 @@ ggsave(paste0("output/figures/vis_differential__overall_density__quality_correct
 rm(n_samples_grade, n_samples_prim_rec)
 
 
+
 ### 4. PC1 / qual corrected HOX CC etc. ----
 
 
@@ -267,6 +268,8 @@ plt <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
+
+
 
 
 
@@ -1652,6 +1655,63 @@ ggplot(plt, aes(x=DMP__primary_recurrence__pp_nc_PC1__t,
 
 
 
+### PCHorvathS2018 qual cor ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                #y=DMP__dnaMethyAge__HorvathS2018__up_nc__t
+                y=DMP__PCs__pp_nc__PC4_t
+)) +
+  geom_point(pch=16, cex=0.001 , alpha=0.15)
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                y=DMP__primary_recurrence__pp_nc_PC1__t,
+                col=DMP__dnaMethyAge__HorvathS2018__up_nc__t
+                #col=DMP__PCs__pp_nc__PC3_t
+                )) +
+
+  geom_point(pch=16, cex=0.001 , alpha=0.15) + 
+  
+  #geom_vline(xintercept=0, col="red", alpha=0.1) +
+  #geom_hline(yintercept=0, col="red", alpha=0.1) +
+  
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  
+  #ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size, label.x=5) +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrent"
+       #caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")
+  ) +
+  
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+#theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+
+
+
 
 
 ## C: G-CIMP ----
@@ -1799,8 +1859,8 @@ ggplot(plt, aes(x=DMP__primary_recurrence__pp_nc__t, y=RepliTali_coef)) +
 
 
 
-## death clock ----
 
+### death clock ----
 
 
 plt <- data.mvalues.probes |> 
@@ -3656,7 +3716,8 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
 
 
 clocks <- plt |> 
-  dplyr::select(contains("dnaMethyAge") | contains("epiTOC2")) |> 
+  dplyr::select(contains("dnaMethyAge") | contains("epiTOC2") | contains("DMP__RepliTali__up_nc__t")) |> 
+  dplyr::select(!contains("__adj.P.Val")) |> 
   colnames()
 
 
@@ -3681,15 +3742,15 @@ for(clock in clocks) {
     
     theme(plot.background = element_rect(fill="white", colour=NA)) + # png export
     
-    scale_color_gradientn(colours = col3(200), na.value = "grey50", oob = scales::squish)
+    scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
   
   
   ggsave(paste0("output/figures/vis_differential__epiGenetic_clock__",clock_name,".png"), width = (8.5*0.975/2), height = 4.3)
-  
-  
-  
-  
+
 }
+
+
+
 
 ## early ~ late repli ----
 
@@ -3861,186 +3922,6 @@ ggsave("output/figures/vis_differential__g23__wgEncodeUwRepliSeqSknshWaveSignalR
 
 
 # Figure S2A: corr covars per sample ----
-## corr ----
-
-
-plt <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  dplyr::mutate(`age_at_diagnosis_days` = as.Date(patient_diagnosis_date) - as.Date(patient_birth_date)) |> 
-  dplyr::filter(!is.na(age_at_diagnosis_days)) |> 
-  dplyr::mutate(age_at_diagnosis_days = age_at_diagnosis_days - min(na.omit(age_at_diagnosis_days))) |> 
-  dplyr::mutate(age_at_diagnosis_days = as.numeric(age_at_diagnosis_days)) |> 
-  dplyr::mutate(time_tissue_in_ffpe =  ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> 
-  dplyr::select(resection_id,
-
-                array_epiTOC2_tnsc, array_epiTOC2_hypoSC, contains("array_dnaMethyAge"), array_RepliTali,
-                array_percentage.detP.signi, array_PC1, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`,
-                time_tissue_in_ffpe,
-                array_GLASS_NL_g2_g3_sig, array_PC2, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
-                
-                array_PC3,
-                age_at_diagnosis_days
-  ) |> 
-  tibble::column_to_rownames('resection_id') |> 
-  dplyr::filter(!is.na(time_tissue_in_ffpe)) |> 
-  
-  dplyr::mutate(array_GLASS_OD_g2_g3_sig2 = NULL) |> 
-  dplyr::mutate(array_GLASS_OD_prim_rec_sig2 = NULL) |> 
-  dplyr::mutate(array_GLASS_OD_g2_g3_sig3 = NULL) |> 
-  dplyr::mutate(array_GLASS_OD_prim_rec_sig3 = NULL) |> 
-  dplyr::mutate(array_GLASS_OD_g2_g3_sig4 = NULL) |> 
-  dplyr::mutate(array_GLASS_OD_prim_rec_sig4 = NULL) |> 
-  
-  dplyr::mutate(array_PC3 = -1 * array_PC3) |> 
-  dplyr::mutate(array_percentage.detP.signi = log(array_percentage.detP.signi)) |> 
-  
-  dplyr::mutate(`CGC[Ac]` = -1 * array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit = NULL) |> 
-  dplyr::mutate(`-1 * array_dnaMethyAge__ZhangY2017` = -1 * array_dnaMethyAge__ZhangY2017 , array_dnaMethyAge__ZhangY2017 = NULL) |> 
-  dplyr::mutate(`-1 * array_epiTOC2_hypoSC` = -1 * array_epiTOC2_hypoSC, array_epiTOC2_hypoSC = NULL) |>  # seems at inversed scale
-  dplyr::mutate(`-1 * array_dnaMethyAge__LuA2019` = -1 * array_dnaMethyAge__LuA2019, array_dnaMethyAge__LuA2019 = NULL) |>  # seems at inversed scale
-  dplyr::mutate(`-1 * QC: SPECIFICITY I GT MM 6` = -1 * `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`=NULL) |> 
-  dplyr::select(-array_dnaMethyAge__YangZ2016) |>  # epiTOC1, near identical to epiTOC2
-  dplyr::select(-array_dnaMethyAge__PCHorvathS2013) |>  # very similar to its 2018 equivalent
-  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-3_Beta_larger_0.12_0.18` = NULL) |> # contains N/A's
-  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-6_Beta_larger_0.2_0.3` = NULL) |> # contains N/A's
-  dplyr::rename(`% detP significant probes (log)` = array_percentage.detP.signi) |> 
-  
-  dplyr::mutate(`-1 * CGC[Ac]` = -1 * `CGC[Ac]`, `CGC[Ac]`= NULL) |> 
-  dplyr::mutate(`array_dnaMethyAge__ZhangY2017` = -1 * `-1 * array_dnaMethyAge__ZhangY2017`, `-1 * array_dnaMethyAge__ZhangY2017`=NULL) |>
-  dplyr::mutate(`-1 * array_GLASS_NL_g2_g3_sig` = -1 * array_GLASS_NL_g2_g3_sig, array_GLASS_NL_g2_g3_sig = NULL) |>
-  dplyr::mutate(`-1 * array_PC2` = -1 * array_PC2, array_PC2 = NULL)
-
-
-colnames(plt) <- gsub("array_","",colnames(plt))
-
-corrplot::corrplot(cor(plt, method="spearman"), order="hclust", tl.cex=0.75, tl.pos="l")
-h = corrplot::corrplot(cor(plt, method="spearman"), order="hclust", tl.cex=0.75, tl.pos="l")
-
-
-ggsave("output/figures/vis_differential__corrplot_dnaMethyAge.pdf", width= 8.5 * 0.975 / 2 , height = 4)
-
-
-
-
-## en daarnaast een forest ----
-
-
-tmp <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  dplyr::mutate(`age_at_diagnosis_days` = as.Date(patient_diagnosis_date) - as.Date(patient_birth_date)) |> 
-  dplyr::filter(!is.na(age_at_diagnosis_days)) |> 
-  dplyr::mutate(age_at_diagnosis_days = age_at_diagnosis_days - min(na.omit(age_at_diagnosis_days))) |> 
-  dplyr::mutate(age_at_diagnosis_days = as.numeric(age_at_diagnosis_days)) |> 
-  dplyr::mutate(time_tissue_in_ffpe =  ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> 
-  dplyr::select(resection_id,
-                resection_tumor_grade,
-                
-                array_epiTOC2_tnsc, array_epiTOC2_hypoSC, contains("array_dnaMethyAge"), array_RepliTali,
-                array_percentage.detP.signi, array_PC1, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`,
-                time_tissue_in_ffpe,
-                array_GLASS_NL_g2_g3_sig, array_PC2, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
-                
-                array_PC3,
-                age_at_diagnosis_days
-  ) |> 
-  tibble::column_to_rownames('resection_id') |> 
-  dplyr::filter(!is.na(time_tissue_in_ffpe)) |> 
-  
-  dplyr::mutate(array_GLASS_OD_g2_g3_sig2 = NULL) |> 
-  dplyr::mutate(array_GLASS_OD_prim_rec_sig2 = NULL) |> 
-  dplyr::mutate(array_GLASS_OD_g2_g3_sig3 = NULL) |> 
-  dplyr::mutate(array_GLASS_OD_prim_rec_sig3 = NULL) |> 
-  dplyr::mutate(array_GLASS_OD_g2_g3_sig4 = NULL) |> 
-  dplyr::mutate(array_GLASS_OD_prim_rec_sig4 = NULL) |> 
-  
-  dplyr::mutate(array_PC3 = -1 * array_PC3) |> 
-  dplyr::mutate(array_percentage.detP.signi = log(array_percentage.detP.signi)) |> 
-  
-  dplyr::mutate(`CGC[Ac]` = -1 * array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit = NULL) |> 
-  dplyr::mutate(`-1 * array_dnaMethyAge__ZhangY2017` = -1 * array_dnaMethyAge__ZhangY2017 , array_dnaMethyAge__ZhangY2017 = NULL) |> 
-  dplyr::mutate(`-1 * array_epiTOC2_hypoSC` = -1 * array_epiTOC2_hypoSC, array_epiTOC2_hypoSC = NULL) |>  # seems at inversed scale
-  dplyr::mutate(`-1 * array_dnaMethyAge__LuA2019` = -1 * array_dnaMethyAge__LuA2019, array_dnaMethyAge__LuA2019 = NULL) |>  # seems at inversed scale
-  dplyr::mutate(`-1 * QC: SPECIFICITY I GT MM 6` = -1 * `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`=NULL) |> 
-  dplyr::select(-array_dnaMethyAge__YangZ2016) |>  # epiTOC1, near identical to epiTOC2
-  dplyr::select(-array_dnaMethyAge__PCHorvathS2013) |>  # very similar to its 2018 equivalent
-  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-3_Beta_larger_0.12_0.18` = NULL) |> # contains N/A's
-  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-6_Beta_larger_0.2_0.3` = NULL) |> # contains N/A's
-  dplyr::rename(`% detP significant probes (log)` = array_percentage.detP.signi) |> 
-
-  dplyr::mutate(resection_tumor_grade = factor(paste0("Grade",resection_tumor_grade), levels=c("Grade2","Grade3"))) |> 
-  
-  dplyr::mutate(`-1 * CGC[Ac]` = -1 * `CGC[Ac]`, `CGC[Ac]`= NULL) |> 
-  dplyr::mutate(`array_dnaMethyAge__ZhangY2017` = -1 * `-1 * array_dnaMethyAge__ZhangY2017`, `-1 * array_dnaMethyAge__ZhangY2017`=NULL) |>
-  dplyr::mutate(`-1 * array_GLASS_NL_g2_g3_sig` = -1 * array_GLASS_NL_g2_g3_sig, array_GLASS_NL_g2_g3_sig = NULL) |>
-  dplyr::mutate(`-1 * array_PC2` = -1 * array_PC2, array_PC2 = NULL)
-
-colnames(tmp) <- gsub("array_","",colnames(tmp))
-
-
-data <- tmp |>
-  dplyr::mutate(`resection_tumor_grade` = NULL) |> 
-  as.data.frame() |> 
-  #scale(center=T, scale=T) |> 
-  t() |>
-  as.data.frame() 
-
-
-design <- model.matrix(~age_at_diagnosis_days + factor(resection_tumor_grade), data=tmp)
-#design <- model.matrix(~factor(resection_tumor_grade), data=tmp)
-fit <- limma::lmFit(data, design)
-fit <- limma::eBayes(fit, trend=T)
-stats <- limma::topTable(fit,
-                            n=nrow(data),
-                            coef="factor(resection_tumor_grade)Grade3",
-                            sort.by = "none",
-                            confint=T,
-                            adjust.method="fdr") |> 
-  tibble::rownames_to_column('covar') 
-
-
-
-plt <- h$corr |>
-  as.data.frame() |>
-  tibble::rownames_to_column("covar") |>
-  dplyr::select("covar") |> 
-  assertr::verify(covar %in% stats$covar) |> 
-  dplyr::left_join(stats, by=c('covar'='covar')) |> 
-  dplyr::mutate(y = dplyr::n():1)
-
-
-plt <- rbind(
-  plt |>
-    dplyr::mutate(logFC = 0) |> 
-    dplyr::mutate(t = 0) |> 
-    dplyr::mutate(type = "zero")
-,
-  plt |>
-    dplyr::mutate(type = "datapoint")
-,
-plt |>
-  dplyr::mutate(logFC = CI.L) |> 
-  dplyr::mutate(type = "CI")
-,
-plt |>
-  dplyr::mutate(logFC = CI.R) |> 
-  dplyr::mutate(type = "CI")
-)
-
-
-ggplot(plt, aes(x = logFC, y=y, label=covar, group=covar)) +
-  geom_line(data=subset(plt, type %in% c("datapoint", "zero")),lwd=theme_nature_lwd) + 
-  #geom_line(data=subset(plt, type %in% c("CI")),lwd=theme_nature_lwd*3) + 
-  geom_point(data=subset(plt, type == "datapoint"), size=theme_nature_size/3) +
-  geom_text(data=subset(plt, type %in% c("datapoint")), x = 2, size=theme_nature_size) + 
-  xlim(-1,3) + 
-  theme_nature
-
-
-# https://support.bioconductor.org/p/37524/
-# https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/forest.html
-# https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/metareg.html
-
-
 # corr qc ----
 
 #p1 = ggcorrplot2::ggcorrplot(h$corr) +
@@ -4181,6 +4062,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   scale_color_manual(values=c("darkgray","red")) +
   scale_size_manual(values=c(0.001, 0.2)) +
   scale_alpha_manual(values=c(`TRUE`=1.0, `FALSE`=0.6)) + 
+  labs(subtitle=format_subtitle("Oligodendroglioma vs. Alzheimer Disease")) +
   theme(plot.background = element_rect(fill="white", colour=NA))  # png export
 
 

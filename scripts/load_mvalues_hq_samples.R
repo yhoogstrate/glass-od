@@ -618,7 +618,7 @@ rm(fn)
 ### QC ----
 
 
-fns <- c("analysis_differential__pct_detP_signi__partial_paired_nc__stats.Rds"
+fns <- c("analysis_differential__pct_detP_signi__partial_paired_nc__stats.Rds",
          # "analysis_differential__array_qc_STAINING_Biotin_High_Grn_smaller_6000_2000__partial_paired_nc__stats.Rds",
          # "analysis_differential__array_qc_STAINING_Biotin_Bkg_Grn_larger_500_1000__partial_paired_nc__stats.Rds",
          # "analysis_differential__array_qc_STAINING_DNP_High_Red_smaller_9000_3000__partial_paired_nc__stats.Rds", 
@@ -644,7 +644,7 @@ fns <- c("analysis_differential__pct_detP_signi__partial_paired_nc__stats.Rds"
          # "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_3_MM_Grn_larger_NA_0_1__partial_paired_nc__stats.Rds",
          # "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_4_PM_Red_smaller_NA_2__partial_paired_nc__stats.Rds", 
          # "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_5_PM_Red_smaller_NA_0_5__partial_paired_nc__stats.Rds",
-         # "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5__partial_paired_nc__stats.Rds",
+         "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_6_PM_Red_smaller_NA_0_5__partial_paired_nc__stats.Rds"
          # "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_5_MM_Red_larger_NA_0_3__partial_paired_nc__stats.Rds", 
          # "analysis_differential__array_qc_SPECIFICITY_I_GT_Mismatch_6_MM_Red_larger_NA_0_5__partial_paired_nc__stats.Rds",
          # "analysis_differential__array_qc_SPECIFICITY_II_Specificity_1_Red_smaller_NA_1_6__partial_paired_nc__stats.Rds", 
@@ -672,7 +672,7 @@ for (fn in fns) {
   if(file.exists(fn)) {
      
      tmp <- readRDS(fn) |> 
-       dplyr::select(probe_id, t) |> 
+       dplyr::select(probe_id, t, adj.P.Val) |> 
        dplyr::rename_with(~paste0("DMP__",txt,"__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
        (function(.) {
          print(dim(.))
@@ -1058,7 +1058,7 @@ for(clock in clocks) {
   print(clock_name)
   
   tmp <- readRDS(clock) |> 
-    dplyr::select(probe_id, t) |> 
+    dplyr::select(probe_id, t, adj.P.Val) |> 
     dplyr::rename_with(~paste0("DMP__",clock_name,"__", .x), .cols=!matches("^probe_id$",perl = T))  |> 
     (function(.) {
       print(dim(.))
