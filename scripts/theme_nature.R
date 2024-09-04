@@ -47,24 +47,32 @@
 theme_nature_lwd <- 0.5 / 2.14 # pt?
 theme_nature_size <- 6 * (3.88 / 11) # 
 #theme_nature_size_annotate <- 6 * (3.88 / 11) # scaling_factor for ggplot::annotate(size=) to font size 6
+theme_nature_font_family <- "Times New Roman"
+
+# e.g.:
+#   ggrepel::geom_text_repel(..., 
+#     size         =theme_nature_size,
+#     family       = theme_nature_font_family,
+#     segment.size = theme_nature_lwd
+#   )
 
 
 theme_nature <- theme_bw() +
   theme(
-    text =          element_text(size = 6, family = "Times New Roman", face = "plain"),
-    axis.text =     element_text(size = 6, family = "Times New Roman", face = "plain", color="black"), # , angle=90, vjust =0.5
-    axis.title.x =  element_text(size = 6, family = "Times New Roman", face = "plain", color="black"), # , vjust = -0.2
-    axis.title.y =  element_text(size = 6, family = "Times New Roman", face = "plain", color="black"),
+    text =          element_text(size = 6, family = theme_nature_font_family, face = "plain"),
+    axis.text =     element_text(size = 6, family = theme_nature_font_family, face = "plain", color="black"), # , angle=90, vjust =0.5
+    axis.title.x =  element_text(size = 6, family = theme_nature_font_family, face = "plain", color="black"), # , vjust = -0.2
+    axis.title.y =  element_text(size = 6, family = theme_nature_font_family, face = "plain", color="black"),
     axis.line =     element_line(linewidth = theme_nature_lwd),
     axis.ticks =    element_line(linewidth = theme_nature_lwd),
     
-    strip.text =    element_text(size = 6, family = "Times New Roman", face = "plain", margin=margin(1,1,1,1), color="black"),
-    strip.text.x =  element_text(size = 6, family = "Times New Roman", face = "plain", margin=margin(1,1,1,1), color="black"),
-    strip.text.y =  element_text(size = 6, family = "Times New Roman", face = "plain", margin=margin(1,1,1,1), color="black"),
+    strip.text =    element_text(size = 6, family = theme_nature_font_family, face = "plain", margin=margin(1,1,1,1), color="black"),
+    strip.text.x =  element_text(size = 6, family = theme_nature_font_family, face = "plain", margin=margin(1,1,1,1), color="black"),
+    strip.text.y =  element_text(size = 6, family = theme_nature_font_family, face = "plain", margin=margin(1,1,1,1), color="black"),
     strip.background = element_blank(), # clean as possible
     
-    legend.title =  element_text(size = 6, family = "Times New Roman", face = "plain", color="black"),
-    legend.text =   element_text(size = 6, family = "Times New Roman", face = "plain", color="black"),
+    legend.title =  element_text(size = 6, family = theme_nature_font_family, face = "plain", color="black"),
+    legend.text =   element_text(size = 6, family = theme_nature_font_family, face = "plain", color="black"),
     legend.position = 'bottom',
     legend.margin   = margin(t=-2),
     legend.key.size = unit(0.2, 'lines'),
@@ -72,9 +80,9 @@ theme_nature <- theme_bw() +
     legend.background = element_blank(),
     legend.box.background = element_blank(),
     
-    plot.title =      element_text(size = 6, family = "Times New Roman", face = "plain", color="black"), # `title` covers both title and subtitle
-    plot.subtitle =   element_text(size = 6, family = "Times New Roman", face = "italic", color="#777777"),
-    plot.caption =    element_text(size = 6, family = "Times New Roman", face = "italic", color="#777777"),
+    plot.title =      element_text(size = 6, family = theme_nature_font_family, face = "plain", color="black"), # `title` covers both title and subtitle
+    plot.subtitle =   element_text(size = 6, family = theme_nature_font_family, face = "italic", color="#777777"),
+    plot.caption =    element_text(size = 6, family = theme_nature_font_family, face = "italic", color="#777777"),
     plot.background = element_blank(),
     
     panel.grid.major.x = element_blank(),
