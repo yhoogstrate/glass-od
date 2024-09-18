@@ -296,12 +296,15 @@ plts <- plts |>
 
 
 ggplot(plts, aes(x=mean, y=`-log(p.value)`, col=is.tf, label=gene, shape=log_pval_truncated)) + 
-  facet_wrap(~facet, scale="free",ncol=5,nrow=6) +
+  facet_wrap(~facet, scale="free",ncol=6,nrow=5) +
   geom_point(data=subset(plts, is.tf == "No" & !log_pval_truncated), cex=0.01, alpha=0.5) +
   geom_point(data=subset(plts, is.tf == "No" & log_pval_truncated), cex=theme_nature_size/6) +
   ggrepel::geom_text_repel(data=subset(plts, gene %in% c("HOXD13", "TMPRSS3", "DAXX")),
                            box.padding = 0.65,
-                           size=theme_nature_size, col="black", segment.size=theme_nature_lwd) +
+                           col="black", 
+                           size=theme_nature_size,
+                           family = theme_nature_font_family,
+                           segment.size=theme_nature_lwd) +
   geom_point(data=subset(plts, gene %in% c("HOXD13", "TMPRSS3", "DAXX")), col="black", cex=theme_nature_size/3, pch=1) +
   geom_point(data=subset(plts, is.tf == "Yes"), size=theme_nature_size/3) +
   coord_cartesian(xlim = c(-7.5, 7.5)) + 
@@ -313,7 +316,7 @@ ggplot(plts, aes(x=mean, y=`-log(p.value)`, col=is.tf, label=gene, shape=log_pva
   theme(plot.background = element_rect(fill="white", colour=NA))   # png export
 
 
-ggsave("output/figures/vis_analysis_DMP_gene_level.png", width=(8.5 * 0.975), height=6.5, dpi=600)
+ggsave("output/figures/vis_analysis_DMP_gene_level.png", width=(8.5 * 0.975), height=4.5, dpi=600)
 
 
 
@@ -336,9 +339,12 @@ plts |> dplyr::filter(is.tf == "Yes") |> dplyr::pull(gene)
 
 plt <- plt |> 
   dplyr::mutate(col = dplyr::case_when(
-#    gene %in% genes_polycomb_suz12 & grepl("^HOX|HOTAIR|HOTTIP", gene)  ~ "suz12 + HOX",
-    gene %in% genes_polycomb_suz12 ~ "suz12",
-#    grepl("^HOX|HOTAIR|HOTTIP", gene) ~ "HOX",
+    grepl("^HOX|HOTAIR|HOTTIP", gene) ~ "HOX",
+    gene %in% c(genes_polycomb_eed_homeobox, 
+                genes_polycomb_h3k27_homeobox,
+                genes_polycomb_prc2_homeobox,
+                genes_polycomb_suz12_homeobox
+                ) ~ "polycomb TF",
     T ~ "other"
   )) |> 
   dplyr::mutate(`-log(p.value)` = -log(p.value)) |> 
@@ -351,18 +357,24 @@ plt <- plt |>
 ggplot(plt, aes(x=mean, y=`-log(p.value)`, col=col, label=gene, shape=log_pval_truncated)) + 
   geom_point(data=subset(plt, col == "other" & !log_pval_truncated), cex=0.01, alpha=0.7) +
   geom_point(data=subset(plt, log_pval_truncated), cex=theme_nature_size/2) +
-  geom_point(data=subset(plt, col != "other"), cex=theme_nature_size/2) +
+  geom_point(data=subset(plt, col != "other"), cex=theme_nature_size/6) +
   ggrepel::geom_text_repel(data=subset(plt, gene %in% c("HOXD13", "TMPRSS3", "DAXX", "TERT")),
-                           box.padding = 0.65,
-                           size=theme_nature_size, col="black", segment.size=theme_nature_lwd) +
+                           box.padding = 0.95,
+                           col="black",
+                           size=theme_nature_size,
+                           family = theme_nature_font_family,
+                           segment.size=theme_nature_lwd) +
   geom_point(data=subset(plt, gene %in% c("HOXD13", "TMPRSS3", "DAXX", "TERT")), col="black", cex=theme_nature_size/2, pch=1) +
   scale_shape_manual(values=c(T=8,F=19,'TRUE'=8,'FALSE'=19)) +
-  scale_color_manual(values=c(col3(11)[10], "red")) +
+  scale_color_manual(values=c( col3(11)[10],'gray', "red")) +
   xlim(c(-8,8)) +
-  theme_nature
+  labs(x = "mean t-score probes per gene") +
+  theme_nature +
+  theme(plot.background = element_rect(fill="white", colour=NA))   # png export
 
 
 
+ggsave("output/figures/vis_DMP_gene_level__polycomb_hox.png", width=(8.5 * 0.975)/3, height=2.25, dpi=600)
 
 
 
