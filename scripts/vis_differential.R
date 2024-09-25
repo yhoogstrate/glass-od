@@ -13,6 +13,7 @@ source('scripts/load_constants.R')
 source('scripts/load_functions.R')
 source('scripts/load_palette.R')
 source('scripts/load_themes.R')
+source('scripts/load_gene_annotations.R')
 
 
 
@@ -21,14 +22,18 @@ if(!exists('data.mvalues.probes')) {
 }
 
 
+if(!exists('glass_od.metadata.array_samples')) {
+  source('scripts/load_GLASS-OD_metadata.R')
+}
+
+
+
+
+
 if(!exists('data.intensities.probes')) {
   source('scripts/load_intensities_hq_samples.R')
 }
 
-
-if(!exists('glass_od.metadata.array_samples')) {
-  source('scripts/load_GLASS-OD_metadata.R')
-}
 
 
 
@@ -74,7 +79,8 @@ plt <- rbind(
 ggplot(plt, aes(fill=significant, x=type)) +
   geom_bar() + 
   scale_y_continuous(labels = scales::unit_format(unit = "K", scale = 1e-3)) +
-  scale_fill_manual(values=c('< 0.01'=mixcol( 'darkblue', 'darkgreen'), ">= 0.01"=mixcol( 'lightblue', 'lightgreen'))) +
+  scale_fill_manual(values=c("< 0.01"= mixcol('darkblue',  'darkgreen'),
+                             ">= 0.01"=mixcol('lightblue', 'lightgreen'))) +
   theme_nature +
   labs(fill="adj. P-value", y = "tested probes", x="", format_subtitle("DMP power"))
 
@@ -268,8 +274,6 @@ plt <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
-
-
 
 
 
@@ -1654,6 +1658,139 @@ ggplot(plt, aes(x=DMP__primary_recurrence__pp_nc_PC1__t,
   theme(plot.background = element_rect(fill="white", colour=NA))  # png export
 
 
+ggsave(paste0("output/figures/vis_differential__epiGenetic_clock__PC_corr_axes__PCHorvathS2018.png"), width = (8.5*0.975/2), height = 4.3)
+
+
+
+
+### CGC ac / AcCGAP ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                y=DMP__primary_recurrence__pp_nc_PC1__t,
+                col=DMP__AcCGAP__pp_nc__t
+)) +
+  
+  geom_point(pch=16, cex=0.001 , alpha=0.15) + 
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrent"
+       #caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")
+  ) +
+  
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+ggsave(paste0("output/figures/vis_differential__epiGenetic_clock__PC_corr_axes__AcCGAP.png"), width = (8.5*0.975/2), height = 4.3)
+
+
+
+### PC2 ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                y=DMP__primary_recurrence__pp_nc_PC1__t,
+                col=DMP__PCs__pp_nc__PC2_t
+)) +
+  
+  geom_point(pch=16, cex=0.001 , alpha=0.15) + 
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrent"
+       #caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")
+  ) +
+  
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+ggsave(paste0("output/figures/vis_differential__epiGenetic_clock__PC_corr_axes__PC2.png"), width = (8.5*0.975/2), height = 4.3)
+
+
+### PC3 ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                y=DMP__primary_recurrence__pp_nc_PC1__t,
+                col=DMP__PCs__pp_nc__PC3_t
+)) +
+  
+  geom_point(pch=16, cex=0.001 , alpha=0.15) + 
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrent"
+       #caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")
+  ) +
+  
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+ggsave(paste0("output/figures/vis_differential__epiGenetic_clock__PC_corr_axes__PC3.png"), width = (8.5*0.975/2), height = 4.3)
+
+
+
 
 ### PCHorvathS2018 qual cor ----
 
@@ -1673,42 +1810,29 @@ plt <- data.mvalues.probes |>
 
 
 
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
-                #y=DMP__dnaMethyAge__HorvathS2018__up_nc__t
-                y=DMP__PCs__pp_nc__PC4_t
-)) +
-  geom_point(pch=16, cex=0.001 , alpha=0.15)
-
-
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
                 y=DMP__primary_recurrence__pp_nc_PC1__t,
-                col=DMP__dnaMethyAge__HorvathS2018__up_nc__t
-                #col=DMP__PCs__pp_nc__PC3_t
+                col=DMP__dnaMethyAge__PCHorvathS2018__up_nc__t
                 )) +
 
   geom_point(pch=16, cex=0.001 , alpha=0.15) + 
-  
-  #geom_vline(xintercept=0, col="red", alpha=0.1) +
-  #geom_hline(yintercept=0, col="red", alpha=0.1) +
-  
-  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
-  #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
-  
-  #ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size, label.x=5) +
   
   labs(x = "Per probe t-score Grade 2 ~ Grade 3",
        y="Per probe t-score Primary ~ Recurrent"
        #caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")
   ) +
   
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   
   coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
   coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
   
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
-#theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+
+
+ggsave(paste0("output/figures/vis_differential__epiGenetic_clock__PC_corr_axes__PCHorvathS2018.png"), width = (8.5*0.975/2), height = 4.3)
 
 
 
@@ -3983,7 +4107,7 @@ tmp <- readRDS("cache/analysis_differential__ad_co__stats.Rds") |>
   tibble::column_to_rownames('probe_id') |> 
   dplyr::rename_with( ~ paste0("DMP__ad_brain__", .x)) |> 
   tibble::rownames_to_column('probe_id')
-  
+
 
 
 
@@ -4021,7 +4145,7 @@ polycomb_tfs <- plt |>
     return(.)
   })() |> 
   dplyr::mutate(polycomb_homeobox = 
-    gene %in% c(genes_polycomb_suz12_homeobox, genes_polycomb_eed_homeobox, genes_polycomb_h3k27_homeobox, genes_polycomb_prc2_homeobox)
+                  gene %in% c(genes_polycomb_suz12_homeobox, genes_polycomb_eed_homeobox, genes_polycomb_h3k27_homeobox, genes_polycomb_prc2_homeobox)
   ) |> 
   dplyr::filter(polycomb_homeobox) |> 
   (function(.) {
@@ -4042,7 +4166,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
                 col=polycomb_homeobox_tf,
                 alpha=polycomb_homeobox_tf,
                 size=polycomb_homeobox_tf
-                )) +
+)) +
   
   geom_point(pch=16) +
   
@@ -4070,6 +4194,243 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
 
 
 ggsave(paste0("output/figures/vis_differential__grade_PC1__alzheimer_disease.png"), width=(8.5 * 0.975 * (2/5)), height=3.48, dpi=300)
+
+
+
+
+# AD alzheimer disease x aging ----
+
+
+tmp <- readRDS("cache/analysis_differential__ad_co__stats.Rds") |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::rename_with( ~ paste0("DMP__ad_brain__", .x)) |> 
+  tibble::rownames_to_column('probe_id')
+
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id')) |> 
+  dplyr::filter(!is.na(DMP__ad_brain__t)) 
+#dplyr::arrange(abs(DMP__dnaMethyAge__PCHorvathS2018__up_nc__t))
+
+
+
+
+p1 <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                      y=DMP__ad_brain__t,
+                      #col=DMP__AcCGAP__pp_nc__t
+                      #col=DMP__dnaMethyAge__PCHorvathS2018__up_nc__t
+                      col=DMP__PC1_PC2_PC3_multivariate__t_PC2
+)) +
+  
+  geom_point(pch=16, cex=0.01 , alpha=0.45) + 
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y = "Per probe t-score Alzheimer - Control",
+       caption=paste0("Included samples per test: ")
+  ) +
+  
+  theme_nature + 
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))),
+                  ylim=c(-max(abs(plt$DMP__ad_brain__t)), max(abs(plt$DMP__ad_brain__t)))) +
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  
+  labs(subtitle=format_subtitle("Oligodendroglioma vs. Alzheimer Disease")) +
+  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+
+
+p2 <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                      y=DMP__ad_brain__t,
+                      #col=DMP__AcCGAP__pp_nc__t
+                      #col=DMP__dnaMethyAge__PCHorvathS2018__up_nc__t
+                      col=DMP__PC1_PC2_PC3_multivariate__t_PC3
+)) +
+  
+  geom_point(pch=16, cex=0.01 , alpha=0.45) + 
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y = "Per probe t-score Alzheimer - Control",
+       caption=paste0("Included samples per test: ")
+  ) +
+  
+  theme_nature + 
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))),
+                  ylim=c(-max(abs(plt$DMP__ad_brain__t)), max(abs(plt$DMP__ad_brain__t)))) +
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  
+  labs(subtitle=format_subtitle("Oligodendroglioma vs. Alzheimer Disease")) +
+  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+
+
+p1 + p2
+
+
+ggsave(paste0("output/figures/vis_differential__grade_PC1__alzheimer_disease__aging.png"), width=(8.5 * 0.975 * (3.5/5)), height=3.48, dpi=300)
+
+
+
+
+
+
+
+# AD alzheimer disease x aging ----
+
+
+tmp <- readRDS("cache/analysis_differential__ad_co__stats.Rds") |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::rename_with( ~ paste0("DMP__ad_brain__", .x)) |> 
+  tibble::rownames_to_column('probe_id')
+
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id')) |> 
+  dplyr::filter(!is.na(DMP__ad_brain__t)) 
+#dplyr::arrange(abs(DMP__dnaMethyAge__PCHorvathS2018__up_nc__t))
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                y=DMP__ad_brain__t,
+                col=DMP__AcCGAP__pp_nc__t
+                #col=DMP__dnaMethyAge__PCHorvathS2018__up_nc__t
+)) +
+  
+  geom_point(pch=16, cex=0.01 , alpha=0.45) + 
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y = "Per probe t-score Alzheimer - Control",
+       caption=paste0("Included samples per test: ")
+  ) +
+  
+  theme_nature + 
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))),
+                  ylim=c(-max(abs(plt$DMP__ad_brain__t)), max(abs(plt$DMP__ad_brain__t)))) +
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  
+  labs(subtitle=format_subtitle("Oligodendroglioma vs. Alzheimer Disease")) +
+  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+
+
+
+
+ggsave(paste0("output/figures/vis_differential__grade_PC1__alzheimer_disease__AcCGAP.png"), width=(8.5 * 0.975 * (2/5)), height=3.48, dpi=300)
+
+
+
+
+
+# polycomb x aging ----
+
+
+
+
+tmp <- readRDS("cache/analysis_differential__ad_co__stats.Rds") |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::rename_with( ~ paste0("DMP__ad_brain__", .x)) |> 
+  tibble::rownames_to_column('probe_id')
+
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id')) |> 
+  dplyr::filter(!is.na(DMP__ad_brain__t))
+
+
+
+#source("scripts/load_gene_annotations.R")
+
+
+
+polycomb_tfs <- plt |> 
+  dplyr::rename(gene = GencodeCompV12_NAME) |> 
+  dplyr::select(probe_id, gene) |>
+  tibble::tibble() |> 
+  tidyr::separate_longer_delim(gene, delim = ";") |> 
+  dplyr::filter(gene != "") |> 
+  dplyr::distinct() |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 323685)
+    return(.)
+  })() |> 
+  dplyr::mutate(polycomb_homeobox = 
+                  gene %in% c(genes_polycomb_suz12_homeobox, genes_polycomb_eed_homeobox, genes_polycomb_h3k27_homeobox, genes_polycomb_prc2_homeobox)
+  ) |> 
+  dplyr::filter(polycomb_homeobox) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 3105)
+    return(.)
+  })()
+
+
+
+plt <- plt |> 
+  dplyr::mutate(polycomb_homeobox_tf = probe_id %in% polycomb_tfs$probe_id )
+
+
+
+ggplot(plt, aes(x=polycomb_homeobox_tf, y=DMP__dnaMethyAge__PCHorvathS2018__up_nc__t)) +
+  geom_violin() +
+  #geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray") +
+  theme_nature
+
+
+ggplot(plt, aes(x=polycomb_homeobox_tf, y=DMP__AcCGAP__pp_nc__t)) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray")
+
+
+wilcox.test(
+  plt |> dplyr::filter(polycomb_homeobox_tf)      |> dplyr::pull(DMP__dnaMethyAge__PCHorvathS2018__up_nc__t),
+  plt |> dplyr::filter(polycomb_homeobox_tf == F) |> dplyr::pull(DMP__dnaMethyAge__PCHorvathS2018__up_nc__t)
+)
 
 
 

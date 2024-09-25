@@ -2261,6 +2261,95 @@ saveRDS(stats.PCs.pp.nc, file="cache/analysis_differential__PCs__partial_paired_
 
 
 
+
+## PC1, PC2 & PC3 ----
+
+
+
+metadata.pc1_3.pp.nc <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES) 
+    return(.)
+  })()
+
+
+
+data.pc1_3.pp.nc <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.pc1_3.pp.nc$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+
+design.pc1_3.pp.nc <- model.matrix(~factor(patient) + array_PC1 + array_PC2 + array_PC3, data=metadata.pc1_3.pp.nc)
+fit.pc1_3.pp.nc <- limma::lmFit(data.pc1_3.pp.nc, design.pc1_3.pp.nc)
+fit.pc1_3.pp.nc <- limma::eBayes(fit.pc1_3.pp.nc, trend=T)
+
+
+stats.pc1.pp.nc <- limma::topTable(fit.pc1_3.pp.nc,
+                                   n=nrow(data.pc1_3.pp.nc),
+                                   coef="array_PC1",
+                                   sort.by = "none",
+                                   adjust.method="fdr") |> 
+  dplyr::select(adj.P.Val, logFC, t) |> 
+  dplyr::rename_with( ~ paste0(.x, "_PC1")) |> 
+  tibble::rownames_to_column('probe_id')
+
+stats.pc2.pp.nc <- limma::topTable(fit.pc1_3.pp.nc,
+                                   n=nrow(data.pc1_3.pp.nc),
+                                   coef="array_PC2",
+                                   sort.by = "none",
+                                   adjust.method="fdr") |> 
+  dplyr::select(adj.P.Val, logFC, t) |> 
+  dplyr::rename_with( ~ paste0(.x, "_PC2")) |> 
+  tibble::rownames_to_column('probe_id')
+
+stats.pc3.pp.nc <- limma::topTable(fit.pc1_3.pp.nc,
+                                   n=nrow(data.pc1_3.pp.nc),
+                                   coef="array_PC3",
+                                   sort.by = "none",
+                                   adjust.method="fdr") |>
+  dplyr::select(adj.P.Val, logFC, t) |> 
+  dplyr::rename_with( ~ paste0(.x, "_PC3")) |> 
+  tibble::rownames_to_column('probe_id')
+
+
+
+stats <- stats.pc1.pp.nc |> 
+  dplyr::left_join(stats.pc2.pp.nc, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(stats.pc3.pp.nc, by=c('probe_id'='probe_id'))
+
+
+rm(design.pc1_3.pp.nc)
+
+
+
+
+saveRDS(stats, file="cache/analysis_differential__PC1_PC2_PC3.Rds")
+
+
+rm(fit.pc1_3.pp.nc, stats.pc1_3.pp.nc)
+
+
+
+
 # analysis: QC metrics ----
 
 # array_percentage.detP.signi # log
@@ -4983,6 +5072,7 @@ ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=col2)) +
   geom_point(data=subset(plt, col2==F),pch=19, alpha=0.15,cex=0.02) +
   geom_point(data=subset(plt, col2==T),pch=19, alpha=0.65,cex=0.05) +
   theme_bw()
+
 
 
 

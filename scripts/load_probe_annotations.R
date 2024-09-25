@@ -172,7 +172,7 @@ rm(tmp, fn)
 
 
 fn <- "cache/infinium-methylationepic-v-1-0-b5-manifest-file.csv.Rds"
-# unlink(fn)
+#unlink(fn)
 
 if(file.exists(fn)) {
   
@@ -191,9 +191,10 @@ if(file.exists(fn)) {
     dplyr::rename(Forward_Sequence_hg19 = Forward_Sequence) |> 
     dplyr::select(
       -c(
-        Phantom4_Enhancers , SNP_DISTANCE, SNP_MinorAlleleFrequency,  Random_Loci, MFG_Change_Flagged, SNP_ID, Coordinate_36, Chromosome_36, Methyl27_Loci, TFBS_Evidence_Count,
+        Phantom4_Enhancers , SNP_DISTANCE, SNP_MinorAlleleFrequency, Random_Loci, MFG_Change_Flagged, SNP_ID, Coordinate_36, Chromosome_36, Methyl27_Loci, TFBS_Evidence_Count,
         
-        Forward_Sequence_hg19, Genome_Build,
+        #Forward_Sequence_hg19,
+        Genome_Build,
         SourceSeq, # SourceSeq: The original, genomic sequence used for probe design before bisulfite conversion. - built against, not the exact probe seq
         
         UCSC_RefGene_Accession, UCSC_RefGene_Group, UCSC_CpG_Islands_Name,
@@ -209,20 +210,32 @@ if(file.exists(fn)) {
         OpenChromatin_Evidence_Count, OpenChromatin_NAME,
         TFBS_NAME
       )
-    )
+    ) |> 
+    dplyr::mutate(Strand_hg38 = as.factor(Strand_hg38)) |> 
+    dplyr::mutate(CHR_hg38 = as.factor(CHR_hg38))
   
-  colnames(tmp)[colnames(tmp) %in% colnames(metadata.cg_probes.epic)]
+  # mem cleanup ...
+  tmp <- tmp |> 
+    dplyr::mutate(AddressA_ID = NULL) |> 
+    dplyr::mutate(AddressB_ID = NULL) |> 
+    dplyr::mutate(Next_Base = NULL) |> 
+    dplyr::mutate(Color_Channel = NULL) |> 
+    dplyr::mutate(CHR = NULL) |> 
+    dplyr::mutate(MAPINFO = NULL) |> 
+    dplyr::mutate(Strand = NULL) |> 
+    dplyr::mutate(Relation_to_UCSC_CpG_Island = NULL) |> 
+    dplyr::mutate(DNase_Hypersensitivity_NAME = NULL) |> 
+    dplyr::mutate(DNase_Hypersensitivity_Evidence_Count = NULL) |> 
+    dplyr::mutate(Methyl450_Loci = NULL) 
+  
+  #colnames(tmp)[colnames(tmp) %in% colnames(metadata.cg_probes.epic)]
   
   saveRDS(tmp, file=fn)
-  
 }
-
-
 
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
-
 
 
 rm(tmp, fn)
@@ -252,7 +265,7 @@ if(file.exists(fn)) {
     
     dplyr::mutate(needle = gsub("R","A", AlleleA_ProbeSeq)) |> 
     dplyr::filter(!is.na(Forward_Sequence_hg19)) |> 
-    dplyr::mutate(haystack = gsub("[][]","",Forward_Sequence_hg19)) |> 
+    dplyr::mutate(haystack = gsub("[][]","", Forward_Sequence_hg19)) |> 
     dplyr::mutate(haystack_rc =  as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(haystack)))) |> 
     
     dplyr::mutate(haystack = gsub("G","A", haystack)) |> 
@@ -269,15 +282,17 @@ if(file.exists(fn)) {
     
     dplyr::select(probe_id, orientation_mapped) |> 
     
-    assertr::verify(orientation_mapped != "error") # orientation, AlleleA_ProbeSeq as compared to Forward_Sequence_hg19
-
+    assertr::verify(orientation_mapped != "error") |> # orientation, AlleleA_ProbeSeq as compared to Forward_Sequence_hg19
+    dplyr::mutate(orientation_mapped = as.factor(orientation_mapped))
+  
+  
   saveRDS(tmp, file=fn)
   
 }
 
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
-  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
 
 
 rm(tmp, fn)
@@ -319,6 +334,7 @@ if(file.exists(fn)) {
     assertr::verify(nchar(sequence_target) == 2) |> 
     assertr::verify(nchar(sequence_post) == 60) |> 
     dplyr::select(probe_id, sequence_pre, sequence_target, sequence_post) |> 
+    dplyr::mutate(sequence_target = as.factor(sequence_target)) |> 
     assertr::verify(probe_id %in% metadata.cg_probes.epic$probe_id)
   
   saveRDS(tmp, file=fn)
@@ -327,7 +343,8 @@ if(file.exists(fn)) {
 
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
-  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))  |> 
+  dplyr::mutate(Forward_Sequence_hg19 = NULL) # from previous config
 
 
 rm(tmp, fn)
@@ -351,14 +368,15 @@ if(file.exists(fn)) {
   tmp <- metadata.cg_probes.epic |> 
     dplyr::filter(grepl("^cg", probe_id)) |> 
     dplyr::mutate(probe_type_orientation = dplyr::case_when(
-      type == "I"  & orientation_mapped == "forward" ~ "I - forward (red & green)",
-      type == "I"  & orientation_mapped == "reverse" ~ "I - reverse (red & green)",
-      type == "II" & orientation_mapped == "forward" ~ "II - forward (Allele-A)",
-      type == "II" & orientation_mapped == "reverse" ~ "II - reverse (Allele-A)",
+      probe_type == "I (red & green)"  & orientation_mapped == "forward" ~ "I - forward (red & green)",
+      probe_type == "I (red & green)"  & orientation_mapped == "reverse" ~ "I - reverse (red & green)",
+      probe_type == "II (ligation Allele-A)" & orientation_mapped == "forward" ~ "II - forward (Allele-A)",
+      probe_type == "II (ligation Allele-A)" & orientation_mapped == "reverse" ~ "II - reverse (Allele-A)",
       T ~ "error"
     )) |> 
     dplyr::select(probe_id, probe_type_orientation) |> 
-    assertr::verify(probe_type_orientation != "error")
+    assertr::verify(probe_type_orientation != "error") |> 
+    dplyr::mutate(probe_type_orientation = as.factor(probe_type_orientation))
   
   
   #table(tmp$probe_type_orientation)
@@ -428,7 +446,7 @@ tmp <- GCIMPlow.probes |>
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
   dplyr::mutate(GCIMP_low_90 = probe_id %in% tmp$probe_id)
 
-rm(tmp)
+rm(tmp, GCIMPlow.probes)
 
 
 ## add gene annotation ----
@@ -527,7 +545,11 @@ if(file.exists(fn)) {
     assertr::verify(nchar(gc_sequence_context_1_old) == 6) |> 
     assertr::verify(nchar(gc_sequence_context_2_new) == 8) |> 
     assertr::verify(nchar(gc_sequence_context_2_old) == 8) |> 
-    assertr::verify(probe_id %in% metadata.cg_probes.epic$probe_id)
+    assertr::verify(probe_id %in% metadata.cg_probes.epic$probe_id) |> 
+    dplyr::mutate(gc_sequence_context_1_new = as.factor(gc_sequence_context_1_new  )) |> 
+    dplyr::mutate(gc_sequence_context_2_new = as.factor(gc_sequence_context_2_new )) |> 
+    dplyr::mutate(gc_sequence_context_1_old = as.factor(gc_sequence_context_1_old )) |> 
+    dplyr::mutate(gc_sequence_context_2_old = as.factor(gc_sequence_context_2_old)) 
   
     saveRDS(tmp, file=fn)
 }
@@ -760,7 +782,7 @@ rm(tmp)
 # rm(tmp)
 
 
-# Wies signature ----
+## Wies signature ----
 
 
 tmp <- read.csv("data/GLASS_NL/Metadata/(Epi)genetic_data/ProbeSelection_IvR_FDR 1e-9 Delta 1_06072022.csv") |> 
@@ -790,43 +812,87 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
 ## manifest ----
 
 
-metadata.cg_probes.450k <- read.table("data/Improved DNA Methylation Array Probe Annotation/450k/HM450.hg38.manifest.tsv", header=T) |> 
-  dplyr::rename(probe_id = Probe_ID)
+
+
+fn <- "cache/HM450.hg38.manifest.Rds" # unlink(fn)
+
+if(file.exists(fn)) {
+  
+  message(paste0("loading '",fn,"' from cache"))
+  tmp <- readRDS(fn)
+  
+} else {
+  
+  tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/450k/HM450.hg38.manifest.tsv", header=T) |> 
+    dplyr::rename(probe_id = Probe_ID)
+  
+  # Save mem...
+  tmp <- tmp |> 
+    dplyr::select(probe_id, CpG_chrm,   CpG_beg,   CpG_end)
+  
+  saveRDS(tmp, file=fn)
+  
+}
+
+metadata.cg_probes.450k <- tmp
+rm(tmp, fn)
+
+
 
 
 ## add masking ----
 
 
-tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/450k/HM450.hg38.mask.tsv", header=T) |> 
-  dplyr::rename(probe_id = probeID)
 
 
-stopifnot(intersect(colnames(tmp) , colnames(metadata.cg_probes.450k)) == c("probe_id"))
+fn <- "cache/HM450.hg38.mask.Rds" # unlink(fn)
+
+if(file.exists(fn)) {
+  
+  message(paste0("loading '",fn,"' from cache"))
+  tmp <- readRDS(fn)
+  
+} else {
+  
+  
+  tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/450k/HM450.hg38.mask.tsv", header=T) |> 
+    dplyr::rename(probe_id = probeID) |> 
+    dplyr::select(probe_id, MASK_general) # save mem ....
+  
+  
+  stopifnot(intersect(colnames(tmp) , colnames(metadata.cg_probes.450k)) == c("probe_id"))
+
+  
+  saveRDS(tmp, file=fn)
+  
+}
+
 
 
 metadata.cg_probes.450k <- metadata.cg_probes.450k |> 
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
   dplyr::mutate(exclude = is.na(MASK_general) | MASK_general == T) # control probes (^ctl_.+$ instead of ^gc[0-9]+$) have no MASK_general
 
-rm(tmp)
+rm(tmp, fn)
+
 
 
 
 ## add gene annotation ----
 
 
-tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/450k/HM450.hg38.manifest.gencode.v36.tsv", header=T) |> 
-  dplyr::rename(probe_id = probeID) |> 
-  dplyr::mutate(CpG_chrm = NULL, CpG_beg  = NULL, CpG_end  = NULL)
-
-
-stopifnot(intersect(colnames(tmp) , colnames(metadata.cg_probes.450k)) == c("probe_id"))
-
-
-metadata.cg_probes.450k <- metadata.cg_probes.450k |> 
-  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
-
-rm(tmp)
+# tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/450k/HM450.hg38.manifest.gencode.v36.tsv", header=T) |> 
+#   dplyr::rename(probe_id = probeID) |> 
+#   dplyr::mutate(CpG_chrm = NULL, CpG_beg  = NULL, CpG_end  = NULL)
+# 
+# 
+# stopifnot(intersect(colnames(tmp) , colnames(metadata.cg_probes.450k)) == c("probe_id"))
+# 
+# 
+# metadata.cg_probes.450k <- metadata.cg_probes.450k |> 
+#   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+# 
+# rm(tmp)
 
 
 

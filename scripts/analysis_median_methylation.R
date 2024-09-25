@@ -20,11 +20,11 @@ data <- data.mvalues.hq_samples |>
     assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
     return(.)
   })()
-data.mask <- data.mvalues.mask.hq_samples
+#data.mask <- data.mvalues.mask.hq_samples
 
 
-stopifnot(nrow(data) == nrow(data.mask))
-stopifnot(ncol(data) == ncol(data.mask))
+#stopifnot(nrow(data) == nrow(data.mask))
+#stopifnot(ncol(data) == ncol(data.mask))
 
 
 rm(data.mvalues.hq_samples)
@@ -46,7 +46,7 @@ data <- data |>
     return(.)
   })()
 
-rm(data.mask)
+#rm(data.mask)
 gc()
 
 

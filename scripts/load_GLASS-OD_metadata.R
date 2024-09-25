@@ -214,6 +214,8 @@ tmp <- DBI::dbReadTable(metadata.db.con, 'view_array_samples') |>
 
 
 
+
+
 stopifnot(length(setdiff(glass_od.metadata.array_samples$array_sentrix_id, tmp$array_sentrix_id)) == 0)
 stopifnot(length(setdiff(tmp$array_sentrix_id, glass_od.metadata.array_samples$array_sentrix_id)) == 0)
 
@@ -240,6 +242,18 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
 
 
 rm(tmp)
+
+
+## c. calc survival ----
+
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
+  dplyr::mutate(time_between_resection_and_last_event = as.Date(patient_last_follow_up_date) - as.Date(resection_date)) |> 
+  dplyr::mutate(patient_last_follow_up_event = 1 * patient_last_follow_up_event)  # from boolean to 1 = T , 0 = F
+
+#glass_od.metadata.array_samples |> 
+#  dplyr::select(array_sentrix_id, resection_id, time_between_resection_and_last_event, resection_date, patient_last_follow_up_date, patient_last_follow_up_event) |> 
+#  View()
 
 
 

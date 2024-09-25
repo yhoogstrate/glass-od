@@ -30,16 +30,16 @@ data.mvalues.hq_samples <- readRDS("cache/mvalues/mvalues_hq.Rds") |>  # former 
     return(.)
   })()
 
-data.mvalues.mask.hq_samples <- readRDS("cache/masks_hq/masks_hq.Rds") |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
-    return(.)
-  })()
+#data.mvalues.mask.hq_samples <- readRDS("cache/masks_hq/masks_hq.Rds") |> 
+#  (function(.) {
+#    print(dim(.))
+#    assertthat::assert_that(ncol(.) == CONST_N_SAMPLES)
+#    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+#    return(.)
+#  })()
 
-stopifnot(colnames(data.mvalues.hq_samples) == colnames(data.mvalues.mask.hq_samples))
-stopifnot(rownames(data.mvalues.hq_samples) == rownames(data.mvalues.mask.hq_samples))
+#stopifnot(colnames(data.mvalues.hq_samples) == colnames(data.mvalues.mask.hq_samples))
+#stopifnot(rownames(data.mvalues.hq_samples) == rownames(data.mvalues.mask.hq_samples))
 
 
 
@@ -47,18 +47,48 @@ stopifnot(rownames(data.mvalues.hq_samples) == rownames(data.mvalues.mask.hq_sam
 ## probe table - mask / detP counts ----
 
 
-data.mvalues.probes <- data.mvalues.mask.hq_samples |> 
-  is.na() |> 
-  rowSums() |> 
-  as.data.frame() |> 
-  dplyr::rename(n_na = 1) |> 
-  dplyr::mutate(detP_good_probe = n_na == 0) |> 
-  tibble::rownames_to_column('probe_id') |> 
+fn <- "cache/data.mvalues.probes.init.Rds"
+
+
+if(file.exists(fn)) {
+  
+  message(paste0("loading '",fn,"' from cache"))
+  tmp <- readRDS(fn)
+  
+} else {
+  
+  tmp <- load_masks_hq() |> 
+    is.na() |> 
+    rowSums() |> 
+    as.data.frame() |> 
+    dplyr::rename(n_na = 1) |> 
+    dplyr::mutate(detP_good_probe = n_na == 0) |> 
+    tibble::rownames_to_column('probe_id') |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+      return(.)
+    })()
+  
+  
+  saveRDS(tmp, file=fn)
+  
+}
+
+
+data.mvalues.probes <- tmp |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
     return(.)
   })()
+
+rm(tmp, fn)
+
+
+
+
+
 
 
 
@@ -119,6 +149,7 @@ rm(tmp)
 
 
 fn <- "cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds"
+
 if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
@@ -148,6 +179,7 @@ rm(fn)
 
 
 fn <- "cache/analysis_differential__primary_recurrence__PC1__partial_paired_nc__stats.Rds"
+
 if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
@@ -264,6 +296,7 @@ rm(fn)
 #### pct detP
 
 fn <- "cache/analysis_differential__g2_g3__PC1__partial_paired_nc__stats.Rds"
+
 if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
@@ -343,6 +376,34 @@ if(file.exists(fn)) {
 
 rm(fn)
 
+
+
+### PC1 + PC2 + PC3 ----
+
+
+fn <- "cache/analysis_differential__PC1_PC2_PC3.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::select(probe_id, starts_with("t"), starts_with("adj.P.Val")) |> 
+    dplyr::rename_with(~paste0("DMP__PC1_PC2_PC3_multivariate__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  
+  data.mvalues.probes <- data.mvalues.probes |> 
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result primary - recurrence is missing")
+}
+
+rm(fn)
 
 
 
