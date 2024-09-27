@@ -1,6 +1,6 @@
 #!/usr/bin/env R
 
-fn = "data/GLASS_OD/DNA Methylation - EPIC arrays - MethylScape Bethesda classifier/v2.0/0017-R3_Report-CNS-Bv2_203989100149_R05C01.html"
+#fn = "data/GLASS_OD/DNA Methylation - EPIC arrays - MethylScape Bethesda classifier/v2.0/0017-R3_Report-CNS-Bv2_203989100149_R05C01.html"
 
 parse_MethylScape_Bv2 <- function(fn) {
   if(length(fn) > 1) {
