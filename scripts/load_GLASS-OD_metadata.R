@@ -49,7 +49,9 @@ glass_od.metadata.patients <- DBI::dbReadTable(metadata.db.con, 'view_patients')
   assertr::verify(is.na(patient_diagnosis_date) | grepl("^[0-9]{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}$", patient_diagnosis_date)) |> 
   assertr::verify(is.na(patient_IDH_mutation) | (patient_IDH_mutation %in% c(
     "IDH1 R132H",
+    "IDH1 R132G",
     "IDH1 R132S",
+    "IDH1 R132L",
     
     "IDH2 R172K",
     "IDH2 R172M"
@@ -956,6 +958,51 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
 
 
 rm(tmp, tmp.ls)
+
+
+## MethylScape Bethesda Classifier v2 ----
+
+
+tmp <- readRDS( "cache/MethylScape_Bethesda_Classifier_v2.Rds") |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
+    return(.)
+  })() |> 
+  assertr::verify(!is.na(array_sentrix_id)) |> 
+  assertr::verify(!is.na(array_methylscape_bethesda_class)) |> 
+  assertr::verify(is.numeric(array_methylscape_bethesda_class_score))
+
+
+
+
+# if err, then:
+# 
+# tmp.ls <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MethylScape Bethesda classifier/", pattern = "*.html", recursive = TRUE)
+# 
+# tmp <- parse_MethylScape_Bv2(paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MethylScape Bethesda classifier/",tmp.ls)) |>
+#  (function(.) {
+#    print(dim(.))
+#    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
+#    return(.)
+#  })()
+# 
+# saveRDS(tmp, "cache/MethylScape_Bethesda_Classifier_v2.Rds")
+# rm(tmp.ls)
+
+
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES)
+    return(.)
+  })()
+
+
+
+rm(tmp)
 
 
 
