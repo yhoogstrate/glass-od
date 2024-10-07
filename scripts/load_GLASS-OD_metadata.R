@@ -969,9 +969,12 @@ tmp <- readRDS( "cache/MethylScape_Bethesda_Classifier_v2.Rds") |>
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
     return(.)
   })() |> 
+  dplyr::mutate(array_sentrix_id = gsub("^.+_([0-9]+_[0-9A-Z]+)$","\\1",array_sentrix_id)) |> 
   assertr::verify(!is.na(array_sentrix_id)) |> 
+  assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   assertr::verify(!is.na(array_methylscape_bethesda_class)) |> 
   assertr::verify(is.numeric(array_methylscape_bethesda_class_score))
+  #dplyr::mutate(array_methylscape_bethesda_class = ifelse(array_methylscape_bethesda_class == "O_SARC_IDH", "OLIGOSARC_IDH" , array_methylscape_bethesda_class))
 
 
 

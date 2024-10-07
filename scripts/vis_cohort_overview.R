@@ -64,7 +64,9 @@ plt <- glass_od.metadata.array_samples |>
   #dplyr::mutate(too_low_purity = ifelse(array_methylation_bins_1p19q_purity <= 0.1, "Yes", "No")) |> 
   dplyr::select(patient_id, patient_suspected_noncodel, resection_number, resection_tumor_grade,
                 resection_treatment_status_chemo, resection_treatment_status_radio,
-                Source, contains("_cal_class"), too_low_purity) |> 
+                Source, contains("_cal_class"), 
+                #array_methylscape_bethesda_class, 
+                too_low_purity) |> 
   dplyr::mutate(resection_tumor_grade = dplyr::case_when(
     is.na(resection_tumor_grade) | patient_suspected_noncodel ~ as.character(NA),
     !patient_suspected_noncodel ~ paste0("Grade ", resection_tumor_grade)
@@ -74,6 +76,8 @@ plt <- glass_od.metadata.array_samples |>
                                array_mnp_predictBrain_v2.0.1_cal_class,
                                array_mnp_predictBrain_v12.5_cal_class,
                                array_mnp_predictBrain_v12.8_cal_class,
+                               
+                               # array_methylscape_bethesda_class,
                                
                                resection_treatment_status_chemo,
                                resection_treatment_status_radio,
@@ -85,7 +89,7 @@ plt <- glass_od.metadata.array_samples |>
     class == "A_IDH_HG" ~ class,
     
     class %in% c("O_IDH") ~ "O_IDH",
-    class %in% c("OLIGOSARC_IDH") ~ "OLIGOSARC_IDH",
+    class %in% c("OLIGOSARC_IDH", "O_SARC_IDH") ~ "OLIGOSARC_IDH",
     
     class %in% c("Grade 2", "Grade 3") ~ class,
     
@@ -107,9 +111,10 @@ plt <- glass_od.metadata.array_samples |>
     classifier_version == "resection_treatment_status_radio" ~ "Radio",
     classifier_version == "resection_treatment_status_chemo" ~ "Chemo",
     classifier_version == "too_low_purity" ~ "Insuff. purity",
+    classifier_version == "array_methylscape_bethesda_class" ~ "Bethesda",
     T ~ gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version)
   )) |> 
-  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Insuff. purity", "Source")))
+  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Bethesda", "Insuff. purity", "Source")))
 
 
 plt.resection.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
@@ -159,11 +164,12 @@ ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
   theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_nature_lwd , linetype="solid"))
 
 
-ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 4.4)
+ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 4.0)
 
 
 
 # Figure S5A: GLASS_OD DMP selection ----
+
 
 glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
@@ -423,7 +429,7 @@ cols <- c('A_IDH [_LG]' = 'lightblue',
 ggplot(plt, aes(x = x, y = resection_number, col=col)) +
   facet_grid(cols=vars(patient_suspected_noncodel),  rows=vars(classifier_version_txt), scales = "free", space="free") +
   geom_point(pch=15,size=1.4,alpha=0.65) +
-  geom_point(data=plt |> dplyr::filter(classifier_version_txt == "Insuff. purity" & col == "Yes"),pch=0,size=1.4 * 1.3, col="red") +
+  geom_point(data=plt |> dplyr::filter(classifier_version_txt == "Insuff. purity" & col == "Yes"),pch=0,size=1.4 * 1.2, col="red") +
   labs(x = "patient", y="resection #", col="",fill="") +
   labs(subtitle=format_subtitle("Cohort overview")) +
   #ylim(0.5, 4.5) +
@@ -434,8 +440,8 @@ ggplot(plt, aes(x = x, y = resection_number, col=col)) +
   theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_nature_lwd , linetype="solid"))
 
 
+ggsave("output/figures/vis_validation_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975 * 0.68, height = 5.0)
 
-ggsave("output/figures/vis_validation_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 5.75)
 
 
 
