@@ -374,17 +374,43 @@ rm(tmp.stats.last_rec, tmp.last_rec.CGC,tmp.last_rec.GMS, tmp.last_rec.PC2, tmp.
 
 
 p2 <- ggplot(plt.last_rec, aes(x=k, y=-log10(pval), col=name, group=name)) +
-  geom_line(lwd=theme_nature_lwd) +
-  geom_point() + 
   geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(0.05), col="gray60", lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
   geom_hline(yintercept=-log10(0.5), col="gray60", lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(1), col="gray60", lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
+  geom_line(lwd=theme_nature_lwd, alpha=0.5) +
+  geom_point(size=theme_nature_size/3) + 
   scale_y_continuous(breaks = -log10(c(0,0.01,0.05,0.5,1)),
                      labels =        c(0,0.01,0.05,0.5,1)) +
   theme_nature + 
   labs(y = "p-value logrank test", x=paste0("# last_rec samples (of ",nrow(stats.last_rec),") stratified low grade"))
 p2
+
+
+ggsave("output/figures/vis_analysis_survival__last_rec__split_sweep.pdf", width = 8.5*0.95/2, height = 2.5)
+
+
+
+
+# simplified version for pres
+ggplot(plt.last_rec |> 
+         dplyr::filter(name %in% c("PC3", "GMS") == F)
+         , aes(x=k, y=-log10(pval), col=name, group=name)) +
+  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(0.5), col="gray60", lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
+  geom_line(lwd=theme_nature_lwd, alpha=0.5) +
+  geom_point(size=theme_nature_size/3) + 
+  scale_y_continuous(breaks = -log10(c(0,0.01,0.05,0.5,1)),
+                     labels =        c(0,0.01,0.05,0.5,1)) +
+  theme_nature + 
+  labs(y = "p-value logrank test", x=paste0("# last_rec samples (of ",nrow(stats.last_rec),") stratified low grade"))
+
+
+
+ggsave("output/figures/vis_analysis_survival__last_rec__split_sweep_simplified.pdf", width = 8.5*0.95/2, height = 2.5)
+
 
 
 

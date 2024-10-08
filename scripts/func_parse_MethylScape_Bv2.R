@@ -36,9 +36,9 @@ parse_MethylScape_Bv2 <- function(fn) {
       rvest::html_text2() |> 
       as.numeric()
     
-    out <- data.frame(sentrix_id = sentrix_id,
-                      class = class,
-                      class_score = class_score)
+    out <- data.frame(array_sentrix_id = sentrix_id,
+                      array_methylscape_bethesda_class = class,
+                      array_methylscape_bethesda_class_score = class_score)
   }
   
   return(out)
