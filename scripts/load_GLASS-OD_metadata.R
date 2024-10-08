@@ -392,6 +392,67 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
 rm(tmp, tmp.verify)
 
 
+### actual processed data ----
+
+
+
+tmp <- read.csv("data/GLASS_OD/Stainings/KI67 - QuPath/measurements/measurements_annotations.tsv", sep="\t")
+
+
+tmp <- tmp |> 
+  dplyr::mutate(Classification = NULL) |> # not really used
+  dplyr::mutate(Name = NULL) |> 
+  dplyr::rename(qupath_label = Image) |> 
+  dplyr::mutate(annotated = grepl("annotated", qupath_label)) |> 
+  dplyr::mutate(ki67_staining = trimws(gsub("[ ]?\\[.+\\]","",qupath_label))) |> 
+  
+  assertr::verify(Object.type == "Annotation") |> 
+  dplyr::mutate(Object.type = NULL) |> 
+  
+  assertr::verify(Parent == "Root object (Image)") |> 
+  dplyr::mutate(Parent = NULL) |> 
+  
+  assertr::verify(ROI %in% c("Polygon", "Geometry")) |> 
+  dplyr::mutate(ROI = NULL) |> 
+  
+  assertr::verify(!annotated | !is.na(Num.Detections)) |> 
+  assertr::verify(!annotated | !is.na(Num.KI67neg)) |> 
+  assertr::verify(!annotated | !is.na(Num.KI67pos)) |> 
+  assertr::verify(!annotated | !is.na(Num.Other)) |> 
+  
+  dplyr::filter(annotated)
+
+
+
+tmp.aggregated <- tmp |> 
+  dplyr::mutate(`Perimeter.µm` = NULL) |> # not needed
+  dplyr::mutate(Object.ID  = NULL) |> 
+  dplyr::mutate(Centroid.X.µm = NULL) |> 
+  dplyr::mutate(Centroid.Y.µm = NULL) |> 
+  dplyr::mutate(qupath_label = NULL) |> 
+  dplyr::mutate(annotated = NULL) |> 
+  dplyr::group_by(ki67_staining) |> 
+  dplyr::summarise(
+    staining_KI67_Num.Detections = sum(Num.Detections),
+    staining_KI67_Num.KI67neg = sum(Num.KI67neg),
+    staining_KI67_Num.KI67pos = sum(Num.KI67pos),
+    staining_KI67_Num.Other = sum(Num.Other),
+    staining_KI67_Area_um_2 = sum(`Area.µm.2`)
+  ) |> 
+  dplyr::rename(staining_KI67_filename = ki67_staining) |> 
+  
+  dplyr::mutate(staining_KI67_pos_per_detected_cells = staining_KI67_Num.KI67pos / (staining_KI67_Num.KI67pos + staining_KI67_Num.KI67neg)) |> 
+  dplyr::mutate(staining_KI67_pos_per_area_um2 = staining_KI67_Num.KI67pos / staining_KI67_Area_um_2)
+
+
+# four discarded
+# tmp.aggregated$ki67_staining[tmp.aggregated$ki67_staining %in% tmp.a$staining_KI67_filename == F]
+
+
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
+  dplyr::left_join(tmp.aggregated, by=c('staining_KI67_filename'='staining_KI67_filename'), suffix=c('',''))
+
 
 
 ## Percentage detP probesC ----
