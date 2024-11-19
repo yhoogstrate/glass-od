@@ -442,7 +442,12 @@ tmp.aggregated <- tmp |>
   dplyr::rename(staining_KI67_filename = ki67_staining) |> 
   
   dplyr::mutate(staining_KI67_pos_per_detected_cells = staining_KI67_Num.KI67pos / (staining_KI67_Num.KI67pos + staining_KI67_Num.KI67neg)) |> 
-  dplyr::mutate(staining_KI67_pos_per_area_um2 = staining_KI67_Num.KI67pos / staining_KI67_Area_um_2)
+  dplyr::mutate(staining_KI67_lr_pos_neg_cells = log(staining_KI67_Num.KI67pos / staining_KI67_Num.KI67neg)) |> 
+  dplyr::mutate(staining_KI67_pos_per_area_um2 = staining_KI67_Num.KI67pos / staining_KI67_Area_um_2) |> 
+  dplyr::mutate(staining_KI67_pos_neg_cell_density = (staining_KI67_Num.KI67pos + staining_KI67_Num.KI67neg) / staining_KI67_Area_um_2)
+
+rm(tmp)
+
 
 
 # four discarded
@@ -452,6 +457,10 @@ tmp.aggregated <- tmp |>
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
   dplyr::left_join(tmp.aggregated, by=c('staining_KI67_filename'='staining_KI67_filename'), suffix=c('',''))
+
+rm(tmp.aggregated)
+
+
 
 
 

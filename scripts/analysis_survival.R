@@ -1,6 +1,10 @@
 #!/usr/bin/env R
 
 
+library(survival)
+library(survminer)
+
+
 if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
 }
@@ -86,7 +90,7 @@ survminer::ggsurvplot(s2, data = stats.primary, pval = TRUE, risk.table=T, table
 
 
 
-## last rec ----
+## KM: last rec ----
 
 
 stats.primary <- stats.primary |> 
@@ -118,12 +122,12 @@ ggsave("output/figures/analysis_survival_cgc_at_recurrence.pdf", width=8.3 / 2 *
 
 
 
-## last rec ----
+## KM: last rec ----
 
 
 stats.last_rec <- stats.last_rec |> 
   dplyr::mutate(cgc = cut(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, breaks=2)) |> 
-  dplyr::mutate(cgc = ifelse(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit < -4.9, "CGC[Astro] low", "CGC[Astro] high")) |> 
+  dplyr::mutate(cgc = ifelse(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit < -4.9, "CGC low-grade", "CGC high-grade")) |> 
   dplyr::filter(!is.na(time_between_resection_and_last_event) & !is.na(patient_last_follow_up_event))
 
 
@@ -134,15 +138,31 @@ table(stats.last_rec$resection_tumor_grade)
 
 
 
-s1 <- survfit(Surv(time_between_resection_and_last_event, patient_last_follow_up_event) ~ cgc, data = stats.last_rec)
-s2 <- survfit(Surv(time_between_resection_and_last_event, patient_last_follow_up_event) ~ resection_tumor_grade, data = stats.last_rec)
+s1 <- survfit(Surv(time_between_resection_and_last_event, patient_last_follow_up_event) ~ resection_tumor_grade, data = stats.last_rec)
+s2 <- survfit(Surv(time_between_resection_and_last_event, patient_last_follow_up_event) ~ cgc, data = stats.last_rec)
 
 
-p2 = survminer::ggsurvplot(s2, data = stats.last_rec, pval = TRUE, risk.table=T, tables.y.text = FALSE, xlab="Time (days) last recurrence -> death")
-p1 = survminer::ggsurvplot(s1, data = stats.last_rec, pval = TRUE, risk.table=T, tables.y.text = FALSE, xlab="Time (days) last recurrence -> death", newpage = FALSE)
+p1 <- survminer::ggsurvplot(s1, data = stats.last_rec, pval = TRUE, risk.table=T, tables.y.text = FALSE, xlab="Time (days) last recurrence -> death", newpage = FALSE)
+
+#p2 <- 
+survminer::ggsurvplot(s2,
+                      data = stats.last_rec,
+                      pval = TRUE, risk.table=T,
+                      tables.y.text = FALSE,
+                      xlab="Time (days) last recurrence -> death",
+                      
+                      legend.labs=c(`cgc=CGC high-grade` = 'CGC High grade',
+                                    `cgc=CGC low-grade`  = 'CGC Low grade'),
+                      
+                      palette = c('CGC Low grade' = as.character(palette_g2_g3['Grade 2']),
+                                  'CGC High grade' = as.character(palette_g2_g3['Grade 3']))
+                      ) +
+  labs(subtitle="Post-recurrence survival in GLASS-OD dataset")
 
 
-grid.draw.ggsurvplot <- function(x){
+
+
+ggrid.draw.ggsurvplot <- function(x){
   survminer:::print.ggsurvplot(x, newpage = FALSE)
 }
 ggsave("output/figures/analysis_survival_cgc_at_recurrence.pdf", width=8.3 / 2 * 0.8,height=2.6, scale=2, plot=p1)

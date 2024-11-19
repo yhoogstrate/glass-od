@@ -54,6 +54,23 @@ col3 <- grDevices::colorRampPalette(c(       "#67001F",
 ))
 
 
+# quite a bit brighter, neat for heatmap
+col6 <- grDevices::colorRampPalette(c(       "#67001F", 
+                                             mixcol("#B2182B","black",0.025 * 0.5),
+                                             mixcol("#D6604D","black",0.050 * 0.5),
+                                             mixcol("#F4A582","black",0.075 * 0.5),
+                                             mixcol("#FDDBC7","black",0.100 * 0.5),
+                                             
+                                             mixcol("#FFFFFF","black",0.125 * 0.5),
+                                             
+                                             mixcol("#D1E5F0","black",0.100 * 0.5),
+                                             mixcol("#92C5DE","black",0.075 * 0.5),
+                                             mixcol("#4393C3","black",0.050 * 0.5),
+                                             mixcol("#2166AC","black",0.025 * 0.5),
+                                             
+                                             "#053061"
+))
+
 
 
 # center with white - nicest if applicable
@@ -73,6 +90,16 @@ palette_mnp_12.8_6 <- c(
 )
 
 
+
+palette_mnp_12.8_7 <- c(
+  'A_IDH_HG' = '#d34394ff',
+  'O_IDH' = 'aquamarine3',
+  'OLIGOSARC_IDH' = 'aquamarine4',
+  'other' = 'gray80'
+)
+
+
+
 palette_mnp_12.8_AC_3 <- c(
   'A_IDH_LG' = mixcol('#f85eb6', 'gray80',0.15),
   'A_IDH_HG' = '#d34394ff',
@@ -81,16 +108,28 @@ palette_mnp_12.8_AC_3 <- c(
 )
 
 
+# palette_g2_g3 <- c(
+#   'Grade 2' = mixcol(col2(10)[9], "white", 0.15),
+#   'Grade 3' = mixcol(col2(10)[2], "white", 0.15)
+# )
 palette_g2_g3 <- c(
-  'Grade 2' = mixcol(col2(10)[9], "white", 0.15),
-  'Grade 3' = mixcol(col2(10)[2], "white", 0.15)
+  'Grade 2' = mixcol( 'lightblue', 'lightgreen'),
+  'Grade 3' = mixcol( 'darkblue', 'darkgreen')
 )
 
+
+# palette_p_r <- c(
+#   'Primary' = mixcol(col2(10)[9], "white", 0.15),
+#   'Recurrent' = mixcol(col2(10)[2], "white", 0.15)
+# )
 
 palette_p_r <- c(
-  'Primary' = mixcol(col2(10)[9], "white", 0.15),
-  'Recurrence' = mixcol(col2(10)[2], "white", 0.15)
+  'Primary' = '#d9e39e', # #e3b29e
+  'Recurrent' = '#3b4500'
 )
+
+palette_yes_no_1 <- c('Yes' = '#E49E27', 'No' = '#59B2E6')
+palette_yes_no_2 <- c('Yes' = '#009E74', 'No' = '#CB75A4')
 
 
 palette_infinium_signals <- c('methylated'='darkgreen', 'unmethylated'='red')
