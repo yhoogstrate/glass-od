@@ -1,0 +1,212 @@
+
+# load ----
+
+
+library(ggplot2)
+library(patchwork)
+
+
+source('scripts/load_functions.R')
+source('scripts/load_themes.R')
+
+
+if(!exists('glass_od.metadata.array_samples')) {
+  source('scripts/load_GLASS-OD_metadata.R')
+}
+
+
+## figs ----
+
+
+
+
+ggplot(glass_od.metadata.array_samples, aes(x=staining_KI67_lr_pos_neg_cells, y=array_PC3)) +
+  geom_point()
+
+ggplot(glass_od.metadata.array_samples, aes(x=log(staining_KI67_pos_per_area_um2), y=array_PC3)) +
+  geom_point()
+
+
+
+
+ggplot(glass_od.metadata.array_samples, aes(x=staining_KI67_lr_pos_neg_cells, y=array_PC2)) +
+  geom_point()
+
+ggplot(glass_od.metadata.array_samples, aes(x=log(staining_KI67_pos_per_area_um2), y=array_PC2)) +
+  geom_point()
+
+
+
+
+
+ggplot(glass_od.metadata.array_samples, aes(x=log(staining_KI67_pos_per_area_um2), 
+                                            y=array_dnaMethyAge__PCHorvathS2018)) +
+  geom_point()
+
+
+
+# ggplot(glass_od.metadata.array_samples, aes(x=staining_KI67_lr_pos_neg_cells, 
+#                                             y=array_dnaMethyAge__PCHorvathS2018)) +
+#   geom_point()
+
+
+
+
+
+ggplot(glass_od.metadata.array_samples, aes(x=log(staining_KI67_pos_per_detected_cells), y=array_PC2)) +
+  geom_point()
+
+
+ggplot(glass_od.metadata.array_samples, aes(x=log(staining_KI67_pos_per_detected_cells), y=array_PC3)) +
+  geom_point()
+
+
+
+ggplot(glass_od.metadata.array_samples, aes(x=staining_KI67_lr_pos_neg_cells, y=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) +
+  geom_point()
+
+
+ggplot(glass_od.metadata.array_samples, aes(x=log(staining_KI67_pos_per_detected_cells), y=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) +
+  geom_point()
+
+
+ggplot(glass_od.metadata.array_samples, aes(x=log(staining_KI67_pos_per_area_um2), y=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) +
+  geom_point()
+
+
+ggplot(glass_od.metadata.array_samples, aes(
+  x=log(staining_KI67_Num.KI67pos / (staining_KI67_Area_um_2)),
+  y=array_PC3)) +
+  geom_point()
+
+
+
+## corr ----
+
+
+
+dat <- glass_od.metadata.array_samples |> 
+  dplyr::mutate(log_staining_KI67_pos_per_area_um2 = log(staining_KI67_pos_per_area_um2)) |> 
+  #dplyr::mutate(log_staining_KI67_pos_neg_cell_density = log(staining_KI67_pos_neg_cell_density)) |> 
+  dplyr::select(
+                staining_KI67_lr_pos_neg_cells,
+                log_staining_KI67_pos_per_area_um2,
+                #staining_KI67_pos_neg_cell_density,
+                #log_staining_KI67_pos_neg_cell_density,
+                
+                array_PC2, array_PC3,
+                array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, array_GLASS_NL_g2_g3_sig,
+                array_dnaMethyAge__PCHorvathS2018) |> 
+  dplyr::filter(!is.na(staining_KI67_lr_pos_neg_cells) & !is.na(array_PC3)) |> 
+  dplyr::mutate(`-1 * array_PC2` = -1 * array_PC2, array_PC2=NULL) |> 
+  dplyr::mutate(`-1 * array_PC3` = -1 * array_PC3, array_PC3=NULL) |> 
+  dplyr::mutate(`-1 * array_GLASS_NL_g2_g3_sig` = -1 * array_GLASS_NL_g2_g3_sig, array_GLASS_NL_g2_g3_sig=NULL)
+
+
+
+
+pdf("output/figures/vis_KI67_classifications__corrplot.pdf",width=2.5, height=2.15)
+
+
+
+corrplot::corrplot(cor(dat), order="hclust", tl.cex=0.52, tl.pos="l", cl.cex=0.52,
+                   
+
+                   
+                   title = paste0("\nsample: n=", nrow(dat))
+                   )
+
+
+
+dev.off()
+
+
+
+
+
+## cohort overview ----
+
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(!is.na(staining_KI67_lr_pos_neg_cells)) |> 
+  dplyr::mutate(resection_grade = paste0("WHO Grade ", resection_tumor_grade)) |> 
+  dplyr::mutate(resection_type = ifelse(resection_number == 1, "primary", "recurrent")) |> 
+  dplyr::mutate(rank = order(order(staining_KI67_pos_per_detected_cells)))
+
+
+plt |> dplyr::select(resection_id, resection_number, staining_KI67_filename, staining_KI67_pos_per_detected_cells) |> 
+  dplyr::mutate(pct = staining_KI67_pos_per_detected_cells * 100) |> 
+  View()
+
+
+
+
+ggplot(plt, aes(x=reorder(resection_id, rank), y=staining_KI67_pos_per_detected_cells)) +
+  geom_point() +
+  scale_y_continuous(labels = scales::percent) +
+  geom_hline(yintercept=0.05, col="red", lty=2,lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0.1, col="red", lty=2,lwd=theme_nature_lwd) +
+  theme_nature
+
+
+
+
+## who grade ----
+
+
+
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::mutate(resection_grade = paste0("WHO Grade ", resection_tumor_grade)) |> 
+  dplyr::filter(!is.na(staining_KI67_lr_pos_neg_cells))
+
+
+ggplot(plt, aes(x=resection_grade, y=staining_KI67_lr_pos_neg_cells)) +
+  ggbeeswarm::geom_quasirandom(size=theme_nature_size/3,width=0.175) + 
+  labs(subtitle=format_subtitle("KI67 x WHO Grade"),
+       caption=paste0("samples  --  ",
+                      "Grade 2: n=", (plt |> dplyr::filter(resection_grade == "WHO Grade 2") |>  nrow()), "  --  ",
+                      "Grade 3: n=", (plt |> dplyr::filter(resection_grade == "WHO Grade 3") |>  nrow()
+       ))) +
+  ggpubr::stat_compare_means(label.x.npc=0.5, method = "t.test", show_guide  = FALSE,  size=theme_nature_size, col="darkgray") +
+  labs(y="log(Ki-67 positive cells / Ki-67 negative cells)", x=NULL) +
+  theme_nature
+
+
+
+ggsave("output/figures/vis_KI67_classifications__who_grade.pdf",width=1.5, height=2.25)
+
+
+
+
+
+## prim rec ----
+
+
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::mutate(resection_type = ifelse(resection_number == 1, "primary", "recurrent")) |> 
+  dplyr::filter(!is.na(staining_KI67_lr_pos_neg_cells))
+
+
+ggplot(plt, aes(x=resection_type, y=staining_KI67_lr_pos_neg_cells)) +
+  ggbeeswarm::geom_quasirandom(size=theme_nature_size/3,width=0.175) + 
+  labs(subtitle=format_subtitle("KI67 x resection type"),
+       caption=paste0("samples  --  ",
+                      "primary: n=",   (plt |> dplyr::filter(resection_type == "primary") |>    nrow()),"  --  ",
+                      "recurrent: n=", (plt |> dplyr::filter(resection_type == "recurrent") |>  nrow()
+       ))) +
+  ggpubr::stat_compare_means( label.x.npc=0.5, method = "t.test", show_guide  = FALSE,  size=theme_nature_size, col="darkgray") +
+  labs(y="log(Ki-67 positive cells / Ki-67 negative cells)", x=NULL) +
+  theme_nature
+
+
+ggsave("output/figures/vis_KI67_classifications__prim_rec.pdf",width=1.5, height=2.25)
+
+
+
+
+
