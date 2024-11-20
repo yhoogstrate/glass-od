@@ -553,58 +553,55 @@ p_A + p_B + p_C
 #ggsave("/tmp/papbpc.png",width = 8.5*0.975, height=3.2, dpi=600)
 
 
-## GLASS-OD x GLASS-NL + PC1 ----
-
-# corrplot
-
-dat = stats.od |> dplyr::select(probe_id) |> 
-  dplyr::left_join(
-    stats.od |> 
-      dplyr::rename(t_od_new = t) |> 
-      dplyr::select(probe_id, t_od_new)
-    ,
-    by=c('probe_id'='probe_id')
-  ) |> 
-  dplyr::left_join(
-    data.mvalues.probes |> 
-      dplyr::rename(t_od_stored = DMP__g2_g3__pp_nc_PC1__t) |> 
-      dplyr::select(probe_id, t_od_stored)
-    ,
-    by=c('probe_id'='probe_id')
-  ) |> 
-  dplyr::left_join(
-    data.mvalues.probes |> 
-      dplyr::rename(t_ac_stored = DMP__GLASS_NL__g2_g3.4__pp_nc_PC1__t) |> 
-      dplyr::select(probe_id, t_ac_stored)
-    ,
-    by=c('probe_id'='probe_id')
-  ) |> 
-  dplyr::left_join(
-    stats.glass_nl.who_lg_who_hg.quality.pp.nc |> 
-      dplyr::rename(t_ac_new = t) |> 
-      dplyr::select(probe_id, t_ac_new)
-    ,
-    by=c('probe_id'='probe_id')
-  ) |> 
-  dplyr::left_join(
-    stats.ac.2_3.4 |> 
-      dplyr::rename(t_ac_new_2___3.4 = t) |> 
-      dplyr::select(probe_id, t_ac_new_2___3.4)
-    ,
-    by=c('probe_id'='probe_id')
-  ) |> 
-  dplyr::left_join(
-    stats.ac.2.3_4 |> 
-      dplyr::rename(t_ac_new_2.3___4 = t) |> 
-      dplyr::select(probe_id, t_ac_new_2.3___4)
-    ,
-    by=c('probe_id'='probe_id')
-  ) |> 
-  tibble::column_to_rownames('probe_id')
+## E: GLASS-OD x GLASS-NL + PC1 ----
 
 
-cor(dat)
-corrplot::corrplot(cor(dat), order="hclust")
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                y=DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t)) +
+  geom_vline(xintercept=0, col="red", lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd=theme_nature_lwd) +
+  
+  geom_point(pch=16, cex=0.001, alpha=0.01, col="black") +  
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 5) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 4) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 3) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 2) +
+  geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5", size=theme_nature_size, family = theme_nature_font_family) +
+  
+  labs(x = "Per probe t-score GLASS-OD Grade 2 ~ Grade 3",
+       y = "Per probe t-score GLASS-NL Grade 2 & 3 ~ Grade 4",
+       subtitle=format_subtitle("Overlap outcome oligodendroglioma vs. astrocytoma"),
+       caption="Overlap Grade associated differences oligodendroglioma & astrocytoma (patient and PC1 corrected)"
+  ) +
+  
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  #scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+
+ggsave("output/figures/vis_differential__GLASS_NL__x__GLASS_OD__grade__PC1.png", width=(8.5 * 0.97 / 4), height=(8.5 * 0.97 / 4))
+
+
+
 
 
 
@@ -1402,7 +1399,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
   
   labs(x = "Per probe t-score Grade 2 ~ Grade 3",
-       y="Per probe t-score Primary ~ Recurrent"
+         y="Per probe t-score Primary ~ Recurrent"
   ) +
   
   theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
@@ -1415,156 +1412,10 @@ ggsave(paste0("output/figures/vis_differential__overall_density__quality_correct
 
 
 
-### GLASS-NL ----
-#### naive ----
-
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
-    return(.)
-  })() |> 
-  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
-    return(.)
-  })()
-
-
-ggplot(plt, aes(x=DMP__GLASS_NL__g2_g3.4__pp_nc_naive__t,
-                y=DMP__GLASS_NL__prim_rec__pp_nc_naive__t)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +  
-  
-  geom_vline(xintercept=0, col="red", alpha=0.1) +
-  geom_hline(yintercept=0, col="red", alpha=0.1) +
-  
-  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
-  geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
-  
-  labs(x = "Per probe t-score Grade 2 ~ Grade 3 & 4",
-       y="Per probe t-score Primary ~ Recurrent"
-  ) +
-  
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
-  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
-
-
-ggsave(paste0("output/figures/vis_differential__GLASS_NL__overall_density__naive.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
 
 
 
-
-#### PC1 ----
-
-
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
-    return(.)
-  })() |> 
-  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
-    return(.)
-  })()
-
-
-# ggplot(plt, aes(x=DMP__GLASS_NL__g2_g3.4__pp_nc_PC1__t,
-#                 y=DMP__GLASS_NL__prim_rec__pp_nc_PC1__t)) +
-#   geom_vline(xintercept=0, col="red") +
-#   geom_hline(yintercept=0, col="red") +
-#   
-#   geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +  
-#   
-#   geom_vline(xintercept=0, col="red", alpha=0.1) +
-#   geom_hline(yintercept=0, col="red", alpha=0.1) +
-#   
-#   geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
-#   geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
-#   ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
-#   
-#   labs(x = "Per probe t-score Grade 2 ~ Grade 3 & 4",
-#        y="Per probe t-score Primary ~ Recurrent"
-#   ) +
-#   
-#   theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-#   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
-#   theme(plot.background = element_rect(fill="white", colour=NA))  # png export
-# 
-# 
-# 
-
-
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
-                y=DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +  
-  
-  geom_vline(xintercept=0, col="red", alpha=0.1) +
-  geom_hline(yintercept=0, col="red", alpha=0.1) +
-  
-  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
-  geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
-  
-  labs(x = "Per probe t-score Grade 2 ~ Grade 3 & 4",
-       y="Per probe t-score Primary ~ Recurrent"
-  ) +
-  
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
-  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
-
-ggsave(paste0("output/figures/vis_differential__GLASS_NL__x__GLASS_OD__grade__PC1.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
-
-
-
-
-
-# ggplot(plt, aes(x=DMP__GLASS_NL__g2_g3.4__pp_nc_PC1__t,
-#                 y=DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t)) +
-#   geom_vline(xintercept=0, col="red") +
-#   geom_hline(yintercept=0, col="red") +
-#   
-#   geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +  
-#   
-#   geom_vline(xintercept=0, col="red", alpha=0.1) +
-#   geom_hline(yintercept=0, col="red", alpha=0.1) +
-#   
-#   geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
-#   geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
-#   ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
-#   
-#   labs(x = "Per probe t-score Grade 2 ~ Grade 3 & 4",
-#        y="Per probe t-score Primary ~ Recurrent"
-#   ) +
-#   
-#   theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-#   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
-#   theme(plot.background = element_rect(fill="white", colour=NA))  # png export
-
-
-
-
-#ggsave(paste0("output/figures/vis_differential__GLASS_NL__overall_density__quality_corrected.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
-
-
-
-
-
-
-
-### GLASS-OD x GLASS-NL ----
+### GLASS-OD x GLASS-NL x ATAC-seq ? ----
 
 
 plt <- data.mvalues.probes |> 
@@ -1582,23 +1433,24 @@ plt <- data.mvalues.probes |>
   dplyr::filter(!is.na(ATAC_astro_counts_per_bin_per_base) & !is.na(ATAC_oligo_counts_per_bin_per_base)) |> 
   dplyr::mutate(col = ATAC_astro_counts_per_bin_per_base - ATAC_oligo_counts_per_bin_per_base) |> 
   dplyr::mutate(rank = order(order(col))) |> 
-  dplyr::mutate(rank_fraction = (rank - 1) / max(rank - 1)) |> 
-  dplyr::mutate(col = dplyr::case_when(
-    ATAC_astro_counts_per_bin_per_base > 2 ~ "strong",
-    T ~ "weak"
-)) 
+  dplyr::mutate(rank_fraction = (rank - 1) / max(rank - 1)) 
+#   dplyr::mutate(col = dplyr::case_when(
+#     ATAC_astro_counts_per_bin_per_base > 2 ~ "strong",
+#     T ~ "weak"
+# )) 
   
 
 
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
-                y=DMP__GLASS_NL__g2_g3.4__pp_nc_PC1__t)) +
+                y=DMP__GLASS_NL__g2_g3.4__pp_nc_PC1__t,
+                col=col)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
   #geom_point(pch=16, cex=0.35) +   # , col="black"
-  geom_point(pch=16, cex=0.001, alpha=0.0125 * 4, col="black") +  
+  geom_point(pch=16, cex=0.3, alpha=0.1125 * 4) + # , col="black"
   
   geom_vline(xintercept=0, col="red", alpha=0.1) +
   geom_hline(yintercept=0, col="red", alpha=0.1) +
@@ -1612,7 +1464,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   ) +
   
   theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-1.5, 1.5), oob = scales::squish) +
   theme(plot.background = element_rect(fill="white", colour=NA))  # png export
 
 
