@@ -135,7 +135,7 @@ tmp <- readRDS(file="cache/analysis_probe_median_statistics.Rds") |>
 
 data.mvalues.probes <- data.mvalues.probes |> 
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
-  assertr::verify(!is.na(median.beta.primary))
+  assertr::verify(!is.na(median.beta.primary.glass_od))
 
 
 rm(tmp)

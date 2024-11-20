@@ -550,7 +550,52 @@ p_C <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc_
 p_A + p_B + p_C
 
 
-ggsave("/tmp/papbpc.png",width = 8.5*0.975, height=3.2, dpi=600)
+#ggsave("/tmp/papbpc.png",width = 8.5*0.975, height=3.2, dpi=600)
+
+
+## GLASS-OD x GLASS-NL + PC1 ----
+
+# corrplot
+
+dat = stats.od |> dplyr::select(probe_id) |> 
+  dplyr::left_join(
+    stats.od |> 
+      dplyr::rename(t_od_new = t) |> 
+      dplyr::select(probe_id, t_od_new)
+    ,
+    by=c('probe_id'='probe_id')
+  ) |> 
+  dplyr::left_join(
+    data.mvalues.probes |> 
+      dplyr::rename(t_od_stored = DMP__g2_g3__pp_nc_PC1__t) |> 
+      dplyr::select(probe_id, t_od_stored)
+    ,
+    by=c('probe_id'='probe_id')
+  ) |> 
+  dplyr::left_join(
+    data.mvalues.probes |> 
+      dplyr::rename(t_ac_stored = DMP__GLASS_NL__g2_g3.4__pp_nc_PC1__t) |> 
+      dplyr::select(probe_id, t_ac_stored)
+    ,
+    by=c('probe_id'='probe_id')
+  ) |> 
+  dplyr::left_join(
+    stats.glass_nl.who_lg_who_hg.quality.pp.nc |> 
+      dplyr::rename(t_ac_new = t) |> 
+      dplyr::select(probe_id, t_ac_new)
+    ,
+    by=c('probe_id'='probe_id')
+  ) |> 
+  tibble::column_to_rownames('probe_id')
+
+
+cor(dat)
+corrplot::corrplot(cor(dat), order="hclust")
+
+
+
+
+
 
 
 
@@ -2925,7 +2970,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   theme(plot.background = element_rect(fill="white", colour=NA))
 
 
-## G: 1P | 19Q ----
+## G: chromosomal ----
 
 
 plt <- data.mvalues.probes |> 
@@ -2934,7 +2979,7 @@ plt <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
-  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
@@ -2954,47 +2999,59 @@ plt <- data.mvalues.probes |>
     CpG_chrm == "chr19" & !is_19Q ~ "chr19p",
     T ~ CpG_chrm
   )) |> 
+  dplyr::filter(CpG_chrm %in% c("chrX", "chrY") == F ) |> 
   dplyr::mutate(chr = factor(CpG_chrm, levels=gtools::mixedsort(unique(as.character(CpG_chrm))) ))
 
 
 
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probeCpGcnt)) +
-  facet_grid(cols = vars(facet)) +
 
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(data=subset(plt, probeCpGcnt == 0), pch=16, cex=0.001, alpha=0.1) + 
-  geom_point(data=subset(plt, probeCpGcnt == 1), pch=16, cex=0.0025, alpha=0.15) + 
-  geom_point(data=subset(plt, probeCpGcnt == 2), pch=16, cex=0.005, alpha=0.20) + 
-  geom_point(data=subset(plt, probeCpGcnt == 3), pch=16, cex=0.05, alpha=0.25) + 
-  geom_point(data=subset(plt, probeCpGcnt == 4), pch=16, cex=0.01, alpha=0.30) + 
-  geom_point(data=subset(plt, probeCpGcnt == 5), pch=16, cex=0.01, alpha=0.35) + 
-  geom_point(data=subset(plt, probeCpGcnt == 6), pch=16, cex=0.01, alpha=0.40) + 
-  geom_point(data=subset(plt, probeCpGcnt == 7), pch=16, cex=0.025, alpha=0.45) + 
-  geom_point(data=subset(plt, probeCpGcnt == 8), pch=16, cex=0.05, alpha=0.50) + 
-  geom_point(data=subset(plt, probeCpGcnt == 9), pch=16, cex=0.1, alpha=0.55) + 
-  geom_point(data=subset(plt, probeCpGcnt == 10), pch=16, cex=0.1, alpha=0.60) + 
-  geom_point(data=subset(plt, probeCpGcnt == 11), pch=16, cex=0.1, alpha=0.65) + 
-  geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
-  
-  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
-                                 breaks = 0:11,
-                                 labels = c(0,"",2,"","","",6,"","","","",11)
-  ) + # , oob = scales::squish
-  
-  labs(col = "CpG's per probe") +
-  
-  
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  theme(plot.background = element_rect(fill="white", colour=NA))
-
-
-ggplot(plt, aes(x = chr, y=DMP__g2_g3__pp_nc__t, fill=col)) +
+ggplot(plt, aes(x = chr, y=DMP__g2_g3__pp_nc_PC1__t, fill=col)) +
   ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "white", adjust = 1.95) +
+  
+  labs(fill = NULL, 
+       subtitle=format_subtitle("chromosomal differences")) +
   scale_fill_manual(values=c('chr1'='red','chr19'='blue','other'='darkgray')) +
   theme_nature +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+
+
+
+
+# ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probeCpGcnt)) +
+#   facet_grid(cols = vars(facet)) +
+#   
+#   geom_vline(xintercept=0, col="red") +
+#   geom_hline(yintercept=0, col="red") +
+#   
+#   geom_point(data=subset(plt, probeCpGcnt == 0), pch=16, cex=0.001, alpha=0.1) + 
+#   geom_point(data=subset(plt, probeCpGcnt == 1), pch=16, cex=0.0025, alpha=0.15) + 
+#   geom_point(data=subset(plt, probeCpGcnt == 2), pch=16, cex=0.005, alpha=0.20) + 
+#   geom_point(data=subset(plt, probeCpGcnt == 3), pch=16, cex=0.05, alpha=0.25) + 
+#   geom_point(data=subset(plt, probeCpGcnt == 4), pch=16, cex=0.01, alpha=0.30) + 
+#   geom_point(data=subset(plt, probeCpGcnt == 5), pch=16, cex=0.01, alpha=0.35) + 
+#   geom_point(data=subset(plt, probeCpGcnt == 6), pch=16, cex=0.01, alpha=0.40) + 
+#   geom_point(data=subset(plt, probeCpGcnt == 7), pch=16, cex=0.025, alpha=0.45) + 
+#   geom_point(data=subset(plt, probeCpGcnt == 8), pch=16, cex=0.05, alpha=0.50) + 
+#   geom_point(data=subset(plt, probeCpGcnt == 9), pch=16, cex=0.1, alpha=0.55) + 
+#   geom_point(data=subset(plt, probeCpGcnt == 10), pch=16, cex=0.1, alpha=0.60) + 
+#   geom_point(data=subset(plt, probeCpGcnt == 11), pch=16, cex=0.1, alpha=0.65) + 
+#   geom_point(data=head(plt, n=1),pch=16, cex=1, alpha=0.8) + 
+#   
+#   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
+#                         breaks = 0:11,
+#                         labels = c(0,"",2,"","","",6,"","","","",11)
+#   ) + # , oob = scales::squish
+#   
+#   labs(col = "Chromosome of CpG", 
+#        subtitle=format_subtitle("chromosomal differences")) +
+#   
+#   
+#   theme_nature +
+#   theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+#   theme(plot.background = element_rect(fill="white", colour=NA))
+# 
+
 
 
 ## L: PC1 ----
