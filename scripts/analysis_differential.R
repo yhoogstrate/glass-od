@@ -4998,36 +4998,163 @@ ggplot(plt.pre, aes(x=logFC.lgc, y=-log(P.Value.lgc), col=col)) +
 #' OD
 #' AC
 #' general grading
+
+#### glass-nl subsets -----
+
+#### 2,3 - 4 ----
+
+
+metadata.ac.2.3_4 <- glass_nl.metadata.array_samples |> 
+  filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
+  filter_first_G2_G3_and_last_G4(133) |> 
+  dplyr::select(array_sentrix_id,
+                Sample_Name,
+                patient_id, 
+                WHO_Classification2021
+  ) |>  # has to be WHO since OD has no methylation based split
+  dplyr::rename(sample_id = Sample_Name) |> 
+  dplyr::mutate(dataset = "GLASS-NL") |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  
+  dplyr::mutate(LG_HG_status = factor(ifelse(WHO_Classification2021 == "Astrocytoma, IDH-mutant, WHO grade 4", "HG", "LG"), levels=c("LG","HG")))
+
+
+data.ac.2.3_4 <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata.ac.2.3_4$array_sentrix_id)
+
+pc <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_prcomp.Rds")
+pcd <- predict(pc, t(data.ac.2.3_4)) |> 
+  as.data.frame() |> 
+  tibble::rownames_to_column('array_sentrix_id')
+
+metadata.ac.2.3_4 <- metadata.ac.2.3_4 |>
+  dplyr::left_join(pcd, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
+rm(pc, pcd)
+
+
+
+design.ac.2.3_4 <- model.matrix(~PC1 + factor(patient) + LG_HG_status, data=metadata.ac.2.3_4)
+fit.ac.2.3_4 <- limma::eBayes(limma::lmFit(data.ac.2.3_4, design.ac.2.3_4), trend=T)
+stats.ac.2.3_4 <- limma::topTable(fit.ac.2.3_4,
+                            n=nrow(data.ac.2.3_4),
+                            coef="LG_HG_statusHG",
+                            sort.by = "none",
+                            adjust.method="fdr") |>
+  tibble::rownames_to_column('probe_id')
+
+
+rm(
+metadata.ac.2.3_4,
+data.ac.2.3_4,
+design.ac.2.3_4,
+fit.ac.2.3_4
+)
+
+
+
+
+#### 2 - 3,4 ----
+
+
+
+metadata.ac.2_3.4 <- glass_nl.metadata.array_samples |> 
+  filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3_G4(135) |> 
+  dplyr::select(array_sentrix_id,
+                Sample_Name,
+                patient_id, 
+                WHO_Classification2021
+  ) |>  # has to be WHO since OD has no methylation based split
+  dplyr::rename(sample_id = Sample_Name) |> 
+  dplyr::mutate(dataset = "GLASS-NL") |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  
+  dplyr::mutate(LG_HG_status = factor(ifelse(WHO_Classification2021 == "Astrocytoma, IDH-mutant, WHO grade 2", "LG", "HG"), levels=c("LG","HG")))
+
+
+data.ac.2_3.4 <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  dplyr::select(metadata.ac.2_3.4$array_sentrix_id)
+
+pc <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_prcomp.Rds")
+pcd <- predict(pc, t(data.ac.2_3.4)) |> 
+  as.data.frame() |> 
+  tibble::rownames_to_column('array_sentrix_id')
+
+metadata.ac.2_3.4 <- metadata.ac.2_3.4 |>
+  dplyr::left_join(pcd, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
+rm(pc, pcd)
+
+
+
+design.ac.2_3.4 <- model.matrix(~PC1 + factor(patient) + LG_HG_status, data=metadata.ac.2_3.4)
+fit.ac.2_3.4 <- limma::eBayes(limma::lmFit(data.ac.2_3.4, design.ac.2_3.4), trend=T)
+stats.ac.2_3.4 <- limma::topTable(fit.ac.2_3.4,
+                                  n=nrow(data.ac.2_3.4),
+                                  coef="LG_HG_statusHG",
+                                  sort.by = "none",
+                                  adjust.method="fdr") |>
+  tibble::rownames_to_column('probe_id')
+
+
+
+rm(
+  metadata.ac.2_3.4,
+  data.ac.2_3.4,
+  design.ac.2_3.4,
+  fit.ac.2_3.4
+)
+
+
+
+
+
 ## test pat + HG_AC + HG_OD + overall_HG ----
 
-
-
-metadata.od <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-    filter_first_G2_and_last_G3(156) |> 
-    dplyr::select(array_sentrix_id, 
-                  resection_id, 
-                  resection_tumor_grade,
-                  patient_id, 
-                  
-                  array_PC1
-                  #, A_IDH_HG__A_IDH_LG_lr__lasso_fit
-                  ) |>  # has to be WHO since OD has no methylation based split
-    dplyr::mutate(dataset = "GLASS-OD") |> 
-  
-    dplyr::group_by(patient_id) |> 
-    dplyr::mutate(is.paired = dplyr::n() == 2) |> 
-    dplyr::ungroup() |> 
-    
-    dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
-    
-    dplyr::mutate(LG_HG_status = factor(ifelse(resection_tumor_grade == 2, "LG", "HG"), levels=c("LG","HG")))
+# 
+# metadata.od <- glass_od.metadata.array_samples |> 
+#   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+#     filter_first_G2_and_last_G3(156) |> 
+#     dplyr::select(array_sentrix_id, 
+#                   resection_id, 
+#                   resection_tumor_grade,
+#                   patient_id, 
+#                   
+#                   array_PC1
+#                   #, A_IDH_HG__A_IDH_LG_lr__lasso_fit
+#                   ) |>  # has to be WHO since OD has no methylation based split
+#     dplyr::mutate(dataset = "GLASS-OD") |> 
+#   
+#     dplyr::group_by(patient_id) |> 
+#     dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+#     dplyr::ungroup() |> 
+#     
+#     dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+#     
+#     dplyr::mutate(LG_HG_status = factor(ifelse(resection_tumor_grade == 2, "LG", "HG"), levels=c("LG","HG")))
 
 
 
 metadata.ac <- glass_nl.metadata.array_samples |> 
       filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
-      filter_first_G2_and_last_G3(133) |> 
+      filter_first_G2_G3_and_last_G4(133) |> 
       dplyr::select(array_sentrix_id,
                     Sample_Name,
                     patient_id, 
@@ -5054,7 +5181,6 @@ metadata.ac <- glass_nl.metadata.array_samples |>
 data.od <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
-  #dplyr::filter(probe_id %in% probe.sel) |> 
   tibble::column_to_rownames('probe_id') |> 
   dplyr::select(metadata.od$array_sentrix_id)
 
