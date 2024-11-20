@@ -22,7 +22,11 @@ if(!exists('metadata.cg_probes.epic')) {
 # EPIC: all hq ----
 
 
-data.intensities.combined.hq_samples <- readRDS("cache/intensities_hq/intensities_hq.Rds") |> 
+
+
+
+#data.intensities.combined.hq_samples <- readRDS("cache/intensities_hq/intensities_hq.Rds") |> 
+data.intensities.combined.hq_samples <- readRDS("cache/intensities_raw_hq/intensities_raw_hq.Rds") |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == CONST_N_SAMPLES) # 4 replicates still need to be removed still
@@ -31,7 +35,8 @@ data.intensities.combined.hq_samples <- readRDS("cache/intensities_hq/intensitie
   })()
 
 
-data.intensities.methylated.hq_samples <- readRDS("cache/intensities_m_hq/intensities_m_hq.Rds") |> 
+#data.intensities.methylated.hq_samples <- readRDS("cache/intensities_m_hq/intensities_m_hq.Rds") |> 
+  data.intensities.methylated.hq_samples <- readRDS("cache/intensities_raw_m_hq/intensities_raw_m_hq.Rds") |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == CONST_N_SAMPLES) # 4 replicates still need to be removed still
@@ -40,7 +45,8 @@ data.intensities.methylated.hq_samples <- readRDS("cache/intensities_m_hq/intens
   })()
 
 
-data.intensities.unmethylated.hq_samples <- readRDS("cache/intensities_um_hq/intensities_um_hq.Rds") |> 
+#data.intensities.unmethylated.hq_samples <- readRDS("cache/intensities_um_hq/intensities_um_hq.Rds") |> 
+data.intensities.unmethylated.hq_samples <- readRDS("cache/intensities_raw_um_hq/intensities_raw_um_hq.Rds") |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(ncol(.) == CONST_N_SAMPLES) # 4 replicates still need to be removed still
@@ -136,4 +142,11 @@ data.intensities.good_probes <- data.intensities.probes |>
 # }
 # 
 # rm(fn)
+
+
+# glass_od.metadata.array_samples |> 
+#   dplyr::filter(grepl("Valor",patient_center_name)) |> 
+#   dplyr::select(array_sentrix_id, resection_id, patient_id, resection_number, patient_study_name, isolation_pathology_number , contains("note"), contains("reaso"), patient_suspected_noncodel) |> 
+#   View()
+
 

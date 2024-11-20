@@ -102,6 +102,8 @@ rm(fit.glass_nl.prim_rec_naive, stats.glass_nl.prim_rec_naive)
 ## prim rec & quality (intr. PC1) ----
 
 
+
+
 metadata.glass_nl.prim_rec_qual <- glass_nl.metadata.array_samples |> 
   dplyr::mutate(patiend_id = paste0("p", patient_id)) |>  # avoid numbers because regression models may go nuts
   filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
@@ -148,6 +150,7 @@ stats.glass_nl.prim_rec_qual <- limma::topTable(fit.glass_nl.prim_rec_qual,
 
 rm(design.glass_nl.prim_rec_qual)
 
+#stats.glass_nl.prim_rec_qual.old_array_pca <- stats.glass_nl.prim_rec_qual
 
 sum(stats.glass_nl.prim_rec_qual$P.Value < 0.01)
 sum(stats.glass_nl.prim_rec_qual$adj.P.Val < 0.01)
@@ -383,7 +386,11 @@ metadata.glass_nl.who_lg_who_hg.quality.pp.nc <- glass_nl.metadata.array_samples
     print(dim(.))
     assertthat::assert_that(nrow(.) == 133) 
     return(.)
-  })()
+  })() |> 
+  
+  dplyr::left_join(
+    pcd, by=c('array_sentrix_id' = 'array_sentrix_id')
+  )
 
 
 
@@ -402,7 +409,7 @@ data.glass_nl.who_lg_who_hg.quality.pp.nc <- data.mvalues.hq_samples |>
 
 
 
-design.glass_nl.who_lg_who_hg.quality.pp.nc <- model.matrix(~array_PC1 + factor(patient) + factor(gr.status), data=metadata.glass_nl.who_lg_who_hg.quality.pp.nc)
+design.glass_nl.who_lg_who_hg.quality.pp.nc <- model.matrix(~PC1 + factor(patient) + factor(gr.status), data=metadata.glass_nl.who_lg_who_hg.quality.pp.nc)
 fit.glass_nl.who_lg_who_hg.quality.pp.nc <- limma::lmFit(data.glass_nl.who_lg_who_hg.quality.pp.nc, design.glass_nl.who_lg_who_hg.quality.pp.nc)
 fit.glass_nl.who_lg_who_hg.quality.pp.nc <- limma::eBayes(fit.glass_nl.who_lg_who_hg.quality.pp.nc, trend=T)
 stats.glass_nl.who_lg_who_hg.quality.pp.nc <- limma::topTable(fit.glass_nl.who_lg_who_hg.quality.pp.nc,
@@ -424,6 +431,9 @@ saveRDS(stats.glass_nl.who_lg_who_hg.quality.pp.nc, file="cache/analysis_differe
 
 rm(fit.glass_nl.who_lg_who_hg.quality.pp.nc, stats.glass_nl.who_lg_who_hg.quality.pp.nc)
 
+
+
+#cor(tmp$t, stats.glass_nl.who_lg_who_hg.quality.pp.nc$t)
 
 
 

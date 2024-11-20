@@ -4,6 +4,9 @@
 # load data ----
 
 
+#library(ggplot2)
+
+
 source('scripts/load_constants.R')
 source('scripts/load_functions.R')
 #source('scripts/load_palette.R')
@@ -23,6 +26,15 @@ if(!exists('data.intensities.combined.hq_samples')) {
 
 if(!exists('glass_od.metadata.array_samples')) {
   source('scripts/load_GLASS-OD_metadata.R')
+}
+
+
+
+
+
+
+if(!exists('glass_nl.metadata.array_samples')) {
+  source('scripts/load_GLASS-NL_metadata.R')
 }
 
 
@@ -895,7 +907,6 @@ sum(stats.g2g3.quality.pp.nc$adj.P.Val < 0.01)
 
 
 rm(design.g2g3.quality.pp.nc)
-
 
 
 saveRDS(stats.g2g3.quality.pp.nc, file="cache/analysis_differential__g2_g3__PC1__partial_paired_nc__stats.Rds")
@@ -4980,6 +4991,8 @@ ggplot(plt.pre, aes(x=logFC.lgc, y=-log(P.Value.lgc), col=col)) +
 
 
 
+
+
 # analyses: GLASS-OD + GLASS-NL LG/HG ----
 #' multi-dataset mixed model to find changes specific to
 #' OD
@@ -4988,50 +5001,111 @@ ggplot(plt.pre, aes(x=logFC.lgc, y=-log(P.Value.lgc), col=col)) +
 ## test pat + HG_AC + HG_OD + overall_HG ----
 
 
+
 metadata.od <- glass_od.metadata.array_samples |> 
-    filter_GLASS_OD_idats(163) |> 
-    filter_first_G2_and_last_G3(105) |> 
-    dplyr::select(sentrix_id, resection_id, patient_id, LG_HG_status, A_IDH_HG__A_IDH_LG_lr__lasso_fit) |>  # has to be WHO since OD has no methylation based split
-    dplyr::rename(sample_id = resection_id) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+    filter_first_G2_and_last_G3(156) |> 
+    dplyr::select(array_sentrix_id, 
+                  resection_id, 
+                  resection_tumor_grade,
+                  patient_id, 
+                  
+                  array_PC1
+                  #, A_IDH_HG__A_IDH_LG_lr__lasso_fit
+                  ) |>  # has to be WHO since OD has no methylation based split
     dplyr::mutate(dataset = "GLASS-OD") |> 
-    dplyr::mutate(LG_HG_status = factor(LG_HG_status, levels=c("LG","HG")))
+  
+    dplyr::group_by(patient_id) |> 
+    dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+    dplyr::ungroup() |> 
+    
+    dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+    
+    dplyr::mutate(LG_HG_status = factor(ifelse(resection_tumor_grade == 2, "LG", "HG"), levels=c("LG","HG")))
+
+
+
 metadata.ac <- glass_nl.metadata.array_samples |> 
-      filter_GLASS_NL_idats(218) |> 
-      filter_first_G2_and_last_G3(130) |> 
-      dplyr::select(sentrix_id, Sample_Name, patient_id, LG_HG_status, A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV) |>  # has to be WHO since OD has no methylation based split
+      filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
+      filter_first_G2_and_last_G3(133) |> 
+      dplyr::select(array_sentrix_id,
+                    Sample_Name,
+                    patient_id, 
+                    WHO_Classification2021
+                    #, A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV
+                    ) |>  # has to be WHO since OD has no methylation based split
       dplyr::rename(sample_id = Sample_Name) |> 
-      dplyr::rename(`A_IDH_HG__A_IDH_LG_lr__lasso_fit` = `A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV`) |> 
       dplyr::mutate(dataset = "GLASS-NL") |> 
-      dplyr::mutate(LG_HG_status = factor(LG_HG_status, levels=c("LG","HG")))
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  
+  dplyr::mutate(LG_HG_status = factor(ifelse(WHO_Classification2021 == "Astrocytoma, IDH-mutant, WHO grade 4", "HG", "LG"), levels=c("LG","HG")))
+
+
+# probe.sel <- data.mvalues.probes |> 
+#   dplyr::filter(median.beta.primary.glass_nl > 0.5 & median.beta.primary.glass_od > 0.5) |> 
+#   dplyr::pull(probe_id)
+
 
 data.od <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  #dplyr::filter(probe_id %in% probe.sel) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.od$sentrix_id)
+  dplyr::select(metadata.od$array_sentrix_id)
 
 data.ac <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.ac$sentrix_id)
+  dplyr::select(metadata.ac$array_sentrix_id)
+
+pc <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_prcomp.Rds")
+pcd <- predict(pc, t(data.ac)) |> 
+  as.data.frame() |> 
+  tibble::rownames_to_column('array_sentrix_id')
+
+metadata.ac <- metadata.ac |>
+ dplyr::left_join(pcd, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
 
 
-design.od <- model.matrix(~factor(patient_id) + factor(LG_HG_status), data=metadata.od)
-design.ac <- model.matrix(~factor(patient_id) + factor(LG_HG_status), data=metadata.ac)
+# data.ac <-  data.ac |> 
+#   tibble::rownames_to_column('probe_id') |> 
+#   dplyr::filter(probe_id %in% probe.sel)  |> 
+#   tibble::column_to_rownames('probe_id') 
 
-fit.od <- limma::eBayes(limma::lmFit(data.od, design.od),trend=T)
-fit.ac <- limma::eBayes(limma::lmFit(data.ac, design.ac),trend=T)
 
+stopifnot(nrow(data.od) == nrow(data.ac))
+stopifnot(rownames(data.od) == rownames(data.ac))
+
+
+
+#design.od <- model.matrix(~factor(patient_id) + LG_HG_status, data=metadata.od)
+#design.ac <- model.matrix(~factor(patient_id) + LG_HG_status, data=metadata.ac)
+
+View(design.g2g3.quality.pp.nc)
+View(design.od)
+
+design.od <- model.matrix(~array_PC1 + factor(patient) + LG_HG_status, data=metadata.od)
+fit.od <- limma::eBayes(limma::lmFit(data.od, design.od), trend=T)
 stats.od <- limma::topTable(fit.od,
                               n=nrow(data.od),
-                              coef="factor(LG_HG_status)HG",
+                              coef="LG_HG_statusHG",
                               sort.by = "none", 
                               adjust.method="fdr") |>
   tibble::rownames_to_column('probe_id')
+
+
+
+design.ac <- model.matrix(~PC1 + factor(patient) + LG_HG_status, data=metadata.ac)
+fit.ac <- limma::eBayes(limma::lmFit(data.ac, design.ac), trend=T)
 stats.ac <- limma::topTable(fit.ac,
                               n=nrow(data.ac),
-                              coef="factor(LG_HG_status)HG",
+                              coef="LG_HG_statusHG",
                               sort.by = "none",
                               adjust.method="fdr") |>
   tibble::rownames_to_column('probe_id')
@@ -5039,39 +5113,99 @@ stats.ac <- limma::topTable(fit.ac,
 
 stopifnot(stats.od$probe_id == stats.ac$probe_id)
 
+
 plt <- stats.od |> 
   dplyr::left_join(stats.ac, by=c('probe_id'='probe_id'),suffix=c('.od','.ac')) |> 
-  dplyr::mutate(col1 = probe_id %in% (stats.b.hg_od |> dplyr::filter(adj.P.Val < 0.01) |> dplyr::pull(probe_id)))|> 
-  dplyr::mutate(col2 = probe_id %in% (stats.b.hg_ac |> dplyr::filter(adj.P.Val < 0.01) |> dplyr::pull(probe_id)))
+  dplyr::mutate(col1 = adj.P.Val.ac < 0.01) |> 
+  dplyr::mutate(col2 = adj.P.Val.od < 0.01) |> 
+  dplyr::mutate(col3 = dplyr::case_when(
+    adj.P.Val.ac < 0.01 & adj.P.Val.od < 0.01 ~ "both",
+    adj.P.Val.ac < 0.01 ~ "AC",
+    adj.P.Val.od < 0.01 ~ "OD",
+    T ~ "none"
+  ))
 
 
 plt <- plt |> 
-  dplyr::mutate(col3 = probe_id %in% (stats.b.hg_ac$probe_id[stats.b.hg_ac$adj.P.Val < 0.01]))
-
-ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=col1)) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  geom_point(pch=19, alpha=0.15,cex=0.02) +
-  theme_bw()
+  dplyr::left_join(data.mvalues.probes, by=c('probe_id'='probe_id')) |> 
+  dplyr::mutate(beta.delta.primary = median.beta.primary.glass_od - median.beta.primary.glass_nl) |> 
+  dplyr::mutate(cdkn2ablocus = CHR_hg38 == "chr9" & Start_hg38 > 21482324 & Start_hg38 < 22348772)
 
 
-ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=col2)) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  geom_point(pch=19, alpha=0.15,cex=0.02) +
-  theme_bw()
 
 
 ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=col3)) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  geom_point(data=subset(plt, col3==F),pch=19, alpha=0.15,cex=0.02) +
-  geom_point(data=subset(plt, col3==T),pch=19, alpha=0.65,cex=0.05) +
-  theme_bw()
+  geom_point(pch=19, alpha=0.15,cex=0.02) +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) 
+
+ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=col3)) +
+  ggpubr::stat_cor( aes(label = after_stat(r.label)), col="1", cor.coef.name ="R") +
+  geom_point(pch=19, alpha=0.15,cex=0.02) +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) 
 
 
-ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=col2)) +
+
+
+ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=beta.delta.primary)) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
-  geom_point(data=subset(plt, col2==F),pch=19, alpha=0.15,cex=0.02) +
-  geom_point(data=subset(plt, col2==T),pch=19, alpha=0.65,cex=0.05) +
-  theme_bw()
+  geom_point(pch=19, alpha=0.15,cex=0.02) +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) +
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-0.1, 0.1), oob = scales::squish)
+
+
+ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=median.beta.primary.glass_od)) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  geom_point(pch=19, alpha=0.15,cex=0.02) +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) +
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
+
+
+ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=median.beta.primary.glass_nl)) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  geom_point(pch=19, alpha=0.15,cex=0.02) +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines'))  +
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
+
+
+
+ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=is_1P)) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  geom_point(data=subset(plt, !is_1P), pch=19, alpha=0.15,cex=0.02) +
+  geom_point(data=subset(plt,  is_1P), pch=19, alpha=0.35,cex=0.04) +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) 
+
+
+ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=CHR_hg38 == "chr19")) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho") +
+  geom_point(data=subset(plt, !CHR_hg38 == "chr19"), pch=19, alpha=0.15,cex=0.02) +
+  geom_point(data=subset(plt,  CHR_hg38 == "chr19"), pch=19, alpha=0.35,cex=0.04) +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) 
+
+
+ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=CHR_hg38)) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)),  cor.coef.name ="rho") +
+  geom_point(data=subset(plt, !CHR_hg38 == "chr2"), pch=19, alpha=0.15,cex=0.02) +
+  geom_point(data=subset(plt,  CHR_hg38 == "chr2"), pch=19, alpha=0.35,cex=0.04) +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) 
+
+
+ggplot(plt, aes(x=`t.od`,y=`t.ac`, col=cdkn2ablocus)) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)),  cor.coef.name ="rho") +
+  geom_point(data=subset(plt, !cdkn2ablocus), pch=19, alpha=0.15,cex=0.02) +
+  geom_point(data=subset(plt,  cdkn2ablocus), pch=19, cex=0.4) +
+  theme_nature +
+  theme(legend.key.size = unit(0.6, 'lines')) 
+
+
 
 
 
@@ -5124,6 +5258,10 @@ saveRDS(stats.ad, file="cache/analysis_differential__ad_co__stats.Rds")
 
 
 rm(fit.ad, stats.ad)
+
+
+
+
 
 
 
@@ -5401,4 +5539,16 @@ summary(lm(dat1 ~ grade + tmz, data=d))$coefficients
 
 
 
+a <- metadata.glass_nl.who_lg_who_hg.quality.pp.nc |> dplyr::select(array_sentrix_id, patient, PC1, gr.status) |> 
+  tibble::column_to_rownames('array_sentrix_id') |> 
+  dplyr::rename_with(~ paste0(.x, ".a")) |> 
+  tibble::rownames_to_column('array_sentrix_id')
+b <- metadata.ac |> dplyr::select(array_sentrix_id, patient, PC1, LG_HG_status) |> 
+  tibble::column_to_rownames('array_sentrix_id') |> 
+  dplyr::rename_with(~ paste0(.x, ".b")) |> 
+  tibble::rownames_to_column('array_sentrix_id')
 
+dim(a)
+dim(b)
+
+c <- dplyr::left_join(a, b, by=c('array_sentrix_id'='array_sentrix_id'))

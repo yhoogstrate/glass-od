@@ -8,6 +8,7 @@ library(ggplot2)
 library(minfi)
 
 library(IlluminaHumanMethylationEPICmanifest)
+data('IlluminaHumanMethylationEPICmanifest')
 library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19) # BiocManager::install("IlluminaHumanMethylationEPICanno.ilm10b4.hg19")
 
 
@@ -94,9 +95,15 @@ all_targets <- rbind(
   dplyr::mutate(cache_mvalues =       paste0("cache/mvalues/",array_sentrix_id,".Rds")) |> 
   assertr::verify(file.exists(cache_mvalues)) |>  # essential - in qc step - also for integration later
   dplyr::mutate(cache_mask =         paste0("cache/masks_hq/",array_sentrix_id,".Rds")) |> 
+  
   dplyr::mutate(cache_intensities =    paste0("cache/intensities_hq/",array_sentrix_id,".Rds")) |> 
   dplyr::mutate(cache_intensities_m =  paste0("cache/intensities_m_hq/",array_sentrix_id,".Rds")) |> 
   dplyr::mutate(cache_intensities_um = paste0("cache/intensities_um_hq/",array_sentrix_id,".Rds")) |> 
+
+  dplyr::mutate(cache_intensities_raw =    paste0("cache/intensities_raw_hq/",array_sentrix_id,".Rds")) |> 
+  dplyr::mutate(cache_intensities_raw_m =  paste0("cache/intensities_raw_m_hq/",array_sentrix_id,".Rds")) |> 
+  dplyr::mutate(cache_intensities_raw_um = paste0("cache/intensities_raw_um_hq/",array_sentrix_id,".Rds")) |> 
+  
   dplyr::mutate(cache_betavalues =         paste0("cache/betavalues_hq/",array_sentrix_id,".Rds")) |> 
   dplyr::mutate(cached = file.exists(cache_mask) &
                   file.exists(cache_intensities) & file.exists(cache_intensities_m) & file.exists(cache_intensities_um) & 
@@ -168,15 +175,19 @@ for(target_id in targets$array_sentrix_id) { # yep loop, minor overhead but safe
   # normalise
   
   proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = T, verbose = TRUE, dyeMethod="single")  #dyeMethod="reference"
+  proc_intensities_raw <- minfi::preprocessRaw(RGSet)
+  
+  
+  #minfi::getMeth(proc)[1:5,1:2]
+  #minfi::getMeth(proc_intensities_raw)[1:5,1:2]
   
   
   # intensities
-  
-  
-  intensities <- log2(minfi::getMeth(proc) + minfi::getUnmeth(proc)) |> 
+  intensities <- (minfi::getMeth(proc) + minfi::getUnmeth(proc)) |> 
+    log2() |> 
     data.table::as.data.table(keep.rownames = "probe_id") |> 
     dplyr::rename_with(~ gsub("^GSM[0-9]+_([^_]+_[^_]+)$","\\1",.x)) |> # I Guess GEO hard re-codes internal identifiers
-    dplyr::select(probe_id, target_id) |> 
+    dplyr::select(tidyselect::all_of(c("probe_id", target_id))) |> 
     (function(.) {
       print(dim(.))
       assertthat::assert_that(nrow(.) == CONST_N_PROBES)
@@ -206,12 +217,50 @@ for(target_id in targets$array_sentrix_id) { # yep loop, minor overhead but safe
   rm(intensities)
   
   
-  # intensities M
   
-  intensities_m <- log2(minfi::getMeth(proc)) |> 
+  # intensities raw
+  intensities_raw <- (minfi::getMeth(proc_intensities_raw) + minfi::getUnmeth(proc_intensities_raw)) |> 
+    log2() |> 
     data.table::as.data.table(keep.rownames = "probe_id") |> 
     dplyr::rename_with(~ gsub("^GSM[0-9]+_([^_]+_[^_]+)$","\\1",.x)) |> # I Guess GEO hard re-codes internal identifiers
-    dplyr::select(probe_id, target_id) |> 
+    dplyr::select(tidyselect::all_of(c("probe_id", target_id))) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES)
+      assertthat::assert_that(ncol(.) == 2)
+      return(.)
+    })() |> 
+    dplyr::filter(probe_id %in% (
+      metadata.cg_probes.epic |> 
+        dplyr::filter(MASK_general == F) |> 
+        dplyr::pull(probe_id)
+    )) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+      return(.)
+    })()
+  
+  
+  stopifnot(sum(is.na(intensities_raw)) == 0)
+  stopifnot(colnames(intensities_raw) == c("probe_id", target_id))
+  
+  saveRDS(
+    intensities_raw  |> tibble::tibble(),
+    file = target |> dplyr::filter(array_sentrix_id == target_id) |> dplyr::pull(cache_intensities_raw)
+  )
+  
+  rm(intensities_raw)
+  
+  
+  
+  
+  # intensities M
+  intensities_m <- minfi::getMeth(proc) |> 
+    log2() |> 
+    data.table::as.data.table(keep.rownames = "probe_id") |> 
+    dplyr::rename_with(~ gsub("^GSM[0-9]+_([^_]+_[^_]+)$","\\1",.x)) |> # I Guess GEO hard re-codes internal identifiers
+    dplyr::select(tidyselect::all_of(c("probe_id", target_id))) |> 
     (function(.) {
       print(dim(.))
       assertthat::assert_that(nrow(.) == CONST_N_PROBES)
@@ -241,12 +290,50 @@ for(target_id in targets$array_sentrix_id) { # yep loop, minor overhead but safe
   rm(intensities_m)
   
   
-  # intensities UM
   
-  intensities_um <- log2(minfi::getUnmeth(proc)) |> 
+  # intensities raw M
+  intensities_raw_m <- minfi::getMeth(proc_intensities_raw) |> 
+    log2() |> 
     data.table::as.data.table(keep.rownames = "probe_id") |> 
     dplyr::rename_with(~ gsub("^GSM[0-9]+_([^_]+_[^_]+)$","\\1",.x)) |> # I Guess GEO hard re-codes internal identifiers
-    dplyr::select(probe_id, target_id) |> 
+    dplyr::select(tidyselect::all_of(c("probe_id", target_id))) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES)
+      assertthat::assert_that(ncol(.) == 2)
+      return(.)
+    })() |> 
+    dplyr::filter(probe_id %in% (
+      metadata.cg_probes.epic |> 
+        dplyr::filter(MASK_general == F) |> 
+        dplyr::pull(probe_id)
+    )) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+      return(.)
+    })()
+
+  
+  stopifnot(sum(is.na(intensities_raw_m)) == 0)
+  stopifnot(colnames(intensities_raw_m) == c("probe_id", target_id))
+  
+  saveRDS(
+    intensities_raw_m  |> tibble::tibble(),
+    file = target |> dplyr::filter(array_sentrix_id == target_id) |> dplyr::pull(cache_intensities_raw_m)
+  )
+  
+  rm(intensities_raw_m)
+  
+  
+  
+  
+  # intensities UM
+  intensities_um <- minfi::getUnmeth(proc) |> 
+    log2() |> 
+    data.table::as.data.table(keep.rownames = "probe_id") |> 
+    dplyr::rename_with(~ gsub("^GSM[0-9]+_([^_]+_[^_]+)$","\\1",.x)) |> # I Guess GEO hard re-codes internal identifiers
+    dplyr::select(tidyselect::all_of(c("probe_id", target_id))) |> 
     (function(.) {
       print(dim(.))
       assertthat::assert_that(nrow(.) == CONST_N_PROBES)
@@ -274,7 +361,43 @@ for(target_id in targets$array_sentrix_id) { # yep loop, minor overhead but safe
   )
   
   rm(intensities_um)
-
+  
+  
+  
+  # intensities UM
+  intensities_raw_um <- minfi::getUnmeth(proc_intensities_raw) |> 
+    log2() |> 
+    data.table::as.data.table(keep.rownames = "probe_id") |> 
+    dplyr::rename_with(~ gsub("^GSM[0-9]+_([^_]+_[^_]+)$","\\1",.x)) |> # I Guess GEO hard re-codes internal identifiers
+    dplyr::select(tidyselect::all_of(c("probe_id", target_id))) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES)
+      assertthat::assert_that(ncol(.) == 2)
+      return(.)
+    })() |> 
+    dplyr::filter(probe_id %in% (
+      metadata.cg_probes.epic |> 
+        dplyr::filter(MASK_general == F) |> 
+        dplyr::pull(probe_id)
+    )) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+      return(.)
+    })()
+  
+  
+  stopifnot(sum(is.na(intensities_raw_um)) == 0)
+  stopifnot(colnames(intensities_raw_um) == c("probe_id", target_id))
+  
+  saveRDS(
+    intensities_raw_um  |> tibble::tibble(),
+    file = target |> dplyr::filter(array_sentrix_id == target_id) |> dplyr::pull(cache_intensities_raw_um)
+  )
+  
+  rm(intensities_raw_um)
+  
   
   # M-value
   # already generated for QC
@@ -356,6 +479,8 @@ for(target_id in targets$array_sentrix_id) { # yep loop, minor overhead but safe
   
   
   rm(beta.value)
+  
+  rm(proc, proc_intensities_raw)
 }
 
 
@@ -406,6 +531,29 @@ rm(exp)
 
 
 
+## intensities raw ----
+
+
+# check if large enough
+#dim(readRDS("cache/intensities_hq/intensities_hq.Rds"))
+
+
+exp <- all_targets |>
+  dplyr::mutate(intensities_cached = file.exists(cache_intensities_raw)) |> 
+  assertr::verify(intensities_cached) |> 
+  dplyr::pull(cache_intensities_raw) |> 
+  pbapply::pblapply(readRDS) |> 
+  purrr::reduce(function(x, y) dplyr::left_join(x, y, by = 'probe_id')) |> 
+  tibble::column_to_rownames('probe_id')
+
+
+saveRDS(exp, "cache/intensities_raw_hq/intensities_raw_hq.Rds")
+
+
+rm(exp)
+
+
+
 ## intensities_m ----
 
 
@@ -423,6 +571,27 @@ exp <- all_targets |>
 
 
 saveRDS(exp, "cache/intensities_m_hq/intensities_m_hq.Rds")
+
+
+rm(exp)
+
+## intensities_raw_m ----
+
+
+# check if large enough
+#dim(readRDS("cache/intensities_m_hq/intensities_m_hq.Rds"))
+
+
+exp <- all_targets |>
+  dplyr::mutate(intensities_m_cached = file.exists(cache_intensities_raw_m)) |> 
+  assertr::verify(intensities_m_cached) |> 
+  dplyr::pull(cache_intensities_raw_m) |> 
+  pbapply::pblapply(readRDS) |> 
+  purrr::reduce(function(x, y) dplyr::left_join(x, y, by = 'probe_id')) |> 
+  tibble::column_to_rownames('probe_id')
+
+
+saveRDS(exp, "cache/intensities_raw_m_hq/intensities_raw_m_hq.Rds")
 
 
 rm(exp)
@@ -450,6 +619,31 @@ saveRDS(exp, "cache/intensities_um_hq/intensities_um_hq.Rds")
 
 
 rm(exp)
+
+
+
+# b = readRDS("cache/intensities_um_hq/201496850071_R02C01.Rds") |> 
+#   head(n=10) |> 
+#   tibble::column_to_rownames('probe_id')
+
+
+## intensities_raw_um ----
+
+
+exp <- all_targets |>
+  dplyr::mutate(intensities_um_cached = file.exists(cache_intensities_raw_um)) |> 
+  assertr::verify(intensities_um_cached) |> 
+  dplyr::pull(cache_intensities_raw_um) |> 
+  pbapply::pblapply(readRDS) |> 
+  purrr::reduce(function(x, y) dplyr::left_join(x, y, by = 'probe_id')) |> 
+  tibble::column_to_rownames('probe_id')
+
+
+saveRDS(exp, "cache/intensities_raw_um_hq/intensities_raw_um_hq.Rds")
+
+
+rm(exp)
+
 
 
 

@@ -59,16 +59,14 @@ metadata.glass_nl <- glass_nl.metadata.array_samples |>
 
 
 
-## total ----
-### load ----
+## methylation ----
 
-
-if(!exists('data.intensities.combined.hq_samples')) {
+if(!exists('data.intensities.combined.hq_samples') | !exists('data.intensities.methylated.hq_samples')  |!exists('data.intensities.methylated.hq_samples')) {
   source('scripts/load_intensities_hq_samples.R')
 }
 
 
-### GLASS-OD ----
+### total GLASS-OD ----
 
 
 median.combined.intensity.primary.glass_od <- data.intensities.combined.hq_samples |> 
@@ -78,7 +76,7 @@ median.combined.intensity.primary.glass_od <- data.intensities.combined.hq_sampl
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.combined.intensity.primary = 1) |> 
+  dplyr::rename(median.combined.intensity.primary.glass_od = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -89,11 +87,11 @@ median.combined.intensity.recurrent.glass_od <- data.intensities.combined.hq_sam
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.combined.intensity.recurrent = 1) |> 
+  dplyr::rename(median.combined.intensity.recurrent.glass_od = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
-### GLASS-NL ----
+### total GLASS-NL ----
 
 
 median.combined.intensity.primary.glass_nl <- data.intensities.combined.hq_samples |> 
@@ -103,7 +101,7 @@ median.combined.intensity.primary.glass_nl <- data.intensities.combined.hq_sampl
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.combined.intensity.primary = 1) |> 
+  dplyr::rename(median.combined.intensity.primary.glass_nl = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -114,31 +112,12 @@ median.combined.intensity.recurrent.glass_nl <- data.intensities.combined.hq_sam
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.combined.intensity.recurrent = 1) |> 
+  dplyr::rename(median.combined.intensity.recurrent.glass_nl = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
-### clean-up ----
 
-
-
-rm(data.intensities.combined.hq_samples)
-gc()
-
-
-
-
-## methylated ----
-
-### load ----
-
-
-if(!exists('data.intensities.methylated.hq_samples')) {
-  source('scripts/load_intensities_hq_samples.R')
-}
-
-
-### GLASS-OD ----
+### methy GLASS-OD ----
 
 
 median.methylated.intensity.primary.glass_od <- data.intensities.methylated.hq_samples |> 
@@ -148,7 +127,7 @@ median.methylated.intensity.primary.glass_od <- data.intensities.methylated.hq_s
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.methylated.intensity.primary = 1) |> 
+  dplyr::rename(median.methylated.intensity.primary.glass_od = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -159,11 +138,12 @@ median.methylated.intensity.recurrent.glass_od <- data.intensities.methylated.hq
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.methylated.intensity.recurrent = 1) |> 
+  dplyr::rename(median.methylated.intensity.recurrent.glass_od = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
-### GLASS-NL ----
+
+### methy GLASS-NL ----
 
 
 median.methylated.intensity.primary.glass_nl <- data.intensities.methylated.hq_samples |> 
@@ -173,7 +153,7 @@ median.methylated.intensity.primary.glass_nl <- data.intensities.methylated.hq_s
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.methylated.intensity.primary = 1) |> 
+  dplyr::rename(median.methylated.intensity.primary.glass_nl = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -184,25 +164,12 @@ median.methylated.intensity.recurrent.glass_nl <- data.intensities.methylated.hq
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.methylated.intensity.recurrent = 1) |> 
+  dplyr::rename(median.methylated.intensity.recurrent.glass_nl = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
 
-### clean-up ----
-
-
-
-rm(data.intensities.methylated.hq_samples)
-gc()
-
-
-
-## unmethylated ----
-
-
-
-### GLASS-OD ----
+### unmethy GLASS-OD ----
 
 
 median.unmethylated.intensity.primary.glass_od <- data.intensities.unmethylated.hq_samples |> 
@@ -212,7 +179,7 @@ median.unmethylated.intensity.primary.glass_od <- data.intensities.unmethylated.
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.unmethylated.intensity.primary = 1) |> 
+  dplyr::rename(median.unmethylated.intensity.primary.glass_od = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -223,13 +190,12 @@ median.unmethylated.intensity.recurrent.glass_od <- data.intensities.unmethylate
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.unmethylated.intensity.recurrent = 1) |> 
+  dplyr::rename(median.unmethylated.intensity.recurrent.glass_od = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
 
-
-### GLASS-NL ----
+### unmethy GLASS-NL ----
 
 
 median.unmethylated.intensity.primary.glass_nl <- data.intensities.unmethylated.hq_samples |> 
@@ -239,7 +205,7 @@ median.unmethylated.intensity.primary.glass_nl <- data.intensities.unmethylated.
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.unmethylated.intensity.primary = 1) |> 
+  dplyr::rename(median.unmethylated.intensity.primary.glass_nl = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -250,7 +216,7 @@ median.unmethylated.intensity.recurrent.glass_nl <- data.intensities.unmethylate
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.unmethylated.intensity.recurrent = 1) |> 
+  dplyr::rename(median.unmethylated.intensity.recurrent.glass_nl = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -258,6 +224,8 @@ median.unmethylated.intensity.recurrent.glass_nl <- data.intensities.unmethylate
 ### clean-up ----
 
 
+rm(data.intensities.methylated.hq_samples)
+rm(data.intensities.combined.hq_samples)
 rm(data.intensities.unmethylated.hq_samples)
 gc()
 
@@ -277,6 +245,7 @@ if(!exists('data.intensities.unmethylated.hq_samples')) {
 ### GLASS-OD ----
 
 
+
 median.mvalue.primary.glass_od <- data.mvalues.hq_samples |> 
   dplyr::select(
     metadata.glass_od |> dplyr::filter(pr.status == "primary") |>  dplyr::pull(array_sentrix_id)
@@ -284,7 +253,7 @@ median.mvalue.primary.glass_od <- data.mvalues.hq_samples |>
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.mvalue.primary = 1) |> 
+  dplyr::rename(median.mvalue.primary.glass_od = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -295,7 +264,7 @@ median.mvalue.recurrent.glass_od <- data.mvalues.hq_samples |>
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.mvalue.recurrent = 1) |> 
+  dplyr::rename(median.mvalue.recurrent.glass_od = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -312,7 +281,7 @@ median.mvalue.primary.glass_nl <- data.mvalues.hq_samples |>
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.mvalue.primary = 1) |> 
+  dplyr::rename(median.mvalue.primary.glass_nl = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -323,7 +292,7 @@ median.mvalue.recurrent.glass_nl <- data.mvalues.hq_samples |>
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.mvalue.recurrent = 1) |> 
+  dplyr::rename(median.mvalue.recurrent.glass_nl = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -341,9 +310,11 @@ gc()
 
 ### load ----
 
+
 if(!exists('data.beta.values.hq_samples')) {
   source('scripts/load_beta.values_hq_samples.R')
 }
+
 
 
 ### GLASS-OD ----
@@ -356,7 +327,7 @@ median.beta.primary.glass_od <- data.beta.values.hq_samples |>
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.beta.primary = 1) |> 
+  dplyr::rename(median.beta.primary.glass_od = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -367,7 +338,7 @@ median.beta.recurrent.glass_od <- data.beta.values.hq_samples |>
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.beta.recurrent = 1) |> 
+  dplyr::rename(median.beta.recurrent.glass_od = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -382,7 +353,7 @@ median.beta.primary.glass_nl <- data.beta.values.hq_samples |>
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.beta.primary = 1) |> 
+  dplyr::rename(median.beta.primary.glass_nl = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -393,7 +364,7 @@ median.beta.recurrent.glass_nl <- data.beta.values.hq_samples |>
   as.matrix() |> 
   MatrixGenerics::rowMedians(useNames = T) |> 
   data.frame() |> 
-  dplyr::rename(median.beta.recurrent = 1) |> 
+  dplyr::rename(median.beta.recurrent.glass_nl = 1) |> 
   tibble::rownames_to_column('probe_id') 
 
 
@@ -433,18 +404,34 @@ gc()
 # export ----
 
 
-tmp <- median.beta.primary |> 
-  dplyr::left_join(median.beta.recurrent, by=c('probe_id'='probe_id')) |> 
-  dplyr::left_join(median.mvalue.primary, by=c('probe_id'='probe_id')) |> 
-  dplyr::left_join(median.mvalue.recurrent, by=c('probe_id'='probe_id')) |> 
-  dplyr::left_join(median.combined.intensity.primary, by=c('probe_id'='probe_id')) |> 
-  dplyr::left_join(median.combined.intensity.recurrent, by=c('probe_id'='probe_id')) |> 
-  dplyr::left_join(median.methylated.intensity.primary, by=c('probe_id'='probe_id')) |> 
-  dplyr::left_join(median.methylated.intensity.recurrent, by=c('probe_id'='probe_id')) |> 
-  dplyr::left_join(median.unmethylated.intensity.primary, by=c('probe_id'='probe_id')) |> 
-  dplyr::left_join(median.unmethylated.intensity.recurrent, by=c('probe_id'='probe_id')) |> 
+tmp <- (median.beta.primary.glass_nl |> dplyr::select(probe_id)) |> 
   
-  dplyr::left_join(median.combined.intensity.primary.AC, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.beta.primary.glass_nl, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.beta.primary.glass_od, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.beta.recurrent.glass_nl, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.beta.recurrent.glass_od, by=c('probe_id'='probe_id')) |> 
+  
+  dplyr::left_join(median.combined.intensity.primary.glass_nl, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.combined.intensity.primary.glass_od, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.combined.intensity.recurrent.glass_nl, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.combined.intensity.recurrent.glass_od, by=c('probe_id'='probe_id')) |> 
+  
+  dplyr::left_join(median.methylated.intensity.primary.glass_nl, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.methylated.intensity.primary.glass_od, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.methylated.intensity.recurrent.glass_nl, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.methylated.intensity.recurrent.glass_od, by=c('probe_id'='probe_id')) |> 
+  
+  dplyr::left_join(median.mvalue.primary.glass_nl, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.mvalue.primary.glass_od, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.mvalue.recurrent.glass_nl, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.mvalue.recurrent.glass_od, by=c('probe_id'='probe_id')) |> 
+  
+  dplyr::left_join(median.unmethylated.intensity.primary.glass_nl, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.unmethylated.intensity.primary.glass_od, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.unmethylated.intensity.recurrent.glass_nl, by=c('probe_id'='probe_id')) |> 
+  dplyr::left_join(median.unmethylated.intensity.recurrent.glass_od, by=c('probe_id'='probe_id')) 
+
+
 
 
 head(tmp)
@@ -453,37 +440,40 @@ head(tmp)
 
 
 
-rm(median.beta.primary)
-rm(median.beta.recurrent)
-rm(median.mvalue.primary)
-rm(median.mvalue.recurrent)
-rm(median.combined.intensity.primary)
-rm(median.combined.intensity.recurrent)
-rm(median.methylated.intensity.primary)
-rm(median.methylated.intensity.recurrent)
-rm(median.unmethylated.intensity.primary)
-rm(median.unmethylated.intensity.recurrent)
-
-
 saveRDS(tmp, file="cache/analysis_probe_median_statistics.Rds")
 
 
-rm(data.intensities.combined.hq_samples)
-rm(data.intensities.methylated.hq_samples)
-rm(data.intensities.unmethylated.hq_samples)
-rm(data.beta.values.hq_samples)
+
+rm(median.beta.primary.glass_nl)
+rm(median.beta.primary.glass_od)
+rm(median.beta.recurrent.glass_nl)
+rm(median.beta.recurrent.glass_od)
+
+rm(median.combined.intensity.primary.glass_nl)
+rm(median.combined.intensity.primary.glass_od)
+rm(median.combined.intensity.recurrent.glass_nl)
+rm(median.combined.intensity.recurrent.glass_od)
+
+rm(median.methylated.intensity.primary.glass_nl)
+rm(median.methylated.intensity.primary.glass_od)
+rm(median.methylated.intensity.recurrent.glass_nl)
+rm(median.methylated.intensity.recurrent.glass_od)
+
+rm(median.mvalue.primary.glass_nl)
+rm(median.mvalue.primary.glass_od)
+rm(median.mvalue.recurrent.glass_nl)
+rm(median.mvalue.recurrent.glass_od)
+
+rm(median.unmethylated.intensity.primary.glass_nl)
+rm(median.unmethylated.intensity.primary.glass_od)
+rm(median.unmethylated.intensity.recurrent.glass_nl)
+rm(median.unmethylated.intensity.recurrent.glass_od)
+
 
 
 gc()
 
 
-# 
-# tmp <- readRDS("cache/analysis_probe_median_statistics.Rds") |> 
-#   dplyr::left_join(median.combined.intensity.primary.AC, by=c('probe_id'='probe_id')) |> 
-#   assertr::verify(!is.na(median.combined.intensity.primary.AC))
-# 
-# saveRDS(tmp, file="cache/analysis_probe_median_statistics.Rds")
-# 
 
 
 
