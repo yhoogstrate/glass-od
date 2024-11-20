@@ -27,7 +27,7 @@ if(!exists('glass_nl.metadata.array_samples')) {
 
 
 
-# GLASS-NL ----
+# GLASS-NL: primary - recurrent  ----
 
 
 # PC1 = quality
@@ -294,16 +294,13 @@ rm(fit.glass_nl.prim_rec_qual, stats.glass_nl.prim_rec_qual)
 
 
 
+# GLASS-NL: (2) vs. (g3 & g4) ----
 
 
-## g2, g3/g4 & naive ----
-
-
-
-metadata.glass_nl.who_lg_who_hg.naive.pp.nc <- glass_nl.metadata.array_samples |> 
+metadata.glass_nl.g2_vs_g3_4.pp.nc <- glass_nl.metadata.array_samples |> 
   dplyr::mutate(patiend_id = paste0("p", patient_id)) |>  # avoid numbers because regression models may go nuts
   filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(133) |> 
+  filter_first_G2_and_last_G3_G4(135) |> 
   dplyr::filter(!is.na(WHO_Classification2021)) |> # 
   
   dplyr::group_by(patient_id) |> 
@@ -317,18 +314,17 @@ metadata.glass_nl.who_lg_who_hg.naive.pp.nc <- glass_nl.metadata.array_samples |
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 133) 
+    assertthat::assert_that(nrow(.) == 135) 
     return(.)
   })()
 
 
-
-data.glass_nl.who_lg_who_hg.naive.pp.nc <- data.mvalues.hq_samples |> 
+data.glass_nl.g2_vs_g3_4.pp.nc <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
   
-  dplyr::select(metadata.glass_nl.who_lg_who_hg.naive.pp.nc$array_sentrix_id) |> 
+  dplyr::select(metadata.glass_nl.g2_vs_g3_4.pp.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
@@ -337,83 +333,45 @@ data.glass_nl.who_lg_who_hg.naive.pp.nc <- data.mvalues.hq_samples |>
 
 
 
-design.glass_nl.who_lg_who_hg.naive.pp.nc <- model.matrix(~factor(patient) + factor(gr.status), data=metadata.glass_nl.who_lg_who_hg.naive.pp.nc)
-fit.glass_nl.who_lg_who_hg.naive.pp.nc <- limma::lmFit(data.glass_nl.who_lg_who_hg.naive.pp.nc, design.glass_nl.who_lg_who_hg.naive.pp.nc)
-fit.glass_nl.who_lg_who_hg.naive.pp.nc <- limma::eBayes(fit.glass_nl.who_lg_who_hg.naive.pp.nc, trend=T)
-stats.glass_nl.who_lg_who_hg.naive.pp.nc <- limma::topTable(fit.glass_nl.who_lg_who_hg.naive.pp.nc,
-                                                            n=nrow(data.glass_nl.who_lg_who_hg.naive.pp.nc),
+## naive ----
+
+
+
+design.glass_nl.g2_vs_g3_4.naive.pp.nc <- model.matrix(~factor(patient) + factor(gr.status), data=metadata.glass_nl.g2_vs_g3_4.pp.nc)
+fit.glass_nl.g2_vs_g3_4.naive.pp.nc <- limma::lmFit(data.glass_nl.g2_vs_g3_4.pp.nc, design.glass_nl.g2_vs_g3_4.naive.pp.nc)
+fit.glass_nl.g2_vs_g3_4.naive.pp.nc <- limma::eBayes(fit.glass_nl.g2_vs_g3_4.naive.pp.nc, trend=T)
+stats.glass_nl.g2_vs_g3_4.naive.pp.nc <- limma::topTable(fit.glass_nl.g2_vs_g3_4.naive.pp.nc,
+                                                            n=nrow(data.glass_nl.g2_vs_g3_4.pp.nc),
                                                             coef="factor(gr.status)Grade3,4",
                                                             sort.by = "none",
                                                             adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id') 
 
-sum(stats.glass_nl.who_lg_who_hg.naive.pp.nc$P.Value < 0.01)
-sum(stats.glass_nl.who_lg_who_hg.naive.pp.nc$adj.P.Val < 0.01)
+sum(stats.glass_nl.g2_vs_g3_4.naive.pp.nc$P.Value < 0.01)
+sum(stats.glass_nl.g2_vs_g3_4.naive.pp.nc$adj.P.Val < 0.01)
 
 
-rm(design.glass_nl.who_lg_who_hg.naive.pp.nc)
+rm(design.glass_nl.g2_vs_g3_4.naive.pp.nc)
 
 
-saveRDS(stats.glass_nl.who_lg_who_hg.naive.pp.nc, file="cache/analysis_differential__GLASS-NL__g2_g3_4__partial_paired_nc__stats.Rds")
+saveRDS(stats.glass_nl.g2_vs_g3_4.naive.pp.nc, file="cache/analysis_differential__GLASS-NL__g2_g3_4__partial_paired_nc__stats.Rds")
 
 
-rm(fit.glass_nl.who_lg_who_hg.naive.pp.nc, stats.glass_nl.who_lg_who_hg.naive.pp.nc)
-
-
-
-
-
-## g2, g3/g4 & quality (intr. PC1) ----
-
-
-
-metadata.glass_nl.who_lg_who_hg.quality.pp.nc <- glass_nl.metadata.array_samples |> 
-  dplyr::mutate(patiend_id = paste0("p", patient_id)) |>  # avoid numbers because regression models may go nuts
-  filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(133) |> 
-  dplyr::filter(!is.na(WHO_Classification2021)) |> # 
-  
-  dplyr::group_by(patient_id) |> 
-  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
-  dplyr::ungroup() |> 
-  
-  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
-  dplyr::mutate(resection_tumor_grade = as.numeric(gsub("^.+(.)$", "\\1", WHO_Classification2021))) |> 
-  assertr::verify(resection_tumor_grade %in% c(2,3,4)) |> 
-  dplyr::mutate(gr.status = as.factor(ifelse(resection_tumor_grade == 2, "Grade2", "Grade3,4"))) |> 
-  
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 133) 
-    return(.)
-  })() |> 
-  
-  dplyr::left_join(
-    pcd, by=c('array_sentrix_id' = 'array_sentrix_id')
-  )
+rm(fit.glass_nl.g2_vs_g3_4.naive.pp.nc, stats.glass_nl.g2_vs_g3_4.naive.pp.nc)
 
 
 
 
-data.glass_nl.who_lg_who_hg.quality.pp.nc <- data.mvalues.hq_samples |> 
-  tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
-  tibble::column_to_rownames('probe_id') |> 
-  
-  dplyr::select(metadata.glass_nl.who_lg_who_hg.quality.pp.nc$array_sentrix_id) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
-    return(.)
-  })()
+
+## quality (intr. PC1) ----
 
 
 
-design.glass_nl.who_lg_who_hg.quality.pp.nc <- model.matrix(~PC1 + factor(patient) + factor(gr.status), data=metadata.glass_nl.who_lg_who_hg.quality.pp.nc)
-fit.glass_nl.who_lg_who_hg.quality.pp.nc <- limma::lmFit(data.glass_nl.who_lg_who_hg.quality.pp.nc, design.glass_nl.who_lg_who_hg.quality.pp.nc)
-fit.glass_nl.who_lg_who_hg.quality.pp.nc <- limma::eBayes(fit.glass_nl.who_lg_who_hg.quality.pp.nc, trend=T)
-stats.glass_nl.who_lg_who_hg.quality.pp.nc <- limma::topTable(fit.glass_nl.who_lg_who_hg.quality.pp.nc,
-                                                              n=nrow(data.glass_nl.who_lg_who_hg.quality.pp.nc),
+design.glass_nl.g2_vs_g3_4.quality.pp.nc <- model.matrix(~PC1 + factor(patient) + factor(gr.status), data=metadata.glass_nl.g2_vs_g3_4.pp.nc)
+fit.glass_nl.g2_vs_g3_4.quality.pp.nc <- limma::lmFit(data.glass_nl.g2_vs_g3_4.pp.nc, design.glass_nl.who_lg_who_hg.quality.pp.nc)
+fit.glass_nl.g2_vs_g3_4quality.pp.nc <- limma::eBayes(fit.glass_nl.g2_vs_g3_4.quality.pp.nc, trend=T)
+stats.glass_nl.g2_vs_g3_4.quality.pp.nc <- limma::topTable(fit.glass_nl.g2_vs_g3_4.quality.pp.nc,
+                                                              n=nrow(data.glass_nl.g2_vs_g3_4.pp.nc),
                                                               coef="factor(gr.status)Grade3,4",
                                                               sort.by = "none",
                                                               adjust.method="fdr") |> 
@@ -433,18 +391,16 @@ rm(fit.glass_nl.who_lg_who_hg.quality.pp.nc, stats.glass_nl.who_lg_who_hg.qualit
 
 
 
-#cor(tmp$t, stats.glass_nl.who_lg_who_hg.quality.pp.nc$t)
 
 
 
+# GLASS-NL: (g2 & g3) vs. (g4) ----
 
-## g2, g3/g4 & quality (intr. PC3) ----
 
-
-metadata.glass_nl.who_lg_who_hg.quality.pp.nc <- glass_nl.metadata.array_samples |> 
+metadata.glass_nl.g2_3_vs_g4.pp.nc <- glass_nl.metadata.array_samples |> 
   dplyr::mutate(patiend_id = paste0("p", patient_id)) |>  # avoid numbers because regression models may go nuts
   filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(133) |> 
+  filter_first_G2_G3_and_last_G4(133) |> 
   dplyr::filter(!is.na(WHO_Classification2021)) |> # 
   
   dplyr::group_by(patient_id) |> 
@@ -454,7 +410,7 @@ metadata.glass_nl.who_lg_who_hg.quality.pp.nc <- glass_nl.metadata.array_samples
   dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
   dplyr::mutate(resection_tumor_grade = as.numeric(gsub("^.+(.)$", "\\1", WHO_Classification2021))) |> 
   assertr::verify(resection_tumor_grade %in% c(2,3,4)) |> 
-  dplyr::mutate(gr.status = as.factor(ifelse(resection_tumor_grade == 2, "Grade2", "Grade3,4"))) |> 
+  dplyr::mutate(gr.status = factor(ifelse(resection_tumor_grade == 4, "Grade4", "Grade2,3"), levels = c("Grade2,3", "Grade4"))) |> 
   
   (function(.) {
     print(dim(.))
@@ -463,14 +419,12 @@ metadata.glass_nl.who_lg_who_hg.quality.pp.nc <- glass_nl.metadata.array_samples
   })()
 
 
-
-
-data.glass_nl.who_lg_who_hg.quality.pp.nc <- data.mvalues.hq_samples |> 
+data.glass_nl.g2_3_vs_g4.pp.nc <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
   
-  dplyr::select(metadata.glass_nl.who_lg_who_hg.quality.pp.nc$array_sentrix_id) |> 
+  dplyr::select(metadata.glass_nl.g2_3_vs_g4.pp.nc$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
@@ -478,99 +432,67 @@ data.glass_nl.who_lg_who_hg.quality.pp.nc <- data.mvalues.hq_samples |>
   })()
 
 
+## naive ----
 
-design.glass_nl.who_lg_who_hg.quality.pp.nc <- model.matrix(~array_PC3 + factor(patient) + factor(gr.status), data=metadata.glass_nl.who_lg_who_hg.quality.pp.nc)
-fit.glass_nl.who_lg_who_hg.quality.pp.nc <- limma::lmFit(data.glass_nl.who_lg_who_hg.quality.pp.nc, design.glass_nl.who_lg_who_hg.quality.pp.nc)
-fit.glass_nl.who_lg_who_hg.quality.pp.nc <- limma::eBayes(fit.glass_nl.who_lg_who_hg.quality.pp.nc, trend=T)
-stats.glass_nl.who_lg_who_hg.quality.pp.nc <- limma::topTable(fit.glass_nl.who_lg_who_hg.quality.pp.nc,
-                                                              n=nrow(data.glass_nl.who_lg_who_hg.quality.pp.nc),
-                                                              coef="factor(gr.status)Grade3,4",
-                                                              sort.by = "none",
-                                                              adjust.method="fdr") |> 
+
+design.glass_nl.g2_3_vs_g4.naive.pp.nc <- model.matrix(~factor(patient) + factor(gr.status), data=metadata.glass_nl.g2_3_vs_g4.pp.nc)
+fit.glass_nl.g2_3_vs_g4.naive.pp.nc <- limma::lmFit(data.glass_nl.g2_3_vs_g4.pp.nc, design.glass_nl.g2_3_vs_g4.naive.pp.nc)
+fit.glass_nl.g2_3_vs_g4.naive.pp.nc <- limma::eBayes(fit.glass_nl.g2_3_vs_g4.naive.pp.nc, trend=T)
+stats.glass_nl.g2_3_vs_g4.naive.pp.nc <- limma::topTable(fit.glass_nl.g2_3_vs_g4.naive.pp.nc,
+                                                         n=nrow(data.glass_nl.g2_3_vs_g4.pp.nc),
+                                                         coef="factor(gr.status)Grade4",
+                                                         sort.by = "none",
+                                                         adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id') 
 
-sum(stats.glass_nl.who_lg_who_hg.quality.pp.nc$P.Value < 0.01)
-sum(stats.glass_nl.who_lg_who_hg.quality.pp.nc$adj.P.Val < 0.01)
+
+sum(stats.glass_nl.g2_3_vs_g4.naive.pp.nc$P.Value < 0.01)
+sum(stats.glass_nl.g2_3_vs_g4.naive.pp.nc$adj.P.Val < 0.01)
 
 
-rm(design.glass_nl.who_lg_who_hg.quality.pp.nc)
+rm(design.glass_nl.g2_3_vs_g4.naive.pp.nc)
 
 
-saveRDS(stats.glass_nl.who_lg_who_hg.quality.pp.nc, file="cache/analysis_differential__GLASS-NL__g2_g3_4__PC3__partial_paired_nc__stats.Rds")
+saveRDS(stats.glass_nl.g2_3_vs_g4.naive.pp.nc, file="cache/analysis_differential__GLASS-NL__g2_3_g4__partial_paired_nc__stats.Rds")
 
 
-rm(fit.glass_nl.who_lg_who_hg.quality.pp.nc, stats.glass_nl.who_lg_who_hg.quality.pp.nc)
-
-
-
-
+rm(fit.glass_nl.g2_3_vs_g4.naive.pp.nc, stats.glass_nl.g2_3_vs_g4.naive.pp.nc)
 
 
 
 
-## g2, g3/g4 & quality (intr. PC1 + PC3) ----
+## quality (intr. PC1) ----
 
 
-
-metadata.glass_nl.who_lg_who_hg.quality.pp.nc <- glass_nl.metadata.array_samples |> 
-  dplyr::mutate(patiend_id = paste0("p", patient_id)) |>  # avoid numbers because regression models may go nuts
-  filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(133) |> 
-  dplyr::filter(!is.na(WHO_Classification2021)) |> # 
-  
-  dplyr::group_by(patient_id) |> 
-  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
-  dplyr::ungroup() |> 
-  
-  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
-  dplyr::mutate(resection_tumor_grade = as.numeric(gsub("^.+(.)$", "\\1", WHO_Classification2021))) |> 
-  assertr::verify(resection_tumor_grade %in% c(2,3,4)) |> 
-  dplyr::mutate(gr.status = as.factor(ifelse(resection_tumor_grade == 2, "Grade2", "Grade3,4"))) |> 
-  
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == 133) 
-    return(.)
-  })()
-
-
-
-
-data.glass_nl.who_lg_who_hg.quality.pp.nc <- data.mvalues.hq_samples |> 
-  tibble::rownames_to_column('probe_id') |> 
-  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
-  tibble::column_to_rownames('probe_id') |> 
-  
-  dplyr::select(metadata.glass_nl.who_lg_who_hg.quality.pp.nc$array_sentrix_id) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
-    return(.)
-  })()
-
-
-
-design.glass_nl.who_lg_who_hg.quality.pp.nc <- model.matrix(~array_PC1 + array_PC3 + factor(patient) + factor(gr.status), data=metadata.glass_nl.who_lg_who_hg.quality.pp.nc)
-fit.glass_nl.who_lg_who_hg.quality.pp.nc <- limma::lmFit(data.glass_nl.who_lg_who_hg.quality.pp.nc, design.glass_nl.who_lg_who_hg.quality.pp.nc)
-fit.glass_nl.who_lg_who_hg.quality.pp.nc <- limma::eBayes(fit.glass_nl.who_lg_who_hg.quality.pp.nc, trend=T)
-stats.glass_nl.who_lg_who_hg.quality.pp.nc <- limma::topTable(fit.glass_nl.who_lg_who_hg.quality.pp.nc,
-                                                              n=nrow(data.glass_nl.who_lg_who_hg.quality.pp.nc),
-                                                              coef="factor(gr.status)Grade3,4",
-                                                              sort.by = "none",
-                                                              adjust.method="fdr") |> 
+design.glass_nl.g2_3_vs_g4.quality.pp.nc <- model.matrix(~PC1 + factor(patient) + factor(gr.status), data=metadata.glass_nl.g2_3_vs_g4.pp.nc)
+fit.glass_nl.g2_3_vs_g4.quality.pp.nc <- limma::lmFit(data.glass_nl.g2_3_vs_g4.pp.nc, design.glass_nl.g2_3_vs_g4.quality.pp.nc)
+fit.glass_nl.g2_3_vs_g4.quality.pp.nc <- limma::eBayes(fit.glass_nl.g2_3_vs_g4.quality.pp.nc, trend=T)
+stats.glass_nl.g2_3_vs_g4.quality.pp.nc <- limma::topTable(fit.glass_nl.g2_3_vs_g4.quality.pp.nc,
+                                                           n=nrow(data.glass_nl.g2_3_vs_g4.pp.nc),
+                                                           coef="factor(gr.status)Grade4",
+                                                           sort.by = "none",
+                                                           adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id') 
 
-sum(stats.glass_nl.who_lg_who_hg.quality.pp.nc$P.Value < 0.01)
-sum(stats.glass_nl.who_lg_who_hg.quality.pp.nc$adj.P.Val < 0.01)
+sum(stats.glass_nl.g2_3_vs_g4.quality.pp.nc$P.Value < 0.01)
+sum(stats.glass_nl.g2_3_vs_g4.quality.pp.nc$adj.P.Val < 0.01)
 
 
-rm(design.glass_nl.who_lg_who_hg.quality.pp.nc)
+rm(design.glass_nl.g2_3_vs_g4.quality.pp.nc)
 
 
-saveRDS(stats.glass_nl.who_lg_who_hg.quality.pp.nc, file="cache/analysis_differential__GLASS-NL__g2_g3_4__PC1_PC3__partial_paired_nc__stats.Rds")
+saveRDS(stats.glass_nl.g2_3_vs_g4.quality.pp.nc, file="cache/analysis_differential__GLASS-NL__g2_3_g4__PC1__partial_paired_nc__stats.Rds")
 
 
-rm(fit.glass_nl.who_lg_who_hg.quality.pp.nc, stats.glass_nl.who_lg_who_hg.quality.pp.nc)
+rm(fit.glass_nl.g2_3_vs_g4.quality.pp.nc, stats.glass_nl.g2_3_vs_g4.quality.pp.nc)
+
+
+
+## clean-up ----
+
+rm(metadata.glass_nl.g2_3_vs_g4.pp.nc)
+rm(data.glass_nl.g2_3_vs_g4.pp.nc)
+
 
 
 

@@ -366,25 +366,25 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
 
 
 
-## unsupervised PCA ----
-
-
-tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-NL_x.Rds") |> 
-  assertr::verify(!is.na(array_PC1)) |> 
-  assertr::verify(!is.na(array_PC2)) |> 
-  assertr::verify(!is.na(array_PC3)) |> 
-  assertr::verify(!is.na(array_PC202)) |> 
-  dplyr::filter(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_NL_INCLUDED_SAMPLES)
-    return(.)
-  })()
-
-
-glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
-  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
-
+# ## unsupervised PCA 
+# 
+# 
+# tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-NL_x.Rds") |> 
+#   assertr::verify(!is.na(array_PC1)) |> 
+#   assertr::verify(!is.na(array_PC2)) |> 
+#   assertr::verify(!is.na(array_PC3)) |> 
+#   assertr::verify(!is.na(array_PC202)) |> 
+#   dplyr::filter(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
+#   (function(.) {
+#     print(dim(.))
+#     assertthat::assert_that(nrow(.) == CONST_N_GLASS_NL_INCLUDED_SAMPLES)
+#     return(.)
+#   })()
+# 
+# 
+# glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+#   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+# 
 
 
 # tmp <- glass_nl.metadata.array_samples |> 
@@ -442,6 +442,36 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
 # glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
 #   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
 # rm(tmp)
+
+
+## lift-over PCA from GLASS-OD ----
+
+if(file.exists("cache/load_GLASS-NL_PCA_liftover_from_GLASS-OD.Rds")) {
+  tmp <- readRDS("cache/load_GLASS-NL_PCA_liftover_from_GLASS-OD.Rds")
+} else {
+  data <- data.mvalues.hq_samples |> 
+    tibble::rownames_to_column('probe_id') |> 
+    dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+    tibble::column_to_rownames('probe_id') |> 
+    dplyr::select(all_of(intersect(glass_nl.metadata.array_samples$array_sentrix_id, colnames(data.mvalues.hq_samples))))
+  
+  pc <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_prcomp.Rds")
+  tmp <- predict(pc, t(data)) |> 
+    as.data.frame() |> 
+    tibble::rownames_to_column('array_sentrix_id')
+  
+  rm(data, pc)
+  
+  saveRDS(tmp, file="cache/load_GLASS-NL_PCA_liftover_from_GLASS-OD.Rds")
+  
+  rm(tmp)
+}
+
+
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
+rm(tmp)
 
 
 
