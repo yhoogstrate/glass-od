@@ -130,6 +130,7 @@ data.example <- data.frame(
 
 
 
+
 ### test: indeed p.values and not f-test ----
 
 
@@ -369,6 +370,31 @@ limma::topTable(fit,
   tibble::rownames_to_column('gene') |>
   dplyr::mutate(pval.stars = gtools::stars.pval(P.Value))
 
+
+
+
+
+# treatments ----
+
+
+d = data.frame(
+  status=c(
+    rep("g2",25),
+    rep("g2+tmz",4),
+    rep("g3+tmz",18),
+    rep("g3",17)
+  )
+) |> 
+  dplyr::mutate(grade = gsub("^(..).+$","\\1",status)) |> 
+  dplyr::mutate(tmz = grepl("tmz", status)) |> 
+  dplyr::mutate(dat1 = runif(dplyr::n()) + (runif(dplyr::n()) * (grade == "g3") * 0.8)) |> 
+  dplyr::mutate(dat1 = runif(dplyr::n()) + (runif(dplyr::n()) * (grade == "g3") * 0.8)) |> 
+  dplyr::mutate(dat1 = runif(dplyr::n()) + (runif(dplyr::n()) * (grade == "g3") * 0.8) + (runif(dplyr::n()) * (status == "g2+tmz") * 0.4))
+
+
+summary(lm(dat1 ~ grade , data=d))$coefficients
+summary(lm(dat1 ~ tmz , data=d))$coefficients
+summary(lm(dat1 ~ grade + tmz, data=d))$coefficients
 
 
 

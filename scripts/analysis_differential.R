@@ -5145,40 +5145,4 @@ ggplot(plt, aes(x=t.c.hg_ac, y=t.c.hg_od, col=col5)) +
   theme_bw()
 
 
-# sandbox ----
 
-
-d = data.frame(
-  status=c(
-    rep("g2",25),
-    rep("g2+tmz",4),
-    rep("g3+tmz",18),
-    rep("g3",17)
-  )
-) |> 
-  dplyr::mutate(grade = gsub("^(..).+$","\\1",status)) |> 
-  dplyr::mutate(tmz = grepl("tmz", status)) |> 
-  dplyr::mutate(dat1 = runif(dplyr::n()) + (runif(dplyr::n()) * (grade == "g3") * 0.8)) |> 
-  dplyr::mutate(dat1 = runif(dplyr::n()) + (runif(dplyr::n()) * (grade == "g3") * 0.8)) |> 
-  dplyr::mutate(dat1 = runif(dplyr::n()) + (runif(dplyr::n()) * (grade == "g3") * 0.8) + (runif(dplyr::n()) * (status == "g2+tmz") * 0.4))
-
-
-summary(lm(dat1 ~ grade , data=d))$coefficients
-summary(lm(dat1 ~ tmz , data=d))$coefficients
-summary(lm(dat1 ~ grade + tmz, data=d))$coefficients
-
-
-
-a <- metadata.glass_nl.who_lg_who_hg.quality.pp.nc |> dplyr::select(array_sentrix_id, patient, PC1, gr.status) |> 
-  tibble::column_to_rownames('array_sentrix_id') |> 
-  dplyr::rename_with(~ paste0(.x, ".a")) |> 
-  tibble::rownames_to_column('array_sentrix_id')
-b <- metadata.ac |> dplyr::select(array_sentrix_id, patient, PC1, LG_HG_status) |> 
-  tibble::column_to_rownames('array_sentrix_id') |> 
-  dplyr::rename_with(~ paste0(.x, ".b")) |> 
-  tibble::rownames_to_column('array_sentrix_id')
-
-dim(a)
-dim(b)
-
-c <- dplyr::left_join(a, b, by=c('array_sentrix_id'='array_sentrix_id'))
