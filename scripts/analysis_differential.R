@@ -1234,49 +1234,6 @@ saveRDS(stats.g2g3.up.cor, file="cache/analysis_differential__g2_g3__unpaired_co
 
 
 
-## x plots ----
-
-
-plt.a <- readRDS("cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds") |> 
-  dplyr::rename_with( ~ paste0(.x, "__g2_g3__partial_paired_nc"), .cols=!matches("^probe_id$",perl = T))
-
-plt.b <- readRDS("cache/analysis_differential__primary_recurrence__partial_paired_nc__stats.Rds") |> 
-  dplyr::rename_with( ~ paste0(.x, "__primary_recurrence__partial_paired_nc"), .cols=!matches("^probe_id$",perl = T))
-
-plt.c <- readRDS("cache/analysis_differential__ad_co__stats.Rds") |> 
-  dplyr::rename_with( ~ paste0(.x, "__ad"), .cols=!matches("^probe_id$",perl = T))
-
-
-
-
-plt <- dplyr::left_join(plt.a, plt.b, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
-  dplyr::left_join( metadata.cg_probes.epic , by=c('probe_id'='probe_id'), suffix=c('','') )
-
-
-
-
-ggplot(plt, aes(x=t__g2_g3__partial_paired_nc,
-                y=t__primary_recurrence__partial_paired_nc,
-                col=glass_nl_prim_rec__deep_significant)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  geom_point(data=subset(plt, glass_nl_prim_rec__deep_significant == F),pch=19, cex=0.0015, alpha=0.035) +
-  geom_point(data=subset(plt, glass_nl_prim_rec__deep_significant == T),pch=19, cex=0.0015, alpha=0.4) +
-  #geom_bin2d(bins = 350) + 
-  #geom_density_2d(h=0.8) +
-  #stat_density_2d(aes(fill = after_stat(level)), geom = "polygon", colour="white") +
-  #scale_fill_continuous(type = "viridis") +
-  #ggplot2::scale_fill_gradientn(colours = mixcol("gray90",col3(2)[1],0:100/100), na.value = "grey50")  +
-  scale_color_manual(values=c('#c04040', 'darkblue')) +
-  labs(x = "GLASS-OD: t-score (Grade 2 ~ Grade 3)", y="GLASS-OD: t-score (primary ~ recurrence)", col="GLASS-NL: deep significant") +
-  theme_cellpress +
-  xlim(-10,10) +
-  ylim(-6,6)
-
-
-ggsave("/home/r361003/volcano_pp_x_g2_g3.png", width=8.5/2,height=3.5)
-
-
 ### AD ----
 
 
