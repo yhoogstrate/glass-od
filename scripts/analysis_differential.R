@@ -3829,29 +3829,6 @@ rm(fit.GLASS_NL_sig.pp.nc, stats.GLASS_NL_sig.pp.nc)
 
 
 
-## x plots: test pat + condition  ----
-
-
-design.lgc <- model.matrix(~factor(patient) + as.numeric(A_IDH_HG__A_IDH_LG_lr__lasso_fit), data=metadata.pp)
-fit.lgc <- limma::lmFit(data.pp, design.lgc)
-fit.lgc <- limma::eBayes(fit.lgc, trend=T)
-stats.lgc <- limma::topTable(fit.lgc,
-                            n=nrow(data.pp),
-                            coef="as.numeric(A_IDH_HG__A_IDH_LG_lr__lasso_fit)",
-                            sort.by = "none",
-                            adjust.method="fdr") |> 
-  tibble::rownames_to_column('probe_id')
-
-rm(design.lgc, fit.lgc)
-
-
-sum(stats.lgc$P.Value < 0.01)
-sum(stats.lgc$adj.P.Val < 0.01)
-
-plot(sort(stats.lgc$P.Value),type="l")
-
-
-
 # analyses: FFPE & FF ----
 ## data: partially paired [w/o FFPE/frozen batch correct] ----
 
@@ -4789,13 +4766,17 @@ ggplot(plt.pre, aes(x=logFC.lgc, y=-log(P.Value.lgc), col=col)) +
 
 
 
-# analyses: GLASS-OD + GLASS-NL LG/HG ----
+# analyses: GLASS-OD + GLASS-NL LG/HG interaction ----
 #' multi-dataset mixed model to find changes specific to
 #' OD
 #' AC
 #' general grading
 
-# grade en tumor type interactie effect?
+
+
+
+
+
 
 # AD dataset ----
 
