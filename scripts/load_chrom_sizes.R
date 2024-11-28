@@ -170,3 +170,17 @@ chrs_hg19_e['chrY'] <- chrs_hg19['chrX'] + chrs_hg19_e['chrX']
 #chrs_hg38_s['chrX'] <- chrs_hg38['chr22'] + chrs_hg38_s['chr22']
 #chrs_hg38_s['chrY'] <- chrs_hg38['chrX'] + chrs_hg38_s['chrX']
 ##chrs_hg38_s['chrM'] <- chrs_hg38['chr'] + chrs_hg38_s['chr']
+
+
+chrs_hg38_cytoBand <- data.table::fread("data/hg38_cytoBand.txt",  col.names = c("chrom","chromStart","chromEnd","name","gieStain")) |> 
+  dplyr::filter(grepl("^chr[0-9]+$", chrom)) |> 
+  dplyr::mutate(gieStain = NULL) |> 
+  dplyr::mutate(arm = gsub("^(.).+$","\\1", name)) |> 
+  dplyr::group_by(chrom, arm) |> 
+  dplyr::summarise(
+    start = min(chromStart),
+    end = max(chromEnd)
+  ) |> 
+  dplyr::ungroup()
+
+
