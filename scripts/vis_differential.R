@@ -604,7 +604,234 @@ ggsave("output/figures/vis_differential__GLASS_NL__x__GLASS_OD__grade__PC1.png",
 
 
 
+## G: chromosomal ----
 
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  #dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  #(function(.) {
+  #  print(dim(.))
+  #  assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+  #  return(.)
+  #})() |> 
+  
+  
+  dplyr::mutate(col = dplyr::case_when(
+    CpG_chrm == "chr1" ~ CpG_chrm,
+    CpG_chrm == "chr19" ~ CpG_chrm,
+    T ~ "other"
+  )) |> 
+  dplyr::mutate(facet = ifelse(is_1P | is_19Q, "on 1p | 19q","other")) |> 
+  dplyr::mutate( CpG_chrm = dplyr::case_when(
+    CpG_chrm == "chr1" & is_1P ~ "chr1p",
+    CpG_chrm == "chr1" & !is_1P ~ "chr1q",
+    
+    CpG_chrm == "chr19" & is_19Q ~ "chr19q",
+    CpG_chrm == "chr19" & !is_19Q ~ "chr19p",
+    T ~ CpG_chrm
+  )) |> 
+  
+  dplyr::filter(CpG_chrm %in% c("chrX", "chrY") == F ) |> 
+  dplyr::mutate(chr = factor(CpG_chrm, levels=gtools::mixedsort(unique(as.character(CpG_chrm))))) |> 
+  
+  dplyr::mutate(chr_arm = dplyr::case_when(
+    CHR_hg38 == "chr1" & Start_hg38 <= 123400000 ~ "p",  #123400000
+    CHR_hg38 == "chr1" & Start_hg38 >  123400000 ~ "q",  #123400000
+    
+    CHR_hg38 == "chr10" & Start_hg38 <= 39800000 ~ "p", 
+    CHR_hg38 == "chr10" & Start_hg38 > 39800000 ~ "q", 
+    
+    CHR_hg38 == "chr11" & Start_hg38 <= 53400000 ~ "p", 
+    CHR_hg38 == "chr11" & Start_hg38 > 53400000 ~ "q", 
+    
+    CHR_hg38 == "chr12" & Start_hg38 <= 35500000 ~ "p", 
+    CHR_hg38 == "chr12" & Start_hg38 > 35500000 ~ "q", 
+    
+    CHR_hg38 == "chr13" & Start_hg38 <= 17700000 ~ "p", 
+    CHR_hg38 == "chr13" & Start_hg38 > 17700000 ~ "q", 
+    
+    CHR_hg38 == "chr14" & Start_hg38 <= 17200000 ~ "p", 
+    CHR_hg38 == "chr14" & Start_hg38 > 17200000 ~ "q", 
+    
+    CHR_hg38 == "chr15" & Start_hg38 <= 19000000 ~ "p", 
+    CHR_hg38 == "chr15" & Start_hg38 > 19000000 ~ "q", 
+    
+    CHR_hg38 == "chr16" & Start_hg38 <= 36800000 ~ "p", 
+    CHR_hg38 == "chr16" & Start_hg38 > 36800000 ~ "q", 
+    
+    CHR_hg38 == "chr17" & Start_hg38 <= 25100000 ~ "p", 
+    CHR_hg38 == "chr17" & Start_hg38 > 25100000 ~ "q", 
+    
+    CHR_hg38 == "chr18" & Start_hg38 <= 18500000 ~ "p", 
+    CHR_hg38 == "chr18" & Start_hg38 > 18500000 ~ "q", 
+    
+    CHR_hg38 == "chr19" & Start_hg38 <= 26200000 ~ "p",  # 26200000
+    CHR_hg38 == "chr19" & Start_hg38 > 26200000 ~ "q", # 26200000
+    
+    CHR_hg38 == "chr2" & Start_hg38 <= 93900000 ~ "p", 
+    CHR_hg38 == "chr2" & Start_hg38 > 93900000 ~ "q", 
+    
+    CHR_hg38 == "chr20" & Start_hg38 <= 28100000 ~ "p", 
+    CHR_hg38 == "chr20" & Start_hg38 > 28100000 ~ "q", 
+    
+    CHR_hg38 == "chr21" & Start_hg38 <= 12000000 ~ "p", 
+    CHR_hg38 == "chr21" & Start_hg38 > 12000000 ~ "q", 
+    
+    CHR_hg38 == "chr22" & Start_hg38 <= 15000000 ~ "p", 
+    CHR_hg38 == "chr22" & Start_hg38 > 15000000 ~ "q", 
+    
+    CHR_hg38 == "chr3" & Start_hg38 <= 90900000 ~ "p", 
+    CHR_hg38 == "chr3" & Start_hg38 > 90900000 ~ "q", 
+    
+    CHR_hg38 == "chr4" & Start_hg38 <= 50000000 ~ "p", 
+    CHR_hg38 == "chr4" & Start_hg38 > 50000000 ~ "q", 
+    
+    CHR_hg38 == "chr5" & Start_hg38 <= 48800000 ~ "p", 
+    CHR_hg38 == "chr5" & Start_hg38 > 48800000 ~ "q", 
+    
+    CHR_hg38 == "chr6" & Start_hg38 <= 59800000 ~ "p", 
+    CHR_hg38 == "chr6" & Start_hg38 > 59800000 ~ "q", 
+    
+    CHR_hg38 == "chr7" & Start_hg38 <= 60100000 ~ "p", 
+    CHR_hg38 == "chr7" & Start_hg38 > 60100000 ~ "q", 
+    
+    CHR_hg38 == "chr8" & Start_hg38 <= 45200000 ~ "p", 
+    CHR_hg38 == "chr8" & Start_hg38 > 45200000 ~ "q", 
+    
+    CHR_hg38 == "chr9" & Start_hg38 <= 43000000 ~ "p", 
+    CHR_hg38 == "chr9" & Start_hg38 > 43000000 ~ "q", 
+    
+    T ~ "?"
+  )) |> 
+  dplyr::mutate(chr_arm2 = paste0(CHR_hg38, chr_arm)) |> 
+  dplyr::mutate(chr_arm2 = factor(chr_arm2, levels=gtools::mixedsort(unique(as.character(chr_arm2))))) |> 
+  dplyr::mutate(CHR_hg38 = factor(CHR_hg38, levels=gtools::mixedsort(unique(as.character(CHR_hg38)))))
+
+
+plt |> 
+  dplyr::filter(CHR_hg38 == "chr13"& Start_hg38 < 17700000 ) |>
+  dim()
+
+# plt <- plt |> 
+#   dplyr::mutate(is_1P = CHR_hg38 == 'chr1' & Start_hg38 < 123590349) |> # rough margin
+#   dplyr::mutate(is_19Q = CHR_hg38 == "chr19" & Start_hg38 > 26486148) # 26200000 rough margin
+# 
+
+
+tmp = plt |> dplyr::filter(CHR_hg38 == "chr13") |> dplyr::arrange(Start_hg38)
+plot(tmp$Start_hg38, col=as.numeric(as.factor(tmp$chr_arm)) + 1)
+
+
+
+
+
+plt |> dplyr::select(is_1P, CHR_hg38) |> table() # perfect
+plt |> dplyr::select(is_19Q, CHR_hg38) |> table() # perfect
+
+plt |> dplyr::select(is_1P, chr_arm2) |> table() # perfect
+plt |> dplyr::select(is_19Q, chr_arm2) |> table() # 47 MM
+plt2 |> dplyr::select(is_19Q, chr_arm2) |> table() # 47 MM
+
+plt |> dplyr::select(is_1P, chr_arm) |> table() # perfect
+plt |> dplyr::select(is_19Q, chr_arm) |> table() # 47 MM
+
+
+plt |> 
+  dplyr::filter(is_19Q & chr_arm == "p") |> 
+  View()
+
+
+metadata.cg_probes.epic |> 
+  dplyr::filter(CpG_chrm == "chr13"& Start_hg38 < 25915498 ) |>
+  dplyr::pull(MASK_general) |> 
+  table()
+
+
+
+
+ggplot(plt, aes(x = chr, y=DMP__g2_g3__pp_nc_PC1__t, fill=chr)) +
+  ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "white", adjust = 1.95) +
+  
+  labs(fill = NULL, 
+       subtitle=format_subtitle("chromosomal differences")) +
+  scale_fill_manual(values=c('chr1'='red','chr19'='blue','other'='darkgray')) +
+  theme_nature +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+
+
+plt |> 
+  dplyr::filter(CHR_hg38 == "chr12") |> 
+  dplyr::mutate(has_dmp = !is.na(DMP__g2_g3__pp_nc_PC1__t)) |> 
+  dplyr::select(chr_arm, has_dmp) |> 
+  table()
+
+
+
+ggplot(plt,
+       aes(x = CHR_hg38,
+           split = as.factor(chr_arm),
+           fill = CHR_hg38,
+           y=DMP__g2_g3__pp_nc_PC1__t)) +
+  ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "white", adjust = 1.95)
+
+
+
+gghalves::geom_half_violin(data=plt, aes(),
+                           draw_quantiles = c(0.5),
+                           position = "identity",
+                           linewidth=theme_nature_lwd,
+                           col = "white",
+                           adjust = 1.95
+) +
+  labs(fill = NULL, 
+       subtitle=format_subtitle("chromosomal differences")) +
+  #scale_fill_manual(values=c('chr1'='red','chr19'='blue','other'='darkgray')) +
+  theme_nature +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+
+
+
+
+
+
+plt.combi <- rbind(
+  plt |>
+    dplyr::mutate(t = DMP__g2_g3__pp_nc_PC1__t) |> 
+    dplyr::mutate(tumortype = "Oligodendroglioma"),
+  plt |>
+    dplyr::mutate(t = DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t) |> 
+    dplyr::mutate(tumortype = "Astrocytoma")
+) |> 
+  dplyr::select(t, tumortype,  CHR_hg38, t, chr_arm , col) |> 
+  dplyr::mutate(chr_arm = as.factor(chr_arm)) |> 
+  dplyr::mutate(chr_w_arm = paste0(CHR_hg38,chr_arm)) |> 
+  dplyr::filter(chr_w_arm != "chr22p") |> # 2 probes only
+  dplyr::mutate(CHR_hg38 = factor(CHR_hg38, levels=gtools::mixedsort(unique(as.character(CHR_hg38))) ))
+
+
+
+ggplot(plt.combi , aes(x = CHR_hg38, split = chr_arm, fill=chr_arm)) +
+  facet_grid(rows = vars(tumortype))+ 
+  #ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "white", adjust = 1.95) +
+  gghalves::geom_half_violin(data=plt.combi, aes(y=t),
+                             draw_quantiles = c(0.5),
+                             position = "identity",
+                             linewidth=theme_nature_lwd,
+                             col = "white",
+                             adjust = 1.95
+  ) +
+  labs(fill = NULL, 
+       subtitle=format_subtitle("chromosomal differences")) +
+  #scale_fill_manual(values=c('chr1'='red','chr19'='blue','other'='darkgray')) +
+  theme_nature +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 
 
@@ -2804,49 +3031,6 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   theme(plot.background = element_rect(fill="white", colour=NA))
 
 
-## G: chromosomal ----
-
-
-plt <- data.mvalues.probes |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
-    return(.)
-  })() |> 
-  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
-    return(.)
-  })() |> 
-  dplyr::mutate(col = dplyr::case_when(
-    CpG_chrm == "chr1" ~ CpG_chrm,
-    CpG_chrm == "chr19" ~ CpG_chrm,
-    T ~ "other"
-  )) |> 
-  dplyr::mutate(facet = ifelse(is_1P | is_19Q, "on 1p | 19q","other")) |> 
-  dplyr::mutate( CpG_chrm = dplyr::case_when(
-    CpG_chrm == "chr1" & is_1P ~ "chr1p",
-    CpG_chrm == "chr1" & !is_1P ~ "chr1q",
-  
-    CpG_chrm == "chr19" & is_19Q ~ "chr19q",
-    CpG_chrm == "chr19" & !is_19Q ~ "chr19p",
-    T ~ CpG_chrm
-  )) |> 
-  dplyr::filter(CpG_chrm %in% c("chrX", "chrY") == F ) |> 
-  dplyr::mutate(chr = factor(CpG_chrm, levels=gtools::mixedsort(unique(as.character(CpG_chrm))) ))
-
-
-
-
-ggplot(plt, aes(x = chr, y=DMP__g2_g3__pp_nc_PC1__t, fill=col)) +
-  ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "white", adjust = 1.95) +
-  
-  labs(fill = NULL, 
-       subtitle=format_subtitle("chromosomal differences")) +
-  scale_fill_manual(values=c('chr1'='red','chr19'='blue','other'='darkgray')) +
-  theme_nature +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 
 
