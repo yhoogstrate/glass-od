@@ -30,6 +30,7 @@ source('scripts/load_functions.R')
 
 fn <- "cache/EPIC.hg38.manifest.tsv_2022.Rds" # unlink(fn)
 
+
 if(file.exists(fn)) {
 
   message(paste0("loading '",fn,"' from cache"))
@@ -44,8 +45,6 @@ if(file.exists(fn)) {
     dplyr::mutate(type = NULL) |> 
     assertr::verify(!duplicated(probe_id)) |> 
     dplyr::mutate(pos = round((CpG_beg + CpG_end )/2)) |> 
-    dplyr::mutate(is_1P = CpG_chrm == 'chr1' & pos < 130 * 1000000) |> # rough margin
-    dplyr::mutate(is_19Q = CpG_chrm == 'chr19' & pos > 23.5 * 1000000 ) |>  # rough margin
     dplyr::rename(target_hg38 = target) # noticed an example where target == 'CA' - while in hg19 ref genome it should have been actually 'CG'
 
   # Save mem...
@@ -226,16 +225,30 @@ if(file.exists(fn)) {
     dplyr::mutate(Relation_to_UCSC_CpG_Island = NULL) |> 
     dplyr::mutate(DNase_Hypersensitivity_NAME = NULL) |> 
     dplyr::mutate(DNase_Hypersensitivity_Evidence_Count = NULL) |> 
-    dplyr::mutate(Methyl450_Loci = NULL) 
+    dplyr::mutate(Methyl450_Loci = NULL) |> 
+    
+    dplyr::mutate(is_1P = CHR_hg38 == 'chr1' & Start_hg38 < 123400000) |> # rough margin
+    dplyr::mutate(is_19Q = CHR_hg38 == "chr19" & Start_hg38 > 26200000 ) # rough margin
+    
   
   #colnames(tmp)[colnames(tmp) %in% colnames(metadata.cg_probes.epic)]
   
   saveRDS(tmp, file=fn)
+
 }
 
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
-  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))  |> 
+  assertr::verify(probe_id != "cg21164657" | (probe_id == "cg21164657" & is_19Q == F))
+
+
+
+# metadata.cg_probes.epic |> 
+#   dplyr::filter(probe_id == "cg21164657") |> 
+#   dplyr::select(probe_id, pos, CpG_beg, Start_hg38, pos, CpG_chrm , CHR_hg38, is_19Q)
+
+
 
 
 rm(tmp, fn)
@@ -292,7 +305,8 @@ if(file.exists(fn)) {
 
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
-  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
+  assertr::verify(probe_id != "cg21164657" | (probe_id == "cg21164657" & is_19Q == F))
 
 
 rm(tmp, fn)
@@ -312,6 +326,7 @@ if(file.exists(fn)) {
   tmp <- readRDS(file = fn)
   
 } else {
+  
   tmp <- metadata.cg_probes.epic |> 
     
     dplyr::filter(!is.na(orientation_mapped)) |>  # some QC probes
@@ -335,7 +350,7 @@ if(file.exists(fn)) {
     assertr::verify(nchar(sequence_post) == 60) |> 
     dplyr::select(probe_id, sequence_pre, sequence_target, sequence_post) |> 
     dplyr::mutate(sequence_target = as.factor(sequence_target)) |> 
-    assertr::verify(probe_id %in% metadata.cg_probes.epic$probe_id)
+    assertr::verify(probe_id %in% metadata.cg_probes.epic$probe_id) 
   
   saveRDS(tmp, file=fn)
   
@@ -344,7 +359,8 @@ if(file.exists(fn)) {
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
   dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))  |> 
-  dplyr::mutate(Forward_Sequence_hg19 = NULL) # from previous config
+  dplyr::mutate(Forward_Sequence_hg19 = NULL)  |>   # from previous config
+  assertr::verify(probe_id != "cg21164657" | (probe_id == "cg21164657" & is_19Q == F))
 
 
 rm(tmp, fn)
@@ -388,7 +404,9 @@ if(file.exists(fn)) {
 
 
 metadata.cg_probes.epic <- metadata.cg_probes.epic |> 
-  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) 
+  dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','')) |> 
+  dplyr::mutate(Forward_Sequence_hg19 = NULL)  |>   # from previous config
+  assertr::verify(probe_id != "cg21164657" | (probe_id == "cg21164657" & is_19Q == F))
 
 
 rm(tmp, fn)
