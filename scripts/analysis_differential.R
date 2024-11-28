@@ -24,10 +24,7 @@ if(!exists('glass_od.metadata.array_samples')) {
 }
 
 
-
-
-
-
+# for combined analysis
 if(!exists('glass_nl.metadata.array_samples')) {
   source('scripts/load_GLASS-NL_metadata.R')
 }
@@ -4715,15 +4712,7 @@ hg_olsc.borderline.probes |>
 
 
 
-# plot: g2-g3 x lgc ----
 
-
-
-plt <- stats.gr |> 
-  dplyr::left_join(stats.lgc,by=c('probe_id'='probe_id'),suffx=c('.gr','.lgc'))
-
-
-plot(sort(stats.lgc$P.Value),type="l")
 
 
 ## powerplot ----
@@ -4772,9 +4761,206 @@ ggplot(plt.pre, aes(x=logFC.lgc, y=-log(P.Value.lgc), col=col)) +
 #' AC
 #' general grading
 
+## AC ----
+
+
+metadata.od <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3(156) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = factor(ifelse(resection_tumor_grade == 2, "LG", "HG"), levels = c("LG", "HG"))) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 156) 
+    return(.)
+  })() |> 
+  
+  dplyr::select(array_sentrix_id, patient, array_PC1, gr.status)
 
 
 
+metadata.ac <- glass_nl.metadata.array_samples |> 
+  dplyr::mutate(patiend_id = paste0("p", patient_id)) |>  # avoid numbers because regression models may go nuts
+  filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
+  filter_first_G2_G3_and_last_G4(133) |> 
+  dplyr::filter(!is.na(WHO_Classification2021)) |> # 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  dplyr::mutate(resection_tumor_grade = as.numeric(gsub("^.+(.)$", "\\1", WHO_Classification2021))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3,4)) |> 
+  dplyr::mutate(gr.status = factor(ifelse(resection_tumor_grade == 4, "HG", "LG"), levels = c("LG", "HG"))) |> 
+  
+  dplyr::rename(array_PC1 = PC1) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 133) 
+    return(.)
+  })() |> 
+  
+  dplyr::select(array_sentrix_id, patient, array_PC1, gr.status)
+
+
+
+
+metadata.combined <- rbind(
+  metadata.od |> dplyr::mutate(tumortype = "Oligodendroglioma"),
+  metadata.ac |> dplyr::mutate(tumortype = "Astrocytoma")
+) 
+
+
+
+data.combined <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.combined$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    assertthat::assert_that(ncol(.) == 156 + 133) 
+    return(.)
+  })()
+
+
+
+#design.combined <- model.matrix(~array_PC1 + patient + gr.status * tumortype, data=metadata.combined)
+design.combined <- model.matrix(~gr.status + tumortype + tumortype:gr.status, data=metadata.combined)
+fit.combined <- limma::lmFit(data.combined, design.combined)
+fit.combined <- limma::eBayes(fit.combined, trend=T)
+
+fit.combined$coefficients |> colnames()
+
+
+
+stats.combined <- limma::topTable(fit.combined,
+                                  n=nrow(data.combined),
+                                  coef="gr.statusHG:tumortypeOligodendroglioma",
+                                  sort.by = "none",
+                                  adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+
+
+## OD ----
+
+
+metadata.od <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3(156) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = factor(ifelse(resection_tumor_grade == 2, "LG", "HG"), levels = c("LG", "HG"))) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 156) 
+    return(.)
+  })() |> 
+  
+  dplyr::select(array_sentrix_id, patient, array_PC1, gr.status)
+
+
+
+metadata.ac <- glass_nl.metadata.array_samples |> 
+  dplyr::mutate(patiend_id = paste0("p", patient_id)) |>  # avoid numbers because regression models may go nuts
+  filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
+  filter_first_G2_G3_and_last_G4(133) |> 
+  dplyr::filter(!is.na(WHO_Classification2021)) |> # 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  dplyr::mutate(resection_tumor_grade = as.numeric(gsub("^.+(.)$", "\\1", WHO_Classification2021))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3,4)) |> 
+  dplyr::mutate(gr.status = factor(ifelse(resection_tumor_grade == 4, "HG", "LG"), levels = c("LG", "HG"))) |> 
+  
+  dplyr::rename(array_PC1 = PC1) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 133) 
+    return(.)
+  })() |> 
+  
+  dplyr::select(array_sentrix_id, patient, array_PC1, gr.status)
+
+
+
+
+metadata.combined <- rbind(
+  metadata.od |> dplyr::mutate(tumortype = "Oligodendroglioma"),
+  metadata.ac |> dplyr::mutate(tumortype = "Astrocytoma")
+) |> 
+  dplyr::mutate(tumortype = factor(tumortype, levels=c("Oligodendroglioma", "Astrocytoma")))
+
+
+
+data.combined <- data.mvalues.hq_samples |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  
+  dplyr::select(metadata.combined$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    assertthat::assert_that(ncol(.) == 156 + 133) 
+    return(.)
+  })()
+
+
+
+
+
+#design.combined <- model.matrix(~array_PC1 + patient + gr.status * tumortype, data=metadata.combined)
+design.combined <- model.matrix(~gr.status + tumortype + tumortype:gr.status, data=metadata.combined)
+fit.combined <- limma::lmFit(data.combined, design.combined)
+fit.combined <- limma::eBayes(fit.combined, trend=T)
+
+fit.combined$coefficients |> colnames()
+
+
+
+stats.combined <- limma::topTable(fit.combined,
+                                  n=nrow(data.combined),
+                                  coef="gr.statusHG:tumortypeAstrocytoma",
+                                  sort.by = "none",
+                                  adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+
+
+
+
+
+
+# quite well correlated when including or excluding correction
+# plot(stats.combined$t , stats.combined.uncorrected$t, pch=19, cex=0.1)
+
+
+
+#stats.combined.uncorrected = stats.combined 
 
 
 
