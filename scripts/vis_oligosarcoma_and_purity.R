@@ -17,6 +17,12 @@ if(!exists('glass_od.metadata.array_samples')) {
 }
 
 
+if(!exists('cortex_dilution')) {
+  source('scripts/load_nonmalignant_cortex_dilution_series.R')
+}
+
+
+
 # GLASS-OD / OD ----
 
 
