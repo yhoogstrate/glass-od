@@ -285,3 +285,94 @@ ggsave("output/figures/vis_oligosarcoma_and_purity__spike-in_nm_cortex.pdf", wid
 
 
 
+# Volcano Oligosarcoma - A_IDH_HG ----
+
+
+
+plt.intervals <- 10^seq(log10(0.01), log10(1), by=2/6) # linear intervals in log scaled labels
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::mutate(significant = DMP__GLASS_OD__oligosarcoma__A_IDH_HG__PC1__adj.P.Val < 0.01)
+
+
+n_oligosarcoma <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(array_mnp_predictBrain_v12.8_cal_class == "OLIGOSARC_IDH") |> 
+  nrow()
+
+n_a_idh_hg <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(array_mnp_predictBrain_v12.8_cal_class == "A_IDH_HG") |> 
+  nrow()
+
+
+ggplot(plt, aes(x=DMP__GLASS_OD__oligosarcoma__A_IDH_HG__PC1__logFC,
+                y=DMP__GLASS_OD__oligosarcoma__A_IDH_HG__PC1__adj.P.Val)) +
+  geom_vline(xintercept=0, col="darkgray", lwd=theme_nature_lwd) +
+  geom_hline(yintercept=plt.intervals[2:6], col="#DDDDDD", lwd=theme_nature_lwd) +
+  geom_hline(yintercept=plt.intervals[1], col="red", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=plt.intervals[7], col="darkgray", lwd=theme_nature_lwd) +
+  geom_point(pch=16, cex=0.01, alpha=0.05) +
+  theme_nature +
+  scale_y_continuous(trans=reverselog_trans(base=10),
+                     breaks=plt.intervals,
+                     labels=round(plt.intervals, 3)
+                     #labels=trans_format("identity", function(x) -x)
+  ) +
+  labs(x = "log2FC",
+       y = "-log10(adj. P)",
+       subtitle=format_subtitle("VolcanoPlot DMP Oligsarcoma vs. A_IDH_HG"),
+       caption=paste0("Oligodendrogliomas classified as: Oligosarcoma: n=",
+                      n_oligosarcoma,
+                      "  --  Astrocytoma: n=",
+                      n_a_idh_hg)) +
+  coord_cartesian(xlim=c(-2.5, 2.5)) +
+  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+
+
+ggsave("output/figures/vis_oligosarcoma_and_purity__volcano_A_IDH_HG.png", width=8.5/4,height=1.5, dpi=300)
+
+
+rm(plt, n_oligosarcoma, n_a_idh_hg, plt.intervals)
+
+
+
+# sandbox ----
+
+
+#!/usr/bin/env R
+
+p1 = ggplot(metadata.hg_olsc, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_methylation_bins_1p19q_purity, label=isolation_id)) +
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
+  theme_cellpress
+
+p2 = ggplot(metadata.hg_olsc, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_median.overall.methylation, label=isolation_id)) +
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
+  theme_cellpress
+
+
+p3 = ggplot(metadata.hg_olsc, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, label=isolation_id)) +
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
+  theme_cellpress
+
+
+p4 = ggplot(metadata.hg_olsc, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_qc.pca.comp1, label=isolation_id)) +
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
+  theme_cellpress
+
+
+p1 + p2 + p3 + p4
+
+

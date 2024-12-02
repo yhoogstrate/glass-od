@@ -4572,142 +4572,51 @@ for(clock in clocks) {
 
 
 
-
-
-
 # analyses: GLASS-OD A_IDH_HG - OLIGOSARC ----
 
 
+
 metadata.hg_olsc <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(211) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   dplyr::filter(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG", "OLIGOSARC_IDH")) |> 
-  dplyr::filter(isolation_id != "0104-R2")   # actual astro
-
-
-p1 = ggplot(metadata.hg_olsc, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_methylation_bins_1p19q_purity, label=isolation_id)) +
-  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
-  theme_cellpress
-
-
-p2 = ggplot(metadata.hg_olsc, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_median.overall.methylation, label=isolation_id)) +
-  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
-  theme_cellpress
-
-
-p3 = ggplot(metadata.hg_olsc, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, label=isolation_id)) +
-  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
-  theme_cellpress
-
-
-p4 = ggplot(metadata.hg_olsc, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_qc.pca.comp1, label=isolation_id)) +
-  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
-  theme_cellpress
-
-
-p1 + p2 + p3 + p4
-
-
-
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 25) 
+    return(.)
+  })() |> 
+  dplyr::mutate(class = factor(array_mnp_predictBrain_v12.8_cal_class, levels=c("OLIGOSARC_IDH", "A_IDH_HG")))
 
 
 data.hg_olsc <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata.hg_olsc$array_sentrix_id) 
+  dplyr::select(metadata.hg_olsc$array_sentrix_id)
 
 
-design.hg_olsc <- model.matrix(~  factor(array_mnp_predictBrain_v12.8_cal_class), data=metadata.hg_olsc)
 
+design.hg_olsc <- model.matrix(~array_PC1 + class, data=metadata.hg_olsc)
 fit.hg_olsc <- limma::lmFit(data.hg_olsc, design.hg_olsc)
 fit.hg_olsc <- limma::eBayes(fit.hg_olsc, trend=T)
 stats.hg_olsc <- limma::topTable(fit.hg_olsc,
                             n=nrow(data.hg_olsc),
-                            coef="factor(array_mnp_predictBrain_v12.8_cal_class)OLIGOSARC_IDH",
+                            coef="classA_IDH_HG",
                             sort.by = "none",
                             adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id') 
 
-rm(design.hg_olsc, fit.hg_olsc)
-
-
 paste0("DMPs: ",sum(stats.hg_olsc$adj.P.Val < 0.01), " / ", nrow(stats.hg_olsc), " (padj < 0.01)")
 
 
+rm(metadata.hg_olsc, data.hg_olsc, design.hg_olsc, fit.hg_olsc)
 
 
-
-#sum(stats.hg_olsc$P.Value < 0.01)
-plot(sort(stats.hg_olsc$P.Value),type="l")
-
+stats.hg_olsc <- stats.hg_olsc |> 
+  dplyr::select(probe_id, logFC, t, P.Value, adj.P.Val)
 
 
-hg_olsc.borderline.probes <- stats.hg_olsc |> 
-  dplyr::filter(P.Value < 0.01) |> 
-  dplyr::left_join(
-    data.mvalues.probes, by=c('probe_id'='probe_id'),suffix=c('','')
-  ) |> 
-  dplyr::mutate(x = ((CpG_beg + CpG_end) / 2 ) / 100000000) |> 
-  dplyr::mutate(chr = factor(CpG_chrm, levels=gtools::mixedsort(unique(as.character(CpG_chrm))) ))
-
-
-plt <- rbind(
-  hg_olsc.borderline.probes |> 
-    dplyr::mutate(col = logFC),
-  hg_olsc.borderline.probes |> 
-    dplyr::mutate(col = logFC) |> 
-    dplyr::mutate(logFC = 0)
-) 
-
-
-
-
-ggplot(plt, aes(x = x, y= logFC, group=probe_id, col=col)) +
-  facet_grid(cols = vars(chr), scales = "free", space="free") +
-  geom_line(lwd=0.22, alpha=0.3) +
-  theme_cellpress +
-  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(-3, 3), breaks=c(-3, 3), oob = scales::squish)
-
-
-ggplot(plt |> dplyr::filter(chr == "chr2"), aes(x = x, y= logFC, group=probe_id, col=col)) +
-  facet_grid(cols = vars(chr), scales = "free", space="free") +
-  geom_line(lwd=0.22, alpha=0.3) +
-  theme_cellpress +
-  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(-3, 3), breaks=c(-3, 3), oob = scales::squish)
-
-
-ggplot(plt |> dplyr::filter(chr == "chr3"), aes(x = x, y= logFC, group=probe_id, col=col)) +
-  facet_grid(cols = vars(chr), scales = "free", space="free") +
-  geom_line(lwd=0.22, alpha=0.3) +
-  theme_cellpress +
-  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(-3, 3), breaks=c(-3, 3), oob = scales::squish)
-
-
-
-ggplot(plt |> dplyr::filter(chr == "chr4"), aes(x = x, y= logFC, group=probe_id, col=col)) +
-  facet_grid(cols = vars(chr), scales = "free", space="free") +
-  geom_line(lwd=0.22, alpha=0.3) +
-  theme_cellpress +
-  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(-3, 3), breaks=c(-3, 3), oob = scales::squish)
-
-
-
-ggplot(plt |> dplyr::filter(chr == "chr6"), aes(x = x, y= logFC, group=probe_id, col=col)) +
-  facet_grid(cols = vars(chr), scales = "free", space="free") +
-  geom_line(lwd=0.22, alpha=0.3) +
-  theme_cellpress +
-  ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(-3, 3), breaks=c(-3, 3), oob = scales::squish)
-
-
-
-
-
-
-hg_olsc.borderline.probes |>
-  dplyr::filter(chr == "chr5") |> 
-  dplyr::arrange(-P.Value) |>  
-  dplyr::select(probe_id,  logFC ,   AveExpr   ,      t,     P.Value, adj.P.Val, CpG_beg ,genesUniq) |> 
-  View()
+saveRDS(stats.hg_olsc, file="cache/analysis_differential__Oligosarcoma_A_IDH_HG__PC1__stats.Rds")
+rm(stats.hg_olsc)
 
 
 
@@ -4715,7 +4624,8 @@ hg_olsc.borderline.probes |>
 
 
 
-## powerplot ----
+
+# powerplot ----
 #' take intersect, then order
 
 
