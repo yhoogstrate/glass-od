@@ -3944,13 +3944,14 @@ for(clock in clocks) {
 
 ## early ~ late repli ----
 
+
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
-  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
@@ -3961,10 +3962,34 @@ plt <- data.mvalues.probes |>
   dplyr::filter(wgEncodeUwRepliSeqBg02esWaveSignalRep1 < 90) |> 
   dplyr::filter(wgEncodeUwRepliSeqBjWaveSignalRep1 < 95) |> 
   dplyr::filter(wgEncodeUwRepliSeqBjWaveSignalRep1 > 10) |> 
-  dplyr::filter(wgEncodeUwRepliSeqNhekWaveSignalRep1 < 80)
+  dplyr::filter(wgEncodeUwRepliSeqNhekWaveSignalRep1 < 80) |> 
+  dplyr::select(DMP__g2_g3__pp_nc_PC1__t,
+                contains("wgEncodeUwRepliSeq")) |> 
+  dplyr::rename_with(~ gsub("wgEncodeUwRepliSeq","RepliSeq: ",.x)) |> 
+  dplyr::rename_with(~ gsub("WaveSignalRep2","-rep2",.x)) |>  
+  dplyr::rename_with(~ gsub("WaveSignalRep1","",.x)) |> 
+  dplyr::rename(`t-score OD` = DMP__g2_g3__pp_nc_PC1__t) |> 
+  cor(method = "spearman")
 
 
-ggplot(plt, aes(y= wgEncodeUwRepliSeqBjWaveSignalRep1, x=glass_nl_prim_rec__deep_significant)) +
+pdf("output/figures/vis_differential__repliseq_correlation.pdf", width= 8.5*0.975/4, height = 2.2)
+corrplot::corrplot(plt, order="hclust",  tl.cex=0.75, tl.pos="l")
+dev.off()
+
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                y=DMP__primary_recurrence__pp_nc_PC1__t,
+                col=cut(wgEncodeUwRepliSeqBjWaveSignalRep1, breaks=12))) +
+  geom_point(pch=16,cex=0.1)
+
+
+ggplot(plt, aes(y= wgEncodeUwRepliSeqBjWaveSignalRep1, x=DMP__g2_g3__pp_nc_PC1__t)) +
+  geom_point(pch=16,cex=0.1)
+  
+  
   ggbeeswarm::geom_quasirandom(size=0.1) +
   ggpubr::stat_compare_means(aes(group=glass_nl_prim_rec__deep_significant), label.x.npc=0.1, method = "wilcox.test", show.lengend  = FALSE,  size=theme_nature_size)
 
