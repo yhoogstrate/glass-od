@@ -7,9 +7,10 @@ source('scripts/load_constants.R')
 source('scripts/load_functions.R')
 
 
-# normal cortex samples ----
 
+# normal cortex samples ----
 ## idat(s) ----
+
 
 normal_cortex.metadata.array_samples <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - Normal Brain/ctrl_brain_PMC6355837_GSE111165/", pattern = "_(Grn|Red).idat$", recursive = TRUE) |> 
   data.frame(array_filename = _) |>
@@ -41,8 +42,7 @@ normal_cortex.metadata.array_samples <- list.files(path = "data/GLASS_OD/DNA Met
                                                     array_sentrix_id == '200392810089_R01C01' ~ 's112',
                                                  T ~ as.character(NA)))
 
-                
-                
+
 
 ## mnp probabilities ----
 
@@ -152,10 +152,60 @@ normal_cortex.metadata.array_samples <- normal_cortex.metadata.array_samples |>
 rm(tmp)
 
 
+## sandbox stats ----
+
+
+normal_cortex.metadata.array_samples |>
+  dplyr::filter(array_control_id == "s107") |>
+  dplyr::select(contains("_cal_")) |>
+  dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = NULL) |> 
+  t() |> 
+  as.data.frame() |> 
+  dplyr::mutate(V1 = round(V1,3)) |> 
+  dplyr::arrange(-V1) |> 
+  head(n=3)
+
+
+
+normal_cortex.metadata.array_samples |>
+  dplyr::filter(array_control_id == "s108") |>
+  dplyr::select(contains("_cal_")) |>
+  dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = NULL) |> 
+  t() |> 
+  as.data.frame() |> 
+  dplyr::mutate(V1 = round(V1,3)) |> 
+  dplyr::arrange(-V1) |> 
+  head(n=3)
+
+
+
+normal_cortex.metadata.array_samples |>
+  dplyr::filter(array_control_id == "s110") |>
+  dplyr::select(contains("_cal_")) |>
+  dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = NULL) |> 
+  t() |> 
+  as.data.frame() |> 
+  dplyr::mutate(V1 = round(V1,3)) |> 
+  dplyr::arrange(-V1) |> 
+  head(n=3)
+
+
+
+normal_cortex.metadata.array_samples |>
+  dplyr::filter(array_control_id == "s112") |>
+  dplyr::select(contains("_cal_")) |>
+  dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = NULL) |> 
+  t() |> 
+  as.data.frame() |> 
+  dplyr::mutate(V1 = round(V1,3)) |> 
+  dplyr::arrange(-V1) |> 
+  head(n=3)
+
+
+
 
 
 # dilution series ----
-
 ## mnp probabilities ----
 
 
@@ -178,7 +228,7 @@ cortex_dilution.metadata.array_samples <- tmp.ls |>
   dplyr::filter(array_sentrix_id %in% normal_cortex.metadata.array_samples$array_sentrix_id == F) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 148)
+    assertthat::assert_that(nrow(.) == 160)
     return(.)
   })() |> 
   dplyr::rowwise() |> 
@@ -213,7 +263,7 @@ tmp <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MNP CNS 
   dplyr::filter(array_sentrix_id %in% cortex_dilution.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 148)
+    assertthat::assert_that(nrow(.) == 160)
     return(.)
   })()
 
@@ -223,7 +273,7 @@ cortex_dilution.metadata.array_samples <- cortex_dilution.metadata.array_samples
   assertr::verify(!is.na(array_heidelberg_cnvp_bins)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 148)
+    assertthat::assert_that(nrow(.) == 160)
     return(.)
   })()
 
@@ -245,7 +295,7 @@ tmp <- readRDS("cache/analysis_tumor_purity_EPIC_bin-based__normal_cortex.Rds") 
   dplyr::filter(array_sentrix_id %in% cortex_dilution.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 148)
+    assertthat::assert_that(nrow(.) == 160)
     return(.)
   })()
 
@@ -254,6 +304,7 @@ cortex_dilution.metadata.array_samples <- cortex_dilution.metadata.array_samples
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
 
 rm(tmp)
+
 
 
 

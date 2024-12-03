@@ -371,7 +371,7 @@ purities.bin <- do.call(
   assertr::verify(is.numeric(array_methylation_bins_1p19q_sd)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 14+148)
+    assertthat::assert_that(nrow(.) == 14+160)
     return(.)
   })()
 

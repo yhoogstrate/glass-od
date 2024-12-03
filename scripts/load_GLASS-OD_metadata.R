@@ -1212,6 +1212,7 @@ stopifnot(colnames(tmp) == colnames(tmp.2))
 
 
 tmp <- rbind(tmp, tmp.2)
+rm(tmp.2)
 
 
 
