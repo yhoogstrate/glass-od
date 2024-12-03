@@ -299,13 +299,13 @@ ggplot(plts, aes(x=mean, y=`-log(p.value)`, col=is.tf, label=gene, shape=log_pva
   facet_wrap(~facet, scale="free",ncol=6,nrow=5) +
   geom_point(data=subset(plts, is.tf == "No" & !log_pval_truncated), cex=0.01, alpha=0.5) +
   geom_point(data=subset(plts, is.tf == "No" & log_pval_truncated), cex=theme_nature_size/6) +
-  ggrepel::geom_text_repel(data=subset(plts, gene %in% c("HOXD13", "TMPRSS3", "DAXX")),
+  ggrepel::geom_text_repel(data=subset(plts, gene %in% c("HOXD13", "TMPRSS3", "DAXX", "TERT")),
                            box.padding = 0.65,
                            col="black", 
                            size=theme_nature_size,
                            family = theme_nature_font_family,
                            segment.size=theme_nature_lwd) +
-  geom_point(data=subset(plts, gene %in% c("HOXD13", "TMPRSS3", "DAXX")), col="black", cex=theme_nature_size/3, pch=1) +
+  geom_point(data=subset(plts, gene %in% c("HOXD13", "TMPRSS3", "DAXX", "TERT")), col="black", cex=theme_nature_size/3, pch=1) +
   geom_point(data=subset(plts, is.tf == "Yes"), size=theme_nature_size/3) +
   coord_cartesian(xlim = c(-7.5, 7.5)) + 
   coord_cartesian(ylim = c(0, 125)) + 
@@ -314,6 +314,7 @@ ggplot(plts, aes(x=mean, y=`-log(p.value)`, col=is.tf, label=gene, shape=log_pva
   labs(x = "Mean t-score for all probes per gene") +
   theme_nature +
   theme(plot.background = element_rect(fill="white", colour=NA))   # png export
+
 
 
 ggsave("output/figures/vis_analysis_DMP_gene_level.png", width=(8.5 * 0.975), height=4.5, dpi=600)
@@ -435,6 +436,83 @@ gene_enrichment_0 |>
   dplyr::filter(!grepl("^AC[0-9]", gene)) |> 
   View()
 
+
+## GSEA analysis ----
+
+tmp <- gene_enrichment_0.GencodeCompV12_NAME |> 
+  dplyr::left_join(out.per.gene.GencodeCompV12_NAME, by=c('gene'='gene')) |> 
+  dplyr::filter(!is.na(DMP__g2_g3__pp_nc_PC1__t)) |> 
+  dplyr::filter(!is.na(t))
+
+
+ggplot(tmp, aes(x=t, y=DMP__g2_g3__pp_nc_PC1__t)) +
+  geom_point(size=theme_nature_size) + 
+  xlim(-60,60)
+
+
+# https://rdrr.io/bioc/missMethyl/src/R/gometh.R
+## out per gene seems better statistic
+out.per.gene.GencodeCompV12_NAME |> 
+  dplyr::filter(p.adj < 0.01) |> 
+  View()
+
+
+
+
+
+sel_signi <- data.mvalues.probes |> dplyr::filter(!is.na(DMP__g2_g3__pp_nc_PC1__adj.P.Val)) |> dplyr::filter(DMP__g2_g3__pp_nc_PC1__adj.P.Val < 0.01) |> dplyr::pull(probe_id)
+all_cpgs = data.mvalues.probes |> dplyr::filter(!is.na(DMP__g2_g3__pp_nc_PC1__adj.P.Val)) |> dplyr::pull(probe_id)
+
+# ? GOmeth - https://rdrr.io/bioc/missMethyl/man/gometh.html
+gometh <- missMethyl::gometh(sig.cpg = sel_signi,
+                             all.cpg = all_cpgs,
+                             collection = "GO", # KEGG
+                             array.type = "EPIC", 
+                             prior.prob=FALSE,
+                             anno = minfi::getAnnotation('IlluminaHumanMethylationEPICanno.ilm10b4.hg19'))
+
+
+sel_signi_up <- data.mvalues.probes |> dplyr::filter(!is.na(DMP__g2_g3__pp_nc_PC1__adj.P.Val)) |> dplyr::filter(DMP__g2_g3__pp_nc_PC1__adj.P.Val < 0.0001 & DMP__g2_g3__pp_nc_PC1__t > 0) |> dplyr::pull(probe_id)
+gometh_up <- missMethyl::gometh(sig.cpg = sel_signi_up,
+                                all.cpg = all_cpgs,
+                                collection = "GO", # KEGG
+                             array.type = "EPIC", 
+                             prior.prob=FALSE,
+                             sig.genes=T,
+                             anno = minfi::getAnnotation('IlluminaHumanMethylationEPICanno.ilm10b4.hg19'))
+
+
+#sel_signi_down <- data.mvalues.probes |> dplyr::filter(runif(nrow(data.mvalues.probes),0,1) < (20*0.01)) |> dplyr::filter(!is.na(DMP__g2_g3__pp_nc_PC1__adj.P.Val)) |> dplyr::pull(probe_id)
+sel_signi_down <- data.mvalues.probes |> dplyr::filter(!is.na(DMP__g2_g3__pp_nc_PC1__adj.P.Val)) |> dplyr::filter(DMP__g2_g3__pp_nc_PC1__adj.P.Val < 0.0001 & DMP__g2_g3__pp_nc_PC1__t < 0) |> dplyr::pull(probe_id)
+gometh_down <- missMethyl::gometh(sig.cpg = sel_signi_down,
+                             all.cpg = all_cpgs,
+                             collection = "KEGG",  # GO
+                             array.type = "EPIC", 
+                             prior.prob=FALSE,
+                             sig.genes=T,
+                             anno = minfi::getAnnotation('IlluminaHumanMethylationEPICanno.ilm10b4.hg19'))
+
+
+View(gometh_up)
+View(gometh_down)
+
+
+plt <- gometh_up |> 
+  dplyr::rename_with(~paste0(.x,"_up")) |> 
+  tibble::rownames_to_column('hsa_id') |> 
+  dplyr::left_join(
+    gometh_down |> 
+      dplyr::rename_with(~paste0(.x,"_down")) |> 
+      tibble::rownames_to_column('hsa_id'),
+    by=c('hsa_id'='hsa_id')
+  )
+
+
+ggplot(plt, aes(x=-log10(P.DE_up),
+                y=-log10(P.DE_down)
+                )
+       )  + 
+  geom_point(pch=16)
 
 
 

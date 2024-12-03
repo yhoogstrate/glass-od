@@ -24,7 +24,7 @@ metadata <- glass_od.metadata.array_samples |>
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   dplyr::mutate(chemo = dplyr::case_when(
     is.na(resection_treatment_status_chemo) ~ as.character(NA),
-    grepl("TMZ",resection_treatment_status_summary) & grepl("PCV",resection_treatment_status_summary) ~ "TMZ & PCV",
+    grepl("TMZ",resection_treatment_status_summary) & grepl("PCV", resection_treatment_status_summary) ~ "TMZ & PCV",
     grepl("TMZ",resection_treatment_status_summary) ~ "TMZ",
     grepl("PCV",resection_treatment_status_summary) ~ "PCV",
     resection_treatment_status_chemo ~ "other",

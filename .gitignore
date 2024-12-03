@@ -16,3 +16,5 @@ qcReport.pdf Rplots.pdf
 Meting(Sheet1).csv
 lengths.R
 scripts/tmp_glass_metadata_request.R
+/cache
+/cache_old

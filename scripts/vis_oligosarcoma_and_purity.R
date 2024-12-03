@@ -348,7 +348,7 @@ ggplot(plt, aes(x=DMP__GLASS_OD__oligosarcoma__A_IDH_HG__PC1__logFC,
   theme(plot.background = element_rect(fill="white", colour=NA))  # png export
 
 
-ggsave("output/figures/vis_oligosarcoma_and_purity__volcano_A_IDH_HG.png", width=8.5/4,height=1.5, dpi=300)
+ggsave("output/figures/vis_oligosarcoma_and_purity__volcano_A_IDH_HG.png", width=(8.5 * 0.975)/2,height=2.375, dpi=300)
 
 
 rm(plt, n_oligosarcoma, n_a_idh_hg, plt.intervals)

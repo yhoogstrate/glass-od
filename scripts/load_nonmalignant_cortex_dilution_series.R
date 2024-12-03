@@ -308,4 +308,42 @@ rm(tmp)
 
 
 
+## actual used spike-in percentages ----
+
+
+tmp <- readLines("scripts/analysis_mix_idats.sh") |> 
+  as.data.frame() |> 
+  dplyr::rename(V1 = 1) |> 
+  dplyr::filter(!grepl("^#", V1)) |> 
+  dplyr::filter(grepl("idat-tools[ ]mix", V1)) |> 
+  dplyr::mutate(array_fraction_normal_brain_cli = as.numeric(gsub("^.+ -r ([0-9\\.]+) .+$","\\1",V1))) |> 
+  dplyr::mutate(sentrix_id_tumor = gsub('^.+/([0-9]+_[RC0-9]+)_.+.+/([A-Z0-9]+_[0-9]+_[RC0-9]+)_.+$','\\1',V1)) |> 
+  dplyr::mutate(sentrix_id_control = gsub('^.+/([0-9]+_[RC0-9]+)_.+.+/([A-Z0-9]+_[0-9]+_[RC0-9]+)_.+$','\\2',V1)) |> 
+  dplyr::mutate(array_sentrix_id = gsub('^.+/([0-9]+_[RC0-9]+)_.+.+/([A-Z0-9]+_[0-9]+_[RC0-9]+)_.+/([0-9]+_[RC0-9]+)_.+$','\\3',V1)) |> 
+  dplyr::mutate(V1 = NULL) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 160 * 2)
+    return(.)
+  })() |> 
+  dplyr::distinct() |> # collapse green and red channels
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 160)
+    return(.)
+  })() |> 
+  assertr::verify(array_sentrix_id %in% cortex_dilution.metadata.array_samples$array_sentrix_id) |> 
+  dplyr::mutate(sentrix_id_tumor = NULL) |> 
+  dplyr::mutate(sentrix_id_control = NULL)
+
+
+cortex_dilution.metadata.array_samples <- cortex_dilution.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
+rm(tmp)
+
+
+
+
+
 
