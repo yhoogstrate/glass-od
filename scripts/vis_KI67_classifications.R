@@ -19,6 +19,7 @@ if(!exists('glass_od.metadata.array_samples')) {
 
 
 plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |>
   dplyr::filter(!is.na(staining_KI67_pos_per_area_um2)) |> 
   dplyr::mutate(col = ifelse(
     array_mnp_predictBrain_v12.8_cal_class %in% c("GBM_MES_TYP", "GBM_RTK1"), "Other", array_mnp_predictBrain_v12.8_cal_class
@@ -30,12 +31,14 @@ plt <- glass_od.metadata.array_samples |>
 
 ggplot(plt, aes(x=log(staining_KI67_pos_per_area_um2), y=array_PC2, col=col)) +
   geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)),  label.x=-5.5, col="black", size=theme_nature_size, family = theme_nature_font_family) +
   scale_color_manual(values = c(palette_mnp_12.8_6, `Other`="darkgray")) +
   theme_nature
 
 
 ggplot(plt, aes(x=log(staining_KI67_pos_per_area_um2), y=array_PC3, col=col)) +
   geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)),  label.x=-5.5, col="black", size=theme_nature_size, family = theme_nature_font_family) +
   scale_color_manual(values = c(palette_mnp_12.8_6, `Other`="darkgray")) +
   theme_nature
 
@@ -44,6 +47,7 @@ ggplot(plt, aes(x=log(staining_KI67_pos_per_area_um2),
                                             y=-1 * array_dnaMethyAge__PCHorvathS2018,
                 , col=col)) +
   geom_point(size=theme_nature_size/3) + 
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)),  label.x=-5.5, col="black", size=theme_nature_size, family = theme_nature_font_family) +
   scale_color_manual(values = c(palette_mnp_12.8_6, `Other`="darkgray")) +
   theme_nature
 
