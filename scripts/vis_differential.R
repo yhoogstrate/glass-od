@@ -49,20 +49,20 @@ data.mvalues.probes |>
   table()
 
 data.mvalues.probes |> 
-  dplyr::filter(!is.na(DMP__g2_g3__pp_nc__P.Value)) |> 
-  dplyr::mutate(significant = DMP__g2_g3__pp_nc__P.Value < 0.01) |> 
+  dplyr::filter(!is.na(DMP__g2_g3__pp_nc__adj.P.Val)) |> 
+  dplyr::mutate(significant = DMP__g2_g3__pp_nc__adj.P.Val < 0.01) |> 
   dplyr::pull(significant) |> 
   table()
 
-(193478 / (193478  + 491687))   /    (44375 / ( 640790 + 44375  ))
+(139606 / 685165)   /    (44375 / 685165)
 
 
 
 
 plt <- rbind(
   data.mvalues.probes |> 
-    dplyr::filter(!is.na(DMP__g2_g3__pp_nc__P.Value)) |> 
-    dplyr::mutate(significant = DMP__g2_g3__pp_nc__P.Value < 0.01) |> 
+    dplyr::filter(!is.na(DMP__g2_g3__pp_nc__adj.P.Val)) |> 
+    dplyr::mutate(significant = DMP__g2_g3__pp_nc__adj.P.Val < 0.01) |> 
     dplyr::select(significant) |> 
     dplyr::mutate(type = "WHO Grade")
   ,
@@ -84,7 +84,10 @@ ggplot(plt, aes(fill=significant, x=type)) +
   theme_nature +
   labs(fill="adj. P-value", y = "tested probes", x="", format_subtitle("DMP power"))
 
+
 ggsave("output/figures/vis_differential__DMP_power.pdf", width=8.5 * 0.975 / 6, height = 1.4)
+
+
 
 
 ## A: overall density ----
@@ -129,7 +132,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
   
   labs(x="Per probe t-score Grade 2 ~ Grade 3",
        y="Per probe t-score Primary ~ Recurrent",
-                caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")) +
+       caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")) +
   
   theme_nature +
   theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
@@ -142,6 +145,7 @@ ggsave(paste0("output/figures/vis_differential__overall_density.png"), width=(8.
 
 
 rm(n_samples_grade, n_samples_prim_rec)
+
 
 
 
@@ -219,47 +223,201 @@ plt <- data.mvalues.probes |>
   })()
 
 
+
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
                 y=DMP__primary_recurrence__pp_nc_PC1__t)) +
   
-  #geom_vline(xintercept=0, col="red") +
-  #geom_hline(yintercept=0, col="red") +
+  geom_vline(xintercept=0, col="red", lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd=theme_nature_lwd) +
   
-  geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +
+  geom_point(pch=16, cex=0.001, alpha=0.01, col="black") +
   
-  #geom_vline(xintercept=0, col="red", alpha=0.1) +
-  #geom_hline(yintercept=0, col="red", alpha=0.1) +
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
   
   #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
   #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
   
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size, label.x=5) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size,
+                   label.x= -7,
+                   family = theme_nature_font_family) +
   
   labs(x = "Per probe t-score Grade 2 ~ Grade 3",
        y="Per probe t-score Primary ~ Recurrent",
        caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")
   ) +
   
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  theme_nature + 
+  #theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   
   coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
   coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
   
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
-  #theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+#theme(plot.background = element_rect(fill="white", colour=NA))  # png export
 
 
 
 
-ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected.png"), width=(8.5 * 0.975 * (2/5)), height=3.48, dpi=300)
+ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected.png"),
+       width=(8.5 * 0.975 * (1/4)), height=2.225, dpi=600)
 
 
 
-rm(n_samples_grade, n_samples_prim_rec)
+rm(n_samples_grade, n_samples_prim_rec, plt)
+
+
+### 3b. PC1 / qual corrected volcano ----
+
+
+n_samples_grade <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3(156) |> 
+  nrow()
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+plt.intervals <- 10^seq(log10(min(plt$DMP__g2_g3__pp_nc_PC1__adj.P.Val)), log10(1), by=3/4) # linear intervals in log scaled labels
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__logFC,
+                y=DMP__g2_g3__pp_nc_PC1__adj.P.Val,
+                col=DMP__AcCGAP__pp_nc__t)) +
+  
+  scale_y_continuous(trans=reverselog_trans(base=10),
+                     
+                     breaks=plt.intervals,
+                     labels=round(plt.intervals, 3)
+                     ) +
+  geom_point(pch=16, cex=0.05, alpha=0.2)  +
+
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+
+  theme_nature
 
 
 
-### 4. PC1 / qual corrected HOX CC etc. ----
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__logFC,
+                y=DMP__g2_g3__pp_nc_PC1__adj.P.Val,
+                col=DMP__PC1_PC2_PC3_multivariate__t_PC1)) +
+  
+  scale_y_continuous(trans=reverselog_trans(base=10)) +
+  geom_point(pch=16, cex=0.05, alpha=0.2)  +
+  
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  
+  theme_nature
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__logFC,
+                y=DMP__g2_g3__pp_nc_PC1__adj.P.Val,
+                col=DMP__PC1_PC2_PC3_multivariate__t_PC2)) +
+  
+  scale_y_continuous(trans=reverselog_trans(base=10)) +
+  geom_point(pch=16, cex=0.05, alpha=0.2)  +
+  
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  
+  theme_nature
+
+
+
+
+
+
+
+
+
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__logFC,
+                y=DMP__g2_g3__pp_nc__adj.P.Val,
+                col=DMP__PC1_PC2_PC3_multivariate__t_PC1)) +
+  
+  scale_y_continuous(trans=reverselog_trans(base=10)) +
+  geom_point(pch=16, cex=0.05, alpha=0.2)  +
+  
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  
+  theme_nature
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__logFC,
+                y=DMP__g2_g3__pp_nc_PC1__adj.P.Val,
+                col=DMP__PC1_PC2_PC3_multivariate__t_PC3)) +
+  
+  scale_y_continuous(trans=reverselog_trans(base=10)) +
+  geom_point(pch=16, cex=0.05, alpha=0.2)  +
+  
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  
+  theme_nature
+
+
+
+
+
+
+geom_vline(xintercept=0, col="red", lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd=theme_nature_lwd) +
+  
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size,
+                   label.x= -7,
+                   family = theme_nature_font_family) +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y = "Per probe t-score Primary ~ Recurrent",
+       caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")
+  ) +
+  
+
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
+
+#theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+
+
+
+
+ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected.png"),
+       width=(8.5 * 0.975 * (1/4)), height=2.225, dpi=600)
+
+
+
+rm(n_samples_grade, n_samples_prim_rec, plt)
+
+
+
+### 4. PC1 / qual corrected  + Genes? etc. ----
 
 
 plt <- data.mvalues.probes |> 
@@ -478,7 +636,8 @@ plot(
 
 
 
-## C: AcCGAP in OD ----
+## C: CGCAc AcCGAP in OD ----
+
 
 
 plt <- data.mvalues.probes |> 
@@ -487,7 +646,7 @@ plt <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
     return(.)
   })() |> 
-  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
@@ -495,20 +654,38 @@ plt <- data.mvalues.probes |>
   })()
 
 
-p_B <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                y=DMP__primary_recurrence__pp_nc_PC1__t,
                        col=DMP__AcCGAP__pp_nc__t)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
   
+  
+  geom_vline(xintercept=0, col="red", lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd=theme_nature_lwd) +
+  
+  #geom_point(pch=16, cex=0.001, alpha=0.15) + 
   geom_point(pch=16, cex=0.001, alpha=0.15) + 
   
-  geom_vline(xintercept=0, col="red", alpha=0.1) +
-  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
   
-  labs(x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrent", col="Association A_IDH_LG ~ A_IDH_HG") +
   
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrent",
+       caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)"),
+       col="Per probe t-score CGC[Ac]") +
+  
+  theme_nature +
+  theme(legend.key.size = unit(0.3, 'lines')) + # resize colbox
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
+  
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+
+
+
+ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected__CGCac.png"),
+       width=(8.5 * 0.975 * (1/4)), height=2.559, dpi=600)
 
 
 
@@ -3093,10 +3270,9 @@ plt <- data.mvalues.probes |>
 
 
 
-
-
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
-                col=DPI__FFPE_decay_time__pp_nc__t)) +
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
+                y=DMP__primary_recurrence__pp_nc__t,
+                col=DPI__FFPE_decay_time__pp_nc__t + 4.794594)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
@@ -3105,7 +3281,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
   labs(col="Total probe intensity ~ FFPE decay time") +
   
   theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-8, 8), oob = scales::squish)
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-4, 4), oob = scales::squish)
 
 
 
