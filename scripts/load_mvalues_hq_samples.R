@@ -271,7 +271,7 @@ fn <- "cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds"
 if(file.exists(fn)) {
   
   tmp <-  readRDS(fn) |> 
-    dplyr::select(probe_id, t, adj.P.Val) |> 
+    dplyr::select(probe_id, t, adj.P.Val, logFC) |> 
     dplyr::rename_with(~paste0("DMP__g2_g3__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
     (function(.) {
       print(dim(.))
@@ -300,7 +300,7 @@ fn <- "cache/analysis_differential__g2_g3__PC1__partial_paired_nc__stats.Rds"
 if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
-    dplyr::select(probe_id, t, adj.P.Val) |> 
+    dplyr::select(probe_id, t, adj.P.Val, logFC) |> 
     dplyr::rename_with(~paste0("DMP__g2_g3__pp_nc_PC1__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
     (function(.) {
       print(dim(.))
@@ -1183,13 +1183,6 @@ data.mvalues.probes |>
   dplyr::pull(exp) |> 
   table()
 
-
-
-
-
-
-#ggplot(plt |> dplyr::filter(ATAC_data_per_bin_per_base < 3.2), aes(x=DMP__g2_g3__pp_nc_PC1__t, y=log1p(ATAC_counts_per_bin_per_base))) +
-#  geom_point(pch=19, cex=0.01)
 
 
 
