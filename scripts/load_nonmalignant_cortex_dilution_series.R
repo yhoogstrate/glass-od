@@ -316,7 +316,7 @@ tmp <- readLines("scripts/analysis_mix_idats.sh") |>
   dplyr::rename(V1 = 1) |> 
   dplyr::filter(!grepl("^#", V1)) |> 
   dplyr::filter(grepl("idat-tools[ ]mix", V1)) |> 
-  dplyr::mutate(array_fraction_normal_brain_cli = as.numeric(gsub("^.+ -r ([0-9\\.]+) .+$","\\1",V1))) |> 
+  dplyr::mutate(array_fraction_normal_brain_cli = as.numeric(gsub("^.+ -r ([0-9\\.]+) .+$","\\1",V1)) * 100.0) |> 
   dplyr::mutate(sentrix_id_tumor = gsub('^.+/([0-9]+_[RC0-9]+)_.+.+/([A-Z0-9]+_[0-9]+_[RC0-9]+)_.+$','\\1',V1)) |> 
   dplyr::mutate(sentrix_id_control = gsub('^.+/([0-9]+_[RC0-9]+)_.+.+/([A-Z0-9]+_[0-9]+_[RC0-9]+)_.+$','\\2',V1)) |> 
   dplyr::mutate(array_sentrix_id = gsub('^.+/([0-9]+_[RC0-9]+)_.+.+/([A-Z0-9]+_[0-9]+_[RC0-9]+)_.+/([0-9]+_[RC0-9]+)_.+$','\\3',V1)) |> 
@@ -344,6 +344,60 @@ rm(tmp)
 
 
 
+## relevel ----
 
+
+cortex_dilution.metadata.array_samples <- cortex_dilution.metadata.array_samples |> 
+  dplyr::mutate(array_tumor_id = factor(array_tumor_id, levels=c("0017-R3", "0008-R2", "0121-R3", "0054-R3"))) |> 
+  dplyr::mutate(array_control_id = factor(array_control_id, levels=c("s107", "s108", "s110", "s112"))) |> 
+  dplyr::arrange(array_tumor_id, array_control_id, array_fraction_normal_brain) 
+
+
+
+
+## sandbox ----
+
+
+tmp <- normal_cortex.metadata.array_samples |> 
+  dplyr::filter(!is.na(array_control_id)) |> 
+  tibble::column_to_rownames('array_control_id') |> 
+  dplyr::select(contains("array_mnp_predictBrain_v12.8_cal_")) |> 
+  dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = NULL) |> 
+  round(3) |> 
+  t()
+
+
+tmp |>
+  as.data.frame() |> 
+  dplyr::select(s107) |> 
+  dplyr::arrange(-s107) |> 
+  head(n=5)
+
+
+tmp |>
+  as.data.frame() |> 
+  dplyr::select(s108) |> 
+  dplyr::arrange(-s108) |> 
+  head(n=5)
+
+
+tmp |>
+  as.data.frame() |> 
+  dplyr::select(s110) |> 
+  dplyr::arrange(-s110) |> 
+  head(n=5)
+
+
+tmp |>
+  as.data.frame() |> 
+  dplyr::select(s112) |> 
+  dplyr::arrange(-s112) |> 
+  head(n=5)
+
+
+
+cortex_dilution.metadata.array_samples |>
+  dplyr::select(array_tumor_id, array_control_id, array_fraction_normal_brain, array_fraction_normal_brain_cli) |> 
+  View()
 
 

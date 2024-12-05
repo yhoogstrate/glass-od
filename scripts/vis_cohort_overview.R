@@ -201,12 +201,29 @@ plt.selection.grade <- glass_od.metadata.array_samples |>
   dplyr::mutate(DMP_grade_class = ifelse(resection_tumor_grade == 2, "first Grade 2", "last Grade 3")) |> 
   dplyr::select(array_sentrix_id, DMP_grade_class)
 
+n_first_grade_2 <- plt.selection.grade |>
+  dplyr::filter(DMP_grade_class == "first Grade 2") |> 
+  nrow()
+
+n_last_grade_3 <- plt.selection.grade |>
+  dplyr::filter(DMP_grade_class == "last Grade 3") |> 
+  nrow()
+
+
 
 plt.selection.resection <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   filter_primaries_and_last_recurrences(180) |> 
   dplyr::mutate(DMP_resection_class = ifelse(resection_number == 1, "primary", "last recurrent")) |> 
   dplyr::select(array_sentrix_id, DMP_resection_class)
+
+n_primary <- plt.selection.resection |>
+  dplyr::filter(DMP_resection_class == "primary") |> 
+  nrow()
+
+n_last_recurrent <- plt.selection.resection |>
+  dplyr::filter(DMP_resection_class == "last recurrent") |> 
+  nrow()
 
 
 plt <- glass_od.metadata.array_samples |> 
@@ -266,10 +283,21 @@ ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
   scale_color_manual(values=cols) +
   theme_nature +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_nature_lwd , linetype="solid"))
+  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_nature_lwd , linetype="solid")) +
+  labs(caption = paste0("Top: ",
+                        "first grade 2 - last grade 3: ",
+                        n_first_grade_2, " - ",n_last_grade_3,
+                        "\nBottom: ",
+                        "primary - last recurrent: ",
+                        n_primary, " - ", n_last_recurrent))
 
 
-ggsave("output/figures/vis_cohort_overview_MNP_classes__DMP_sample_selection.pdf", width=8.5 * 0.975 , height = 1.65)
+
+ggsave("output/figures/vis_cohort_overview_MNP_classes__DMP_sample_selection.pdf", width=8.5 * 0.975 , height = 1.85)
+
+
+rm(n_first_grade_2, n_last_grade_3, n_primary, n_last_recurrent, plt, plt.selection.resection, plt.selection.grade)
+
 
 
 
