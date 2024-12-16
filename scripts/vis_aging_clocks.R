@@ -24,8 +24,170 @@ if(!exists('glass_od.metadata.array_samples')) {
 library(ggplot2)
 
 
+# corr + forest mainly PCs ----
+## load data ----
 
-# corr ----
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::mutate(`age_at_diagnosis_days` = as.Date(patient_diagnosis_date) - as.Date(patient_birth_date)) |> 
+  #dplyr::filter(!is.na(age_at_diagnosis_days)) |> 
+  #dplyr::mutate(age_at_diagnosis_days = age_at_diagnosis_days - min(na.omit(age_at_diagnosis_days))) |> 
+  #dplyr::mutate(age_at_diagnosis_days = as.numeric(age_at_diagnosis_days)) |> 
+  #dplyr::mutate(time_tissue_in_ffpe =  ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> 
+  
+  dplyr::rename_with(~ gsub("array_","",.x)) |>
+  dplyr::rename_with(~ gsub("dnaMethyAge__","dnaMethyAge: ",.x)) |>
+  
+  dplyr::select(resection_id,
+                
+                PC1, 
+                PC2, 
+                PC3, 
+                PC4, 
+                PC5, 
+                PC6, 
+
+                `dnaMethyAge: PCHorvathS2018`,
+                `dnaMethyAge: PCHannumG2013`,
+                percentage.detP.signi,
+                `qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`,
+                GLASS_NL_g2_g3_sig, A_IDH_HG__A_IDH_LG_lr__lasso_fit,
+                
+  ) |> 
+  tibble::column_to_rownames('resection_id') |>  
+  
+  dplyr::mutate(`percentage.detP.signi` = log(percentage.detP.signi)) |> 
+  dplyr::rename(`log(% det-P)` = percentage.detP.signi) |> 
+  
+  dplyr::rename(`GLASS-NL p-r signature` = GLASS_NL_g2_g3_sig) |> 
+  dplyr::rename(`CGC[Ac]` = `A_IDH_HG__A_IDH_LG_lr__lasso_fit`) |> 
+  dplyr::rename(`QC: Spec I GT MM 6` = `qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`)
+
+
+
+
+## corrplot ----
+
+
+# <3
+func_ggcorrplot(plt, abs=T) +
+  labs(caption=paste0("n=",nrow(plt)," samples"),
+       subtitle=format_subtitle("correlation PCs"))
+
+ggsave("output/figures/vis_aging_clocks__PC_clustering.pdf", height = 1.9, width=4)
+
+
+
+
+## stats grade ----
+
+
+data <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3(156) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(gr.status = factor(ifelse(resection_tumor_grade == 2, "Grade2", "Grade3"), levels=c("Grade2", "Grade3"))) |> 
+  
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 156) 
+    return(.)
+  })() |> 
+  
+  dplyr::select(resection_id, gr.status, patient) |> 
+  dplyr::left_join(
+    plt |> 
+      tibble::rownames_to_column('resection_id'),
+    by=c('resection_id'='resection_id')
+  ) |> 
+  tibble::column_to_rownames('resection_id')
+
+n <- nrow(data)
+
+design <- model.matrix(~~patient + gr.status, data=data)
+fit <- limma::lmFit(data |> dplyr::mutate(patient = NULL) |> dplyr::mutate(gr.status = NULL) |> t() |>  as.data.frame()
+                    , design)
+fit <- limma::eBayes(fit, trend=T)
+stats <- limma::topTable(fit,
+                         n=nrow(data),
+                         coef="gr.statusGrade3",
+                         sort.by = "none",
+                         confint=T,
+                         adjust.method="fdr") |> 
+  tibble::rownames_to_column('covar') 
+
+
+order = data.frame(covar = c(
+  "PC6",
+  "PC4",
+  "PC5",
+  "log(% det-P)",
+  "PC1",
+  "QC: Spec I GT MM 6"    ,
+  "GLASS-NL p-r signature" ,
+  "PC2"     ,
+  "CGC[Ac]"  ,
+  "dnaMethyAge: PCHannumG2013" ,
+  "dnaMethyAge: PCHorvathS2018",
+  "PC3" 
+)) |> 
+  dplyr::mutate(rank = 1:dplyr::n())
+
+
+stats <- stats |> 
+  dplyr::left_join(order, by=c('covar'='covar'), suffix=c('',''))
+
+
+
+
+stats.all <- rbind(
+  stats |>
+    dplyr::mutate(logFC = 0) |> 
+    dplyr::mutate(t = 0) |> 
+    dplyr::mutate(type = "zero")
+  ,
+  stats |>
+    dplyr::mutate(type = "datapoint")
+  ,
+  stats |>
+    dplyr::mutate(logFC = CI.L) |> 
+    dplyr::mutate(type = "CI")
+  ,
+  stats |>
+    dplyr::mutate(logFC = CI.R) |> 
+    dplyr::mutate(type = "CI")
+)
+
+
+
+
+ggplot(stats.all, aes(x = t, y=reorder(covar, -rank), label=paste0("q=",format.pval(adj.P.Val,nsmall=3, digits = 1)), group=covar)) +
+  geom_line(data=subset(stats.all, type %in% c("datapoint", "zero")), lwd=theme_nature_lwd) + 
+  #geom_line(data=subset(stats.all, type %in% c("CI")),lwd=theme_nature_lwd*3) + 
+  geom_point(data=subset(stats.all, type == "datapoint"), size=theme_nature_size/3) +
+  ggrepel::geom_text_repel(
+    data=subset(stats.all, type %in% c("datapoint")), size=theme_nature_size, nudge_y = 0, family=theme_nature_font_family) + 
+  labs(x="t WHO grade 2 - 3",
+       y = NULL,
+       caption = paste0("First Grade 2 and last Grade 3: n=",n, " samples")) +
+  theme_nature
+
+
+ggsave("output/figures/vis_aging_clocks__PC_clustering_limma.pdf", width=3.5, height=1.955)
+
+
+
+
+
+# corr + forest with QC & clocks ----
+## corr ----
 
 
 plt <- glass_od.metadata.array_samples |> 
@@ -85,9 +247,6 @@ dev.off()
 
 h = corrplot::corrplot(cor(plt, method="spearman"), order="hclust", tl.cex=0.75, tl.pos="l")
 
-
-
-# per entity statistical power ----
 
 
 
