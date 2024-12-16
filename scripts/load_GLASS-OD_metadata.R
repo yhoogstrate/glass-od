@@ -1163,6 +1163,18 @@ rm(tmp)
 ## unsupervised PCA ----
 
 
+tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_prcomp.Rds") |>
+  summary() |> 
+  purrr::pluck('importance') |> 
+  t() |> 
+  as.data.frame()
+
+
+plot(sort(tmp$`Proportion of Variance`, decreasing = T), 
+     xlim=c(1,50),ylim=c(0,0.4),
+     type="p")
+
+
 tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds") |> 
   assertr::verify(!duplicated(array_sentrix_id)) |> 
   (function(.) {
