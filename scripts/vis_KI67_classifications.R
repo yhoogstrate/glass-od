@@ -6,6 +6,7 @@ library(ggplot2)
 library(patchwork)
 
 
+source('scripts/load_palette.R')
 source('scripts/load_functions.R')
 source('scripts/load_themes.R')
 
@@ -28,31 +29,47 @@ plt <- glass_od.metadata.array_samples |>
 
 
 
+plt.facet <- rbind(
+  plt |>
+    dplyr::mutate(facet = "PC2") |> 
+    dplyr::mutate(y = array_PC2),
+  plt |>
+    dplyr::mutate(facet = "PC3") |> 
+    dplyr::mutate(y = array_PC3),
+  plt |>
+    dplyr::mutate(facet = "PC HorvathS2018 * -1") |> 
+    dplyr::mutate(y = -1 * array_dnaMethyAge__PCHorvathS2018)
+) |> 
+  dplyr::mutate(facet = factor(facet, levels=c("PC2", "PC3", "PC HorvathS2018 * -1")))
 
-ggplot(plt, aes(x=log(staining_KI67_pos_per_area_um2), y=array_PC2, col=col)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)),  label.x=-5.5, col="black", size=theme_nature_size, family = theme_nature_font_family) +
-  scale_color_manual(values = c(palette_mnp_12.8_6, `Other`="darkgray")) +
-  theme_nature
+
+plt.intervals <- 10^seq(log10(max(plt$staining_KI67_pos_per_area_um2)), log10(min(plt$staining_KI67_pos_per_area_um2)), length.out = 5) # linear intervals in log scaled labels
 
 
-ggplot(plt, aes(x=log(staining_KI67_pos_per_area_um2), y=array_PC3, col=col)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)),  label.x=-5.5, col="black", size=theme_nature_size, family = theme_nature_font_family) +
-  scale_color_manual(values = c(palette_mnp_12.8_6, `Other`="darkgray")) +
-  theme_nature
-
-
-ggplot(plt, aes(x=log(staining_KI67_pos_per_area_um2), 
-                                            y=-1 * array_dnaMethyAge__PCHorvathS2018,
-                , col=col)) +
+ggplot(plt.facet, aes(x=staining_KI67_pos_per_area_um2,
+                y=y,
+                col=col)) +
+  facet_wrap(~facet, scales="free") +
   geom_point(size=theme_nature_size/3) + 
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)),  label.x=-5.5, col="black", size=theme_nature_size, family = theme_nature_font_family) +
+  ggpubr::stat_cor(method = "pearson",
+                   aes(label = after_stat(r.label)),
+                   label.x.npc = "right", hjust=1,
+                   col="black",
+                   size=theme_nature_size,
+                   family = theme_nature_font_family) +
   scale_color_manual(values = c(palette_mnp_12.8_6, `Other`="darkgray")) +
+  scale_x_log10() +
+  labs(x = expression("KI67+ cells per um^2"),
+       #y="PC HorvathS2018 * -1",
+       col=NULL,
+       subtitle=format_subtitle("KI67 correlations"),
+       caption=paste0("n=",nrow(plt)," samples with KI67 staining and EPIC array data")) + 
   theme_nature
 
 
 
+
+ggsave("output/figures/vis_KI67_classifications__scatterplots.pdf", width = 8.5*0.975 * (3/5), height=2.34)
 
 
 
