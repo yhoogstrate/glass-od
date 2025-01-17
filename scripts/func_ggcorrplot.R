@@ -4,7 +4,7 @@
 
 
 
-func_ggcorrplot <- function(c,abs=F) {
+ggcorrplot <- function(c,abs=F, reorder=T) {
   if(abs) {
     d <- abs(cor(c, method="spearman")) 
     h <- stats::hclust(stats::as.dist(1 - d), method = "ward.D2")
@@ -14,9 +14,13 @@ func_ggcorrplot <- function(c,abs=F) {
     h <- stats::hclust(stats::as.dist(1 - d), method = "ward.D2")
   }
   
-  
-  o <- h$labels[h$order] |>
-    base::rev()
+  if(reorder) {
+    o <- h$labels[h$order] |>
+      base::rev()
+  } else {
+    o <- h$labels
+      #base::rev()
+  }
   
   
   plt <- d |>

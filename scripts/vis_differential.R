@@ -267,6 +267,8 @@ ggsave(paste0("output/figures/vis_differential__overall_density__quality_correct
 rm(n_samples_grade, n_samples_prim_rec, plt)
 
 
+
+
 ### 3b. PC1 / qual corrected volcano ----
 
 
@@ -290,24 +292,51 @@ plt <- data.mvalues.probes |>
   })()
 
 
-plt.intervals <- 10^seq(log10(min(plt$DMP__g2_g3__pp_nc_PC1__adj.P.Val)), log10(1), by=3/4) # linear intervals in log scaled labels
+# stats
+stats <- plt |> 
+  dplyr::filter(DMP__g2_g3__pp_nc_PC1__adj.P.Val < 0.01) |> 
+  dplyr::filter(abs(DMP__g2_g3__pp_nc_PC1__logFC) > 1) |> 
+  dplyr::mutate(sign = ifelse(DMP__g2_g3__pp_nc_PC1__t < 0,"increased methylation", "decreased methylation")) |> 
+  dplyr::pull(sign) |> 
+  table()
+
+stats / sum(stats) * 100
+
+fisher.test(t(rbind(stats, c(sum(stats) / 2, sum(stats) / 2))))
+fisher.test(t(rbind(stats,  c(1,1) )))
+chisq.test(t(rbind(stats, c(sum(stats) / 2, sum(stats) / 2))))
+
+
+t.test(plt$DMP__g2_g3__pp_nc_PC1__t, mu=0, alternative="less") # single sided to confirm findings in AC
+
+
+
+plt.intervals <- 10^seq(log10(min(plt$DMP__g2_g3__pp_nc_PC1__adj.P.Val)), log10(1),  length.out=6) # linear intervals in log scaled labels
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__logFC,
-                y=DMP__g2_g3__pp_nc_PC1__adj.P.Val,
-                col=DMP__AcCGAP__pp_nc__t)) +
+                y=DMP__g2_g3__pp_nc_PC1__adj.P.Val
+                #col=DMP__AcCGAP__pp_nc__t
+                )) +
   
   scale_y_continuous(trans=reverselog_trans(base=10),
                      
                      breaks=plt.intervals,
-                     labels=round(plt.intervals, 3)
+                     labels=format(plt.intervals, digits = 3)
                      ) +
-  geom_point(pch=16, cex=0.05, alpha=0.2)  +
-
   
+  geom_vline(xintercept = 0, col="red", lwd=theme_nature_lwd, lty=2) +
+  geom_hline(yintercept = 1, col="red", lwd=theme_nature_lwd, lty=2) +
+  
+  geom_point(pch=16, cex=0.05, col="gray", alpha=0.2)  +
+
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
 
-  theme_nature
+  theme_nature +
+  theme(plot.background = element_rect(fill="white", colour=NA)) # png export
+
+ggsave("output/figures/vis_differential__PC1__volcano.png", width = 4* 0.58, height=2.5 * 0.835)
+
 
 
 
@@ -762,7 +791,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 3) +
   geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 2) +
   geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5", size=theme_nature_size, family = theme_nature_font_family) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size, family = theme_nature_font_family) +
   
   labs(x = "Per probe t-score GLASS-OD Grade 2 ~ Grade 3",
        y = "Per probe t-score GLASS-NL Grade 2 & 3 ~ Grade 4",
@@ -775,7 +804,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   #scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
   theme(plot.background = element_rect(fill="white", colour=NA))  # png export
 
-ggsave("output/figures/vis_differential__GLASS_NL__x__GLASS_OD__grade__PC1.png", width=(8.5 * 0.97 / 4), height=(8.5 * 0.97 / 4))
+ggsave("output/figures/vis_differential__GLASS_NL__x__GLASS_OD__grade__PC1.png", width=2.115, height=2.385)
 
 
 
@@ -916,9 +945,9 @@ plt.oligo <- plt.oligo |>
 
 
 
-ggplot(plt.oligo) +
+p1 = ggplot(plt.oligo) +
   geom_hline(yintercept=0, col="red", lwd=theme_nature_lwd) +
-  geom_half_violin( # buggy library, needs AES within function itself otherwise it places the violins very odd
+  gghalves::geom_half_violin( # buggy library, needs AES within function itself otherwise it places the violins very odd
     aes(x = CHR_hg38,
         y = DMP__g2_g3__pp_nc_PC1__t,
         split = as.factor(chr_arm),
@@ -926,14 +955,14 @@ ggplot(plt.oligo) +
     position = "identity",
     draw_quantiles = c(0.5),
     linewidth=theme_nature_lwd,
-    width = 1.05
+    width = 1.025
     #adjust = 2.95
   ) + 
   scale_fill_manual(values=c('chr1p'='lightblue',
                              #'chr20p'='lightpink',
                              #'chr20q'='lightpink',
                              'chr19q'='lightgreen',
-                             'other'='lightgray')) + 
+                             'other'=mixcol('#FFFFFF','#EEEEEE'))) + 
   theme_nature +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))  +
   labs(x=NULL, fill=NULL , y="per-probe t-score GLASS-OD") +
@@ -970,9 +999,9 @@ plt.astro <- plt.astro |>
   dplyr::mutate(CHR_hg38 = factor(CHR_hg38, levels=gtools::mixedsort(unique(as.character(CHR_hg38)))))
 
 
-ggplot(plt.astro) +
+p2 = ggplot(plt.astro) +
   geom_hline(yintercept=0, col="red", lwd=theme_nature_lwd) +
-  geom_half_violin( # buggy library, needs AES within function itself otherwise it places the violins very odd
+  gghalves::geom_half_violin( # buggy library, needs AES within function itself otherwise it places the violins very odd
     aes(x = CHR_hg38,
         y = DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t,
         split = as.factor(chr_arm),
@@ -982,11 +1011,11 @@ ggplot(plt.astro) +
     linewidth=theme_nature_lwd,
     trim=T,
     nudge = 0,
-    width = 1.05
+    width = 1.025
   ) + 
   scale_fill_manual(values=c(#'chr20p'='lightpink',
                              #'chr20q'='lightpink',
-                             'other'='lightgray')) + 
+                             'other'=mixcol('#FFFFFF','#EEEEEE'))) + 
   theme_nature +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   labs(x=NULL, fill=NULL , y="per-probe t-score GLASS-NL") +
@@ -998,7 +1027,7 @@ ggplot(plt.astro) +
 library(patchwork)
 p1 / p2
 
-ggsave("output/figures/vis_differential__GLASS_OD__GLASS_NL__grade__PC1__chromosomal_arm.pdf", width=8.5*0.975 * (6/8), height = 6)
+ggsave("output/figures/vis_differential__GLASS_OD__GLASS_NL__grade__PC1__chromosomal_arm.pdf", width=8.5*0.975 * (6/8), height = 5)
 
 
 
@@ -1201,11 +1230,6 @@ ggsave(paste0("output/figures/vis_differential__FFPE_and_freezer_decay_time__mul
 
 
 
-
-
-
-
-## F: Treatment effect(s) ----
 
 
 
@@ -4144,13 +4168,15 @@ plt <- data.mvalues.probes |>
   dplyr::rename_with(~ gsub("wgEncodeUwRepliSeq","RepliSeq: ",.x)) |> 
   dplyr::rename_with(~ gsub("WaveSignalRep2","-rep2",.x)) |>  
   dplyr::rename_with(~ gsub("WaveSignalRep1","",.x)) |> 
-  dplyr::rename(`t-score OD` = DMP__g2_g3__pp_nc_PC1__t) |> 
-  cor(method = "spearman")
+  dplyr::rename(`t-score OD` = DMP__g2_g3__pp_nc_PC1__t)
 
 
-pdf("output/figures/vis_differential__repliseq_correlation.pdf", width= 8.5*0.975/4, height = 2.2)
-corrplot::corrplot(plt, order="hclust",  tl.cex=0.75, tl.pos="l")
-dev.off()
+
+func_ggcorrplot(plt, abs=T) +
+  labs(caption=paste0("n=",prettyNum(c(nrow(plt)),big.mark=",")," probes with Repli-seq annotation"),
+       subtitle=format_subtitle("Repli-Seq intensity vs. Grade 2 - 3 DMP outcome"))
+
+ggsave("output/figures/vis_differential__repliseq_correlation.pdf", width= 3, height = 2.2)
 
 
 
