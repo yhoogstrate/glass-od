@@ -215,7 +215,7 @@ out <- metadata |>
     print(dim(.))
     assertthat::assert_that(nrow(.) == 
                               (CONST_N_GLASS_OD_ALL_SAMPLES + 
-                                 CONST_N_OD_VALIDATION_INCLUDED_SAMPLES + 
+                                 (CONST_N_OD_VALIDATION_ALL_SAMPLES - 34) + 
                                  CONST_N_GLASS_NL_ALL_SAMPLES + 
                                  CONST_N_GSAM_ALL_SAMPLES +
                                  CONST_N_CATNON_ALL_SAMPLES

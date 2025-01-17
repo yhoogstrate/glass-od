@@ -206,7 +206,7 @@ ggsave("output/figures/vis_oligosarcoma_and_purity__glass-od_barplot_rt.pdf", wi
 
 
 
-# fig 4: spike-in paths ----
+# fig 4g: spike-in paths ----
 
 
 plt.tumor <- rbind(
@@ -238,7 +238,8 @@ plt.tumor <- rbind(
 
 plt.spiked <- cortex_dilution.metadata.array_samples |> 
     dplyr::select(array_tumor_id, array_sentrix_id, array_mnp_predictBrain_v12.8_cal_class, array_methylation_bins_1p19q_purity,
-                  array_fraction_normal_brain, array_control_id)
+                  array_fraction_normal_brain_cli, array_control_id) |> 
+  dplyr::rename(array_fraction_normal_brain = array_fraction_normal_brain_cli)
 
 plt.normal_cortex <- rbind(
   normal_cortex.metadata.array_samples |> 

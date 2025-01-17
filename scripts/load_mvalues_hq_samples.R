@@ -48,7 +48,7 @@ data.mvalues.hq_samples <- readRDS("cache/mvalues/mvalues_hq.Rds") |>  # former 
 
 
 fn <- "cache/data.mvalues.probes.init.Rds"
-
+#file.remove(fn)
 
 if(file.exists(fn)) {
   
@@ -208,59 +208,59 @@ rm(fn)
 
 ### prim rec INTENSITIES ----
 
-
-fn <- "cache/analysis_differential_intensities__primary_recurrence__partial_paired_nc__stats.Rds"
-if(file.exists(fn)) {
-  
-  tmp <- readRDS(fn) |> 
-    dplyr::select(probe_id, t, adj.P.Val) |> 
-    dplyr::rename_with(~paste0("DPI__primary_recurrence__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
-    (function(.) {
-      print(dim(.))
-      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
-      return(.)
-    })()
-  
-  
-  data.mvalues.probes <- data.mvalues.probes |> 
-    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
-  
-  rm(tmp)
-  
-} else {
-  warning("DMP result primary - recurrence is missing")
-}
-
-rm(fn)
-
-
-### prim rec INTENSITIES non-log ----
-
-
-fn <- "cache/analysis_differential_intensities__primary_recurrence__partial_paired_nc__non_log__stats.Rds"
-if(file.exists(fn)) {
-  
-  tmp <- readRDS(fn) |> 
-    dplyr::select(probe_id, t, adj.P.Val) |> 
-    dplyr::rename_with(~paste0("DPI__primary_recurrence__pp_nc__non_log__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
-    (function(.) {
-      print(dim(.))
-      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
-      return(.)
-    })()
-  
-  
-  data.mvalues.probes <- data.mvalues.probes |> 
-    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
-  
-  rm(tmp)
-  
-} else {
-  warning("DMP result primary - recurrence is missing")
-}
-
-rm(fn)
-
+# 
+# fn <- "cache/analysis_differential_intensities__primary_recurrence__partial_paired_nc__stats.Rds"
+# if(file.exists(fn)) {
+#   
+#   tmp <- readRDS(fn) |> 
+#     dplyr::select(probe_id, t, adj.P.Val) |> 
+#     dplyr::rename_with(~paste0("DPI__primary_recurrence__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+#     (function(.) {
+#       print(dim(.))
+#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+#       return(.)
+#     })()
+#   
+#   
+#   data.mvalues.probes <- data.mvalues.probes |> 
+#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+#   
+#   rm(tmp)
+#   
+# } else {
+#   warning("DMP result primary - recurrence is missing")
+# }
+# 
+# rm(fn)
+# 
+# 
+# ### prim rec INTENSITIES non-log ----
+# 
+# 
+# fn <- "cache/analysis_differential_intensities__primary_recurrence__partial_paired_nc__non_log__stats.Rds"
+# if(file.exists(fn)) {
+#   
+#   tmp <- readRDS(fn) |> 
+#     dplyr::select(probe_id, t, adj.P.Val) |> 
+#     dplyr::rename_with(~paste0("DPI__primary_recurrence__pp_nc__non_log__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+#     (function(.) {
+#       print(dim(.))
+#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+#       return(.)
+#     })()
+#   
+#   
+#   data.mvalues.probes <- data.mvalues.probes |> 
+#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('','') )
+#   
+#   rm(tmp)
+#   
+# } else {
+#   warning("DMP result primary - recurrence is missing")
+# }
+# 
+# rm(fn)
+# 
 
 
 
@@ -324,57 +324,57 @@ rm(fn)
 
 ### g3 g2 INTENSITIES ----
 
-
-fn <- "cache/analysis_differential_intensities__g2_g3__partial_paired_nc__stats.Rds"
-if(file.exists(fn)) {
-  
-  tmp <-  readRDS(fn) |> 
-    dplyr::select(probe_id, t, adj.P.Val) |> 
-    dplyr::rename_with(~paste0("DPI__g2_g3__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
-    (function(.) {
-      print(dim(.))
-      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
-      return(.)
-    })()
-  
-  data.mvalues.probes <- data.mvalues.probes |> 
-    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
-  
-  rm(tmp)
-  
-} else {
-  warning("DMP result g2 - g3 is missing")
-}
-
-rm(fn)
-
+# 
+# fn <- "cache/analysis_differential_intensities__g2_g3__partial_paired_nc__stats.Rds"
+# if(file.exists(fn)) {
+#   
+#   tmp <-  readRDS(fn) |> 
+#     dplyr::select(probe_id, t, adj.P.Val) |> 
+#     dplyr::rename_with(~paste0("DPI__g2_g3__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+#     (function(.) {
+#       print(dim(.))
+#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+#       return(.)
+#     })()
+#   
+#   data.mvalues.probes <- data.mvalues.probes |> 
+#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+#   
+#   rm(tmp)
+#   
+# } else {
+#   warning("DMP result g2 - g3 is missing")
+# }
+# 
+# rm(fn)
+# 
 
 
 ### g3 g2 INTENSITIES non log ----
 
-
-fn <- "cache/analysis_differential_intensities__g2_g3__partial_paired_nc__non_log__stats.Rds"
-if(file.exists(fn)) {
-  
-  tmp <-  readRDS(fn) |> 
-    dplyr::select(probe_id, t, adj.P.Val) |> 
-    dplyr::rename_with(~paste0("DPI__g2_g3__pp_nc__non_log__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
-    (function(.) {
-      print(dim(.))
-      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
-      return(.)
-    })()
-  
-  data.mvalues.probes <- data.mvalues.probes |> 
-    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
-  
-  rm(tmp)
-  
-} else {
-  warning("DMP result g2 - g3 is missing")
-}
-
-rm(fn)
+# 
+# fn <- "cache/analysis_differential_intensities__g2_g3__partial_paired_nc__non_log__stats.Rds"
+# if(file.exists(fn)) {
+#   
+#   tmp <-  readRDS(fn) |> 
+#     dplyr::select(probe_id, t, adj.P.Val) |> 
+#     dplyr::rename_with(~paste0("DPI__g2_g3__pp_nc__non_log__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
+#     (function(.) {
+#       print(dim(.))
+#       assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+#       return(.)
+#     })()
+#   
+#   data.mvalues.probes <- data.mvalues.probes |> 
+#     dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+#   
+#   rm(tmp)
+#   
+# } else {
+#   warning("DMP result g2 - g3 is missing")
+# }
+# 
+# rm(fn)
 
 
 
