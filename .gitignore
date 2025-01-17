@@ -18,3 +18,5 @@ lengths.R
 scripts/tmp_glass_metadata_request.R
 /cache
 /cache_old
+*.Rds
+data/DNA Methylation - 450K arrays - Alzheimer

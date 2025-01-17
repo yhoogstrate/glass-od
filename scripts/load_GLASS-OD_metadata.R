@@ -246,6 +246,8 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
 rm(tmp)
 
 
+
+
 ## c. calc survival ----
 
 
@@ -1033,49 +1035,57 @@ rm(tmp, tmp.ls)
 ## MethylScape Bethesda Classifier v2 ----
 
 
-tmp <- readRDS( "cache/MethylScape_Bethesda_Classifier_v2.Rds") |> 
-  (function(.) {
-    print(dim(.))
-    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
-    return(.)
-  })() |> 
-  dplyr::mutate(array_sentrix_id = gsub("^.+_([0-9]+_[0-9A-Z]+)$","\\1",array_sentrix_id)) |> 
-  assertr::verify(!is.na(array_sentrix_id)) |> 
-  assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
-  assertr::verify(!is.na(array_methylscape_bethesda_class)) |> 
-  assertr::verify(is.numeric(array_methylscape_bethesda_class_score))
-  #dplyr::mutate(array_methylscape_bethesda_class = ifelse(array_methylscape_bethesda_class == "O_SARC_IDH", "OLIGOSARC_IDH" , array_methylscape_bethesda_class))
+fn <- "cache/MethylScape_Bethesda_Classifier_v2.Rds"
+# file.remove(fn)
 
+if(file.exists(fn)) {
+  tmp <- readRDS(fn) |> 
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
+      return(.)
+    })() |> 
+    dplyr::mutate(array_sentrix_id = gsub("^.+_([0-9]+_[0-9A-Z]+)$","\\1",array_sentrix_id)) |> 
+    assertr::verify(!is.na(array_sentrix_id)) |> 
+    assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
+    assertr::verify(!is.na(array_methylscape_bethesda_class)) |> 
+    assertr::verify(is.numeric(array_methylscape_bethesda_class_score))
+    #dplyr::mutate(array_methylscape_bethesda_class = ifelse(array_methylscape_bethesda_class == "O_SARC_IDH", "OLIGOSARC_IDH" , array_methylscape_bethesda_class))
+  
+} else {
+  tmp.ls <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MethylScape Bethesda classifier/", pattern = "*.html", recursive = TRUE)
 
+  tmp <- parse_MethylScape_Bv2(paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MethylScape Bethesda classifier/",tmp.ls)) |>
+    dplyr::mutate(sid = gsub("^([^_]+)_.+$","\\1", array_sentrix_id)) |> 
+    dplyr::mutate(array_sentrix_id = gsub("^[^_]+_(.+)$","\\1", array_sentrix_id)) |> 
+    dplyr::filter(array_sentrix_id != "207356840076_R02C01") |> # exclude, contaminated w/ non tumor normal DNA, discovered after running classifier
+    dplyr::mutate(sid=NULL) |> 
+    (function(.) {
+     print(dim(.))
+     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
+     return(.)
+   })()
 
+  saveRDS(tmp, "cache/MethylScape_Bethesda_Classifier_v2.Rds")
+  rm(tmp.ls)
+}
 
-# if err, then:
-# 
-# tmp.ls <- list.files(path = "data/GLASS_OD/DNA Methylation - EPIC arrays - MethylScape Bethesda classifier/", pattern = "*.html", recursive = TRUE)
-# 
-# tmp <- parse_MethylScape_Bv2(paste0("data/GLASS_OD/DNA Methylation - EPIC arrays - MethylScape Bethesda classifier/",tmp.ls)) |>
-#  (function(.) {
-#    print(dim(.))
-#    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
-#    return(.)
-#  })()
-# 
-# saveRDS(tmp, "cache/MethylScape_Bethesda_Classifier_v2.Rds")
-# rm(tmp.ls)
 
 
 
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
-  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |>
+  dplyr::left_join(tmp , by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |>
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_ALL_SAMPLES + CONST_N_CATNON_ALL_SAMPLES + CONST_N_OD_VALIDATION_ALL_SAMPLES)
+    assertthat::assert_that(sum(!is.na(.$array_methylscape_bethesda_class)) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
     return(.)
   })()
 
 
 
 rm(tmp)
+
 
 
 
@@ -1170,9 +1180,9 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_prcomp.Rds") |>
   as.data.frame()
 
 
-plot(sort(tmp$`Proportion of Variance`, decreasing = T), 
-     xlim=c(1,50),ylim=c(0,0.4),
-     type="p")
+# plot(sort(tmp$`Proportion of Variance`, decreasing = T), 
+#      xlim=c(1,50),ylim=c(0,0.4),
+#      type="p")
 
 
 tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds") |> 
@@ -1187,7 +1197,7 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds") |>
   assertr::verify(!is.na(array_PC2)) |> 
   assertr::verify(!is.na(array_PC3)) |> 
   assertr::verify(!is.na(array_PC163)) |> 
-  assertr::verify(!is.na(array_PC212)) |> 
+  assertr::verify(!is.na(array_PC211)) |> 
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
@@ -1196,7 +1206,7 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds") |>
   })()
 
 
-tmp$array_sentrix_id[tmp$array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id == F]
+#tmp$array_sentrix_id[tmp$array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id == F]
 
 
 
@@ -1217,7 +1227,7 @@ tmp.2 <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD__lifted_over_to_
   assertr::verify(!is.na(array_PC2)) |> 
   assertr::verify(!is.na(array_PC3)) |> 
   assertr::verify(!is.na(array_PC163)) |> 
-  assertr::verify(!is.na(array_PC212))
+  assertr::verify(!is.na(array_PC211))
 
 
 stopifnot(colnames(tmp) == colnames(tmp.2))
@@ -1255,7 +1265,7 @@ tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-OD_AND_VALIDATION_x.R
   })() |>
   assertr::verify(!is.na(array_GLASS_OD_VALIDATION_PC1)) |> 
   assertr::verify(!is.na(array_GLASS_OD_VALIDATION_PC2)) |> 
-  assertr::verify(!is.na(array_GLASS_OD_VALIDATION_PC298)) |> 
+  assertr::verify(!is.na(array_GLASS_OD_VALIDATION_PC297)) |> 
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
@@ -1439,6 +1449,37 @@ rm(tmp)
 #   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
 # 
 # rm(tmp)
+
+
+
+## CDKN2A/B manual annotations ----
+
+
+tmp <- read.csv("data/CDKN2AB_export.txt", header=T, sep="\t", stringsAsFactors = F, check.names=F) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == 111)
+    return(.)
+    })() |> 
+  assertr::verify(`Last resection` %in% glass_od.metadata.array_samples$resection_id) |> 
+  dplyr::rename(resection_id = `Last resection`) |> 
+  
+  dplyr::rename(`CDKN2A/B focal deletion` = `Focal del.`) |> 
+  dplyr::rename(`CDKN2A/B (partial) arm deletion` = `(partial) arm del.`) |> 
+  dplyr::rename(`CDKN2A/B deletion status last recurrence` = `wt/SD/HD`) |> 
+  
+  dplyr::select(resection_id, contains("CDKN2A")) |> 
+  
+  dplyr::mutate(`CDKN2A/B focal deletion` = ifelse(`CDKN2A/B focal deletion` == "-","no",`CDKN2A/B focal deletion`)) |> 
+  dplyr::mutate(`CDKN2A/B (partial) arm deletion` = ifelse(`CDKN2A/B (partial) arm deletion` == "-","no",`CDKN2A/B (partial) arm deletion`)) |> 
+  dplyr::mutate(`CDKN2A/B deletion status last recurrence` = ifelse(`CDKN2A/B deletion status last recurrence` == "-","no",`CDKN2A/B deletion status last recurrence`))
+
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('resection_id'='resection_id'), suffix=c('',''))
+
+rm(tmp)
+
 
 
 

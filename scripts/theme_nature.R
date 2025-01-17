@@ -95,6 +95,10 @@ theme_nature <- theme_bw() +
   )
 
 
+theme_nature_gpar <-  grid::gpar(fontsize = theme_nature_size / (3.88 / 11),
+                           fontfamily = theme_nature_font_family
+                           )
+
 # Facette: use facet_wrap with scales="free" rather than facet_grid, for nice borders
 # facet_wrap(~facet, scales="free",ncol=5)
 
@@ -105,8 +109,8 @@ theme_nature <- theme_bw() +
 # ggsave(..., width = (8.5 * 0.95) * (1/3), height = .. (<11.2)) # for three figs on one page width
 
 library(extrafont)
-loadfonts()
-choose_font("Times New Roman")
+extrafont::loadfonts()
+extrafont::choose_font("Times New Roman")
 
 
 
