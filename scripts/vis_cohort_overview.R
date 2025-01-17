@@ -197,7 +197,7 @@ glass_od.metadata.array_samples |>
 
 plt.selection.grade <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(156) |> 
+  filter_first_G2_and_last_G3(154) |> 
   dplyr::mutate(DMP_grade_class = ifelse(resection_tumor_grade == 2, "first Grade 2", "last Grade 3")) |> 
   dplyr::select(array_sentrix_id, DMP_grade_class)
 
@@ -213,7 +213,7 @@ n_last_grade_3 <- plt.selection.grade |>
 
 plt.selection.resection <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_primaries_and_last_recurrences(180) |> 
+  filter_primaries_and_last_recurrences(179) |> 
   dplyr::mutate(DMP_resection_class = ifelse(resection_number == 1, "primary", "last recurrent")) |> 
   dplyr::select(array_sentrix_id, DMP_resection_class)
 
