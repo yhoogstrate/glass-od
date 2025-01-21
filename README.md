@@ -35,5 +35,5 @@ ___
 
 # GLASS-OD methylation analysis code #
 
-Dr. Youri Hoogstrate, 2023
+Dr. Youri Hoogstrate, 2023 - 2025
 

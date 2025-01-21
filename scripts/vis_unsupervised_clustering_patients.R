@@ -4,6 +4,8 @@
 
 
 library(ggplot2)
+library(ComplexHeatmap)
+
 
 source('scripts/load_constants.R')
 source('scripts/load_functions.R')
@@ -19,10 +21,9 @@ if(!exists('glass_od.metadata.array_samples')) {
 # plt ----
 
 
-## PC hierarchical ----
+## PC hierarchical ComplexHeatmap ----
 
 
-library(ComplexHeatmap)
 
 plt <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
@@ -76,15 +77,44 @@ heidi <- HeatmapAnnotation(`1. MNP` = (plt$heidi_label),
                               -0.8 * max(abs(plt$array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)),
                               
                               length.out=100), col6(100))
-                            )
+                            ),
+                           
+                           annotation_name_gp = theme_nature_gpar,
+                           annotation_legend_param = list(
+                             `1. MNP` = list(title_gp = theme_nature_gpar, labels_gp = theme_nature_gpar),
+                             `2. Radio Therapy` = list(title_gp = theme_nature_gpar, labels_gp = theme_nature_gpar),
+                             `3. Chemo` = list(title_gp = theme_nature_gpar, labels_gp = theme_nature_gpar),
+                             `4. WHO grade` = list(title_gp = theme_nature_gpar, labels_gp = theme_nature_gpar),
+                             `5. resection` = list(title_gp = theme_nature_gpar, labels_gp = theme_nature_gpar),
+                             `6. log(frac. detP)` = list(title_gp = theme_nature_gpar, labels_gp = theme_nature_gpar),
+                             `7. PC1` = list(title_gp = theme_nature_gpar, labels_gp = theme_nature_gpar),
+                             `8. PCHorvathS2018` = list(title_gp = theme_nature_gpar, labels_gp = theme_nature_gpar),
+                             `9. CGC[ac]` = list(title_gp = theme_nature_gpar, labels_gp = theme_nature_gpar)
+                           ),
+                           
+                           simple_anno_size = unit(0.22, "cm")
 )
-Heatmap(mat, name = "mat", 
+
+
+pdf("output/figures/vis_unsupervised_cluster_patients__ComplexHeatMap.pdf",width=8.5*0.975, height=3.3 )
+
+
+Heatmap(mat,
+        name = "mat", 
         top_annotation = heidi,
         cluster_rows = F,
         clustering_method_columns = "ward.D2",
         
-        col = circlize::colorRamp2(seq(-410, 410, length.out=100), col6(100))
+        col = circlize::colorRamp2(seq(-410, 410, length.out=100), col6(100)),
+        
+        show_column_names = F,
+        
+        row_names_gp = theme_nature_gpar,
+        column_dend_gp = gpar(lwd = theme_nature_lwd),
+        heatmap_legend_param = list(title="PC2 - PC20", title_gp = theme_nature_gpar, labels_gp = theme_nature_gpar)
 )
+
+dev.off()
 
 
 

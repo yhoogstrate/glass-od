@@ -34,7 +34,8 @@ metadata <- glass_od.metadata.array_samples |>
     resection_treatment_status_radio == T ~ "Yes",
     resection_treatment_status_radio == F ~ "No",
     T ~ as.character(NA)
-  ))
+  )) |> 
+  dplyr::mutate(CDKN2AB = `CDKN2A/B deletion status last recurrence`)
 
 
 
@@ -103,7 +104,7 @@ ggplot(plt, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-array_PC2, col=col2
 
 ## Figure 2 ----
 
-### new PC2 ----
+### new GLASS-NL ----
 
 
 plt.split <- rbind(
@@ -145,6 +146,18 @@ plt.split <- rbind(
     dplyr::mutate(col = chemo) |> 
     dplyr::mutate(facet = "g. Chemo")  |> 
     dplyr::mutate(stat = 'NA')
+  ,
+  metadata |> 
+    dplyr::mutate(col = dplyr::case_when(
+      CDKN2AB == "wt" ~ "CDKN2A/B wt",
+      CDKN2AB == "SD, arm" ~ "CDKN2A/B SD arm/chr",
+      CDKN2AB == "SD, chr" ~ "CDKN2A/B SD arm/chr",
+      CDKN2AB == "SD, focal" ~ "CDKN2A/B SD focal",
+      CDKN2AB == "HD" ~ "CDKN2A/B HD",
+      T ~ "NA"
+    )) |>
+    dplyr::mutate(facet = "h. CDKNA/B")  |> 
+    dplyr::mutate(stat = 'NA')
 )
 
 
@@ -167,9 +180,15 @@ ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL
     
     "FFPE"="darkgreen",
     "OLIGOSARC_IDH" = "orange",
-    "NA" = "gray40",
+    "NA" = "gray80",
     "other" = "purple",
-    "Tissue"="brown"
+    "Tissue"="brown",
+    
+    "CDKN2A/B wt" = "darkgreen",
+    "CDKN2A/B SD arm/chr" = "orange",
+    "CDKN2A/B SD focal" = "red",
+    "CDKN2A/B HD" = "brown"
+    
   )) +
   labs(x="Astrocytoma CGC Lasso",y = "GLASS-NL signature (supervised primary - recurrent)", col="") +
   labs(subtitle=format_subtitle("Logit WHO grade")) +

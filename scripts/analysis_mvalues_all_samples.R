@@ -48,7 +48,7 @@ metadata.glass_od <- glass_od.metadata.array_samples |>
     print(dim(.))
     assertthat::assert_that(nrow(.) == (CONST_N_GLASS_OD_ALL_SAMPLES +
                                         CONST_N_CATNON_ALL_SAMPLES + 
-                                        CONST_N_OD_VALIDATION_INCLUDED_SAMPLES))
+                                        (CONST_N_OD_VALIDATION_ALL_SAMPLES - 34)))
     return(.)
   })()
 

@@ -21,16 +21,15 @@ library(patchwork)
 
 
 metadata.all <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(212) |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3(156) |> 
   dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2", "Grade3")) |> 
   dplyr::mutate(gr.status = factor(gr.status, levels=c("Grade2", "Grade3")))
 
 
-#'@todo remove interim samples, second g2's and non-last g3's etc.
-#'@todo first grading needs to be complete
-
 
 ## get raw cnv profiles ----
+
 
 f <- function(fn, purity) {
   #fn = metadata$heidelberg_cnvp_bins[1]
