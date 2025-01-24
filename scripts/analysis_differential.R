@@ -4075,14 +4075,17 @@ rm(fit.GLASS_NL_sig.pp.nc, stats.GLASS_NL_sig.pp.nc)
 
 metadata.ffpe_or_ff.pp.nc <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  
   dplyr::filter(!is.na(isolation_material)) |>
   dplyr::mutate(isolation_material = factor(isolation_material, levels=c("ffpe", "tissue"))) |> 
   dplyr::mutate(ffpe_or_ff_time = ifelse(isolation_material == "ffpe", -time_between_resection_and_array, 0)) |> 
   dplyr::filter(!is.na(ffpe_or_ff_time)) |> 
+  
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() >= 2) |> 
   dplyr::ungroup() |> 
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
+  
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == 205)

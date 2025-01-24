@@ -406,6 +406,7 @@ if(file.exists(fn)) {
 rm(fn)
 
 
+
 ### Oligosarcoma A_IDH_HG ----
 
 
@@ -619,8 +620,6 @@ rm(fn)
 
 
 
-
-
 ### PCs multivariate 1st 8 components ----
 
 
@@ -647,6 +646,7 @@ if(file.exists(fn)) {
 }
 
 rm(fn)
+
 
 
 
@@ -782,6 +782,8 @@ for (fn in fns) {
   
   rm(fn)
 }
+
+rm(txt, fns)
 
 
 

@@ -54,7 +54,7 @@ data.mvalues.probes |>
   dplyr::pull(significant) |> 
   table()
 
-(139606 / 685165)   /    (44375 / 685165)
+(157187 / CONST_N_PROBES_UNMASKED_AND_DETP)   /    (39540 / CONST_N_PROBES_UNMASKED_AND_DETP)
 
 
 
@@ -96,12 +96,12 @@ ggsave("output/figures/vis_differential__DMP_power.pdf", width=8.5 * 0.975 / 6, 
 
 n_samples_grade <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(156) |> 
+  filter_first_G2_and_last_G3(154) |> 
   nrow()
 
 n_samples_prim_rec <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_primaries_and_last_recurrences(180) |> 
+  filter_primaries_and_last_recurrences(179) |> 
   nrow()
 
 
@@ -127,7 +127,10 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
   
   geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +
   
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size, label.x=5) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black",
+                   size=theme_nature_size, 
+                   family = theme_nature_font_family,
+                   label.x=5) +
   
   
   labs(x="Per probe t-score Grade 2 ~ Grade 3",
@@ -138,10 +141,11 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
   theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
   coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
+  
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
-ggsave(paste0("output/figures/vis_differential__overall_density.png"), width=(8.5 * 0.975 * (2/5)), height=3.48, dpi=300)
+ggsave(paste0("output/figures/vis_differential__overall_density.png"), width=(8.5 * 0.975 * (2/5)), height=3.48, dpi=600)
 
 
 rm(n_samples_grade, n_samples_prim_rec)
@@ -199,12 +203,12 @@ rm(n_samples_grade, n_samples_prim_rec)
 
 n_samples_grade <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(156) |> 
+  filter_first_G2_and_last_G3(154) |> 
   nrow()
 
 n_samples_prim_rec <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_primaries_and_last_recurrences(180) |> 
+  filter_primaries_and_last_recurrences(179) |> 
   nrow()
 
 
@@ -238,7 +242,8 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
   #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
   
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size,
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black",
+                   size=theme_nature_size,
                    label.x= -7,
                    family = theme_nature_font_family) +
   
@@ -253,8 +258,8 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
   coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
   
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish)
-#theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
+  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
 
 
 
@@ -274,7 +279,7 @@ rm(n_samples_grade, n_samples_prim_rec, plt)
 
 n_samples_grade <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(156) |> 
+  filter_first_G2_and_last_G3(154) |> 
   nrow()
 
 
@@ -311,7 +316,7 @@ t.test(plt$DMP__g2_g3__pp_nc_PC1__t, mu=0, alternative="less") # single sided to
 
 
 
-plt.intervals <- 10^seq(log10(min(plt$DMP__g2_g3__pp_nc_PC1__adj.P.Val)), log10(1),  length.out=6) # linear intervals in log scaled labels
+plt.intervals <- 10^seq(log10(min(plt$DMP__g2_g3__pp_nc_PC1__adj.P.Val)), log10(1),  length.out=5) # linear intervals in log scaled labels
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__logFC,
@@ -322,20 +327,23 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__logFC,
   scale_y_continuous(trans=reverselog_trans(base=10),
                      
                      breaks=plt.intervals,
-                     labels=format(plt.intervals, digits = 3)
+                     labels=format(plt.intervals, digits = 2)
                      ) +
   
   geom_vline(xintercept = 0, col="red", lwd=theme_nature_lwd, lty=2) +
   geom_hline(yintercept = 1, col="red", lwd=theme_nature_lwd, lty=2) +
   
-  geom_point(pch=16, cex=0.05, col="gray", alpha=0.2)  +
+  geom_point(pch=16, cex=0.05, col="darkgray", alpha=0.2)  +
 
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
 
   theme_nature +
-  theme(plot.background = element_rect(fill="white", colour=NA)) # png export
+  theme(plot.background = element_rect(fill="white", colour=NA)) + # png export
+  labs(x = "log2FC Grade2 ~ Grade3 (+quality)",
+       y= "-log10(adj. P) Grade2 ~ Grade3 (+quality)")
 
-ggsave("output/figures/vis_differential__PC1__volcano.png", width = 4* 0.58, height=2.5 * 0.835)
+ggsave("output/figures/vis_differential__PC1__volcano.png",
+       width = 4* 0.58, height=2.5 * 0.835, dpi=600)
 
 
 
@@ -669,6 +677,18 @@ plot(
 
 
 
+n_samples_grade <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3(154) |> 
+  nrow()
+
+n_samples_prim_rec <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_primaries_and_last_recurrences(179) |> 
+  nrow()
+
+
+
 plt <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
@@ -709,7 +729,9 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
   coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
   
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  
+  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
 
 
 
@@ -729,6 +751,7 @@ plt <- data.mvalues.probes |>
     return(.)
   })() |> 
   dplyr::filter(detP_good_probe & !MASK_general) |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
@@ -786,12 +809,16 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   geom_vline(xintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
   geom_hline(yintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
   
-  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 5) +
-  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 4) +
-  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 3) +
-  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 2) +
-  geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size, family = theme_nature_font_family) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 4) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 2) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  
+  ggpubr::stat_cor(
+    label.x = -8,
+    label.y =  8,
+    method = "pearson", aes(label = after_stat(r.label)), col="black",
+                   size = theme_nature_size,
+                   family = theme_nature_font_family) +
   
   labs(x = "Per probe t-score GLASS-OD Grade 2 ~ Grade 3",
        y = "Per probe t-score GLASS-NL Grade 2 & 3 ~ Grade 4",
@@ -799,12 +826,14 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
        caption="Overlap Grade associated differences oligodendroglioma & astrocytoma (patient and PC1 corrected)"
   ) +
   
+  coord_cartesian(ylim = c(-11.5, 9), xlim = c(-9,6.5)) +
+  
   theme_nature +
   theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox
   #scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
   theme(plot.background = element_rect(fill="white", colour=NA))  # png export
 
-ggsave("output/figures/vis_differential__GLASS_NL__x__GLASS_OD__grade__PC1.png", width=2.115, height=2.385)
+ggsave("output/figures/vis_differential__GLASS_NL__x__GLASS_OD__grade__PC1.png", width=2.115, height=2.385, dpi=600)
 
 
 
@@ -904,7 +933,7 @@ plt <- plt |>
   dplyr::filter(
     chr_arm_full %in% c(
       
-      plt.oligo |> 
+      plt |> 
         dplyr::pull(chr_arm_full) |> 
         table() |> 
         as.data.frame() |> 
@@ -1027,10 +1056,72 @@ p2 = ggplot(plt.astro) +
 library(patchwork)
 p1 / p2
 
-ggsave("output/figures/vis_differential__GLASS_OD__GLASS_NL__grade__PC1__chromosomal_arm.pdf", width=8.5*0.975 * (6/8), height = 5)
+
+ggsave("output/figures/vis_differential__GLASS_OD__GLASS_NL__grade__PC1__chromosomal_arm.pdf",
+       width=8.5*0.975 * (6/8), height = 5)
 
 
 
+### stats ----
+
+
+df <- data.frame()
+
+stats <- plt |> 
+  dplyr::select(chr_arm_full, DMP__g2_g3__pp_nc_PC1__t, DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t) |> 
+  dplyr::filter(!is.na(DMP__g2_g3__pp_nc_PC1__t)) |> 
+  dplyr::filter(!is.na(DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t)) |> 
+  dplyr::mutate(DMP__g2_g3__pp_nc_PC1__t = scale(DMP__g2_g3__pp_nc_PC1__t)) |> 
+  dplyr::mutate(DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t = scale(DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t))
+
+
+for(arm in as.character(gtools::mixedsort(unique(plt$chr_arm_full)))) {
+  probes <- stats |> 
+    dplyr::filter(chr_arm_full == arm)
+
+    
+  tscores_od <- probes |> 
+    dplyr::pull(DMP__g2_g3__pp_nc_PC1__t) |> 
+    as.numeric()
+
+  tscores_ac <-  probes |> 
+    dplyr::filter(chr_arm_full == arm) |> 
+    dplyr::pull(DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t) |> 
+    as.numeric()
+
+  t = t.test(tscores_od, tscores_ac, mu=0,var.equal=T)
+  #w = wilcox.test(tscores_od, tscores_ac)
+  print(paste0(arm, ": t=",t$statistic, "  p=",t$p.value))
+  
+  df <- rbind(df, data.frame(arm = arm, t = t$statistic, p.value = t$p.value))
+}
+
+df <- df |> 
+  dplyr::mutate(adj.p.value = p.adjust(p.value)) |> 
+  dplyr::mutate(arm = factor(arm, levels = gtools::mixedsort(as.character(arm))))
+
+
+plt <- rbind(
+  df,
+  df |> dplyr::mutate(t=0)
+  ) |> 
+  dplyr::mutate(chr = gsub("[pq]$","",arm)) |> 
+  dplyr::mutate(chr = factor(chr, levels=gtools::mixedsort(unique(chr)))) |> 
+  dplyr::mutate(arm_short = gsub("^.+([pq])$","\\1", arm))
+
+
+ggplot(plt, aes(x=arm_short, y=t)) +
+  facet_grid(~chr) +
+  #facet_wrap(~chr, scales="free_x")+
+  geom_line() +
+  geom_hline(yintercept = 0, lwd=theme_cellpress_lwd, col="darkgray") +
+  labs(y="t-test statistic outcome per-arm astro vs. oligo", x="chr arm") +
+  theme_nature
+
+
+
+ggsave("output/figures/vis_differential__GLASS_OD__GLASS_NL__grade__PC1__chromosomal_arm_stats.pdf",
+       width=8.5*0.975 * (6/8) * 0.975, height = 1.7)
 
 
 

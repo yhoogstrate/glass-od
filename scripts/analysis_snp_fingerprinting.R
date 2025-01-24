@@ -494,8 +494,35 @@ p2 + p3
 
 
 # main: X/Y plot ----
+## complete data ----
 
 
+dat |> 
+  dplyr::filter(is.na(patient_sex)) |> 
+  dplyr::pull(resection_id)
+
+
+
+dat <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::mutate(col = ifelse(patient_id == "0124", resection_id, "other"))
+
+
+ggplot(dat, aes(
+  x=array_mnp_rsGender_12.8_dist,
+  y=array_mnp_rsGender_12.8_chrYintensity,
+  label=resection_id,
+  #col=array_mnp_rsGender_11b4_predicted
+  col=patient_sex
+)) +
+  geom_point() +
+  geom_point(data= subset(dat, col != "other"), col="black") +
+  ggrepel::geom_text_repel(data= subset(dat, col != "other"), col="black")
+
+
+
+
+## analysis ----
 
 dat <- glass_od.metadata.array_samples |> 
   dplyr::filter(patient_study_name == "GLASS-OD" & arraychip_version == "EPICv1") |> 

@@ -381,7 +381,7 @@ tmp <- tmp |>
   dplyr::mutate(file_exists = NULL) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (135))
+    assertthat::assert_that(nrow(.) == 135)
     return(.)
   })() |> 
   assertr::verify(sum(resection_id %in% glass_od.metadata.array_samples$resection_id == F) == 1) # 0003-R1
@@ -392,6 +392,7 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
 
 
 rm(tmp, tmp.verify)
+
 
 
 ### actual processed data ----
