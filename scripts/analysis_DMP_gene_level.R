@@ -113,13 +113,13 @@ idx.GencodeCompV12_NAME <- stat |>
   dplyr::distinct() |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 604089)
+    assertthat::assert_that(nrow(.) == 604185)
     return(.)
   })() |> 
   dplyr::filter(!grepl("^RP[0-9]+-", gene)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 531913)
+    assertthat::assert_that(nrow(.) == 532000)
     return(.)
   })() 
   
@@ -204,15 +204,20 @@ genes.GencodeCompV12_NAME = idx.GencodeCompV12_NAME |>
   unique()
 
 
-
-if(!exists('gene_enrichment_0.GencodeCompV12_NAME')) {
-  if(file.exists('cache/gene_enrichment_0.GencodeCompV12_NAME.Rds')) {
-    gene_enrichment_0.GencodeCompV12_NAME <- readRDS("cache/gene_enrichment_0.GencodeCompV12_NAME.Rds")
+fn <- 'gene_enrichment_0.GencodeCompV12_NAME'
+if(!exists(fn)) {
+  if(file.exists(fn)) {
+    gene_enrichment_0.GencodeCompV12_NAME <- readRDS(fn)
   } else {
     gene_enrichment_0.GencodeCompV12_NAME = do.call(rbind, pbapply::pblapply(genes.GencodeCompV12_NAME, gene_enrich_mu, mu=0, stats=stat, idx=idx.GencodeCompV12_NAME))
-    saveRDS(gene_enrichment_0.GencodeCompV12_NAME, "cache/gene_enrichment_0.GencodeCompV12_NAME.Rds")
+    saveRDS(gene_enrichment_0.GencodeCompV12_NAME, fn)
   }
 }
+rm(fn)
+
+
+gene_enrichment_0.GencodeCompV12_NAME <- gene_enrichment_0.GencodeCompV12_NAME |> 
+  dplyr::mutate(q.value = p.adjust(p.value))
 
 
 
@@ -290,6 +295,7 @@ panels <- c(
    "TLX",
   "VSX"
 )
+
 
 
 
@@ -426,6 +432,216 @@ plts |> dplyr::filter(facet == "HOXD") |> dplyr::filter(is.tf == "Yes") |> dplyr
 plts |> dplyr::filter(facet == "PAX") |> dplyr::filter(is.tf == "Yes") |> dplyr::pull(gene)
 
 plts |> dplyr::filter(is.tf == "Yes") |> dplyr::pull(gene)
+
+
+
+
+### combined ----
+
+
+panels <- c(
+  "ALX",
+  "BARX",
+  "DBX",
+  "DLX",
+  "EMX[0-9]$",
+  "EN[12]$",
+  "EVX",
+  "HMX",
+  "HOXA|HOTTIP",
+  "HOXB",
+  "HOXC|HOTAIR",
+  "HOXD",
+  "GBX",
+  "IRX",
+  "ISL",
+  "LHX",
+  "LMX",
+  "MKX",
+  "MNX",
+  "MSX",
+  "NKX",
+  "OTP|OTX",
+  "OSR[0-9]+",
+  "PAX[0-9]+",
+  "PHOX",
+  "PITX",
+  #"SOX",
+  "SHOX",
+  "SIX",
+  "TBX[0-9]$",
+  "TLX",
+  "VSX",
+  
+  "^OR",
+  
+  "^IDH1$",
+  "^IDH2$",
+  #"^IDH3$",
+  "DAXX",
+  "ATRX",
+  "TERT",
+  "H3F3A",
+  "CIC",
+  "FUBP1",
+  "TCF12"
+  
+)
+
+
+facettes <- rep("?", length(panels))
+facettes[1:which(panels == "VSX")] <- "Homeobox TFs"
+facettes[which(panels == "^OR")] <- "Olfactory Receptors"
+facettes[which(panels == "^IDH1$"):which(panels == "TCF12")] <- "Disease implicated"
+
+
+
+
+
+plt <- gene_enrichment_0.GencodeCompV12_NAME
+plts <- data.frame()
+
+for(i in 1:1:length(panels)) {
+  tf <- panels[i]
+  screen <- facettes[i]
+
+  plts <- rbind(plts,
+                plt |> 
+                  dplyr::mutate(is.tf = ifelse(grepl(paste0("^", tf), gene) & !grepl("-AS[0-9]$", gene)  & !grepl("-AS$", gene) & !grepl("-IT[0-9]$", gene) & !grepl("-OT$", gene), "Yes", "No")) |> 
+                  dplyr::mutate(facet = gsub("^([A-Z]+)[^A-Z]*?$","\\1", tf)) |> 
+                  dplyr::mutate(screen = screen)
+  ) 
+}
+
+
+
+a =               plt |> 
+  dplyr::mutate(HOX = grepl("^HOX|HOTAIR|HOTTIP", gene) & !grepl("-AS[0-9]$", gene) & !grepl("-AS$", gene)) |> 
+  dplyr::mutate(polycomb =  gene %in% c(genes_polycomb_eed_homeobox, 
+                                        genes_polycomb_h3k27_homeobox,
+                                        genes_polycomb_prc2_homeobox,
+                                        genes_polycomb_suz12_homeobox
+  )) |> 
+  dplyr::mutate(is.tf = ifelse(HOX | polycomb, "Yes", "No")) |> 
+  dplyr::mutate(col = dplyr::case_when(
+    HOX & polycomb ~ "HOX & polycomb",
+    HOX ~ "HOX",
+    polycomb ~ "polycomb",
+    T ~ "not selected"
+  )) |> 
+  dplyr::mutate(facet = "Polycomb TF & HOX") |> 
+  dplyr::mutate(screen = "Polycomb TF & HOX") |> 
+  dplyr::mutate(HOX = NULL) |> 
+  dplyr::mutate(polycomb = NULL)
+
+
+plts <- rbind(plts |> dplyr::mutate(col = "see y-axis" ), 
+
+a
+              
+              )
+
+
+
+
+
+
+plts <- plts |> 
+  dplyr::arrange(facet, screen) |> 
+  dplyr::mutate(screen = factor(screen, levels=c(
+    "Homeobox TFs", "Disease implicated" , "Olfactory Receptors", "Polycomb TF & HOX"
+  )))
+
+
+names <- plts |> 
+  dplyr::filter(is.tf == "Yes") |> 
+  dplyr::select(facet, gene) |> 
+  dplyr::arrange(facet, gene) |> 
+  dplyr::group_by(facet) |> 
+  dplyr::summarise(genes = paste0(gene, collapse=", ")) |> 
+  dplyr::mutate(genes = ifelse(grepl("^OR", genes), "Olfactory Receptors", genes)) |> 
+  dplyr::mutate(genes = ifelse(facet == "Polycomb TF & HOX", facet, genes))
+
+
+plts <- plts |> 
+  dplyr::left_join(names, by=c('facet'='facet'), suffix=c('',''))
+
+
+plts <- plts |> 
+  dplyr::group_by(facet) |> 
+  dplyr::mutate(facet_i = dplyr::cur_group_id()) |> 
+  dplyr::mutate(n.tfs = sum(is.tf == "Yes")) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(facet_x = facet_i %/% 8) |> 
+  dplyr::mutate(facet_y = facet_i %% 4)
+
+plts <- plts |> 
+  dplyr::mutate(
+    facet = factor(facet, levels = plts |> 
+                     dplyr::filter(!duplicated(facet)) |> 
+                     dplyr::arrange(-n.tfs, facet) |> 
+                     dplyr::pull(facet))
+  ) |> 
+  dplyr::mutate(`-log(p.value)` = -log(p.value)) |> 
+  dplyr::mutate(`log_pval_truncated` = `-log(p.value)` > 125) |> 
+  dplyr::mutate(`-log(p.value)` = ifelse(`log_pval_truncated`, 125, `-log(p.value)`))
+
+
+
+
+
+plts |>
+  dplyr::filter(gene %in% c("DAXX", "TERT", "CIC", "IDH2", "H3F3A"))  |> 
+  dplyr::filter(facet == plts$facet[1]) |> 
+  dplyr::select(gene, p.value, q.value) |> 
+  dplyr::mutate(signi = q.value < 0.01) |> 
+  dplyr::mutate(q.str = format.pval(q.value, digits=3)) |> 
+  as.data.frame()
+
+
+
+
+ggplot(plts, aes(x=reorder(genes, dplyr::desc(genes)),
+                 y=`mean`,
+                 color=col,
+                 label=gene
+)) + 
+  facet_grid(rows = vars(screen), scales = "free", space="free") +
+  #ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "darkgray", adjust = 1.95) +
+  #see::geom_violinhalf() +
+  geom_hline(yintercept=0, col="darkgray", lwd=theme_nature_lwd, lty=2) +
+  gghalves::geom_half_violin(fill=mixcol("#FFFFFF", "#EEEEEE"),side = "r", draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "darkgray", width = 1.6) +
+  #geom_point(data=subset(plts, is.tf == "Yes"), size=theme_nature_size/3, col="red") +
+  #ggbeeswarm::geom_beeswarm(data=subset(plts, is.tf == "Yes"), size=theme_nature_size/3, col="red", side=1, method="compactswarm") +
+  geom_point(data=subset(plts, is.tf == "Yes"), size=theme_nature_size, pch="|") +
+  ggrepel::geom_text_repel(segment.size=theme_nature_lwd,
+                           data = plts |> dplyr::filter(is.tf == "Yes" & 
+                                                          gene %in% c("HOXD12", "HOXD13") & 
+                                                          screen == "Homeobox TFs"),
+                           size=theme_nature_size,
+                           family=theme_nature_font_family,
+                           col="#444444",
+                           nudge_x = -1.5,
+                           nudge_y = 0.5,
+                           min.segment.length = 0
+                           ) +
+  coord_flip() +
+  labs(y= "Mean t-score (methylation change Grade 2 - Grade 3) for all CpGs per genes", x=NULL) +
+  theme_nature +
+  scale_color_manual(values=c(
+    `see y-axis` = 'red',
+    `polycomb` = col3(11)[10],
+    `HOX` = 'red',
+    `HOX & polycomb` = 'purple'
+  ))
+
+
+
+ggsave("output/figures/vis_analysis_DMP_gene_level__TFs_gghalve_l__combi.pdf", width=(8.5 * 0.975), height=5.0, dpi=600)
+
+
+
+
 
 
 
