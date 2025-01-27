@@ -445,9 +445,20 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
 
 ## lift-over PCA from GLASS-OD ----
 
-if(file.exists("cache/load_GLASS-NL_PCA_liftover_from_GLASS-OD.Rds")) {
-  tmp <- readRDS("cache/load_GLASS-NL_PCA_liftover_from_GLASS-OD.Rds")
+fn <- "cache/load_GLASS-NL_PCA_liftover_from_GLASS-OD.Rds"
+#file.remove(fn)
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(ncol(.) == 1 + CONST_N_GLASS_OD_INCLUDED_SAMPLES) 
+      return(.)
+    })()
+
 } else {
+  
   data <- data.mvalues.hq_samples |> 
     tibble::rownames_to_column('probe_id') |> 
     dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
@@ -457,13 +468,20 @@ if(file.exists("cache/load_GLASS-NL_PCA_liftover_from_GLASS-OD.Rds")) {
   pc <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_prcomp.Rds")
   tmp <- predict(pc, t(data)) |> 
     as.data.frame() |> 
+    
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(ncol(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES) 
+      return(.)
+    })() |> 
+    dplyr::rename_with(~ gsub("^PC","PC__from_OD__",.x)) |> 
     tibble::rownames_to_column('array_sentrix_id')
-  
+
   rm(data, pc)
   
   saveRDS(tmp, file="cache/load_GLASS-NL_PCA_liftover_from_GLASS-OD.Rds")
   
-  rm(tmp)
+  #rm(tmp)
 }
 
 
