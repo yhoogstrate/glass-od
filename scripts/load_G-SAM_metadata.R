@@ -30,10 +30,6 @@ gsam.metadata.array_samples <-  list.files(path = "data/G-SAM/DNA Methylation - 
     return(.)
   })()  |> 
   dplyr::rename_with( ~ paste0("array_", .x)) 
-
-
-
-
 ## link sample names ----
 
 
@@ -93,6 +89,11 @@ gsam.metadata.array_samples <- gsam.metadata.array_samples |>
 rm(tmp)
 
 
+## flag discrepancy ----
+
+
+gsam.metadata.array_samples <- gsam.metadata.array_samples |>
+ dplyr::mutate(patient_reason_excluded = ifelse(patient_id == "AAA", "SNP based sample mismatch for this patient", NA))
 
 
 
@@ -350,7 +351,55 @@ gsam.metadata.array_samples <- gsam.metadata.array_samples |>
 rm(tmp)
 
 
+## dnaMethyAge ----
 
+
+tmp <- readRDS("cache/analysis_dnaMethyAge.Rds") |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_SAMPLES)
+    return(.)
+  })() |> 
+  dplyr::rename_with( ~ paste0("array_", .x)) |> 
+  dplyr::mutate(array_dnaMethyAge__epiTOC2 = NULL) |> # superseded by `array_epiTOC2_tnsc`
+  tibble::rownames_to_column('array_sentrix_id') |> 
+  dplyr::filter(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GSAM_INCLUDED_SAMPLES)
+    return(.)
+  })()
+
+
+
+gsam.metadata.array_samples <- gsam.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
+  assertr::verify(ifelse(resection_id == "AZF1", (!is.na(array_dnaMethyAge__HannumG2013)), T))
+
+
+rm(tmp)
+
+
+
+
+## unsupervised PCA ----
+
+
+tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GSAM_x.Rds") |>
+  assertr::verify(!is.na(array_PC1)) |>
+  assertr::verify(!is.na(array_PC2)) |>
+  assertr::verify(!is.na(array_PC3)) |>
+  assertr::verify(!is.na(array_PC83)) |>
+  dplyr::filter(array_sentrix_id %in% gsam.metadata.array_samples$array_sentrix_id) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GSAM_INCLUDED_SAMPLES - 2)
+    return(.)
+  })()
+
+
+gsam.metadata.array_samples <- gsam.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
 
 
 

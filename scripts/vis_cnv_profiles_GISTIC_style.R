@@ -22,9 +22,8 @@ library(patchwork)
 
 metadata.all <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(156) |> 
-  dplyr::mutate(gr.status = ifelse(resection_tumor_grade == 2, "Grade2", "Grade3")) |> 
-  dplyr::mutate(gr.status = factor(gr.status, levels=c("Grade2", "Grade3")))
+  filter_first_G2_and_last_G3(154) |> 
+  dplyr::mutate(gr.status = factor(ifelse(resection_tumor_grade == 2, "Grade2", "Grade3"), levels=c("Grade2", "Grade3")))
 
 
 
@@ -88,7 +87,7 @@ data.cnv.profiles <- data.cnv.profiles |>
 
 metadata.g3.g2 <- metadata.all |> 
   dplyr::filter(!is.na(resection_tumor_grade)) |> 
-  filter_first_G2_and_last_G3(156) |>
+  filter_first_G2_and_last_G3(154) |>
   
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() == 2) |> 
@@ -152,12 +151,11 @@ quantiles.g3 <- metadata.g3.g2 |>
   tibble::rownames_to_column('cnvp_bin')
 
 
+
 quantiles.g3.g2 <- rbind(
   quantiles.g2 |> dplyr::mutate(grade = 2),
   quantiles.g3 |> dplyr::mutate(grade = 3)
 )
-
-
 
 
 
@@ -189,7 +187,7 @@ p1
 
 
 
-p2 <- ggplot(stats.g3.g2, aes(x=pos/100000000,y=logFC)) +
+p2a <- ggplot(stats.g3.g2, aes(x=pos/100000000,y=logFC)) +
   facet_wrap(~chr, scales="free_x", ncol=22) +
   geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
   geom_point(pch=19,cex=0.2,alpha=0.05) +
@@ -199,7 +197,23 @@ p2 <- ggplot(stats.g3.g2, aes(x=pos/100000000,y=logFC)) +
   labs(x=NULL) +
   scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
   theme_nature
-p2
+p2a
+
+
+
+p2b <- ggplot(stats.g3.g2, aes(x=pos/100000000,y=t)) +
+  facet_wrap(~chr, scales="free_x", ncol=22) +
+  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
+  geom_point(pch=19,cex=0.2,alpha=0.05) +
+  geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd) +
+  geom_smooth(se=F, lwd=theme_cellpress_lwd * 2, col="black") +
+  coord_cartesian(ylim=c(-6.5, 6.5)) +
+  labs(x=NULL) +
+  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  theme_nature
+p2b
+
+p2 <- p2b # otherwise logfc between categorial grade and cgc are incomparible
 
 
 
@@ -237,6 +251,8 @@ ggsave("output/figures/vis_cnv_profiles_GISTIC_style__g2_x_g3.png", width=11 * 0
 
 
 # CGC[Ac] + PC2 + PC3 ----
+
+
 
 
 metadata.LR.PC2 <- metadata.g3.g2 |> 
@@ -307,13 +323,13 @@ plt.LR.padj <- rbind(
   plt.LR.padj |> dplyr::mutate(type = "border", minLogPadj = 0))
 
 
-p4 <- ggplot(plt.LR, aes(x=pos/100000000,y=logFC)) +
+p4 <- ggplot(plt.LR, aes(x=pos/100000000,y=t)) +
   facet_wrap(~chr, scales="free_x", ncol=22) +
   geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
   geom_point(pch=19,cex=0.2,alpha=0.05) +
   geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd,lty=1) +
   geom_smooth(se=F, lwd=theme_cellpress_lwd * 2, col="black") +
-  coord_cartesian(ylim=c(-0.3, 0.3)) +
+  coord_cartesian(ylim=c(-6.5, 6.5)) +
   labs(x=NULL) +
   scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
   theme_nature

@@ -65,7 +65,7 @@ glass_od.metadata.patients <- DBI::dbReadTable(metadata.db.con, 'view_patients')
 
 
 patients_without_array_samples <- DBI::dbReadTable(metadata.db.con, 'view_check_patients_without_array_samples')
-stopifnot(sort(patients_without_array_samples$patient_id) == c("0001")) # x-checked, patients currently missing samples
+stopifnot(sort(patients_without_array_samples$patient_id) == c("0001", "GSM4429903")) # x-checked, samples of 0001 removed, GSM4429903 merged into GSM4429901 as same patient
 
 
 
@@ -73,13 +73,13 @@ glass_od.metadata.patients <- glass_od.metadata.patients |>
   dplyr::filter(patient_id %in% patients_without_array_samples$patient_id == F) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) ==  126 + 57 + 7 + 4 + 20 + 21 + 7) # + 10x astro
+    assertthat::assert_that(nrow(.) ==  126 + 57 + 7 + 4 + 20 + 21 + 7 - 1) # + 10x astro
     return(.)
   })() |> 
   dplyr::filter(is.na(patient_reason_excluded)) |> # 7 non(-canonical) codels
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 126 + 57 + 7 + 4 + 20 + 21 + 7) # + 10x astro
+    assertthat::assert_that(nrow(.) == 126 + 57 + 7 + 4 + 20 + 21 + 7 - 1) # + 10x astro
     return(.)
   })()
 
@@ -556,6 +556,17 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
 
 rm(tmp)
 
+
+
+# plt <- glass_od.metadata.array_samples |> 
+#   dplyr::select(array_PC1, array_PC2,
+#                 array_percentage.detP.signi,
+#                 contains("_ewastools_")
+#                 ) |> 
+#   dplyr::filter(!is.na(array_PC1)) |> 
+#   dplyr::mutate(array_percentage.detP.signi.log1p = log1p(array_percentage.detP.signi))
+# 
+# corrplot::corrplot(cor(plt))
 
 
 ## Heidelberg 11b4[+12.5] QC full ----
@@ -1333,8 +1344,6 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
 rm(tmp)
 
 
-
-
 ## dnaMethyAge ----
 
 
@@ -1350,18 +1359,15 @@ tmp <- readRDS("cache/analysis_dnaMethyAge.Rds") |>
   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id)
 
 
-
 glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) |> 
   assertr::verify(ifelse(resection_id == "0002-R1", (!is.na(array_dnaMethyAge__HannumG2013)), T))
 
+
 rm(tmp)
 
 
-#plot(glass_od.metadata.array_samples$array_epiTOC2_hypoSC , glass_od.metadata.array_samples$dnaMethyAge__epiTOC2)
-#plot(glass_od.metadata.array_samples$array_epiTOC2_pcgtAge , glass_od.metadata.array_samples$dnaMethyAge__epiTOC2)
-#plot(glass_od.metadata.array_samples$array_epiTOC2_tnsc , glass_od.metadata.array_samples$dnaMethyAge__epiTOC2) ~= 1.0
-#plot(glass_od.metadata.array_samples$array_epiTOC2_tnsc2 , glass_od.metadata.array_samples$dnaMethyAge__epiTOC2)
+
 
 
 ## RepliTali ----

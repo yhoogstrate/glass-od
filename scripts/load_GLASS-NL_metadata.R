@@ -147,6 +147,20 @@ rm(PC3_low_purity_samples)
 
 
 
+## ewastools ----
+
+
+tmp <- read.table("output/tables/ewastools.txt") |> 
+  assertr::verify(!duplicated(array_sentrix_id)) |> 
+  assertr::verify(glass_nl.metadata.array_samples$array_sentrix_id %in% array_sentrix_id)
+
+
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
+
+rm(tmp)
+
 
 ## Heidelberg 12.8 reportBrain files ----
 
@@ -365,43 +379,42 @@ glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
 
 
 
-# ## unsupervised PCA 
-# 
-# 
-# tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-NL_x.Rds") |> 
-#   assertr::verify(!is.na(array_PC1)) |> 
-#   assertr::verify(!is.na(array_PC2)) |> 
-#   assertr::verify(!is.na(array_PC3)) |> 
-#   assertr::verify(!is.na(array_PC202)) |> 
-#   dplyr::filter(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |> 
-#   (function(.) {
-#     print(dim(.))
-#     assertthat::assert_that(nrow(.) == CONST_N_GLASS_NL_INCLUDED_SAMPLES)
-#     return(.)
-#   })()
-# 
-# 
-# glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |> 
-#   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
-# 
+## unsupervised PCA ----
 
 
-# tmp <- glass_nl.metadata.array_samples |> 
+tmp <- readRDS(file="cache/analysis_unsupervised_PCA_GLASS-NL_x.Rds") |>
+  assertr::verify(!is.na(array_PC1)) |>
+  assertr::verify(!is.na(array_PC2)) |>
+  assertr::verify(!is.na(array_PC3)) |>
+  assertr::verify(!is.na(array_PC202)) |>
+  dplyr::filter(array_sentrix_id %in% glass_nl.metadata.array_samples$array_sentrix_id) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_NL_INCLUDED_SAMPLES)
+    return(.)
+  })()
+
+
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
+
+
+# tmp <- glass_nl.metadata.array_samples |>
 #   dplyr::filter(!is.na(array_PC1))
-# 
+
 # cor(tmp$array_percentage.detP.signi , tmp$array_PC1, method="spearman")
-# 
 # plot(log1p(tmp$array_percentage.detP.signi) , tmp$array_PC1, cex=0.1)
 # plot(log1p(tmp$array_percentage.detP.signi) , tmp$array_PC2, cex=0.1)
 # plot(log1p(tmp$array_percentage.detP.signi) , tmp$array_PC3, cex=0.1)
 # 
 # 
 # tmp <- glass_nl.metadata.array_samples |> 
-#   dplyr::filter(!is.na(array_PC1)) |> 
-#   dplyr::filter(!is.na(WHO_Classification2021))
+#    dplyr::filter(!is.na(array_PC1)) |> 
+#    dplyr::filter(!is.na(WHO_Classification2021))
 # 
-# #plot(as.factor(tmp$WHO_Classification2021) , tmp$array_PC1, cex=0.1)
-# #plot(as.factor(tmp$WHO_Classification2021) , tmp$array_PC2, cex=0.1)
+# plot(as.factor(tmp$WHO_Classification2021) , tmp$array_PC1, cex=0.1)
+# plot(as.factor(tmp$WHO_Classification2021) , tmp$array_PC2, cex=0.1)
 # #plot(as.factor(tmp$WHO_Classification2021) , tmp$array_PC3, cex=0.1)
 # #plot(as.factor(tmp$WHO_Classification2021) , tmp$array_PC4, cex=0.1)
 # 

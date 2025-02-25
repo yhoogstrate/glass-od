@@ -1496,7 +1496,7 @@ metadata.trtmnt.quality.pp.nc <- glass_od.metadata.array_samples |>
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   dplyr::filter(!is.na(resection_treatment_status_chemo)) |> 
   dplyr::filter(!is.na(resection_treatment_status_radio)) |> 
-  filter_first_G2_and_last_G3(155) |> 
+  filter_first_G2_and_last_G3(153) |> 
   
   dplyr::mutate(in_ffpe = isolation_material == "ffpe") |> 
   dplyr::filter(!is.na(in_ffpe)) |> 
@@ -1525,7 +1525,7 @@ metadata.trtmnt.quality.pp.nc <- glass_od.metadata.array_samples |>
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 149) 
+    assertthat::assert_that(nrow(.) == 147) 
     return(.)
   })() 
 
@@ -1542,7 +1542,11 @@ data.trtmnt.quality.pp.nc <- data.mvalues.hq_samples |>
     return(.)
   })()
 
+
+
 ## individual + corr in outcome ----
+
+
 
 
 design_g <- model.matrix(~
@@ -1550,11 +1554,13 @@ design_g <- model.matrix(~
                            factor(patient) +
                            factor(gr.status)
                          , data=metadata.trtmnt.quality.pp.nc)
+
 design_chemo <- model.matrix(~
                                array_PC1 +
                                factor(patient) +
                                factor(chemo)
                              , data=metadata.trtmnt.quality.pp.nc)
+
 design_radio <-  model.matrix(~
                                 array_PC1 +
                                 factor(patient) +
@@ -1565,6 +1571,12 @@ design_tmz <- model.matrix(~
                              array_PC1 +
                              factor(patient) +
                              factor(TMZ)
+                           , data=metadata.trtmnt.quality.pp.nc)
+
+design_sex <- model.matrix(~
+                             array_PC1 +
+                             factor(patient) +
+                             factor(patient_sex)
                            , data=metadata.trtmnt.quality.pp.nc)
 
 design_PC2 <- model.matrix(~
@@ -1590,6 +1602,7 @@ fit_g <- limma::lmFit(data.trtmnt.quality.pp.nc, design_g)
 fit_chemo <- limma::lmFit(data.trtmnt.quality.pp.nc, design_chemo)
 fit_radio <- limma::lmFit(data.trtmnt.quality.pp.nc, design_radio)
 fit_tmz <- limma::lmFit(data.trtmnt.quality.pp.nc, design_tmz)
+fit_sex <- limma::lmFit(data.trtmnt.quality.pp.nc, design_sex)
 fit_PC2 <- limma::lmFit(data.trtmnt.quality.pp.nc, design_PC2)
 fit_PC3 <- limma::lmFit(data.trtmnt.quality.pp.nc, design_PC3)
 fit_PC8 <- limma::lmFit(data.trtmnt.quality.pp.nc, design_PC8)
@@ -1598,6 +1611,7 @@ fit_g <- limma::eBayes(fit_g, trend=T)
 fit_chemo <- limma::eBayes(fit_chemo, trend=T)
 fit_radio <- limma::eBayes(fit_radio, trend=T)
 fit_tmz <- limma::eBayes(fit_tmz, trend=T)
+fit_sex <- limma::eBayes(fit_sex, trend=T)
 fit_PC2 <- limma::eBayes(fit_PC2, trend=T)
 fit_PC3 <- limma::eBayes(fit_PC3, trend=T)
 fit_PC8 <- limma::eBayes(fit_PC8, trend=T)
@@ -1622,6 +1636,13 @@ plt.radio <- limma::topTable(fit_radio,
                              coef="factor(radio)Yes",
                              sort.by = "none",
                              adjust.method="fdr") |> 
+  tibble::rownames_to_column('probe_id') 
+
+plt.sex <- limma::topTable(fit_sex,
+                           n=nrow(data.trtmnt.quality.pp.nc),
+                           coef="factor(patient_sex)male",
+                           sort.by = "none",
+                           adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id') 
 
 plt.tmz <- limma::topTable(fit_tmz,
@@ -1674,35 +1695,44 @@ plt <- plt.g |>
       dplyr::select(probe_id, t) |> 
       dplyr::rename(t_tmz = t),
     by=c('probe_id'='probe_id')
-  ) |> 
-  dplyr::left_join(
-    plt.PC2 |> 
-      dplyr::select(probe_id, t) |> 
-      dplyr::rename(t_PC2 = t),
-    by=c('probe_id'='probe_id')
-  ) |> 
-  dplyr::left_join(
-    plt.PC3 |> 
-      dplyr::select(probe_id, t) |> 
-      dplyr::rename(t_PC3 = t),
-    by=c('probe_id'='probe_id')
-  ) |> 
-  dplyr::left_join(
-    plt.PC8 |> 
-      dplyr::select(probe_id, t) |> 
-      dplyr::rename(t_PC8 = t),
-    by=c('probe_id'='probe_id')
   )
+  # |> 
+  # dplyr::left_join(
+  #   plt.sex |> 
+  #     dplyr::select(probe_id, t) |> 
+  #     dplyr::rename(t_tmz = t),
+  #   by=c('probe_id'='probe_id')
+  # )
+  # dplyr::left_join(
+  #   plt.PC2 |> 
+  #     dplyr::select(probe_id, t) |> 
+  #     dplyr::rename(t_PC2 = t),
+  #   by=c('probe_id'='probe_id')
+  # ) |> 
+  # dplyr::left_join(
+  #   plt.PC3 |> 
+  #     dplyr::select(probe_id, t) |> 
+  #     dplyr::rename(t_PC3 = t),
+  #   by=c('probe_id'='probe_id')
+  # ) |>
+  # dplyr::left_join(
+  #   plt.PC8 |>
+  #     dplyr::select(probe_id, t) |>
+  #     dplyr::rename(t_PC8 = t),
+  #   by=c('probe_id'='probe_id')
+  # )
 
 
 c <- plt |>
-  tibble::column_to_rownames('probe_id') |> 
-  dplyr::mutate(t_PC2 = -1 * t_PC2) |> 
-  dplyr::mutate(t_PC3 = -1 * t_PC3) |> 
-  cor()
+  tibble::column_to_rownames('probe_id')
+  #dplyr::mutate(t_PC2 = -1 * t_PC2) |> 
+  #dplyr::mutate(t_PC3 = -1 * t_PC3) |> 
+  #dplyr::mutate(t_PC8 = -1 * t_PC8)
+  #cor()
 
 
-#corrplot::corrplot(c)
+ggcorrplot(c )
+cor(c |> dplyr::mutate(t_chemo= NULL))
 
 
 
@@ -1735,14 +1765,14 @@ fit.trtmnt.quality.pp.nc <- limma::eBayes(fit.trtmnt.quality.pp.nc, trend=T)
 colnames(fit.trtmnt.quality.pp.nc$coefficients)
 
 
-tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+tmp1_grade <- limma::topTable(fit.trtmnt.quality.pp.nc,
                        n=nrow(data.trtmnt.quality.pp.nc),
                        coef="factor(gr.status)Grade3",
                        sort.by = "none",
                        adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id') 
 
-sum(tmp$adj.P.Val < 0.01)
+sum(tmp1_grade$adj.P.Val < 0.01)
 
 # tmz_g <- tmp |>
 #   dplyr::filter(adj.P.Val < 0.01) |> 
@@ -1752,14 +1782,14 @@ sum(tmp$adj.P.Val < 0.01)
 
 
 
-tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+tmp1_TMZ <- limma::topTable(fit.trtmnt.quality.pp.nc,
                        n=nrow(data.trtmnt.quality.pp.nc),
                        coef="factor(TMZ)Yes",
                        sort.by = "none",
                        adjust.method="fdr") |> 
   tibble::rownames_to_column('probe_id') 
 
-sum(tmp$adj.P.Val < 0.01)
+sum(tmp1_TMZ$adj.P.Val < 0.01)
 
 
 
@@ -1772,7 +1802,7 @@ sum(tmp$adj.P.Val < 0.01)
 
 
 
-tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+tmp1_radio <- limma::topTable(fit.trtmnt.quality.pp.nc,
                        n=nrow(data.trtmnt.quality.pp.nc),
                        coef="factor(radio)Yes",
                        sort.by = "none",
@@ -1780,9 +1810,7 @@ tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
   #dplyr::select(t, adj.P.Val) |> 
   tibble::rownames_to_column('probe_id') 
 
-sum(tmp$adj.P.Val < 0.01)
-
-
+sum(tmp1_radio$adj.P.Val < 0.01)
 
 
 
@@ -1807,7 +1835,7 @@ fit.trtmnt.quality.pp.nc <- limma::eBayes(fit.trtmnt.quality.pp.nc, trend=T)
 colnames(fit.trtmnt.quality.pp.nc$coefficients)
 
 
-tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+tmp2_grade <- limma::topTable(fit.trtmnt.quality.pp.nc,
                        n=nrow(data.trtmnt.quality.pp.nc),
                        coef="factor(gr.status)Grade3",
                        sort.by = "none",
@@ -1815,12 +1843,12 @@ tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
   dplyr::select(t, adj.P.Val) |> 
   tibble::rownames_to_column('probe_id') 
 
-sum(tmp$adj.P.Val < 0.01)
+sum(tmp2_grade$adj.P.Val < 0.01)
 
 
 
 
-tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+tmp2_chemo <- limma::topTable(fit.trtmnt.quality.pp.nc,
                        n=nrow(data.trtmnt.quality.pp.nc),
                        coef="factor(chemo)Yes",
                        sort.by = "none",
@@ -1828,11 +1856,11 @@ tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
   dplyr::select(t, adj.P.Val) |> 
   tibble::rownames_to_column('probe_id') 
 
-sum(tmp$adj.P.Val < 0.01)
+sum(tmp2_chemo$adj.P.Val < 0.01)
 
 
 
-tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
+tmp2_radio <- limma::topTable(fit.trtmnt.quality.pp.nc,
                        n=nrow(data.trtmnt.quality.pp.nc),
                        coef="factor(radio)Yes",
                        sort.by = "none",
@@ -1841,8 +1869,79 @@ tmp <- limma::topTable(fit.trtmnt.quality.pp.nc,
   tibble::rownames_to_column('probe_id') 
 
 
-sum(tmp$adj.P.Val < 0.01)
+sum(tmp2_radio$adj.P.Val < 0.01)
 
+
+
+out <- rbind(
+  tmp1_grade |>
+    dplyr::filter(adj.P.Val < 0.01) |>
+    dplyr::select(probe_id, adj.P.Val, t) |> 
+    dplyr::mutate(test = "model1: Grade")
+  ,
+  tmp1_TMZ |>  dplyr::filter(adj.P.Val < 0.01) |>  
+    dplyr::select(probe_id, adj.P.Val, t) |> 
+    dplyr::mutate(test = "model1: TMZ")
+  ,
+  tmp1_radio |>  dplyr::filter(adj.P.Val < 0.01) |>
+    dplyr::select(probe_id, adj.P.Val, t) |> 
+    dplyr::mutate(test = "model1: radio"),
+  
+  
+  
+  tmp2_grade |>
+    dplyr::filter(adj.P.Val < 0.01) |>
+    dplyr::select(probe_id, adj.P.Val, t) |> 
+    dplyr::mutate(test = "model2: Grade")
+  ,
+  tmp2_chemo |>  dplyr::filter(adj.P.Val < 0.01) |>  
+    dplyr::select(probe_id, adj.P.Val, t) |> 
+    dplyr::mutate(test = "model2: chemo")
+  ,
+  tmp2_radio |>  dplyr::filter(adj.P.Val < 0.01) |>
+    dplyr::select(probe_id, adj.P.Val, t) |> 
+    dplyr::mutate(test = "model2: radio")
+) |> 
+  dplyr::mutate(test = factor(test, levels=c("model1: Grade", "model1: TMZ", "model1: radio", "model2: Grade", "model2: chemo", "model2: radio")))
+
+
+
+out |> 
+  dplyr::pull(test) |> 
+  table()
+
+exp <- out |> tidyr::pivot_wider(id_cols = c(probe_id), 
+                          names_from = c(test),
+                          values_from = c(adj.P.Val      ,   t),
+                          names_expand = TRUE
+                          ) |> 
+  dplyr::select(
+    "probe_id",
+    
+    
+    "adj.P.Val_model1: Grade",
+    "t_model1: Grade",
+    
+    "adj.P.Val_model1: TMZ",
+    "t_model1: TMZ",
+    
+    "adj.P.Val_model1: radio",
+    "t_model1: radio",
+    
+    
+    
+    "adj.P.Val_model2: Grade",
+    "t_model2: Grade",
+    
+    "adj.P.Val_model2: chemo",
+    "t_model2: chemo",
+    
+    "adj.P.Val_model2: radio",
+    "t_model2: radio"
+  )
+
+
+write.table(exp, file="output/tables/analysis_differential__treatment_mv.txt", sep="\t", quote = F, row.names = F)
 
 
 
@@ -4088,7 +4187,7 @@ metadata.ffpe_or_ff.pp.nc <- glass_od.metadata.array_samples |>
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 205)
+    assertthat::assert_that(nrow(.) == 204)
     return(.)
   })()
 
@@ -4156,7 +4255,7 @@ metadata.ffpe_decay.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 205) 
+    assertthat::assert_that(nrow(.) == 204) 
     return(.)
   })()
 
@@ -4205,6 +4304,7 @@ rm(fit.ffpe_decay.pp.nc, stats.ffpe_decay.pp.nc, metadata.ffpe_decay.pp.nc)
 
 
 
+
 ### 2. time in freezer ----
 
 
@@ -4219,7 +4319,7 @@ metadata.freezer_decay.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 203) 
+    assertthat::assert_that(nrow(.) == 204) 
     return(.)
   })()
 
@@ -4296,7 +4396,7 @@ metadata.ffpe_freezer_multivar.pp.nc <- glass_od.metadata.array_samples |>
   dplyr::mutate(patient = as.factor(paste0("p_",ifelse(is.paired, patient_id, "remainder")))) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 203) 
+    assertthat::assert_that(nrow(.) == 204) 
     return(.)
   })()
 
@@ -4377,8 +4477,6 @@ rm(fit.ffpe_freezer_multivar.pp.nc,
 if(!exists('data.mvalues.probes')) {
   source('scripts/load_mvalues_hq_samples.R')
 }
-
-#tmp <- readRDS(file="cache/analysis_differential__ffpe-decay-time__partial_paired_nc__stats.Rds")
 
 
 tmp <- data.mvalues.probes |> 
@@ -4512,6 +4610,7 @@ saveRDS(stats.ffpe_decay.intensities.total, file="cache/analysis_differential_in
 
 
 rm(fit.ffpe_decay.intensities.total, stats.ffpe_decay.intensities.total, metadata.ffpe_decay.intensities.total)
+
 
 
 

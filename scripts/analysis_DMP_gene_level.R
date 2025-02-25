@@ -484,7 +484,11 @@ panels <- c(
   "H3F3A",
   "CIC",
   "FUBP1",
-  "TCF12"
+  "TCF12",
+  
+  "GATA6",
+  "GATA4",
+  "^KRT"
   
 )
 
@@ -492,7 +496,7 @@ panels <- c(
 facettes <- rep("?", length(panels))
 facettes[1:which(panels == "VSX")] <- "Homeobox TFs"
 facettes[which(panels == "^OR")] <- "Olfactory Receptors"
-facettes[which(panels == "^IDH1$"):which(panels == "TCF12")] <- "Disease implicated"
+facettes[which(panels == "^IDH1$"):length(panels)] <- "Disease implicated"
 
 
 

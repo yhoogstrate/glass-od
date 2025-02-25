@@ -592,6 +592,7 @@ ggsave("output/figures/vis_CDKN2AB_incidence__96_114.png", width=8.5 * 0.975, he
 
 # 9p arm medians ----
 
+
 sel <- c("0007-R2","0012-R3","0018-R3","0024-R2","0031-R2","0032-R1","0036-R2","0038-R2","0042-R3","0045-R2","0051-R2","0054-R3","0055-R2","0061-R2","0064-R4","0070-R3","0090-R3","0092-R3","0094-R2","0099-R2","0111-R2","0114-R2","0116-R2","0117-R3","0119-R2","0124-R2")
 
 
@@ -646,16 +647,18 @@ ggplot(plt, aes(x=pos, y=log2fc, col=CDKN2AB, group=bin)) +
   
   labs(x = "million bases hg19", y="mean log2fc", col="", caption="last resections with 9p arm losses (n=26, incl 4x HD)") +
   
-  scale_color_manual(values=c(`CDKN2A/B` = "red",
-                              `chr9p` = "lightblue",
-                              `chr9q` = "lightgreen")) +
+  scale_color_manual(values=c(`CDKN2A/B` = mixcol("red","black",0.2),
+                              `chr9q` = "#CB75A4",
+                              `chr9p` = "#59B2E6")) +
   
   scale_x_continuous(breaks=(0:15)*10) +
   scale_y_continuous(breaks=c(0,-0.25,-0.5)) +
   
   theme_nature +
   theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_nature_lwd)) +
-  theme(plot.background = element_rect(fill="white", colour = NA)) # png export, white background, no border
+  theme(plot.background = element_rect(fill="white", colour = NA)) + # png export, white background, no border
+  theme(legend.position = "right")
 
-ggsave("output/figures/vis_CDKN2AB_incidence__9p_arm__mean.png", width=8.5*0.975*0.66, height=2.7, dpi=600)
+
+ggsave("output/figures/vis_CDKN2AB_incidence__9p_arm__mean.png", width=6.5, height=2.25, dpi=600)
 

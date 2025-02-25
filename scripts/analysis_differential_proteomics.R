@@ -26,8 +26,6 @@ if(!exists('glass_od.metadata.proteomics')) {
 
 
 
-lfc_cut <- log2(1.25)
-
 
 
 # limma N/A ----
@@ -108,7 +106,7 @@ ki67.proteomics <-  ki67.proteomics |>
     by=c('proteomics_id'='proteomics_id')
   )
 dim(ki67.proteomics)
-sum(duplicated(ki67.proteomics$resection_id))
+stopifnot(duplicated(ki67.proteomics$resection_id) == 0)
 
 
 
@@ -138,34 +136,38 @@ ki67.joined = ki67.proteomics |> dplyr::inner_join(ki67.if, by=c('resection_id'=
 sum(duplicated(ki67.joined$resection_id))
 
 
-ggplot(ki67.joined, aes(x=KI67, y=staining_KI67_pos_per_detected_cells)) +
+ggplot(ki67.joined, aes(x=MKI67, y=staining_KI67_pos_per_detected_cells)) +
+  ggpubr::stat_cor(method = "spearman") +
   geom_point() +
   theme_nature
 
 
 
-ggplot(ki67.joined, aes(x=KI67, y=staining_KI67_lr_pos_neg_cells)) +
-  geom_point() +
-  theme_nature
-
-
-
-
-ggplot(ki67.joined, aes(x=KI67, y=staining_KI67_pos_neg_cell_density)) +
-  geom_point() +
-  theme_nature
-
-
-
-
-ggplot(ki67.joined, aes(x=KI67, y=staining_KI67_pos_per_area_um2)) +
+ggplot(ki67.joined, aes(x=MKI67, y=staining_KI67_lr_pos_neg_cells)) +
+  ggpubr::stat_cor(method = "spearman") +
   geom_point() +
   theme_nature
 
 
 
 
-cor(exp(ki67.joined$KI67),
+ggplot(ki67.joined, aes(x=MKI67, y=staining_KI67_pos_neg_cell_density)) +
+  ggpubr::stat_cor(method = "spearman") +
+  geom_point() +
+  theme_nature
+
+
+
+
+ggplot(ki67.joined, aes(x=MKI67, y=staining_KI67_pos_per_area_um2)) +
+  ggpubr::stat_cor(method = "spearman") +
+  geom_point() +
+  theme_nature
+
+
+
+
+cor(exp(ki67.joined$MKI67),
     ki67.joined$staining_KI67_pos_per_area_um2,
     use="complete.obs", method="spearman")
 
@@ -406,7 +408,7 @@ metadata <- metadata |>
   ) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 119) 
+    assertthat::assert_that(nrow(.) == 118) 
     return(.)
   })() |> 
 
@@ -513,6 +515,7 @@ rm(design, fit, data, metadata)
 ## plt tmp ----
 ### cell cycling ----
 
+
 clng <- c("AAAS","AATF","ABCB1","ABL1","ABRAXAS1","ABRAXAS2","ACTB","ACTL6A","ACTL6B","ACTR2","ACTR3","ACTR5",
           "ACTR8","ACVR1","ACVR1B","ADAM17","ADAMTS1","ADARB1","ADCYAP1","AFAP1L2","AGO4","AHCTF1","AHR","AICDA",
           "AIF1","AJUBA","AKAP8","AKAP8L","AKT1","AKT2","ALKBH4","ALMS1","ALOX15B","AMBRA1","ANAPC1","ANAPC10",
@@ -605,8 +608,8 @@ pltcor <- plt |>
   dplyr::filter(!is.na(t_grade)) |> 
   dplyr::filter(!is.na(t_cgc))|> 
   dplyr::filter(!is.na(t_time.cor)) |> 
-  dplyr::filter(!is.na(t_grade.cor)) |> 
-  dplyr::filter(!is.na(t_cgc.cor))
+  dplyr::filter(!is.na(t_grade.cor))
+  #dplyr::filter(!is.na(t_cgc.cor))
 
 corrplot::corrplot(cor(pltcor), order="hclust")
 
@@ -848,7 +851,7 @@ ggplot(plt, aes(x= `logFC_cgc.cor`, y= -log(`adj.P.Val_cgc.cor`), col=significan
 ### recursive Cor N/A adj ----
 
 
-#lfc_cut <- 0.25
+lfc_cut <- 0.5
 
 plt <- plt |>
   dplyr::mutate(significant = adj.P.Val_cgc < 0.01 & abs(logFC_cgc) > lfc_cut) 
@@ -893,7 +896,7 @@ cordata <- metadata |>
 ) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 119) 
+    assertthat::assert_that(nrow(.) == 118) 
     return(.)
   })() |> 
   dplyr::select(resection_id, proteomics_id, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
@@ -923,11 +926,19 @@ labels <- data |>
     "TMPO","DEK","RFC4",
     "HMGB3", "HMGB1", "HMGB2"
   )) |> 
-  dplyr::mutate(IDH = gene_id %in% c("GLUD2", "IDH1","IDH2", "GLUL", "GLUD1", "ALDH18A1", "GLS", "PC", "GLS2", "GOT1L1", "GOT1", "CPS1", "GOT2",
-                                     "IDH3B",  "IDH3A", "IDH3G", "LDHA", "LDHB", "OGDH")) |> 
-  #dplyr::mutate(GO_0002526_acute_inflammatory_response = gene_id %in% c(
-  #  "BTK","CD6","PTGER3","ITIH4","CREB3L3","TFRC","FCGR2B","PTGS2","GSTP1","B4GALT1","EIF2AK1","OSM","RHBDD3","PIK3CG","EPHB6","TFR2","LIPA","VNN1","IL4","IL1A","ACVR1","FN1","PARK7","ASH1L","PLA2G2D","F3","TNFSF4","CNR1","TNFSF11","IL1B","C3","FFAR2","CCR7","IL22","APOL2","LBP","EPO","ASS1","F12","SELENOS","PPARG","CRP","APCS","ALOX5AP","SAA2","IL6ST","EDNRB","IL6","IL1RN","PRCP","MYLK3","TNFRSF11A","REG3G","AHSG","OSMR","PTGES","SAA4","FCGR1A","ADAM8","IL6R","NLRP3","ADORA1","DNASE1L3","NPY5R","KLKB1","IL31RA","MBL2","SERPINF2","SCN11A","MRGPRX1","REG3A","CEBPB","SAA1","IL20RB","NLRP6","A2M","NUPR1","ANO6","CD163","CTNNBIP1","FCER1A","F2","FUT7","CXCR2","EXT1","F8","SIGIRR","FFAR3","PLSCR1","ZP3","SERPINA3","TRPV1","SERPINA1","SPN","ELANE","C2CD4A","FCGR3A","HLA-E","C2CD4B","IGHG1","DNASE1","ORM2","ORM1","TNF","UGT1A1","INS","SAA2-SAA4","HP" 
-  #)) |> 
+  dplyr::mutate(GO_0002526_acute_inflammatory_response = gene_id %in% c(
+   "BTK","CD6","PTGER3","ITIH4","CREB3L3","TFRC","FCGR2B","PTGS2","GSTP1","B4GALT1","EIF2AK1","OSM","RHBDD3","PIK3CG","EPHB6","TFR2","LIPA","VNN1","IL4","IL1A","ACVR1","FN1","PARK7","ASH1L","PLA2G2D","F3","TNFSF4","CNR1","TNFSF11","IL1B","C3","FFAR2","CCR7","IL22","APOL2","LBP","EPO","ASS1","F12","SELENOS","PPARG","CRP","APCS","ALOX5AP","SAA2","IL6ST","EDNRB","IL6","IL1RN","PRCP","MYLK3","TNFRSF11A","REG3G","AHSG","OSMR","PTGES","SAA4","FCGR1A","ADAM8","IL6R","NLRP3","ADORA1","DNASE1L3","NPY5R","KLKB1","IL31RA","MBL2","SERPINF2","SCN11A","MRGPRX1","REG3A","CEBPB","SAA1","IL20RB","NLRP6","A2M","NUPR1","ANO6","CD163","CTNNBIP1","FCER1A","F2","FUT7","CXCR2","EXT1","F8","SIGIRR","FFAR3","PLSCR1","ZP3","SERPINA3","TRPV1","SERPINA1","SPN","ELANE","C2CD4A","FCGR3A","HLA-E","C2CD4B","IGHG1","DNASE1","ORM2","ORM1","TNF","UGT1A1","INS","SAA2-SAA4","HP"
+  )) |>
+  dplyr::mutate(GO_0062023_collagen_containing_extracellular_matrix = gene_id %in% c(
+    "DCN","SEMA3B","MARCO","SERPINB1","MYOC","TIMP2","VCAN","TNC","USH2A","COL9A2","LTBP1","ELN","LAMC3","COL23A1","LAMA3","ENTPD2","CBLN4","ITIH4","ITIH1","F7","LAMC2","COL11A1","WNT8A","GPC1","CDON","NTN1","COL17A1","FGFR2","PKM","FGF10","SPP2","ADAM11","NTN4","LMAN1","DLG1","GPC4","FBLN1","COL5A3","HSP90AA1","COL4A4","IMPG2","COL19A1","COL16A1","FCN1","ACHE","ADAMTS2","MMP2","NID2","LTBP4","ICAM1","P3H2","LAMB4","LAMB1","APOH","ANGPT2","CCDC80","CMA1","COL9A3","TGFB2","AMELY","HNRNPM","LGALS1","TIMP3","PDGFB","CHADL","CTSG","COCH","MMP9","BMP7","CTSZ","COL20A1","ANGPT4","LAMA1","MXRA5","SRPX","F9","TIMP1","SRPX2","CBLN1","ZP2","CTSH","SFRP1","IL7","FGL1","CLC","APLP1","TGFB1","COMP","WNT2","PTPRZ1","PCOLCE","SERPINE1","PLOD3","RARRES2","AEBP1","MEGF9","OGN",
+    "ASPN","ECM2","AMBP","CXCL12","ACTA2","KAZALD1","LGALS3BP","COL1A1","VTN","SOD3","CTSC","HPX","APOA4","APOC3","MDK","VWF","WNT5B","MGP","COL12A1","COL9A1","SMOC2","IMPG1","LAMA4","ERBIN","LOX","SPARC","THBS4","KNG1","HRG","WNT5A","COL7A1","LOXL3","EFEMP1","FN1","TNR","ANGPTL1","PRG4","NID1","ZP4","MFAP2","P3H1","F3","SERPINC1","CTSD","MMP8","APOA1","CCN2","LTBP2","TGFB3","TNN","TGFBI",
+    "CLU","A1BG","FMOD","PLG","ANXA11","COL10A1","SLPI","MATN4","NDP","F13A1","SERPINB6","COL21A1","AMELX","CFP","PZP","FGL2","LOXL1","APOE","NCAN","PXDN","GDF15","COL5A1","LAMA5","FIBCD1","ANGPTL6","F12","LGALS3","PODNL1","RTBDN","MATN3","EMILIN2","SERPINF1","ITGB4","MATN2","BCAN","HAPLN2","APCS","ANGPTL3","POSTN","LOXL2","ADAMDEC1","WNT2B","COL4A2","ADAMTS8","ANXA1","CTSL","ADAM19","AGT","LAMC1","SERPINE2","ANGPTL2","CCN3","IGFBPL1","TINAG","SULF1","THBS1",
+    "EMILIN1","LOXL4","ANXA7","CILP","SEMA7A","MMRN1","FRAS1","FBN2","COL2A1","INHBE","LUM","FBLN5","PCSK6","LMAN1L","HAPLN3","MFGE8","TGFB1I1","CDH13","COL6A1","COL6A2","ADAMTS10","FCN3","HSPG2","CCN1","TINAGL1","DPT","HDGF","HMCN1","ECM1","ADAMTSL4","ANXA9","S100A8","S100A7","FLG","LEFTY2","COL8A1","AHSG","SFRP2","HAPLN1","CASK","GPC3","HMCN2","SERPING1","SERPINH1","NCAM1","ZP1","FREM2","ITIH2","DST","SPARCL1","ABI3BP","ANGPT1","ADAMTS1","ADAMTS5","ADAMTS3","PRG3","ACAN","COLEC12","ADAMTS4","LAD1","C1QC","CSTB","FCN2","AZGP1","COL26A1","MATN1","SDC3","CTSS","S100A9","COL6A3","IGFBP7","FBLN2","ADAMTS9","CRELD1","PF4","CPA3","TGM4","CLEC3B","ANXA5","EDIL3","EGFLAM","RELL2","SHH","COL1A2","CTSB","SBSPON","CTHRC1","FREM1","VWA2","HTRA1","ADAMTS15","FBN1","SERPINB8","MFAP4","HSP90B1","SERPINB12","NAV2","GREM1","SERPINF2","KRT1","ANGPTL4",
+    "SOST","LTBP3","TNXB","COL3A1","NPNT","LGALS9","COL4A3","THBS3","COL22A1","SDC2","MUC17","SERPINB9","CDH2","COL24A1","FGG","FGA","FGB","LGALS4","COL8A2","ANGPTL7","LAMB2","LRRC15","TPSAB1","EFEMP2","COL6A5","EGFL7","ADAMTS20","MMRN2","C1QA","DAG1","CSPG4","CTSF","PODN","FGFBP3","ZG16","NPPA","A2M","CLEC14A","CD151","CALR","GPC5","VWA1","SSC5D","F2","ADIPOQ","OTOL1","BGN","MXRA7","SNORC","ANXA2","COL18A1","FREM3","GPC6","EMILIN3","EFNA5","THBS2","PRG2","C17orf58","ANGPTL5","BCAM","COL4A1","HAPLN4","AMTN","THSD4","COL14A1","EYS","COL4A5","AGRN","PLSCR1","ZP3","IFNA2","SERPINA5","COL25A1","VWC2","PRELP","MMP23B","SERPINA3","S100A4","PRTN3","LAMA2","COL27A1","LAMB3","ANXA4","ANXA6","SERPINA1","TPSB2","COL13A1","SPN","ELANE","COL4A6","MFAP5","PSAP","S100A10","HRNR","S100A6","SMOC1","EGFL6","L1CAM","TGM2","COL11A2","COL5A2","COL15A1","PRSS1","VIT","DEFA1","COL6A6","COLQ","GPC2","ANG","COL28A1","ORM2","ORM1","DEFA1B","MARCOL","GH1","SPON1","ANXA8","RBP3","GDF10","MMP28"
+  )) |> 
+  dplyr::mutate(`GO_0072562_blood_microparticle` = gene_id %in% c(
+    "CFH","SLC4A1","PON1","ITGA2B","CP","ITIH4","ITIH1","GRIPAP1","TFRC","CD5L","ACTB","AFM","PSMC5","TF","APOL1","TGFB1","AMBP","ENG","PFN1","LGALS3BP","VTN","HSPA8","HPX","APOA4","C9","KNG1","HRG","BCHE","FN1","CFHR3","SLC2A1","SERPINC1","APOA1","CLU","A1BG","PLG","C4BPA","DNPEP","F13A1","C3","HSPA2","PZP","INTS11","APOE","JCHAIN","APCS","AGT","CIB2","SDCBP","TMPRSS13","FCN3","OAZ3","ACTA1","EIF2A","AHSG","GC","MSN","STOM","GSN","SERPING1","ITIH2","C8A","APOA2","C1QC","ACTC1","FCN2","ACTG2","ALB","ANXA5","YWHAZ","ACSM1","SERPINF2","KRT1","ANGPTL4","FGG","FGA","FGB","HSPA6","A2M","C8G","ZBTB38","CPN2","F2","C1S","ACTG1","PROS1","KDM4D","POTEE","HBA2","ZNF177","SERPINA3","HBG2","POTEF","HSPA1B","HSPA1A","HSPA1L","PRSS1","HBA1","IGKV4-1","IGLV1-47","IGLV3-25","IGLV3-21","IGLC2","IGLC3","IGHA2","IGHG4","IGHG2","IGHA1","IGHG1","IGHM","IGHV3-7","IGHV3-13","IGHV3-23","CLIC1","HBE1","HBD","C4B","ORM2","ORM1","IGKV3-20","IGKV1D-33","IGKV1-17","IGKV3-11","IGKV1-33","IGKV1-39","IGKV2D-28","IGKV2-30","IGKV1-5","CFB","CFHR1","IGKV3-15","C4A","HBB","IGKV2D-40","HP","HPR","IGKV1D-12"
+  )) |> 
   tibble::column_to_rownames("gene_id")
 
 
@@ -993,7 +1004,7 @@ plt.expanded2 <- reshape2::melt(pplt) |>
 base::rm(o.join)
 
 
-font_scale = 1.5
+font_scale = 4.5
 legend_scale = 1.2
 
 
@@ -1111,7 +1122,8 @@ patchwork::wrap_plots(
   patchwork::plot_layout(ncol=1)
 
 
-ggsave("output/figures/vis_differential_proteomics_corrplot.png", width=8.4 , height=8.4*2, dpi=600)
+ggsave("output/figures/vis_differential_proteomics_corrplot.pdf", width=8.4 , height=8.4*2, dpi=600)
+
 
 
 #### GSEA ----

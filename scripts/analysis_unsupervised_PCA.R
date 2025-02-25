@@ -148,12 +148,62 @@ saveRDS(data.pca.glass_od_and_validation.x, file="cache/analysis_unsupervised_PC
 
 
 
-# GLASS-NL ----
+# GLASS-NL [all] ----
+
+
+# metadata <- glass_nl.metadata.array_samples |>
+#   dplyr::select(array_sentrix_id) |> 
+#   (function(.) {
+#     print(dim(.))
+#     assertthat::assert_that(nrow(.) == 235)
+#     return(.)
+#   })()
+# 
+# 
+# 
+# data <- data.mvalues.hq_samples |> 
+#   tibble::rownames_to_column('probe_id') |> 
+#   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+#   tibble::column_to_rownames('probe_id') |> 
+#   dplyr::select(metadata$array_sentrix_id) |> 
+#   (function(.) {
+#     print(dim(.))
+#     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+#     assertthat::assert_that(ncol(.) == 235)
+#     return(.)
+#   })()
+# 
+# 
+# data.pca.glass_nl <- data |> 
+#   t() |> 
+#   prcomp()
+# 
+# 
+# data.pca.glass_nl.x <- data.pca.glass_nl |> 
+#   purrr::pluck('x') |> 
+#   as.data.frame(stringsAsFactors=F) |> 
+#   dplyr::rename_with( ~ paste0("array_", .x)) |> 
+#   tibble::rownames_to_column('array_sentrix_id')
+# 
+# 
+# saveRDS(data.pca.glass_nl, file="cache/analysis_unsupervised_PCA_GLASS-NL_all_prcomp.Rds")
+# saveRDS(data.pca.glass_nl.x, file="cache/analysis_unsupervised_PCA_GLASS-NL_all_x.Rds")
+# 
+# 
+# rm(data, metadata, data.pca.glass_nl)
+
+
+# GLASS-NL [hq] ----
 
 
 metadata <- glass_nl.metadata.array_samples |>
   filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
-  dplyr::select(array_sentrix_id)
+  dplyr::select(array_sentrix_id) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_NL_INCLUDED_SAMPLES)
+    return(.)
+  })()
 
 
 data <- data.mvalues.hq_samples |> 
@@ -164,6 +214,7 @@ data <- data.mvalues.hq_samples |>
   (function(.) {
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+    assertthat::assert_that(ncol(.) == CONST_N_GLASS_NL_INCLUDED_SAMPLES)
     return(.)
   })()
 

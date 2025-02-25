@@ -2,11 +2,16 @@
 
 filter_GLASS_NL_idats <- function(metadata, nrow.check = 0) {
   out <- metadata |> 
+    
     dplyr::filter(!is.na(array_sentrix_id)) |> 
+    (function(.) { print(dim(.)); return(.) })() |> 
+    
     assertr::verify(!is.na(array_qc.pca.detP.outlier)) |> 
     dplyr::filter(array_qc.pca.detP.outlier == F) |> 
+    (function(.) { print(dim(.)); return(.) })() |> 
     
     dplyr::filter(qc.pca.pc3purity.outlier == F) |> 
+    (function(.) { print(dim(.)); return(.) })() |> 
     
     assertr::verify(!duplicated(array_sentrix_id))
   
@@ -22,6 +27,4 @@ filter_GLASS_NL_idats <- function(metadata, nrow.check = 0) {
   
   return (out)
 }
-
-# table(glass_nl.metadata.array_samples$qc.pca.pc3purity.outlier, glass_nl.metadata.array_samples$array_qc.pca.detP.outlier)
 

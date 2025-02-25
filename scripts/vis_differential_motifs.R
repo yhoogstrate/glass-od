@@ -219,7 +219,7 @@ rm(tmp)
 
 
 
-### adds: per probe outcomes (DMP etc.) ----
+### adds: GLASS-OD probe outcomes (DMP etc.) ----
 
 
 tmp <- data.mvalues.probes |> 
@@ -238,9 +238,15 @@ tmp <- data.mvalues.probes |>
   dplyr::filter(!is.na(gc_sequence_context_2_new)) |> 
   dplyr::mutate(sequence_5p = toupper(gsub("[^a-zA-Z]","", gc_sequence_context_2_new))) |> 
   dplyr::select(sequence_5p, DMP__g2_g3__pp_nc__t, DMP__primary_recurrence__pp_nc__t,
-                DMP__PC1_PC2_PC3_multivariate__t_PC2, DMP__PC1_PC2_PC3_multivariate__t_PC3) |> 
+                DMP__PC1_PC2_PC3_multivariate__t_PC2, DMP__PC1_PC2_PC3_multivariate__t_PC3,
+                
+                
+                DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t, DMP__GLASS_NL__prim_rec__pp_nc_PC1__t
+                ) |> 
   dplyr::group_by(sequence_5p) |>
-  dplyr::summarise(GLASS_OD__DMP__g2_g3__mean = mean(DMP__g2_g3__pp_nc__t),
+  dplyr::summarise(
+                    # GLASS-OD:
+                   GLASS_OD__DMP__g2_g3__mean = mean(DMP__g2_g3__pp_nc__t),
                    GLASS_OD__DMP__g2_g3__median = median(DMP__g2_g3__pp_nc__t),
                    GLASS_OD__DMP__primary_recurrence__mean = mean(DMP__primary_recurrence__pp_nc__t),
                    GLASS_OD__DMP__primary_recurrence__median = median(DMP__primary_recurrence__pp_nc__t),
@@ -249,7 +255,15 @@ tmp <- data.mvalues.probes |>
                    GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC2__median = median(DMP__PC1_PC2_PC3_multivariate__t_PC2),
                    
                    GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC3__mean =   mean(  DMP__PC1_PC2_PC3_multivariate__t_PC3),
-                   GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC3__median = median(DMP__PC1_PC2_PC3_multivariate__t_PC3)
+                   GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC3__median = median(DMP__PC1_PC2_PC3_multivariate__t_PC3),
+                   
+                   
+                   # GLASS-NL:
+                   DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t__mean = mean(DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t),
+                   DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t__median = median(DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t),
+                   
+                   DMP__GLASS_NL__prim_rec__pp_nc_PC1__t__mean = mean(DMP__GLASS_NL__prim_rec__pp_nc_PC1__t),
+                   DMP__GLASS_NL__prim_rec__pp_nc_PC1__t__median = median(DMP__GLASS_NL__prim_rec__pp_nc_PC1__t)
   ) |> 
   dplyr::ungroup()  |> 
   (function(.) {
@@ -278,6 +292,8 @@ rm(tmp)
 
 
 
+
+
 ## plt.motifs.unstranded [palindrom correction] ----
 
 
@@ -301,7 +317,7 @@ plt.motifs.unstranded <- plt.motifs.stranded |>
 
 
 
-### adds: per probe outcomes (DMP etc.) ----
+### per probe outcomes (DMP etc.) ----
 
 
 tmp <- data.mvalues.probes |> 
@@ -318,8 +334,29 @@ tmp <- data.mvalues.probes |>
   })() |>
   dplyr::tibble() |> 
   assertr::verify(!is.na(gc_sequence_context_2_new)) |> 
-  dplyr::select(gc_sequence_context_2_new, DMP__g2_g3__pp_nc__t, DMP__primary_recurrence__pp_nc__t,
-                DMP__PC1_PC2_PC3_multivariate__t_PC2, DMP__PC1_PC2_PC3_multivariate__t_PC3) |> 
+  dplyr::select(gc_sequence_context_2_new,
+                
+                DMP__g2_g3__pp_nc__t,
+                DMP__primary_recurrence__pp_nc__t,
+                
+                DMP__g2_g3__pp_nc_PC1__t,
+                DMP__primary_recurrence__pp_nc_PC1__t,
+                
+                
+                DMP__PC1_PC2_PC3_multivariate__t_PC1,
+                DMP__PC1_PC2_PC3_multivariate__t_PC2,
+                DMP__PC1_PC2_PC3_multivariate__t_PC3,
+                
+                
+                
+                DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t,
+                DMP__GLASS_NL__prim_rec__pp_nc_naive__t,
+                
+                DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t,
+                DMP__GLASS_NL__prim_rec__pp_nc_PC1__t,
+                
+                paste0("DMP__GLASS_NL__exp", 1:9,"__t")
+                ) |> 
   dplyr::mutate(sequence_5p = gsub("[CG]","CG",gc_sequence_context_2_new, fixed=T), gc_sequence_context_2_new=NULL) |> 
   dplyr::mutate(sequence_3p = as.character(Biostrings::reverseComplement(Biostrings::DNAStringSet(sequence_5p)))) |> 
   dplyr::mutate(palindromic = sequence_5p == sequence_3p) |> 
@@ -337,17 +374,51 @@ tmp <- data.mvalues.probes |>
     ))) |> 
   
   dplyr::group_by(oligo_sequence) |>
-  dplyr::summarise(GLASS_OD__DMP__g2_g3__mean = mean(DMP__g2_g3__pp_nc__t),
-                   GLASS_OD__DMP__g2_g3__median = median(DMP__g2_g3__pp_nc__t),
-                   GLASS_OD__DMP__primary_recurrence__mean = mean(DMP__primary_recurrence__pp_nc__t),
-                   GLASS_OD__DMP__primary_recurrence__median = median(DMP__primary_recurrence__pp_nc__t),
+  dplyr::summarise(
+                   # GLASS-OD naive
+                   DMP__g2_g3__pp_nc__t__mean = mean(DMP__g2_g3__pp_nc__t),
+                   DMP__g2_g3__pp_nc__t__median = median(DMP__g2_g3__pp_nc__t),
+                   DMP__primary_recurrence__pp_nc__t__mean = mean(DMP__primary_recurrence__pp_nc__t),
+                   DMP__primary_recurrence__pp_nc__t = median(DMP__primary_recurrence__pp_nc__t),
+                   
+                   # GLASS-OD + PC1
+                   DMP__g2_g3__pp_nc_PC1__t__mean = mean(DMP__g2_g3__pp_nc_PC1__t),
+                   DMP__g2_g3__pp_nc_PC1__t__median = median(DMP__g2_g3__pp_nc_PC1__t),
+                   DMP__primary_recurrence__pp_nc_PC1__t__mean = mean(DMP__primary_recurrence__pp_nc_PC1__t),
+                   DMP__primary_recurrence__pp_nc_PC1__t__median = median(DMP__primary_recurrence__pp_nc_PC1__t),
+                   
+                   # GLASS-OD PC 1,2,3 mv
+                   DMP__PC1_PC2_PC3_multivariate__t_PC1__mean =   mean(  DMP__PC1_PC2_PC3_multivariate__t_PC1),
+                   DMP__PC1_PC2_PC3_multivariate__t_PC1__median = median(DMP__PC1_PC2_PC3_multivariate__t_PC1),
+                   DMP__PC1_PC2_PC3_multivariate__t_PC2__mean =   mean(  DMP__PC1_PC2_PC3_multivariate__t_PC2),
+                   DMP__PC1_PC2_PC3_multivariate__t_PC2__median = median(DMP__PC1_PC2_PC3_multivariate__t_PC2),
+                   DMP__PC1_PC2_PC3_multivariate__t_PC3__mean =   mean(  DMP__PC1_PC2_PC3_multivariate__t_PC3),
+                   DMP__PC1_PC2_PC3_multivariate__t_PC3__median = median(DMP__PC1_PC2_PC3_multivariate__t_PC3),
                    
                    
-                   GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC2__mean =   mean(  DMP__PC1_PC2_PC3_multivariate__t_PC2),
-                   GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC2__median = median(DMP__PC1_PC2_PC3_multivariate__t_PC2),
+                   # GLASS-NL + naive
+                   DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t__mean = mean(DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t),
+                   DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t__median = median(DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t),
+                   DMP__GLASS_NL__prim_rec__pp_nc_naive__t__mean = mean(DMP__GLASS_NL__prim_rec__pp_nc_naive__t),
+                   DMP__GLASS_NL__prim_rec__pp_nc_naive__t__median = median(DMP__GLASS_NL__prim_rec__pp_nc_naive__t),
                    
-                   GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC3__mean =   mean(  DMP__PC1_PC2_PC3_multivariate__t_PC3),
-                   GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC3__median = median(DMP__PC1_PC2_PC3_multivariate__t_PC3)
+                   # GLASS-NL + PC1
+                   `DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t__mean` = mean(DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t),
+                   `DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t__median` = median(DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t),
+                   `DMP__GLASS_NL__prim_rec__pp_nc_PC1__t__mean` = mean(DMP__GLASS_NL__prim_rec__pp_nc_PC1__t),
+                   `DMP__GLASS_NL__prim_rec__pp_nc_PC1__t__median` = median(DMP__GLASS_NL__prim_rec__pp_nc_PC1__t),
+                   
+                   
+                   DMP__GLASS_NL__exp1__t__median = median(DMP__GLASS_NL__exp1__t),
+                   DMP__GLASS_NL__exp2__t__median = median(DMP__GLASS_NL__exp2__t),
+                   DMP__GLASS_NL__exp3__t__median = median(DMP__GLASS_NL__exp3__t),
+                   DMP__GLASS_NL__exp4__t__median = median(DMP__GLASS_NL__exp4__t),
+                   DMP__GLASS_NL__exp5__t__median = median(DMP__GLASS_NL__exp5__t),
+                   DMP__GLASS_NL__exp6__t__median = median(DMP__GLASS_NL__exp6__t),
+                   DMP__GLASS_NL__exp7__t__median = median(DMP__GLASS_NL__exp7__t),
+                   DMP__GLASS_NL__exp8__t__median = median(DMP__GLASS_NL__exp8__t),
+                   DMP__GLASS_NL__exp9__t__median = median(DMP__GLASS_NL__exp9__t)
+                   
                    ) |> 
   dplyr::ungroup()  |> 
   (function(.) {
@@ -359,16 +430,33 @@ tmp <- data.mvalues.probes |>
 
 
 plt.motifs.unstranded <- plt.motifs.unstranded |> 
-  dplyr::left_join(tmp, by=c('oligo_sequence'='oligo_sequence')) |> 
-  assertr::verify(!is.na(GLASS_OD__DMP__g2_g3__mean)) |> 
-  assertr::verify(!is.na(GLASS_OD__DMP__g2_g3__median)) |> 
-  assertr::verify(!is.na(GLASS_OD__DMP__primary_recurrence__mean)) |> 
-  assertr::verify(!is.na(GLASS_OD__DMP__primary_recurrence__median)) |> 
+  dplyr::left_join(tmp, by=c('oligo_sequence'='oligo_sequence'), suffix=c('','')) |> 
+  assertr::verify(!is.na(DMP__g2_g3__pp_nc__t__mean )) |> 
+  assertr::verify(!is.na(DMP__g2_g3__pp_nc__t__median )) |> 
+  assertr::verify(!is.na(DMP__primary_recurrence__pp_nc__t__mean )) |> 
+  assertr::verify(!is.na(DMP__primary_recurrence__pp_nc__t )) |> 
   
-  assertr::verify(!is.na(GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC2__mean)) |> 
-  assertr::verify(!is.na(GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC2__median)) |> 
-  assertr::verify(!is.na(GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC3__mean)) |> 
-  assertr::verify(!is.na(GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC3__median))
+  assertr::verify(!is.na(DMP__g2_g3__pp_nc_PC1__t__mean )) |> 
+  assertr::verify(!is.na(DMP__g2_g3__pp_nc_PC1__t__median )) |> 
+  assertr::verify(!is.na(DMP__primary_recurrence__pp_nc_PC1__t__mean )) |> 
+  assertr::verify(!is.na(DMP__primary_recurrence__pp_nc_PC1__t__median )) |> 
+  
+  assertr::verify(!is.na(DMP__PC1_PC2_PC3_multivariate__t_PC2__mean )) |> 
+  assertr::verify(!is.na(DMP__PC1_PC2_PC3_multivariate__t_PC2__median )) |> 
+  assertr::verify(!is.na(DMP__PC1_PC2_PC3_multivariate__t_PC3__mean )) |> 
+  assertr::verify(!is.na(DMP__PC1_PC2_PC3_multivariate__t_PC3__median )) |> 
+  
+  
+  assertr::verify(!is.na(DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t__mean )) |> 
+  assertr::verify(!is.na(DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t__median )) |> 
+  assertr::verify(!is.na(DMP__GLASS_NL__prim_rec__pp_nc_naive__t__mean )) |> 
+  assertr::verify(!is.na(DMP__GLASS_NL__prim_rec__pp_nc_naive__t__median )) |> 
+  
+  assertr::verify(!is.na(DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t__mean )) |> 
+  assertr::verify(!is.na(DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t__median )) |> 
+  assertr::verify(!is.na(DMP__GLASS_NL__prim_rec__pp_nc_PC1__t__mean )) |> 
+  assertr::verify(!is.na(DMP__GLASS_NL__prim_rec__pp_nc_PC1__t__median ))
+
 
 
 rm(tmp)
@@ -378,9 +466,7 @@ rm(tmp)
 
 # plots ----
 
-
-
-pdf("output/figures/vis_differential__motif_tscores_x_enzyme_kinetics__corrplot.pdf", width=4,height=4)
+#dev.off()
 
 plt <- plt.motifs |> 
   dplyr::select(-c(sequence_5p, sequence_3p, palindromic,
@@ -395,6 +481,8 @@ plt <- plt.motifs |>
 
 colnames(plt) <- gsub("_"," ",colnames(plt))
 rownames(plt) <- gsub("_"," ",rownames(plt))
+
+pdf("output/figures/vis_differential__motif_tscores_x_enzyme_kinetics__corrplot.pdf", width=4,height=4)
 
 corrplot::corrplot(plt, order="hclust", tl.cex=0.65 * (7/8),
                    cl.cex=0.65 * (7/8),
@@ -738,7 +826,7 @@ plt <- plt.motifs.unstranded |>
 # DMP__g2_g3__pp_nc__t
 # DMP__g2_g3__pp_nc_PC1__t
 # DMP__PCs__pp_nc__PC1_t
-ggplot(plt, aes(y=DNMT1_Adam_NAR_2023_unstranded, x=GLASS_OD__DMP__g2_g3__median, col=adjacent_cg, label=oligo_sequence)) +
+ggplot(plt, aes(y=DNMT1_Adam_NAR_2023_unstranded, x=DMP__g2_g3__pp_nc__t__median, col=adjacent_cg, label=oligo_sequence)) +
   geom_point(size=theme_nature_size/3) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
                    label.x=-0.85) +
@@ -749,6 +837,8 @@ ggplot(plt, aes(y=DNMT1_Adam_NAR_2023_unstranded, x=GLASS_OD__DMP__g2_g3__median
     )
   ) +
   theme_nature +
+  ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
+  
   #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
   #coord_cartesian(ylim=c(0, NA))  +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
@@ -841,12 +931,26 @@ ggsave("output/figures/vis_differential_motifs__DNMT3B_x_grade__unstranded.pdf",
 
 plt <- plt.motifs.unstranded |> 
   dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
+  #dplyr::filter(oligo_sequence != "*tacgta/tacgta")
 
 
-# DMP__g2_g3__pp_nc__t
-# DMP__g2_g3__pp_nc_PC1__t
-# DMP__PCs__pp_nc__PC1_t
-ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=GLASS_OD__DMP__g2_g3__median, col=adjacent_cg, label=oligo_sequence)) +
+# DMP__g2_g3__pp_nc__t__mean -0.82
+# DMP__g2_g3__pp_nc__t__median -0.82
+# DMP__g2_g3__pp_nc_PC1__t__mean -0.73
+# DMP__g2_g3__pp_nc_PC1__t__median -0.73
+
+# DMP__GLASS_NL__prim_rec__pp_nc_naive__t__median -0.11
+# DMP__GLASS_NL__prim_rec__pp_nc_PC1__t__median -0.57
+# DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t__median -0.43
+# DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t__median -0.56
+
+ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded,
+                #x=DMP__g2_g3__pp_nc_PC1__t__mean,
+                #DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t__median,
+                DMP__g2_g3__pp_nc__t__median,
+                #x=,
+                col=adjacent_cg,
+                label=oligo_sequence)) +
   geom_point(size=theme_nature_size/3) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
                    label.x=-0.85) +
@@ -857,7 +961,8 @@ ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=GLASS_OD__DMP__g2_g3__
     )
   ) +
   theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
+  ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
+  #ggrepel::geom_text_repel(col="black", size=theme_nature_size* 1.4) +
   coord_cartesian(ylim=c(0, NA))  +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
        y="TET1 5mC (Adam NatCom 2022)",
@@ -946,6 +1051,37 @@ ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded, x=GLASS_OD__DMP__g2
 
 
 ggsave("output/figures/vis_differential_motifs__TET3_x_grade__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
+
+
+
+
+## motif: xx[CG]xx violin(s) unstranded x TET1 x PC1 MV pearson ----
+
+
+
+plt <- plt.motifs.unstranded |> 
+  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence), "Adjacent CG" ,"No adjacent CG"))
+
+
+ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=DMP__PC1_PC2_PC3_multivariate__t_PC1__median, col=adjacent_cg, label=oligo_sequence)) +
+  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
+                   label.x=2) +
+  scale_color_manual(
+    values=c(
+      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
+      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
+    )
+  ) +
+  theme_nature +
+  ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
+  labs(x="T-score\nPC2 (multivariate)",
+       y="-1 * TET3 (Ravichandran SciAdv 2022)",
+       col="",
+       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
+       subtitle=format_subtitle("TET3 x t-score WHO grade")
+  )
 
 
 
@@ -1364,6 +1500,265 @@ ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded, x=GLASS_OD__DMP__PC
 
 ggsave("output/figures/vis_differential_motifs__TET3_x_PC3mv__Spearman__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
 
+
+
+
+## motif: xx[CG]xx violin(s) unstranded x TET1 x PCx MV pearson [GLASS-NL] ----
+
+
+
+plt <- plt.motifs.unstranded |> 
+  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence), "Adjacent CG" ,"No adjacent CG"))
+
+
+ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=DMP__GLASS_NL__exp6__t__median, col=adjacent_cg, label=oligo_sequence)) +
+  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "pearson",
+                   aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
+                   family=theme_nature_font_family,
+                   label.x.npc = "right", hjust=1
+  ) +
+  scale_color_manual(
+    values=c(
+      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
+      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
+    )
+  ) +
+  theme_nature +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
+  labs(x="T-score\nWHO grade 2 & 4 <> WHO grade 4\nAstrocytoma (GLASS-NL)",
+       y="TET1 5mC (Adam NatCom 2022)",
+       col="",
+       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
+       subtitle=format_subtitle("TET1 x t-score WHO grade")
+  )
+
+
+ggsave("output/figures/vis_differential_motifs__TET1_x_Grade__Pearson__unstranded__GLASS-NL.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
+
+
+
+
+
+## motif: xx[CG]xx violin(s) unstranded x TET2 x PCx MV pearson [GLASS-NL] ----
+
+
+
+plt <- plt.motifs.unstranded |> 
+  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence), "Adjacent CG" ,"No adjacent CG"))
+
+
+ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded, x=DMP__GLASS_NL__exp6__t__median, col=adjacent_cg, label=oligo_sequence)) +
+  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "pearson",
+                   aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
+                   family=theme_nature_font_family,
+                   label.x.npc = "right", hjust=1
+  ) +
+  scale_color_manual(
+    values=c(
+      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
+      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
+    )
+  ) +
+  theme_nature +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
+  labs(x="T-score\nWHO grade 2 & 4 <> WHO grade 4\nAstrocytoma (GLASS-NL)",
+       y="TET2 5mC (Adam NatCom 2022)",
+       col="",
+       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
+       subtitle=format_subtitle("TET2 x t-score WHO grade")
+  )
+
+
+ggsave("output/figures/vis_differential_motifs__TET2_x_Grade__Pearson__unstranded__GLASS-NL.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
+
+
+
+
+
+## motif: xx[CG]xx violin(s) unstranded x TET3 x PCx MV pearson [GLASS-NL] ----
+
+
+
+plt <- plt.motifs.unstranded |> 
+  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence), "Adjacent CG" ,"No adjacent CG"))
+
+
+ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded, x=DMP__GLASS_NL__exp6__t__median, col=adjacent_cg, label=oligo_sequence)) +
+  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "pearson",
+                   aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
+                   family=theme_nature_font_family,
+                   label.x.npc = "right", hjust=1
+  ) +
+  scale_color_manual(
+    values=c(
+      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
+      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
+    )
+  ) +
+  theme_nature +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
+  labs(x="T-score\nWHO grade 2 & 4 <> WHO grade 4\nAstrocytoma (GLASS-NL)",
+       y="-1 * TET3 (Ravichandran SciAdv 2022)",
+       col="",
+       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
+       subtitle=format_subtitle("TET1 x t-score WHO grade")
+  )
+
+
+ggsave("output/figures/vis_differential_motifs__TET3_x_Grade__Pearson__unstranded__GLASS-NL.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
+
+
+
+
+## motif: xx[CG]xx violin(s) unstranded x TET1 x naive x TACG pearson [GLASS-NL] ----
+
+
+
+plt <- plt.motifs.unstranded |> 
+  dplyr::mutate(col = dplyr::case_when(
+    grepl("tacgta", oligo_sequence) ~ "TA[CG]TA",
+    grepl("tacg", oligo_sequence) ~ "TA[CG]..",
+    T ~ "other"
+  ))
+
+
+ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, 
+                x=DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t__median,
+                col=col,
+                label=oligo_sequence)) +
+  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "pearson",
+                   aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
+                   family=theme_nature_font_family,
+                   label.x.npc = "left", hjust=0
+  ) +
+  ggpubr::stat_cor(method = "pearson",
+                   aes(label = after_stat(r.label)), size=theme_nature_size,
+                   family=theme_nature_font_family,
+                   label.x.npc = "right", hjust=1
+  ) +
+  scale_color_manual(
+    values=c(
+      'TA[CG]..' = mixcol('#D6604D',"#F4A582"), # "#B2182B", "#D6604D", "#F4A582", aquamarine3
+      'other' = 'aquamarine4',
+      'TA[CG]TA' = 'purple'
+    ) ) +
+  theme_nature +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
+  labs(x="T-score\nWHO grade 2 & 4 <> WHO grade 4\nAstrocytoma (GLASS-NL)",
+       y="TET1 5mC (Adam NatCom 2022)",
+       col="",
+       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
+       subtitle=format_subtitle("TET1 x t-score WHO grade")
+  )
+
+
+
+ggsave("output/figures/vis_differential_motifs__TET1_x_Grade__Pearson__unstranded__naive__GLASS-NL.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
+
+
+
+
+
+## motif: xx[CG]xx violin(s) unstranded x TET2 x naive x TACG pearson [GLASS-NL] ----
+
+
+
+
+plt <- plt.motifs.unstranded |> 
+  dplyr::mutate(col = dplyr::case_when(
+    grepl("tacgta", oligo_sequence) ~ "TA[CG]TA",
+    grepl("tacg", oligo_sequence) ~ "TA[CG]..",
+    T ~ "other"
+  ))
+
+
+ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded,
+                x=DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t__median, 
+                col=col, label=oligo_sequence)) +
+  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "pearson",
+                   aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
+                   family=theme_nature_font_family,
+                   label.x.npc = "left", hjust=0
+  ) +
+  ggpubr::stat_cor(method = "pearson",
+                   aes(label = after_stat(r.label)), size=theme_nature_size,
+                   family=theme_nature_font_family,
+                   label.x.npc = "right", hjust=1
+  ) +
+  scale_color_manual(
+    values=c(
+      'TA[CG]..' = mixcol('#D6604D',"#F4A582"), # "#B2182B", "#D6604D", "#F4A582", aquamarine3
+      'other' = 'aquamarine4',
+      'TA[CG]TA' = 'purple'
+    )  ) +
+  theme_nature +
+  labs(x="T-score\nWHO grade 2 & 4 <> WHO grade 4\nAstrocytoma (GLASS-NL)",
+       y="TET2 5mC (Adam NatCom 2022)",
+       col="",
+       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
+       subtitle=format_subtitle("TET2 x t-score WHO grade")
+  )
+
+
+ggsave("output/figures/vis_differential_motifs__TET2_x_Grade__Pearson__unstranded__naive__GLASS-NL.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
+
+
+
+
+
+## motif: xx[CG]xx violin(s) unstranded x TET3 x naive x TACG pearson [GLASS-NL] ----
+
+
+
+plt <- plt.motifs.unstranded |> 
+  dplyr::mutate(col = dplyr::case_when(
+    grepl("tacgta", oligo_sequence) ~ "TA[CG]TA",
+    grepl("tacg", oligo_sequence) ~ "TA[CG]..",
+    T ~ "other"
+  ))
+
+
+
+ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded,
+                x=DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t__median,
+                col=col,
+                label=oligo_sequence)) +
+  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "pearson",
+                   aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
+                   family=theme_nature_font_family,
+                   label.x.npc = "left", hjust=0
+  ) +
+  ggpubr::stat_cor(method = "pearson",
+                   aes(label = after_stat(r.label)), size=theme_nature_size,
+                   family=theme_nature_font_family,
+                   label.x.npc = "right", hjust=1
+  ) +
+  scale_color_manual(
+    values=c(
+      'TA[CG]..' = mixcol('#D6604D',"#F4A582"), # "#B2182B", "#D6604D", "#F4A582", aquamarine3
+      'other' = 'aquamarine4',
+      'TA[CG]TA' = 'purple'
+    )  ) +
+  theme_nature +
+  labs(x="T-score\nWHO grade 2 & 4 <> WHO grade 4\nAstrocytoma (GLASS-NL)",
+       y="-1 * TET3 (Ravichandran SciAdv 2022)",
+       col="",
+       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
+       subtitle=format_subtitle("TET1 x t-score WHO grade")
+  )
+
+
+ggsave("output/figures/vis_differential_motifs__TET3_x_Grade__Pearson__unstranded__naive__GLASS-NL.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
 
 
 

@@ -17,6 +17,11 @@ if(!exists('glass_od.metadata.array_samples')) {
 }
 
 
+if(!exists('gsam.metadata.array_samples')) {
+  source('scripts/load_G-SAM_metadata.R')
+}
+
+
 # GLASS-OD / OD ----
 
 
@@ -156,7 +161,7 @@ plt.split <- rbind(
       CDKN2AB == "HD" ~ "CDKN2A/B HD",
       T ~ "NA"
     )) |>
-    dplyr::mutate(facet = "h. CDKNA/B")  |> 
+    dplyr::mutate(facet = "h. CDKN2A/B")  |> 
     dplyr::mutate(stat = 'NA')
 )
 
@@ -165,7 +170,9 @@ plt.split <- rbind(
 # array_PC2 ~ 202 | array_GLASS_NL_g2_g3_sig ~ 218
 ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL_g2_g3_sig, col=col)) + 
   facet_wrap(~facet, scales="free",ncol=5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat), 
+                   size=theme_nature_size,
+                   family=theme_nature_font_family ,cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
   geom_point(size=theme_nature_size/3) +
   scale_color_manual(values=c(
     "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
@@ -190,6 +197,7 @@ ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL
     "CDKN2A/B HD" = "brown"
     
   )) +
+  #coord_equal() +
   labs(x="Astrocytoma CGC Lasso",y = "GLASS-NL signature (supervised primary - recurrent)", col="") +
   labs(subtitle=format_subtitle("Logit WHO grade")) +
   theme_nature
@@ -203,7 +211,7 @@ ggsave("output/figures/vis_LGC_x_PCA__scatter_A1.pdf",width=8.5 * 0.975, height 
 # array_PC2 ~ 202 | array_GLASS_NL_g2_g3_sig ~ 218
 ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_PC2, col=col)) + 
   facet_wrap(~facet, scales="free",ncol=5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_nature_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
   geom_point(size=theme_nature_size/3) +
   scale_color_manual(values=c(
     "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
@@ -286,7 +294,7 @@ plt.split <- rbind(
 #ggplot(plt.split, aes(x=array_methylation_bins_1p19q_purity, y=-array_PC3, col=col)) + 
 ggplot(plt.split, aes(x=array_dnaMethyAge__PCHorvathS2018, y=-array_PC3, col=col)) +
   facet_wrap(~facet, scales="free",ncol=5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "top") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_nature_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "top") +
   geom_point(size=theme_nature_size/3) +
   scale_color_manual(values=c(
     "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
@@ -381,7 +389,7 @@ plt.split <- plt.split.raw |>
 # array_PC2 ~ 202 | array_GLASS_NL_g2_g3_sig ~ 218
 ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL_g2_g3_sig, col=col)) + 
   facet_wrap(~facet, scales="free",ncol=5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_nature_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
   geom_point(size=theme_nature_size/3) +
   scale_color_manual(values=c(
     "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
@@ -453,7 +461,7 @@ plt.split |> dplyr::filter(facet == "A) Dataset") |> dplyr::pull(array_notes) |>
 # array_PC2 ~ 202 | array_GLASS_NL_g2_g3_sig ~ 218
 ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL_g2_g3_sig, col=col, label=label)) + 
   facet_wrap(~facet, scales="free",ncol=5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_nature_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
   geom_point(size=theme_nature_size/3) +
   scale_color_manual(values=c(
     "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
@@ -517,8 +525,8 @@ plt.split <- rbind(
 ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_PC2, col=col)) + 
   #facet_grid(cols = vars(facet), scales = "free", space="free") +
   facet_wrap(~facet, scales="free",ncol=5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show_guide = FALSE) +
-  geom_point(size=theme_cellpress_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_nature_size, cor.coef.name ="rho", show_guide = FALSE) +
+  geom_point(size=theme_nature_size/3) +
   scale_color_manual(values=c(
     "Grade 2"= col3(11)[10],"O_IDH"=col3(11)[10], 
     "Grade 3"="red","A_IDH_HG"="red",  
@@ -676,7 +684,7 @@ p1 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
             lwd=theme_nature_lwd) +
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
@@ -734,7 +742,7 @@ p1
 #             lwd=theme_nature_lwd) +
 #   scale_color_gradientn(colours = c("aquamarine3","aquamarine3","#d34394ff","#d34394ff"), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
 #   theme_nature +
-#   annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
+# annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
 #   labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "GLASS-NL MedMeth x Resection") +
 #   scale_x_continuous(breaks = c(0,1),
 #                      labels=c("Primary", "Recurrent")) + 
@@ -827,7 +835,7 @@ ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
             lwd=theme_nature_lwd) +
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
@@ -915,7 +923,7 @@ p2 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
             col="#3e9e8b",
             lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1), breaks=c(0, 0.50, 1), labels=c("Primary","", "Recurrent"), oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Primary", "Recurrent")) + 
@@ -972,7 +980,7 @@ p2
 #             lwd=theme_nature_lwd) +
 #   scale_color_gradientn(colours = c("aquamarine3","aquamarine3","#d34394ff","#d34394ff"), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
 #   theme_nature +
-#   annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
+# annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
 #   labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "GLASS-NL MedMeth x Resection") +
 #   scale_x_continuous(breaks = c(0,1),
 #                      labels=c("Primary", "Recurrent")) + 
@@ -982,7 +990,8 @@ p2
 
 
 
-### logistic AcCGAP x WHO grade ----
+### logistic AcCGAP x WHO grade unpaired ----
+
 
 
 stats <- metadata |> 
@@ -1059,7 +1068,7 @@ p3 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
             col="#3e9e8b",
             lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
@@ -1067,6 +1076,7 @@ p3 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
         legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p3
+
 
 ### logistic AcCGAP x WHO grade [validation] ----
 
@@ -1146,7 +1156,7 @@ ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
             col="#3e9e8b",
             lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
@@ -1201,7 +1211,7 @@ ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
 #             lwd=1.0) +
 #   theme_nature +
 #   scale_fill_manual(values = palette_mnp_12.8_6) +
-#   annotate("text", y = modelr::seq_range(stats$covar, 16)[15], x = 0.375, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+# annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 16)[15], x = 0.375, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
 #   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1), breaks=c(0, 1), labels=c("Grade 2", "Grade 3"), oob = scales::squish) +
 #   labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "CGC Lasso x WHO Grade") +
 #   scale_x_continuous(breaks = c(0,1), labels=c("Grade 2", "Grade 3")) + 
@@ -1209,6 +1219,340 @@ ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
 #   theme(legend.key.size = unit(0.6, 'lines')) # resize colbox
 # p3
 
+
+
+### paired ----
+#### logistic AcCGAP x WHO grade paired ----
+
+
+stats <- metadata |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(resection_tumor_grade__hg = ifelse(resection_tumor_grade == 3, 1 , 0)) |> 
+  
+  dplyr::mutate(resection = NULL) |> 
+  dplyr::mutate(resection_recurrent = NULL) |> 
+  
+  dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(covar_name = "Astrocytoma CGC Lasso") |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder"))))
+
+
+model <- glm(resection_tumor_grade__hg ~ patient + covar, data = stats, family = binomial)
+pval <- model |>
+  summary() |> 
+  purrr::pluck('coefficients') |>
+  as.data.frame() |>  
+  tibble::rownames_to_column('coef') |>
+  dplyr::filter(coef == "covar") |> 
+  dplyr::pull(`Pr(>|z|)`)
+
+
+#expnd <- (max(stats$covar)-min(stats$covar)) * 0.075
+Predicted_data <- data.frame(covar=modelr::seq_range(c(-15, 15), 500)) |> 
+  dplyr::mutate(patient = "p_remainder")
+Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
+
+
+
+plt.logit.simplistic <- rbind(
+  stats |>  # left point line:
+    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_tumor_grade__hg - 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  stats |>  # right point line:
+    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_tumor_grade__hg + 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  Predicted_data |> # logit fit
+    dplyr::mutate(patient = NULL) |> 
+    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+    dplyr::mutate(group = "logit fit") |> 
+    dplyr::mutate(type = "fit") |> 
+    dplyr::rename(y = covar) |> 
+    dplyr::mutate(x = resection_tumor_grade__hg) |> 
+    dplyr::mutate(col = resection_tumor_grade__hg)
+) |> 
+  dplyr::mutate(col = col  + 2)
+
+
+
+p3b <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
+            aes(col=col),
+            lwd=theme_nature_lwd * 5) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+            col="white",
+            lwd=theme_nature_lwd * 2, alpha=0.65
+  ) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
+            col="gray",
+            lwd=theme_nature_lwd) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
+            col="darkblue",
+            lwd=theme_nature_lwd) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
+            col="#3e9e8b",
+            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
+  theme_nature +
+annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
+  scale_x_continuous(breaks = c(0,1),
+                     labels=c("Grade 2", "Grade 3")) + 
+  theme(legend.box = "vertical",
+        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.title =  element_text(vjust=1)) +
+  ylim(-15, 15)
+
+p3b
+
+
+
+
+
+#### logistic AcCGAP x resection paired ----
+
+
+stats <- metadata |> 
+  dplyr::mutate(resection_tumor_grade = NULL) |> 
+  dplyr::mutate(resection_tumor_grade__hg = NULL) |> 
+  
+  dplyr::mutate(resection = ifelse(resection_number == 1, "primary", "recurrent")) |> 
+  dplyr::mutate(resection_recurrent = ifelse(resection == "primary", 0, 1)) |> 
+  
+  dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(covar_name = "Astrocytoma CGC Lasso") |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p", ifelse(is.paired,patient_id, "_remainder"))))
+
+
+
+model <- glm(resection_recurrent ~ patient + covar, data = stats, family = binomial)
+pval <- model |>
+  summary() |> 
+  purrr::pluck('coefficients') |>
+  as.data.frame() |>  
+  tibble::rownames_to_column('coef') |>
+  dplyr::filter(coef == "covar") |> 
+  dplyr::pull(`Pr(>|z|)`)
+
+
+#expnd <- (max(stats$covar)-min(stats$covar)) * 0.085
+Predicted_data <- data.frame(covar=modelr::seq_range(c(-15, 15), 500)) |> 
+  dplyr::mutate(patient = "p_remainder")
+Predicted_data$resection_recurrent = predict(model, Predicted_data, type="response")
+
+
+
+plt.logit.simplistic <- rbind(
+  stats |>  # left point line:
+    dplyr::select(resection_recurrent, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1 ) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_recurrent - 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  stats |>  # right point line:
+    dplyr::select(resection_recurrent, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1 ) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_recurrent + 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  Predicted_data |> # logit fit
+    dplyr::mutate(patient = NULL) |> 
+    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+    dplyr::mutate(group = "logit fit") |> 
+    dplyr::mutate(type = "fit") |> 
+    dplyr::rename(y = covar) |> 
+    dplyr::mutate(x = resection_recurrent) |> 
+    dplyr::mutate(col = resection_recurrent)
+)
+
+
+p4b <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
+            aes(col=col),
+            lwd=theme_nature_lwd * 5) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+            col="white",
+            lwd=theme_nature_lwd * 2, alpha=0.65
+  ) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
+            col="gray",
+            lwd=theme_nature_lwd) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
+            col="darkblue",
+            lwd=theme_nature_lwd) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
+            col="#3e9e8b",
+            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1),
+                                                           breaks=c(0, 0.50, 1), labels=c("Primary","","Recurrent"),
+                                                           oob = scales::squish) +
+  theme_nature +
+  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
+  scale_x_continuous(breaks = c(0,1),
+                     labels=c("Primary", "Recurrent")) + 
+  theme(legend.box = "vertical",
+        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.title =  element_text(vjust=1)) +
+  ylim(-15, 15)
+p4b
+
+
+
+
+#### logistic AcCGAP x WHO grade paired [validation] ----
+
+
+stats <- metadata.validation |> 
+  dplyr::filter(!is.na(resection_tumor_grade)) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(resection_tumor_grade__hg = ifelse(resection_tumor_grade == 3, 1 , 0)) |> 
+  
+  dplyr::mutate(resection = NULL) |> 
+  dplyr::mutate(resection_recurrent = NULL) |> 
+  
+  dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(covar_name = "Astrocytoma CGC Lasso") |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder"))))
+
+
+model <- glm(resection_tumor_grade__hg ~ patient + covar, data = stats, family = binomial)
+pval <- model |>
+  summary() |> 
+  purrr::pluck('coefficients') |>
+  as.data.frame() |>  
+  tibble::rownames_to_column('coef') |>
+  dplyr::filter(coef == "covar") |> 
+  dplyr::pull(`Pr(>|z|)`)
+
+
+#expnd <- (max(stats$covar)-min(stats$covar)) * 0.085
+Predicted_data <- data.frame(covar=modelr::seq_range(c(-15, 15), 500)) |> 
+  dplyr::mutate(patient = "p_remainder")
+Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
+
+
+
+plt.logit.simplistic <- rbind(
+  stats |>  # left point line:
+    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_tumor_grade__hg - 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  stats |>  # right point line:
+    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_tumor_grade__hg + 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  Predicted_data |> # logit fit
+    dplyr::mutate(patient = NULL) |> 
+    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+    dplyr::mutate(group = "logit fit") |> 
+    dplyr::mutate(type = "fit") |> 
+    dplyr::rename(y = covar) |> 
+    dplyr::mutate(x = resection_tumor_grade__hg) |> 
+    dplyr::mutate(col = resection_tumor_grade__hg)
+) |> 
+  dplyr::mutate(col = col  + 2)
+
+
+
+p5b <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
+            aes(col=col),
+            lwd=theme_nature_lwd * 5) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+            col="white",
+            lwd=theme_nature_lwd * 2, alpha=0.65
+  ) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
+            col="gray",
+            lwd=theme_nature_lwd) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
+            col="darkblue",
+            lwd=theme_nature_lwd) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
+            col="#3e9e8b",
+            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
+  theme_nature +
+annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
+  scale_x_continuous(breaks = c(0,1),
+                     labels=c("Grade 2", "Grade 3")) + 
+  theme(legend.box = "vertical",
+        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.title =  element_text(vjust=1)) +
+  ylim(-15, 15)
+p5b
+
+
+
+#### export ----
+
+
+
+library(patchwork)
+p3b + p4b + p5b + plot_layout(ncol=3) 
+
+
+ggsave("output/figures/vis_LGC_PCA_logistic__paired.pdf", width=(8.5*0.975)*(0.5), height=3.0)
+
+
+
+### stats ----
+
+
+stats <- metadata |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(resection_tumor_grade__hg = ifelse(resection_tumor_grade == 3, 1 , 0)) |> 
+  
+  dplyr::mutate(resection = NULL) |> 
+  dplyr::mutate(resection_recurrent = NULL) |> 
+  
+  dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(covar_name = "Astrocytoma CGC Lasso") |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"_remainder")))) |> 
+  
+  dplyr::mutate(heidelberg_A_IDH_HG_OLIGOSARC = array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG", "OLIGOSARC_IDH"))
+
+dim(stats)
+
+summary(lm(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit ~ patient + heidelberg_A_IDH_HG_OLIGOSARC, data=stats))
+
+glm(as.factor(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) ~ patient + heidelberg_A_IDH_HG_OLIGOSARC, data=stats, family = binomial)
 
 
 
@@ -1289,7 +1633,7 @@ p4 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
                         breaks=c(0, 0.50, 1), labels=c("Primary","","Recurrent"),
                         oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Primary", "Recurrent")) + 
@@ -1348,12 +1692,14 @@ p4
 #             lwd=1.0) +
 #   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1), breaks=c(0, 1), labels=c("Primary", "Recurrent"), oob = scales::squish) +
 #   theme_nature +
-#   annotate("text", y = modelr::seq_range(stats$covar, 16)[15], x = 0.375, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+# annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 16)[15], x = 0.375, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
 #   labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "CGC Lasso x Resection") +
 #   scale_x_continuous(breaks = c(0,1), labels=c("Primary", "Recurrent")) + 
 #   theme(legend.box = "vertical") + # space dependent
 #   theme(legend.key.size = unit(0.6, 'lines'))
 # p4
+
+
 
 
 ### logistic PC2 x WHO grade ----
@@ -1434,7 +1780,7 @@ p5 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
             col="#3e9e8b",
             lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
+annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
@@ -1534,7 +1880,7 @@ p6 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
                                                            breaks=c(0, 0.50, 1), labels=c("Primary","","Recurrent"),
                                                            oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
+annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Primary", "Recurrent")) + 
@@ -1625,7 +1971,7 @@ p7 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
             col="#3e9e8b",
             lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
+annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
@@ -1725,7 +2071,7 @@ p8 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
                                                            breaks=c(0, 0.50, 1), labels=c("Primary","","Recurrent"),
                                                            oob = scales::squish) +
   theme_nature +
-  annotate("text", y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
+annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Primary", "Recurrent")) + 
@@ -1752,7 +2098,6 @@ t.test(
 
 ### export ----
 
-library(patchwork)
 p1 + p3 + p5 + p2 + p4 + p6 + plot_layout(ncol=3) + plot_annotation( subtitle = format_subtitle("PC2 & CGC x Grade & Resection timing") )
 
 
@@ -1764,7 +2109,6 @@ library(patchwork)
 p3 + p5 + p4 + p6 + plot_layout(ncol=4) + plot_annotation(subtitle = format_subtitle("PC2 & CGC x Grade & Resection timing"), theme=theme_nature )
 
 ggsave("output/figures/vis_LGC_PCA_logistic.pdf", width=(8.5*0.975)*(4/5), height=2.5)
-
 
 
 
@@ -1818,7 +2162,7 @@ p3 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
   geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin_wash,xmax=xmax_wash,ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
-  annotate("text", x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
+annotate("text", family = theme_nature_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) + 
   scale_y_continuous(breaks = c(2,3)) + 
   labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
@@ -1891,7 +2235,7 @@ p4 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
   geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin_wash,xmax=xmax_wash,ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
-  annotate("text", x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
+annotate("text", family = theme_nature_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) + 
   scale_y_continuous(breaks = c(2,3)) + 
   labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
@@ -1964,7 +2308,7 @@ p3 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
   geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin-(5 * scaling_factor_x),xmax=xmax+(5 * scaling_factor_x),ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
-  annotate("text", x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
+annotate("text", family = theme_nature_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) + 
   scale_y_continuous(breaks = c(2,3)) + 
   labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
@@ -2022,7 +2366,7 @@ p4 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
   geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin_wash,xmax=xmax_wash,ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
-  annotate("text", x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
+annotate("text", family = theme_nature_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) + 
   scale_y_continuous(breaks = c(2,3)) + 
   labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
@@ -2083,7 +2427,7 @@ p6 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
   geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin_wash,xmax=xmax_wash,ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
-  annotate("text", x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
+annotate("text", family = theme_nature_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) + 
   scale_y_continuous(breaks = c(2,3)) + 
   labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
@@ -2134,38 +2478,39 @@ summary(model3)
 
 
 
+
+
 # G-SAM ----
 
 
-
 metadata <- gsam.metadata.array_samples |> 
-  filter_GSAM_idats(73) |> 
+  filter_GSAM_idats(CONST_N_GSAM_INCLUDED_SAMPLES) |> 
   dplyr::mutate(resection__rec = ifelse(resection == "R1",0,1))
+
+
+
+## logistic LR & recurrence ----
 
 
 data <- data.mvalues.hq_samples |> 
   tibble::rownames_to_column('probe_id') |> 
   dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
   tibble::column_to_rownames('probe_id') |> 
-  dplyr::select(metadata$sentrix_id) |> 
+  dplyr::select(metadata$array_sentrix_id) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == (695840))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
     return(.)
   })() |> 
-  (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this synthax, oh my
+  (function(.) dplyr::mutate(., mad =  apply( ., 1, stats::mad)) )() |> # this syntax, oh my
   dplyr::arrange(mad) |> 
   dplyr::mutate(mad = NULL)
 
 
-## logistic LR & recurrence ----
-
-
-
-ggplot(metadata, aes(x=resection, y=A_IDH_HG__A_IDH_LG_lr, group=patient)) +
+ggplot(metadata, aes(x=resection, y=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) +
   ggbeeswarm::geom_quasirandom() +
-  geom_line(col="black", alpha=0.25, lwd=0.25) +
-  theme_bw()
+  ggpubr::stat_compare_means(method = "t.test") +
+  theme_nature
 
 
 model <- glm(resection__rec ~  A_IDH_HG__A_IDH_LG_lr, 
@@ -2202,76 +2547,109 @@ ggplot(plt.logit, aes(x = A_IDH_HG__A_IDH_LG_lr, y=`resection__rec`, col= mnp_pr
   geom_point(data = plt.logit |> dplyr::filter(type == "data"),pch="|",size=5) +
   geom_line(data = plt.logit |> dplyr::filter(type == "fit"), col="darkgreen") +
   theme_bw() + 
-  annotate("text", x = 2.5, y = 0.5, label = paste0("p = ",format.pval(pval))) + 
+annotate("text", family = theme_nature_font_family,  x = 2.5, y = 0.5, label = paste0("p = ",format.pval(pval))) + 
   theme(legend.position = 'bottom') + 
   scale_y_continuous(breaks = c(0,1)) + 
   labs(col="mnp v12.8", y = "Resection (0 primary, 1 recurrent)")
 
 
-
-## survival ----
-### R1 ----
+## lm/glm/limma ----
 
 
-ggplot(
-  metadata |> 
-    dplyr::filter(resection == "R1"),
-  aes(y= survivalDays , x=A_IDH_HG__A_IDH_LG_lr, shape=status)) + 
-  geom_point()
+tmp <- metadata |>
+  dplyr::select(resection_id, patient_id, resection, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p",ifelse(is.paired,patient_id,"remainder")))) |> 
+  dplyr::mutate(pr.status = factor(ifelse(resection == "R1","primary","recurrence"),levels=c("primary","recurrence")))
 
-
-
-### R2 ----
-
-#plot(sort(stats$A_IDH_HG__A_IDH_LG_lr__lasso_fit)) + abline(h=4.65)
-
-
-stats <-  metadata |> 
-  dplyr::filter(resection == "R2") |> 
-  dplyr::mutate(A_IDH_HG__A_IDH_LG__cut = cut(A_IDH_HG__A_IDH_LG_lr__lasso_fit, breaks=2)) |> 
-  dplyr::mutate(LR_status_median = ifelse(A_IDH_HG__A_IDH_LG_lr__lasso_fit > 6.1, "LR high", "LR low")) |> 
-  dplyr::mutate(LR_status_L1 = ifelse(A_IDH_HG__A_IDH_LG_lr__lasso_fit > 4.7, "LR high", "LR low")) |> 
-  dplyr::mutate(LR_status_L2 = ifelse(A_IDH_HG__A_IDH_LG_lr__lasso_fit > 4.1, "LR high", "LR low"))
-
-
-ggplot(stats, aes(y= survivalFromSecondSurgeryDays , x=A_IDH_HG__A_IDH_LG_lr, shape=status)) + 
-  geom_point()
-
-
-surv_object <- survival::Surv(time = stats$survivalFromSecondSurgeryDays, event=stats$os.event)
-#surv_object <- survival::Surv(time = stats$survivalDays, event=stats$os.event)
-
-
-fit1 <- survival::survfit(surv_object ~  A_IDH_HG__A_IDH_LG__cut , data = stats)
-print(survminer::surv_pvalue(fit1)$pval)
-
-survminer::ggsurvplot(fit1, data = stats, pval = TRUE, risk.table=T, tables.y.text = FALSE,
-                      xlab="Survival from recurrence")
-
-
-fit2 <- survival::survfit(surv_object ~  LR_status_median , data = stats)
-print(survminer::surv_pvalue(fit2)$pval)
-
-survminer::ggsurvplot(fit2, data = stats, pval = TRUE, risk.table=T, tables.y.text = FALSE,
-                      xlab="Survival from recurrence")
-
-fit3 <- survival::survfit(surv_object ~  LR_status_L1 , data = stats)
-print(survminer::surv_pvalue(fit3)$pval)
-
-survminer::ggsurvplot(fit3, data = stats, pval = TRUE, risk.table=T, tables.y.text = FALSE,
-                      xlab="Survival from recurrence")
-
-fit4 <- survival::survfit(surv_object ~  LR_status_L2 , data = stats)
-print(survminer::surv_pvalue(fit4)$pval)
-
-survminer::ggsurvplot(fit4, data = stats, pval = TRUE, risk.table=T, tables.y.text = FALSE,
-                      xlab="Survival from recurrence")
+fit = lm(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit ~ patient + resection, data=tmp)
+summary(fit)
 
 
 
 
-fit_l <- survival::coxph(surv_object ~  A_IDH_HG__A_IDH_LG_lr__lasso_fit , data = stats)
-summary(fit_l)
+
+coef_summary <- summary(fit)$coefficients
+conf_int <- confint(fit)
+
+
+p_x <- coef_summary |>
+  as.data.frame() |> 
+  tibble::rownames_to_column("Term") |>
+  dplyr::filter(Term == "resectionR2") |>
+  dplyr::select(Estimate) |>
+  as.numeric()
+
+p <- coef_summary |>
+  as.data.frame() |> 
+  tibble::rownames_to_column("Term") |>
+  dplyr::filter(Term == "resectionR2") |>
+  dplyr::select(`Pr(>|t|)`) |>
+  as.numeric()
+
+# Combine coefficients and confidence intervals into one data frame
+forest_data <- data.frame(
+  Term = rownames(coef_summary),
+  Estimate = coef_summary[, 1],
+  Lower = conf_int[, 1],
+  Upper = conf_int[, 2]
+) |> 
+  dplyr::filter(Term == "resectionR2") |> 
+  dplyr::mutate(Term = "recurrent resection")
+
+ggplot(forest_data, aes(x = Estimate, y = Term)) +
+  geom_point(size=theme_nature_size/3) + 
+  geom_vline(xintercept = 0, linetype="dotted",  color = "gray", lwd=theme_nature_lwd) +
+  geom_errorbarh(aes(xmin = Lower, xmax = Upper), height = 0.52, lwd=theme_nature_lwd) + 
+  labs(x="CGC: LM Estimate (glioblastoma)", y=NULL) +
+  annotate("text", x = p_x, y = 1.4, label = paste0("p = ",round(p, 3)), size=theme_nature_size, family  = theme_nature_font_family) +
+  theme_nature
+
+ggsave("output/figures/vis_LGC_x_PCA__GSAM__lm.pdf", width=8.5*0.975*1/3, height=0.6)
+
+
+
+## PCA loadings comparison ----
+
+
+metadata <- gsam.metadata.array_samples |> 
+  filter_GSAM_idats(CONST_N_GSAM_INCLUDED_SAMPLES - 2 ) |> 
+  dplyr::select(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, 
+                array_percentage.detP.signi,
+                #array_dnaMethyAge__PCHorvathS2013, 
+                array_dnaMethyAge__PCHorvathS2018,
+                
+                paste0("array_PC",1:5))
+
+ggcorrplot(metadata)
+
+
+ggplot(metadata, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_PC1)) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)),  size=theme_nature_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "top", label.x.npc = "right", hjust=1) + # spearman bc of  outlier at bottom
+  geom_point(size=theme_nature_size/3) +
+  theme_nature
+
+
+
+# get loadings of original
+
+loadings_glod <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_prcomp.Rds")
+loadings_gsam <- readRDS("cache/analysis_unsupervised_PCA_GSAM_prcomp.Rds")
+
+a = data.frame(PC2_glod = loadings_glod$rotation[,"PC2"]) |> 
+  tibble::rownames_to_column("probe_id") 
+b = as.data.frame(loadings_gsam$rotation[,paste0("PC",1:20)]) |> 
+  tibble::rownames_to_column("probe_id") 
+
+m <- a |>
+  dplyr::left_join(b, by=c("probe_id"="probe_id")) |> 
+  tibble::column_to_rownames("probe_id")
+
+
+ggcorrplot(m)
 
 
 

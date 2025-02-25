@@ -131,7 +131,10 @@ palette_p_r <- c(
 palette_yes_no_1 <- c('Yes' = '#E49E27', 'No' = '#59B2E6')
 palette_yes_no_2 <- c('Yes' = '#009E74', 'No' = '#CB75A4')
 
+palette_yes_no_3 <- c('No' = '#E49E27', 'Yes' = '#59B2E6')
+palette_yes_no_4 <- c('No' = '#009E74', 'Yes' = '#CB75A4')
 
-palette_infinium_signals <- c('methylated'='darkgreen', 'unmethylated'='red')
+
+palette_infinium_signals <- c('methylated'='darkgreen', 'unmethylated'= mixcol('red', 'black', 0.10))
 
 

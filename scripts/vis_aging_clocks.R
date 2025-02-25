@@ -71,7 +71,7 @@ plt <- glass_od.metadata.array_samples |>
 
 
 # <3
-func_ggcorrplot(plt, abs=T) +
+ggcorrplot(plt, abs=T) +
   labs(caption=paste0("n=",nrow(plt)," samples"),
        subtitle=format_subtitle("correlation PCs"))
 
@@ -85,7 +85,7 @@ ggsave("output/figures/vis_aging_clocks__PC_clustering.pdf", height = 1.9, width
 
 data <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_first_G2_and_last_G3(156) |> 
+  filter_first_G2_and_last_G3(154) |> 
   
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() == 2) |> 
@@ -97,7 +97,7 @@ data <- glass_od.metadata.array_samples |>
   
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 156) 
+    assertthat::assert_that(nrow(.) == 154) 
     return(.)
   })() |> 
   
@@ -109,7 +109,9 @@ data <- glass_od.metadata.array_samples |>
   ) |> 
   tibble::column_to_rownames('resection_id')
 
+
 n <- nrow(data)
+
 
 design <- model.matrix(~~patient + gr.status, data=data)
 fit <- limma::lmFit(data |> dplyr::mutate(patient = NULL) |> dplyr::mutate(gr.status = NULL) |> t() |>  as.data.frame()
@@ -172,22 +174,23 @@ ggplot(stats.all, aes(x = t, y=reorder(covar, -rank), label=paste0("q=",format.p
   geom_line(data=subset(stats.all, type %in% c("datapoint", "zero")), lwd=theme_nature_lwd) + 
   #geom_line(data=subset(stats.all, type %in% c("CI")),lwd=theme_nature_lwd*3) + 
   geom_point(data=subset(stats.all, type == "datapoint"), size=theme_nature_size/3) +
-  ggrepel::geom_text_repel(
-    data=subset(stats.all, type %in% c("datapoint")), size=theme_nature_size, nudge_y = 0, family=theme_nature_font_family) + 
+  geom_text(data=subset(stats.all, type %in% c("datapoint")), size=theme_nature_size, family=theme_nature_font_family) +
+  #ggrepel::geom_text_repel(
+  #  data=subset(stats.all, type %in% c("datapoint")), size=theme_nature_size, nudge_y = 0, family=theme_nature_font_family) + 
   labs(x="t WHO grade 2 - 3",
        y = NULL,
        caption = paste0("First Grade 2 and last Grade 3: n=",n, " samples")) +
   theme_nature
 
 
-ggsave("output/figures/vis_aging_clocks__PC_clustering_limma.pdf", width=3.5, height=1.955)
+ggsave("output/figures/vis_aging_clocks__PC_clustering_limma.pdf", width=3.5, height=2.028)
 
 
 
 
 
 # corr + forest with QC & clocks ----
-## corr ----
+## corrplot ----
 
 
 plt <- glass_od.metadata.array_samples |> 
@@ -240,21 +243,60 @@ plt <- glass_od.metadata.array_samples |>
 colnames(plt) <- gsub("array_","",colnames(plt))
 
 
-pdf(file="output/figures/vis_differential__corrplot_dnaMethyAge.pdf", width= 8.5 * 0.975 / 2 , height = 4)
-corrplot::corrplot(cor(plt, method="spearman"), order="hclust", shade.lwd=0.5, tl.cex=0.4, cl.cex=0.4, tl.pos="l")
-dev.off()
 
-
-h = corrplot::corrplot(cor(plt, method="spearman"), order="hclust", tl.cex=0.75, tl.pos="l")
+p1 = ggcorrplot(plt)
+p1
+ggsave(plot = p1, "output/figures/vis_aging_clocks__ggcorrplot.pdf", width= 8.5 * 0.975 / 2 , height = 4)
 
 
 
 
-## en daarnaast een forest ----
+order <- c(
+  "-1 * PC2",
+  "-1 * GLASS_NL_g2_g3_sig",
+  "-1 * CGC[Ac]",
+  "dnaMethyAge__ZhangY2017",
+  
+  "dnaMethyAge__LuA2023p3",
+  "dnaMethyAge__LuA2023p2",
+
+  "dnaMethyAge__PCPhenoAge",
+  "dnaMethyAge__PCHorvathS2018",
+  "dnaMethyAge__PCHannumG2013",
+  "PC3",
+  "dnaMethyAge__ShirebyG2020",
+  "dnaMethyAge__McEwenL2019",
+  "dnaMethyAge__LuA2023p1",
+  "-1 * dnaMethyAge__LuA2019",
+  "dnaMethyAge__Cortex_common",
+  "dnaMethyAge__CBL_common",
+  "RepliTali",
+  "dnaMethyAge__CBL_specific",
+  "dnaMethyAge__HorvathS2018",
+  "dnaMethyAge__ZhangQ2019",
+  "dnaMethyAge__HannumG2013",
+  "epiTOC2_tnsc",
+  "dnaMethyAge__LevineM2018",
+  "age_at_diagnosis_days",
+  
+  "-1 * epiTOC2_hypoSC",
+  "PC1",
+  "% detP significant probes (log)",
+  "-1 * QC: SPECIFICITY I GT MM 6",
+  "time_tissue_in_ffpe"
+)
+
+
+
+
+
+## forests ----
+### grade ----
 
 
 tmp <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3(154) |> 
   dplyr::mutate(`age_at_diagnosis_days` = as.Date(patient_diagnosis_date) - as.Date(patient_birth_date)) |> 
   dplyr::filter(!is.na(age_at_diagnosis_days)) |> 
   dplyr::mutate(age_at_diagnosis_days = age_at_diagnosis_days - min(na.omit(age_at_diagnosis_days))) |> 
@@ -315,7 +357,7 @@ data <- tmp |>
   as.data.frame() 
 
 
-design <- model.matrix(~PC1 + factor(resection_tumor_grade), data=tmp)
+design <- model.matrix(~factor(resection_tumor_grade), data=tmp) # no correcion, you can' time in ffpe for quality
 #design <- model.matrix(~age_at_diagnosis_days + factor(resection_tumor_grade), data=tmp)
 #design <- model.matrix(~factor(resection_tumor_grade), data=tmp)
 fit <- limma::lmFit(data, design)
@@ -330,20 +372,17 @@ stats <- limma::topTable(fit,
 
 
 stats = rbind(stats,
-      
-      data.frame(covar=c('array_PC1'), logFC=0, CI.L=0, CI.R=0, AveExpr=0,t=0,P.Value=NA, adj.P.Val=NA,B=NA)
-      
-      ) |> 
+              
+              data.frame(covar=c('array_PC1'), logFC=0, CI.L=0, CI.R=0, AveExpr=0,t=0,P.Value=NA, adj.P.Val=NA,B=NA)
+              
+) |> 
   dplyr::mutate(covar =  gsub("array_", "", covar))
 
 
-plt <- h$corr |>
-  as.data.frame() |>
-  tibble::rownames_to_column("covar") |>
-  dplyr::select("covar") |> 
+plt <- data.frame(covar = order) |>
+  dplyr::mutate(y = dplyr::n():1) |> 
   assertr::verify(covar %in% stats$covar) |> 
-  dplyr::left_join(stats, by=c('covar'='covar')) |> 
-  dplyr::mutate(y = dplyr::n():1)
+  dplyr::left_join(stats, by=c('covar'='covar')) 
 
 
 plt <- rbind(
@@ -362,19 +401,160 @@ plt <- rbind(
   plt |>
     dplyr::mutate(logFC = CI.R) |> 
     dplyr::mutate(type = "CI")
-)
+) |> 
+  dplyr::mutate(stars = gtools::stars.pval(adj.P.Val))
 
 
-ggplot(plt, aes(x = t, y=y, label=covar, group=covar)) +
+#order
+
+
+ggplot(plt, aes(x = t, y=reorder(covar, y), label=stars, group=covar)) +
   geom_line(data=subset(plt, type %in% c("datapoint", "zero")),lwd=theme_nature_lwd) + 
   #geom_line(data=subset(plt, type %in% c("CI")),lwd=theme_nature_lwd*3) + 
   geom_point(data=subset(plt, type == "datapoint"), size=theme_nature_size/3) +
-  #geom_text(data=subset(plt, type %in% c("datapoint")), x = 8, size=theme_nature_size) + 
-  xlim(-3,9) + 
+  geom_text(data=subset(plt, type %in% c("datapoint")), x = 7.5, size=theme_nature_size, family=theme_nature_font_family) + 
+  xlim(-5,7.7) + 
+  labs(y = NULL, x="t statistic WHO Grade 2 vs. Grade 3") +
   theme_nature
 
 
-ggsave("output/figures/vis_aging_clocks.pdf", width=11/3 * 0.37,height = 8.5*0.374)
+ggsave("output/figures/vis_aging_clocks__forest__grade.pdf", width=2.75,height = 2.665)
+
+
+# https://support.bioconductor.org/p/37524/
+# https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/forest.html
+# https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/metareg.html
+
+
+### prim-rec ----
+
+
+tmp <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_primaries_and_last_recurrences(179) |> 
+  dplyr::mutate(`age_at_diagnosis_days` = as.Date(patient_diagnosis_date) - as.Date(patient_birth_date)) |> 
+  dplyr::filter(!is.na(age_at_diagnosis_days)) |> 
+  dplyr::mutate(age_at_diagnosis_days = age_at_diagnosis_days - min(na.omit(age_at_diagnosis_days))) |> 
+  dplyr::mutate(age_at_diagnosis_days = as.numeric(age_at_diagnosis_days)) |> 
+  dplyr::mutate(time_tissue_in_ffpe =  ifelse(isolation_material == "ffpe", time_between_resection_and_array, 0)) |> 
+  dplyr::select(resection_id,
+                resection_number,
+                
+                array_epiTOC2_tnsc, array_epiTOC2_hypoSC, contains("array_dnaMethyAge"), array_RepliTali,
+                array_percentage.detP.signi, array_PC1, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`,
+                time_tissue_in_ffpe,
+                array_GLASS_NL_g2_g3_sig, array_PC2, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
+                
+                array_PC3,
+                age_at_diagnosis_days
+  ) |> 
+  tibble::column_to_rownames('resection_id') |> 
+  dplyr::filter(!is.na(time_tissue_in_ffpe)) |> 
+  
+  dplyr::mutate(array_GLASS_OD_g2_g3_sig2 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_prim_rec_sig2 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_g2_g3_sig3 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_prim_rec_sig3 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_g2_g3_sig4 = NULL) |> 
+  dplyr::mutate(array_GLASS_OD_prim_rec_sig4 = NULL) |> 
+  
+  dplyr::mutate(array_PC3 = -1 * array_PC3) |> 
+  dplyr::mutate(array_percentage.detP.signi = log(array_percentage.detP.signi)) |> 
+  
+  dplyr::mutate(`CGC[Ac]` = -1 * array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit = NULL) |> 
+  dplyr::mutate(`-1 * array_dnaMethyAge__ZhangY2017` = -1 * array_dnaMethyAge__ZhangY2017 , array_dnaMethyAge__ZhangY2017 = NULL) |> 
+  dplyr::mutate(`-1 * array_epiTOC2_hypoSC` = -1 * array_epiTOC2_hypoSC, array_epiTOC2_hypoSC = NULL) |>  # seems at inversed scale
+  dplyr::mutate(`-1 * array_dnaMethyAge__LuA2019` = -1 * array_dnaMethyAge__LuA2019, array_dnaMethyAge__LuA2019 = NULL) |>  # seems at inversed scale
+  dplyr::mutate(`-1 * QC: SPECIFICITY I GT MM 6` = -1 * `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`=NULL) |> 
+  dplyr::select(-array_dnaMethyAge__YangZ2016) |>  # epiTOC1, near identical to epiTOC2
+  dplyr::select(-array_dnaMethyAge__PCHorvathS2013) |>  # very similar to its 2018 equivalent
+  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-3_Beta_larger_0.12_0.18` = NULL) |> # contains N/A's
+  dplyr::mutate(`array_qc_BISULFITE_CONVERSION_I_Beta_I-6_Beta_larger_0.2_0.3` = NULL) |> # contains N/A's
+  dplyr::rename(`% detP significant probes (log)` = array_percentage.detP.signi) |> 
+  
+  dplyr::mutate(resection_prim_rec = factor(ifelse(resection_number == 1,"primary", "recurrent"), levels=c("primary","recurrent"))) |> 
+  
+  dplyr::mutate(`-1 * CGC[Ac]` = -1 * `CGC[Ac]`, `CGC[Ac]`= NULL) |> 
+  dplyr::mutate(`array_dnaMethyAge__ZhangY2017` = -1 * `-1 * array_dnaMethyAge__ZhangY2017`, `-1 * array_dnaMethyAge__ZhangY2017`=NULL) |>
+  dplyr::mutate(`-1 * array_GLASS_NL_g2_g3_sig` = -1 * array_GLASS_NL_g2_g3_sig, array_GLASS_NL_g2_g3_sig = NULL) |>
+  dplyr::mutate(`-1 * array_PC2` = -1 * array_PC2, array_PC2 = NULL)
+
+colnames(tmp) <- gsub("array_","",colnames(tmp))
+
+
+data <- tmp |>
+  dplyr::mutate(`resection_prim_rec` = NULL) |> 
+  dplyr::mutate(array_PC1 = NULL) |> 
+  dplyr::mutate(PC1 = NULL) |> 
+  as.data.frame() |> 
+  #scale(center=T, scale=T)  |> 
+  t() |>
+  as.data.frame() 
+
+
+design <- model.matrix(~ factor(resection_prim_rec), data=tmp)
+#design <- model.matrix(~age_at_diagnosis_days + factor(resection_tumor_grade), data=tmp)
+#design <- model.matrix(~factor(resection_tumor_grade), data=tmp)
+fit <- limma::lmFit(data, design)
+fit <- limma::eBayes(fit, trend=T)
+stats <- limma::topTable(fit,
+                         n=nrow(data),
+                         coef="factor(resection_prim_rec)recurrent",
+                         sort.by = "none",
+                         confint=T,
+                         adjust.method="fdr") |> 
+  tibble::rownames_to_column('covar') 
+
+
+stats = rbind(stats,
+              
+              data.frame(covar=c('array_PC1'), logFC=0, CI.L=0, CI.R=0, AveExpr=0,t=0,P.Value=NA, adj.P.Val=NA,B=NA)
+              
+) |> 
+  dplyr::mutate(covar =  gsub("array_", "", covar))
+
+
+plt <- data.frame(covar = order) |>
+  dplyr::mutate(y = dplyr::n():1) |> 
+  assertr::verify(covar %in% stats$covar) |> 
+  dplyr::left_join(stats, by=c('covar'='covar')) 
+
+
+plt <- rbind(
+  plt |>
+    dplyr::mutate(logFC = 0) |> 
+    dplyr::mutate(t = 0) |> 
+    dplyr::mutate(type = "zero")
+  ,
+  plt |>
+    dplyr::mutate(type = "datapoint")
+  ,
+  plt |>
+    dplyr::mutate(logFC = CI.L) |> 
+    dplyr::mutate(type = "CI")
+  ,
+  plt |>
+    dplyr::mutate(logFC = CI.R) |> 
+    dplyr::mutate(type = "CI")
+) |> 
+  dplyr::mutate(stars = gtools::stars.pval(adj.P.Val))
+
+
+#order
+
+
+ggplot(plt, aes(x = t, y=reorder(covar, y), label=stars, group=covar)) +
+  geom_line(data=subset(plt, type %in% c("datapoint", "zero")),lwd=theme_nature_lwd) + 
+  #geom_line(data=subset(plt, type %in% c("CI")),lwd=theme_nature_lwd*3) + 
+  geom_point(data=subset(plt, type == "datapoint"), size=theme_nature_size/3) +
+  geom_text(data=subset(plt, type %in% c("datapoint")), x = 7.5, size=theme_nature_size, family=theme_nature_font_family) + 
+  xlim(-5, 7.7) + 
+  labs(y = NULL, x="t statistic primary vs. recurrent") +
+  theme_nature
+
+
+ggsave("output/figures/vis_aging_clocks__forest__prim_rec.pdf", width=2.75,height = 2.665)
+
 
 # https://support.bioconductor.org/p/37524/
 # https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/forest.html
@@ -540,7 +720,7 @@ ggplot(plt2, aes(x=order_x, y=one.min.adj.P.val, group=group, col = adj.P.Val < 
 ## prim - rec ----
 tmp <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
-  filter_primaries_and_last_recurrences(180) |> 
+  filter_primaries_and_last_recurrences(179) |> 
   
   dplyr::group_by(patient_id) |> 
   dplyr::mutate(is.paired = dplyr::n() == 2) |> 

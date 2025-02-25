@@ -468,7 +468,7 @@ ggplot(plt, aes(x = x, y = resection_number, col=col)) +
   theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_nature_lwd , linetype="solid"))
 
 
-ggsave("output/figures/vis_validation_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975 * 0.68, height = 5.0)
+ggsave("output/figures/vis_validation_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975 * 0.68, height = 5.3)
 
 
 

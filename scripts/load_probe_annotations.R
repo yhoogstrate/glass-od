@@ -25,7 +25,7 @@ source('scripts/load_functions.R')
 # + https://github.com/zhou-lab/KYCG_knowledgebase_EPIC
 
 
-## manifest 2022 ----
+## 1. manifest 2022 ----
 
 
 fn <- "cache/EPIC.hg38.manifest.tsv_2022.Rds" # unlink(fn)
@@ -45,11 +45,8 @@ if(file.exists(fn)) {
     dplyr::mutate(type = NULL) |> 
     assertr::verify(!duplicated(probe_id)) |> 
     dplyr::mutate(pos = round((CpG_beg + CpG_end )/2)) |> 
-    dplyr::rename(target_hg38 = target) # noticed an example where target == 'CA' - while in hg19 ref genome it should have been actually 'CG'
-
-  # Save mem...
-  tmp <- tmp |> 
-    dplyr::mutate(nextBase = NULL) |> 
+    dplyr::rename(target_hg38 = target) |>  # noticed an example where target == 'CA' - while in hg19 ref genome it should have been actually 'CG'
+    dplyr::mutate(nextBase = NULL) |>  # Save mem...
     dplyr::mutate(target_hg38 = NULL) |> 
     dplyr::mutate(address_A = NULL) |> 
     dplyr::mutate(address_B = NULL) |> 
@@ -70,7 +67,12 @@ if(file.exists(fn)) {
     dplyr::mutate(mapQ_A = NULL) |> 
     dplyr::mutate(mapQ_B = NULL)
   
+  
   saveRDS(tmp, file=fn)
+  
+  #validate 
+  #setdiff(colnames(tmp), readRDS(fn) |> colnames())
+  #setdiff(readRDS(fn) |> colnames(), colnames(tmp))
 
 }
 
@@ -84,13 +86,14 @@ sort(colnames(metadata.cg_probes.epic))
 
 
 
-## old manifest for probeCpGcnt & context35 ----
+## 2. old manifest for probeCpGcnt & context35 ----
 # these variables are only found in some strange files, presumably an old version of the manifest
 # probeCpGcnt: the number of CpG in the probe.
 # context35: the number of CpG in the [-35bp, +35bp] window.
 
 
-fn <- "cache/EPIC.hg38.manifest.tsv_old.Rds" # unlink(fn)
+fn <- "cache/EPIC.hg38.manifest.tsv_old.Rds"
+#unlink(fn)
 
 if(file.exists(fn)) {
   
@@ -98,13 +101,18 @@ if(file.exists(fn)) {
   tmp <- readRDS(fn)
   
 } else {
+
+  tmp <- read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |>
+   dplyr::rename(probe_id = probeID) |>
+   dplyr::select(probe_id, probeCpGcnt, context35)
   
-  tmp <- read.delim("~/mnt/neuro-genomic-1-ro/catnon/Methylation - EPIC arrays/EPIC.hg38.manifest.tsv.gz") |> 
-    dplyr::rename(probe_id = probeID) |> 
-    dplyr::select(probe_id, probeCpGcnt, context35)
+  
+  #validate 
+  setdiff(colnames(tmp), readRDS(fn) |> colnames())
+  setdiff(readRDS(fn) |> colnames(), colnames(tmp))
+  
   
   saveRDS(tmp, file=fn)
-  
 }
 
 
@@ -116,8 +124,7 @@ rm(tmp, fn)
 
 
 
-## add masking ----
-
+## 3. add masking ----
 
 
 fn <- "cache/EPIC.hg38.manifest.tsv.Rds" # ; unlink(fn)
@@ -130,11 +137,8 @@ if(file.exists(fn)) {
 } else {
   
   tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/EPIC/EPIC.hg38.mask.tsv", header=T) |> 
-    dplyr::rename(probe_id = probeID)
-  
-  # save mem ...
-  tmp <- tmp |> 
-    dplyr::mutate(MASK_mapping = NULL) |> 
+    dplyr::rename(probe_id = probeID) |> 
+    dplyr::mutate(MASK_mapping = NULL) |>    # save mem ...
     dplyr::mutate(MASK_typeINextBaseSwitch = NULL) |> 
     dplyr::mutate(MASK_rmsk15 = NULL) |> 
     dplyr::mutate(MASK_sub40_copy = NULL) |> 
@@ -145,7 +149,16 @@ if(file.exists(fn)) {
     dplyr::mutate(MASK_snp5_GMAF1p = NULL) |> 
     dplyr::mutate(MASK_extBase = NULL)
   
+  
+  #validate 
+  setdiff(colnames(tmp), readRDS(fn) |> colnames())
+  setdiff(readRDS(fn) |> colnames(), colnames(tmp))
+  
+  
   stopifnot(intersect(colnames(tmp) , colnames(metadata.cg_probes.epic)) == c("probe_id"))
+  
+
+  
   
   saveRDS(tmp, file=fn)
   
@@ -161,7 +174,7 @@ rm(tmp, fn)
 
 
 
-## manifest from illumina ----
+## 4. manifest from illumina ----
 
 # https://support.illumina.com/array/array_kits/infinium-methylationepic-beadchip-kit/downloads.html
 # Infinium MethylationEPIC v1.0 B5 Manifest File (BPM Format)
@@ -211,11 +224,8 @@ if(file.exists(fn)) {
       )
     ) |> 
     dplyr::mutate(Strand_hg38 = as.factor(Strand_hg38)) |> 
-    dplyr::mutate(CHR_hg38 = as.factor(CHR_hg38))
-  
-  # mem cleanup ...
-  tmp <- tmp |> 
-    dplyr::mutate(AddressA_ID = NULL) |> 
+    dplyr::mutate(CHR_hg38 = as.factor(CHR_hg38)) |> 
+    dplyr::mutate(AddressA_ID = NULL) |> # mem cleanup ...
     dplyr::mutate(AddressB_ID = NULL) |> 
     dplyr::mutate(Next_Base = NULL) |> 
     dplyr::mutate(Color_Channel = NULL) |> 
@@ -232,6 +242,11 @@ if(file.exists(fn)) {
     
   
   #colnames(tmp)[colnames(tmp) %in% colnames(metadata.cg_probes.epic)]
+  
+  #validate 
+  setdiff(colnames(tmp), readRDS(fn) |> colnames())
+  setdiff(readRDS(fn) |> colnames(), colnames(tmp))
+  
   
   saveRDS(tmp, file=fn)
 
@@ -274,6 +289,7 @@ if(file.exists(fn)) {
 } else {
   
   tmp <- metadata.cg_probes.epic |> 
+    dplyr::select(probe_id, Forward_Sequence_hg19, AlleleA_ProbeSeq) |> 
     dplyr::filter(grepl("^cg", probe_id)) |> 
     
     dplyr::mutate(needle = gsub("R","A", AlleleA_ProbeSeq)) |> 
@@ -299,6 +315,14 @@ if(file.exists(fn)) {
     dplyr::mutate(orientation_mapped = as.factor(orientation_mapped))
   
   
+  
+  #validate 
+  setdiff(colnames(tmp), readRDS(fn) |> colnames())
+  setdiff(readRDS(fn) |> colnames(), colnames(tmp))
+  
+  
+  
+  
   saveRDS(tmp, file=fn)
   
 }
@@ -314,7 +338,7 @@ rm(tmp, fn)
 
 
 
-## RC the Forward_Sequence_hg19 when direction is forward ----
+## 5. RC the Forward_Sequence_hg19 when direction is forward ----
 
 
 fn <- "cache/load_probe_annotations__sequence_pre_target_post.Rds"
@@ -352,6 +376,12 @@ if(file.exists(fn)) {
     dplyr::mutate(sequence_target = as.factor(sequence_target)) |> 
     assertr::verify(probe_id %in% metadata.cg_probes.epic$probe_id) 
   
+  
+  #validate 
+  setdiff(colnames(tmp), readRDS(fn) |> colnames())
+  setdiff(readRDS(fn) |> colnames(), colnames(tmp))
+  
+  
   saveRDS(tmp, file=fn)
   
 }
@@ -368,7 +398,7 @@ rm(tmp, fn)
 
 
 
-## proceed with annotations ----
+## 6. proceed with annotations ----
 
 
 fn <- "cache/load_probe_annotations__probe_type_annotation.Rds"
@@ -396,6 +426,15 @@ if(file.exists(fn)) {
   
   
   #table(tmp$probe_type_orientation)
+  
+  
+  
+  #validate 
+  setdiff(colnames(tmp), readRDS(fn) |> colnames())
+  setdiff(readRDS(fn) |> colnames(), colnames(tmp))
+  
+  
+  
   
   
   saveRDS(tmp, file=fn)
@@ -467,7 +506,9 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
 rm(tmp, GCIMPlow.probes)
 
 
-## add gene annotation ----
+
+
+## 8. add gene annotation ----
 
 
 
@@ -482,6 +523,7 @@ if(file.exists(fn)) {
   
 } else {
   
+  
   tmp <- read.table("data/Improved DNA Methylation Array Probe Annotation/EPIC/EPIC.hg38.manifest.gencode.v36.tsv", header=T) |> 
     dplyr::rename(probe_id = probeID) |> 
     dplyr::select(probe_id, genesUniq) |> 
@@ -489,6 +531,14 @@ if(file.exists(fn)) {
   
   
   stopifnot(intersect(colnames(tmp) , colnames(metadata.cg_probes.epic)) == c("probe_id"))
+  
+  
+  
+  #validate 
+  setdiff(colnames(tmp), readRDS(fn) |> colnames())
+  setdiff(readRDS(fn) |> colnames(), colnames(tmp))
+  
+  
   
 
   saveRDS(tmp, file=fn)
@@ -517,7 +567,7 @@ rm(tmp, fn)
 
 
 
-## add sequence-context ----
+## 9. add sequence-context ----
 
 
 fn <- "cache/load_probe_annotation__sequence_contexts.Rds"
@@ -569,6 +619,15 @@ if(file.exists(fn)) {
     dplyr::mutate(gc_sequence_context_1_old = as.factor(gc_sequence_context_1_old )) |> 
     dplyr::mutate(gc_sequence_context_2_old = as.factor(gc_sequence_context_2_old)) 
   
+  
+  
+  #validate 
+  setdiff(colnames(tmp), readRDS(fn) |> colnames())
+  setdiff(readRDS(fn) |> colnames(), colnames(tmp))
+  
+  
+  
+  
     saveRDS(tmp, file=fn)
 }
 
@@ -581,7 +640,7 @@ rm(tmp, fn)
 
 
 
-## add overall G-C content ----
+## 10. add overall G-C content ----
 #' split per pre- and post sequence
 
 
@@ -616,6 +675,13 @@ if(!file.exists(fn)) {
     
     dplyr::select(probe_id, ends_with("_content"))
   
+  
+  
+  #validate 
+  setdiff(colnames(tmp), readRDS(fn) |> colnames())
+  setdiff(readRDS(fn) |> colnames(), colnames(tmp))
+  
+  
   saveRDS(tmp, file=fn)
   
 } else {
@@ -631,9 +697,7 @@ metadata.cg_probes.epic <- metadata.cg_probes.epic |>
 rm(tmp)
 
 
-## overall CG-C's vs independent C's ----
-
-
+## 11. overall CG-C's vs independent C's ----
 
 fn <- "cache/load_probe_annotation__CG_Cs_vs_independent_Cs.Rds"
 
@@ -650,7 +714,14 @@ if(!file.exists(fn)) {
     dplyr::mutate(n_independent_C = stringr::str_count(gsub("CG","XX",tmp), pattern = "C")) |> 
     dplyr::mutate(n_independent_T = stringr::str_count(gsub("CG","XX",tmp), pattern = "T")) |> 
     dplyr::mutate(n_independent_G = stringr::str_count(gsub("CG","XX",tmp), pattern = "G")) |> 
-    dplyr::select(probe_id, n_CG, n_CG_to_CR, n_CG_to_CA, n_independent_A, n_independent_C, n_independent_T, n_independent_G)
+    dplyr::select(probe_id, n_CG, n_CG_to_CR, n_CG_to_CA, 
+                  n_independent_A, n_independent_C, n_independent_T, n_independent_G)
+  
+
+  #validate 
+  setdiff(colnames(tmp), readRDS(fn) |> colnames())
+  setdiff(readRDS(fn) |> colnames(), colnames(tmp))
+  
   
   saveRDS(tmp, file=fn)
   

@@ -1184,4 +1184,403 @@ grid.draw.ggsurvplot <- function(x){
 ggsave("output/figures/analysis_survival_gms_at_recurrence.pdf", width=8.3 / 2 * 0.8,height=2.6, scale=2, plot=p1)
 
 
+# G-SAM ----
+
+
+## R1 ----
+### KM low vs high ----
+
+
+
+stats <-  gsam.metadata.array_samples |> 
+  filter_GSAM_idats(CONST_N_GSAM_INCLUDED_SAMPLES - 2) |> 
+  dplyr::mutate(resection__rec = ifelse(resection == "R1",0,1)) |> 
+  dplyr::filter(resection == "R1") |> 
+  dplyr::mutate(`CGC` = ifelse(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit < median(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit), "low", "high"))
+
+surv_object <- survival::Surv(time = stats$patient_survivalDays, event=stats$patient_os.event)
+
+
+
+fit1 <- survival::survfit(surv_object ~  CGC , data = stats)
+print(survminer::surv_pvalue(fit1)$pval)
+
+
+
+survminer::ggsurvplot(fit1, data = stats, pval = TRUE, risk.table=T, tables.y.text = FALSE,
+                      xlab="Survival time (days) last recurrence -> death", newpage = FALSE,
+                      #palette=c("#d9e39e", "#e3b29e"),
+                      palette = c(
+                        mixcol( 'darkblue', 'darkgreen'),
+                        mixcol( 'lightblue', 'lightgreen')
+                      ),
+                      font.size = 20,
+                      ggtheme = theme_nature,
+                      tables.theme = theme_nature,
+                      font.family = "Times New Roman"
+)
+
+
+
+
+p1 = survminer::ggsurvplot(fit1, data = stats, 
+                           palette = c(
+                             mixcol( 'darkblue', 'darkgreen'),
+                             mixcol( 'lightblue', 'lightgreen')
+                           ),
+                           tables.theme = theme_nature, 
+                           ggtheme = theme_nature,
+                           fontsize = theme_nature_size,
+                           censor.size = theme_nature_size,
+                           pval.size = theme_nature_size,
+                           size = theme_nature_lwd,
+                           font.family = theme_nature_font_family,
+                           pval=T
+)
+
+p2 = survminer::ggsurvtable(fit1, data = stats, 
+                            tables.theme = theme_nature, 
+                            ggtheme = theme_nature,
+                            fontsize = theme_nature_size,
+                            font.family = theme_nature_font_family
+)
+
+
+p1$plot / p2$risk.table +   plot_layout(heights = c(4,1))
+
+
+ggsave("output/figures/analysis_survival__gsam__R1.pdf", width = 8.5 * 0.975 * 1/2, height = 2.75)
+
+
+
+
+### cut-off sweep ----
+
+
+gsam.stats.primary <- gsam.metadata.array_samples |> 
+  
+  filter_GSAM_idats(CONST_N_GSAM_INCLUDED_SAMPLES - 2) |> 
+  dplyr::mutate(resection__rec = ifelse(resection == "R1",0,1)) |> 
+  dplyr::filter(resection == "R1") |> 
+  
+  dplyr::arrange(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(i = 1:dplyr::n())
+
+
+tmp.primary.CGC <- data.frame(
+  k = 1:nrow(gsam.stats.primary),
+  
+  survdiff_p = rep(1.0, nrow(gsam.stats.primary)),
+  
+  name = rep("patient", nrow(gsam.stats.primary)),
+  
+  censored = gsam.stats.primary$patient_os.event == 0
+)
+
+
+
+tmp.s.primary <- survival::Surv(gsam.stats.primary$patient_survivalDays,
+                                gsam.stats.primary$patient_os.event)
+
+
+
+for(split in ((2:nrow(gsam.stats.primary))-0.5) ) {
+  
+  tmp.label <- gsam.stats.primary |> 
+    dplyr::mutate(cgc = ifelse(i < split, "CGC low", "CGC high")) |> 
+    dplyr::mutate(cgc = factor(cgc, levels=c("CGC low", "CGC high")))
+  
+  
+  tmp <- survival::survdiff(tmp.s.primary ~ cgc, data=tmp.label)
+  
+  
+  df <- data.frame(
+    
+    k = split ,
+    
+    survdiff_p = tmp |> purrr::pluck('pvalue'),
+    name="CGC",
+    
+    censored = F
+  )
+  
+  tmp.primary.CGC <- rbind(tmp.primary.CGC, df)
+  rm(tmp, tmp.label)
+}
+
+
+
+
+plt.facet <- tmp.primary.CGC |> 
+  tidyr::pivot_longer(cols=c(survdiff_p ), names_to="pval_method", values_to="pvalue")
+
+
+
+
+ggplot(plt.facet, aes(x=k, y=-log10(pvalue), col=name, group=name, pch=censored)) +
+  facet_grid(cols = vars(pval_method)) +
+  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
+  geom_line(data=subset(plt.facet, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
+  geom_point(data=subset(plt.facet, name == "patient"),y = -0.15, size=theme_nature_size/3) + 
+  geom_point(data=subset(plt.facet, name != "patient"),size=theme_nature_size/3) + 
+  theme_nature + 
+  scale_y_continuous(breaks = -log10(c(0, 0.01, 0.05, 1)),
+                     labels =        c(0, 0.01, 0.05, 1)) +
+  scale_shape_manual(values=c(20, 3)) +
+  labs(y = "p-value logrank test", x=paste0("# primary samples (of ",nrow(gsam.stats.primary),") stratified low grade"))
+
+
+
+
+ggsave("output/figures/analysis_survival__sweep__prim__GSAM.pdf", width = 11 * 1/3 * 0.85, height = 2.36)
+
+
+
+
+### MV ----
+
+
+rm(tmp, svvl.prim, fit.cox)
+
+
+tmp <- gsam.metadata.array_samples |> 
+  filter_GSAM_idats(CONST_N_GSAM_INCLUDED_SAMPLES - 2) |> 
+  dplyr::mutate(resection__rec = ifelse(resection == "R1",0,1)) |> 
+  dplyr::filter(resection == "R1")  |> 
+  dplyr::rename(CGC = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)
+
+
+
+
+svvl.prim <- survival::Surv(tmp$patient_survivalDays,
+                            tmp$patient_os.event)
+
+fit.cox <- survival::coxph(svvl.prim ~ `CGC` , data = tmp)
+
+survminer::ggforest(fit.cox, data = as.data.frame(tmp))
+
+
+ggsave("output/figures/analysis_survival__forest__prim__GSAM.pdf", width=8.5 * 0.975 * 0.67, height=1.3)
+
+
+
+
+
+## R2 ----
+
+### KM low vs high CGC ----
+
+stats <-  metadata |> 
+  dplyr::filter(resection == "R2") |> 
+  dplyr::mutate(`CGC` = ifelse(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit < median(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit), "low", "high"))
+
+
+
+surv_object <- survival::Surv(time = stats$patient_survivalFromSecondSurgeryDays, event=stats$patient_os.event)
+
+
+fit1 <- survival::survfit(surv_object ~  CGC , data = stats)
+print(survminer::surv_pvalue(fit1)$pval)
+
+
+
+survminer::ggsurvplot(fit1, data = stats, pval = TRUE, risk.table=T, tables.y.text = FALSE,
+                      xlab="Survival time (days) last recurrence -> death", newpage = FALSE,
+                      #palette=c("#d9e39e", "#e3b29e"),
+                      palette = c(
+                        mixcol( 'darkblue', 'darkgreen'),
+                         mixcol( 'lightblue', 'lightgreen')
+                      ),
+                      font.size = 20,
+                      ggtheme = theme_nature,
+                      tables.theme = theme_nature,
+                      font.family = "Times New Roman"
+                      )
+
+
+
+
+p1 = survminer::ggsurvplot(fit1, data = stats, 
+                           palette = c(
+                             mixcol( 'darkblue', 'darkgreen'),
+                             mixcol( 'lightblue', 'lightgreen')
+                           ),
+                       tables.theme = theme_nature, 
+                       ggtheme = theme_nature,
+                      fontsize = theme_nature_size,
+                      censor.size = theme_nature_size,
+                      pval.size = theme_nature_size,
+                      size = theme_nature_lwd,
+                      font.family = theme_nature_font_family,
+                      pval=T
+                      )
+
+p2 = survminer::ggsurvtable(fit1, data = stats, 
+                       tables.theme = theme_nature, 
+                       ggtheme = theme_nature,
+                       fontsize = theme_nature_size,
+                       font.family = theme_nature_font_family
+                       )
+
+
+p1$plot / p2$risk.table +   plot_layout(heights = c(4,1))
+
+
+ggsave("output/figures/analysis_survival__gsam__R2.pdf", width = 8.5 * 0.975 * 1/2, height = 2.75)
+
+
+
+
+
+
+### cut-off sweep ----
+
+
+
+gsam.stats.recurrent <- gsam.metadata.array_samples |> 
+  
+  filter_GSAM_idats(CONST_N_GSAM_INCLUDED_SAMPLES - 2) |> 
+  dplyr::mutate(resection__rec = ifelse(resection == "R1",0,1)) |> 
+  dplyr::filter(resection != "R1") |> 
+  
+  dplyr::arrange(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(i = 1:dplyr::n())
+
+
+tmp.recurrent.CGC <- data.frame(
+  k = 1:nrow(gsam.stats.recurrent),
+  
+  survdiff_p = rep(1.0, nrow(gsam.stats.recurrent)),
+  
+  name = rep("patient", nrow(gsam.stats.recurrent)),
+  
+  censored = gsam.stats.recurrent$patient_os.event == 0
+)
+
+
+
+tmp.s.recurrent <- survival::Surv(gsam.stats.recurrent$patient_survivalFromSecondSurgeryDays,
+                                  gsam.stats.recurrent$patient_os.event)
+
+
+
+for(split in ((2:nrow(gsam.stats.recurrent))-0.5) ) {
+  
+  tmp.label <- gsam.stats.recurrent |> 
+    dplyr::mutate(cgc = ifelse(i < split, "CGC low", "CGC high")) |> 
+    dplyr::mutate(cgc = factor(cgc, levels=c("CGC low", "CGC high")))
+  
+  
+  tmp <- survival::survdiff(tmp.s.recurrent ~ cgc, data=tmp.label)
+  
+  
+  df <- data.frame(
+    
+    k = split ,
+    
+    survdiff_p = tmp |> purrr::pluck('pvalue'),
+    name="CGC",
+    
+    censored = F
+  )
+  
+  tmp.recurrent.CGC <- rbind(tmp.recurrent.CGC, df)
+  rm(tmp, tmp.label)
+}
+
+
+
+
+plt.facet <- tmp.recurrent.CGC |> 
+  tidyr::pivot_longer(cols=c(survdiff_p ), names_to="pval_method", values_to="pvalue")
+
+
+
+
+ggplot(plt.facet, aes(x=k, y=-log10(pvalue), col=name, group=name, pch=censored)) +
+  facet_grid(cols = vars(pval_method)) +
+  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
+  geom_line(data=subset(plt.facet, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
+  geom_point(data=subset(plt.facet, name == "patient"),y = -0.15, size=theme_nature_size/3) + 
+  geom_point(data=subset(plt.facet, name != "patient"),size=theme_nature_size/3) + 
+  theme_nature + 
+  scale_y_continuous(breaks = -log10(c(0, 0.01, 0.05, 1)),
+                     labels =        c(0, 0.01, 0.05, 1)) +
+  scale_shape_manual(values=c(20, 3)) +
+  labs(y = "p-value logrank test", x=paste0("# recurrent samples (of ",nrow(gsam.stats.recurrent),") stratified low grade"))
+
+
+
+ggsave("output/figures/analysis_survival__sweep__rec__GSAM.pdf", width = 11 * 1/3 * 0.85, height = 2.36)
+
+
+
+
+
+### MV ----
+
+
+rm(tmp, fit.cox, svvl.rec)
+
+
+tmp <- gsam.metadata.array_samples |> 
+  filter_GSAM_idats(CONST_N_GSAM_INCLUDED_SAMPLES - 2) |> 
+  dplyr::mutate(resection__rec = ifelse(resection == "R1",0,1)) |> 
+  dplyr::filter(resection != "R1")  |> 
+  dplyr::rename(CGC = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)
+
+
+
+svvl.rec <- survival::Surv(tmp$patient_survivalFromSecondSurgeryDays,
+                            tmp$patient_os.event)
+
+fit.cox <- survival::coxph(svvl.rec ~ `CGC` , data = tmp)
+
+survminer::ggforest(fit.cox, data = as.data.frame(tmp))
+
+
+ggsave("output/figures/analysis_survival__forest__rec__GSAM.pdf", width=8.5 * 0.975 * 0.67, height=1.3)
+
+
+## R1 + R2 sweeps ----
+
+
+
+plt <- rbind(
+  tmp.primary.CGC |> 
+    tidyr::pivot_longer(cols=c(survdiff_p ), names_to="pval_method", values_to="pvalue") |> 
+    dplyr::mutate(set = "primary")
+  ,
+  tmp.recurrent.CGC |> 
+    tidyr::pivot_longer(cols=c(survdiff_p ), names_to="pval_method", values_to="pvalue") |> 
+    dplyr::mutate(set = "recurrent")
+  )
+
+
+
+ggplot(plt, aes(x=k, y=-log10(pvalue), col=name, group=name, pch=censored)) +
+  facet_grid(cols = vars(set)) +
+  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
+  geom_line(data=subset(plt, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
+  geom_point(data=subset(plt, name == "patient"),y = -0.15, size=theme_nature_size/3) + 
+  geom_point(data=subset(plt, name != "patient"),size=theme_nature_size/3) + 
+  theme_nature + 
+  scale_y_continuous(breaks = -log10(c(0, 0.01, 0.05, 1)),
+                     labels =        c(0, 0.01, 0.05, 1)) +
+  scale_shape_manual(values=c(20, 3)) +
+  labs(y = "p-value logrank test", x=paste0("# recurrent samples (of ",nrow(gsam.stats.recurrent),") stratified low grade"))
+
+
+
+
+ggsave("output/figures/analysis_survival__sweep__GSAM.pdf", width = 11 * 2/3 * 0.85, height = 2.36)
+
+
+
 

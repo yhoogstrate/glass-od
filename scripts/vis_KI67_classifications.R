@@ -30,17 +30,20 @@ plt <- glass_od.metadata.array_samples |>
 
 
 plt.facet <- rbind(
+  plt |> 
+    dplyr::mutate(facet = "CGC") |> 
+    dplyr::mutate(y = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit),
   plt |>
-    dplyr::mutate(facet = "PC2") |> 
-    dplyr::mutate(y = array_PC2),
+    dplyr::mutate(facet = "-1 * PC2") |> 
+    dplyr::mutate(y = -1 * array_PC2),
   plt |>
-    dplyr::mutate(facet = "PC3") |> 
-    dplyr::mutate(y = array_PC3),
+    dplyr::mutate(facet = "-1 * PC3") |> 
+    dplyr::mutate(y = -1 * array_PC3),
   plt |>
-    dplyr::mutate(facet = "PC HorvathS2018 * -1") |> 
-    dplyr::mutate(y = -1 * array_dnaMethyAge__PCHorvathS2018)
+    dplyr::mutate(facet = "PC HorvathS2018") |> 
+    dplyr::mutate(y = array_dnaMethyAge__PCHorvathS2018)
 ) |> 
-  dplyr::mutate(facet = factor(facet, levels=c("PC2", "PC3", "PC HorvathS2018 * -1")))
+  dplyr::mutate(facet = factor(facet, levels=c("CGC", "-1 * PC2", "-1 * PC3", "PC HorvathS2018")))
 
 
 plt.intervals <- 10^seq(log10(max(plt$staining_KI67_pos_per_area_um2)), log10(min(plt$staining_KI67_pos_per_area_um2)), length.out = 5) # linear intervals in log scaled labels
@@ -49,11 +52,11 @@ plt.intervals <- 10^seq(log10(max(plt$staining_KI67_pos_per_area_um2)), log10(mi
 ggplot(plt.facet, aes(x=staining_KI67_pos_per_area_um2,
                 y=y,
                 col=col)) +
-  facet_wrap(~facet, scales="free") +
+  facet_wrap(~facet, scales="free",ncol=4) +
   geom_point(size=theme_nature_size/3) + 
   ggpubr::stat_cor(method = "pearson",
                    aes(label = after_stat(r.label)),
-                   label.x.npc = "right", hjust=1,
+                   label.x.npc = "left", hjust=0,
                    col="black",
                    size=theme_nature_size,
                    family = theme_nature_font_family) +
@@ -69,7 +72,7 @@ ggplot(plt.facet, aes(x=staining_KI67_pos_per_area_um2,
 
 
 
-ggsave("output/figures/vis_KI67_classifications__scatterplots.pdf", width = 8.5*0.975 * (3/5), height=2.34)
+ggsave("output/figures/vis_KI67_classifications__scatterplots.pdf", width = 8.5*0.975 * (4/5), height=2.38)
 
 
 
@@ -126,6 +129,7 @@ ggplot(glass_od.metadata.array_samples, aes(
 
 
 dat <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   dplyr::mutate(log_staining_KI67_pos_per_area_um2 = log(staining_KI67_pos_per_area_um2)) |> 
   #dplyr::mutate(log_staining_KI67_pos_neg_cell_density = log(staining_KI67_pos_neg_cell_density)) |> 
   dplyr::select(
@@ -145,20 +149,9 @@ dat <- glass_od.metadata.array_samples |>
 
 
 
-pdf("output/figures/vis_KI67_classifications__corrplot.pdf",width=2.5, height=2.15)
+ggcorrplot(dat)
 
-
-
-corrplot::corrplot(cor(dat), order="hclust", tl.cex=0.52, tl.pos="l", cl.cex=0.52,
-                   
-
-                   
-                   title = paste0("\nsample: n=", nrow(dat))
-                   )
-
-
-
-dev.off()
+ggsave("output/figures/vis_KI67_classifications__corrplot.pdf",width=2.95, height=2.15)
 
 
 
@@ -205,13 +198,14 @@ ggplot(plt, aes(x=reorder(resection_id, rank),
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   labs(x='resection', y="Percentage cells classified Ki67+", col=NULL)
 
+
 ggsave("output/figures/vis_KI67_classifications.pdf", width=0.975 * 8.5, height=2.25)
 
 
 
+## stats: log(p/n) ----
 
-
-## who grade ----
+### who grade ----
 
 
 
@@ -225,23 +219,27 @@ plt <- glass_od.metadata.array_samples |>
 ggplot(plt, aes(x=resection_grade, y=staining_KI67_lr_pos_neg_cells)) +
   ggbeeswarm::geom_quasirandom(size=theme_nature_size/3,width=0.175) + 
   labs(subtitle=format_subtitle("KI67 x WHO Grade"),
-       caption=paste0("samples  --  ",
+       caption=paste0("",
                       "Grade 2: n=", (plt |> dplyr::filter(resection_grade == "WHO Grade 2") |>  nrow()), "  --  ",
                       "Grade 3: n=", (plt |> dplyr::filter(resection_grade == "WHO Grade 3") |>  nrow()
-       ))) +
-  ggpubr::stat_compare_means(label.x.npc=0.5, method = "t.test", show_guide  = FALSE,  size=theme_nature_size, col="darkgray") +
+                      ))) +
+  ggpubr::stat_compare_means(label.x.npc=0.5, method = "t.test",
+                             #show_guide  = FALSE, 
+                             show.legend=F,
+                             size=theme_nature_size, family = theme_nature_font_family,
+                             col="#777777") +
   labs(y="log(Ki-67 positive cells / Ki-67 negative cells)", x=NULL) +
   theme_nature
 
 
 
-ggsave("output/figures/vis_KI67_classifications__who_grade.pdf",width=1.5, height=2.25)
+ggsave("output/figures/vis_KI67_classifications__who_grade__lr_p_n.pdf",width=1.5, height=2.25)
 
 
 
 
 
-## prim rec ----
+### prim rec ----
 
 
 
@@ -254,16 +252,90 @@ plt <- glass_od.metadata.array_samples |>
 ggplot(plt, aes(x=resection_type, y=staining_KI67_lr_pos_neg_cells)) +
   ggbeeswarm::geom_quasirandom(size=theme_nature_size/3,width=0.175) + 
   labs(subtitle=format_subtitle("KI67 x resection type"),
-       caption=paste0("samples  --  ",
+       caption=paste0("",
                       "primary: n=",   (plt |> dplyr::filter(resection_type == "primary") |>    nrow()),"  --  ",
                       "recurrent: n=", (plt |> dplyr::filter(resection_type == "recurrent") |>  nrow()
-       ))) +
-  ggpubr::stat_compare_means( label.x.npc=0.5, method = "t.test", show_guide  = FALSE,  size=theme_nature_size, col="darkgray") +
+                      ))) +
+  ggpubr::stat_compare_means(
+    label.x.npc=0.5, method = "t.test", show.legend  = FALSE, 
+    size=theme_nature_size, 
+    family = theme_nature_font_family,
+    col="#777777") +
+  labs(y="log1p(staining_KI67_pos_per_area_um2 * 1000)", x=NULL) +
+  theme_nature
+
+
+ggsave("output/figures/vis_KI67_classifications__prim_rec__lr_p_n.pdf",width=1.5, height=2.25)
+
+
+
+
+
+## stats: p / um2 ----
+
+### who grade ----
+
+
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::mutate(resection_grade = paste0("WHO Grade ", resection_tumor_grade)) |> 
+  dplyr::filter(!is.na(staining_KI67_lr_pos_neg_cells))
+
+
+
+ggplot(plt, aes(x=resection_grade, y=log1p(staining_KI67_pos_per_area_um2 * 1000))) +
+  ggbeeswarm::geom_quasirandom(size=theme_nature_size/3, width=0.175) + 
+  labs(subtitle=format_subtitle("KI67 x WHO Grade"),
+       caption=paste0("",
+                      "Grade 2: n=", (plt |> dplyr::filter(resection_grade == "WHO Grade 2") |>  nrow()),
+                      "  --  ",
+                      "Grade 3: n=", (plt |> dplyr::filter(resection_grade == "WHO Grade 3") |>  nrow()
+                      ))) +
+  ggpubr::stat_compare_means(label.x.npc=0.5, method = "wilcox.test",
+                             #show_guide  = FALSE, 
+                             show.legend=F,
+                             size=theme_nature_size, family = theme_nature_font_family,
+                             col="#777777") +
+  labs(y="log1p(staining_KI67_pos_per_area_um2 * 1000)", x=NULL) +
+  theme_nature
+
+
+
+
+ggsave("output/figures/vis_KI67_classifications__who_grade__p_um2.pdf",width=1.5, height=2.25)
+
+
+
+
+
+### prim rec ----
+
+
+
+plt <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::mutate(resection_type = ifelse(resection_number == 1, "primary", "recurrent")) |> 
+  dplyr::filter(!is.na(staining_KI67_lr_pos_neg_cells))
+
+
+ggplot(plt, aes(x=resection_type, y=log1p(staining_KI67_pos_per_area_um2 * 1000))) +
+  ggbeeswarm::geom_quasirandom(size=theme_nature_size/3,width=0.175) + 
+  labs(subtitle=format_subtitle("KI67 x resection type"),
+       caption=paste0("",
+                      "primary: n=",   (plt |> dplyr::filter(resection_type == "primary") |>    nrow()),"  --  ",
+                      "recurrent: n=", (plt |> dplyr::filter(resection_type == "recurrent") |>  nrow()
+                      ))) +
+  ggpubr::stat_compare_means(
+    label.x.npc=0.5, method = "wilcox.test", show.legend  = FALSE, 
+    size=theme_nature_size, 
+    family = theme_nature_font_family,
+    col="#777777") +
   labs(y="log(Ki-67 positive cells / Ki-67 negative cells)", x=NULL) +
   theme_nature
 
 
-ggsave("output/figures/vis_KI67_classifications__prim_rec.pdf",width=1.5, height=2.25)
+ggsave("output/figures/vis_KI67_classifications__prim_rec__p_um2.pdf",width=1.5, height=2.25)
 
 
 
