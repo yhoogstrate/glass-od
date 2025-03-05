@@ -20,10 +20,10 @@ if(!exists('glass_nl.metadata.array_samples')) {
 
 
 metadata.glass_od <- glass_od.metadata.array_samples |> 
-  filter_GLASS_OD_idats(163) 
+  filter_GLASS_OD_idats(211) 
 
 metadata.glass_nl <- glass_nl.metadata.array_samples |> 
-  filter_GLASS_NL_idats(218)
+  filter_GLASS_NL_idats(203)
 
 
 metadata.combi <- data.frame(array_sentrix_id = c(metadata.glass_od$array_sentrix_id, 
@@ -655,16 +655,16 @@ ggroc(rocobj, colour = 'red', size = 1) +
 
 plt <- metadata.combi |> 
   dplyr::mutate(col.grading1 = dplyr::case_when(
-    dataset == "GLASS-OD" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") ~ "HG",
-    dataset == "GLASS-NL" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") ~ "HG",
+    dataset == "GLASS-OD" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") ~ "HG",
+    dataset == "GLASS-NL" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") ~ "HG",
     T ~ "LG"
   )) |> 
   dplyr::mutate(col.grading2 = dplyr::case_when(
-    dataset == "GLASS-OD" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") ~ "OD [HG - A_IDH_HG & OLIGOSARC]",
-    dataset == "GLASS-OD" & (mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") == F) ~ "OD [LG ~ other]",
+    dataset == "GLASS-OD" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") ~ "OD [HG - A_IDH_HG & OLIGOSARC]",
+    dataset == "GLASS-OD" & (array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","OLIGOSARC_IDH") == F) ~ "OD [LG ~ other]",
     
-    dataset == "GLASS-NL" & mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") ~ "AC [HG - A_IDH_HG]",
-    dataset == "GLASS-NL" & (mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == F) ~ "AC [LG ~ other]"
+    dataset == "GLASS-NL" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") ~ "AC [HG - A_IDH_HG]",
+    dataset == "GLASS-NL" & (array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == F) ~ "AC [LG ~ other]"
   ))
 
 
@@ -715,9 +715,9 @@ p1 + p2 + p3
 plt <- metadata.combi |> 
   dplyr::mutate(col = 
                   dplyr::case_when(
-                    dataset == "GLASS-OD" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","A_IDH","A_IDH_HG") ~ "v12.8 OD misclassified as AC",
+                    dataset == "GLASS-OD" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","A_IDH","A_IDH_HG") ~ "v12.8 OD classified as AC",
                     dataset == "GLASS-OD" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG","A_IDH","A_IDH_HG") == F ~ "v12.8 OD",
-                    dataset == "GLASS-NL" & array_mnp_predictBrain_v12.8_cal_class %in% c("O_IDH","OLIGOSARC_IDH") ~ "v12.8 AC misclassified as OD",
+                    dataset == "GLASS-NL" & array_mnp_predictBrain_v12.8_cal_class %in% c("O_IDH","OLIGOSARC_IDH") ~ "v12.8 AC classified as OD",
                     dataset == "GLASS-NL" & array_mnp_predictBrain_v12.8_cal_class %in% c("O_IDH","OLIGOSARC_IDH") == F ~ "v12.8 AC",
                   )
   )
@@ -726,39 +726,26 @@ plt <- metadata.combi |>
 
 ggplot(plt, aes(x=array_PC.GLASS_OD_NL_combined_excl_1P19Q.3, y=array_PC.GLASS_OD_NL_combined_excl_1P19Q.4, col=col,
                 label=resection_id)) +
-  geom_point(data = subset(plt, grepl("misclass", col) == F),pch=16, size=1.5, alpha=0.5) +
-  geom_point(data = subset(plt, grepl("misclass", col) == T),pch=16, size=1.5, alpha=0.5) +
-  theme_cellpress + 
-  scale_color_manual(values=c('v12.8 AC'='blue',
-                              'v12.8 OD'='darkgreen',
-                              'v12.8 OD misclassified as AC'='red',
-                              'v12.8 AC misclassified as OD'='orange')) +
-  labs(col = "", x = "PC3", 
+  geom_point(data = subset(plt, grepl("misclass", col) == F), size=theme_nature_size/3) +
+  geom_point(data = subset(plt, grepl("misclass", col) == T), size=theme_nature_size/3) +
+  theme_nature + 
+  scale_color_manual(values=c('v12.8 AC'= mixcol('lightblue','darkblue'),
+                              'v12.8 OD'= mixcol('lightgreen','darkgreen'),
+                              'v12.8 OD classified as AC'='red',
+                              'v12.8 AC classified as OD'='orange')) +
+  labs(col = "",
+       x = "PC3", 
        y = "PC4",
-       subtitle = "PCA on GLASS-NL + GLASS-OD combined, excl 1P / 19Q probes")
+       subtitle = format_subtitle("PCA on GLASS-NL + GLASS-OD combined, excl 1P / 19Q probes"))
+
+
+
 
 ggsave("output/figures/vis_mixed_unsupervised_combined_no1p19_PCA.pdf", width = (8.5/3) * 0.95, height = 2.80)
 
 
 
 
-
-p1 <- ggplot(plt, aes(x=PC.GLASS_OD_NL_combined_excl_1P19Q.3, y=PC.GLASS_OD_NL_combined_excl_1P19Q.4, col=batch_us, label=resection_id)) +
-  geom_point(size=2.5) +
-  geom_point(size=3.2, col="black",fill=NA, pch=21, alpha=0.75) +
-  theme_bw()+ 
-  theme(legend.position = "bottom")
-
-p2 <- ggplot(plt, aes(x=PC.GLASS_OD_NL_combined_excl_1P19Q.3, y=PC.GLASS_OD_NL_combined_excl_1P19Q.4, col=dataset, alpha=col.grading1, label=resection_id)) +
-  geom_point(size=2.5) +
-  geom_point(data = subset(plt, col.grading1 == "HG"), size=3.2, col="black",fill=NA, pch=21) +
-  scale_alpha_manual(values=c('HG'=1.0, 'LG'=0.45)) +
-  #scale_color_manual(values=c('HG'='black', 'LG'='white')) +
-  theme_bw() + 
-  theme(  legend.position = "bottom")
-
-
-p1 + p2
 
 
 
@@ -969,12 +956,12 @@ ggplot(plt.p, aes(x=tumor_grade_h_l, y=-log(lda.posterior), col=classification_s
   geom_hline(yintercept = 0, lwd=theme_cellpress_lwd) +
   #facet_grid(cols = vars(dataset)) +
   facet_wrap(~dataset, scales="free") +
-  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/2) +
-  ggpubr::stat_compare_means(aes(group=tumor_grade_h_l), label.x.npc=0.1, method = "wilcox.test", show_guide  = FALSE,  size=theme_cellpress_size) + 
+  ggbeeswarm::geom_quasirandom(size=theme_nature_size/3) +
+  ggpubr::stat_compare_means(aes(group=tumor_grade_h_l), label.x.npc=0.1, method = "wilcox.test", show_guide  = FALSE,  size=theme_cellpress_size, family=theme_nature_font_family) + 
   labs(y = "-log( LDA posterior probability )") +
   geom_hline(yintercept = -log(0.5), col="red", lwd=0.5,lty=2) +
   scale_color_manual(values=c('match'='black', 'misclassification' = 'red')) + 
-  theme_cellpress +
+  theme_nature +
   labs(x=NULL, col=NULL) +
   ylim(0, 72) 
 

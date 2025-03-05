@@ -3153,7 +3153,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
   coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
   
-  #theme(plot.background = element_rect(fill="white", colour=NA)) +  # png export
+  theme(plot.background = element_rect(fill="white", colour=NA)) +  # png export
   
   theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'))
 
@@ -3671,8 +3671,8 @@ plt <- data.mvalues.probes |>
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probe_type)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
+  #geom_vline(xintercept=0, col="red") +
+  #geom_hline(yintercept=0, col="red") +
   
   geom_point(data = subset(plt, probe_type == "II (ligation Allele-A)"), pch=16, cex=0.001, alpha=0.15) + 
   geom_point(data = subset(plt, probe_type== "I (red & green)"), pch=16, cex=0.001, alpha=0.15) +   
@@ -3682,15 +3682,15 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   guides(color = guide_legend(override.aes = list(size = 1, alpha=1) ) )
 
 
-ggsave(paste0("output/figures/vis_differential__probe_type_II_I.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+ggsave(paste0("output/figures/vis_differential__probe_type_II_I.png"), width=1.8634, height=2.362)
 
 
 
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probe_type)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
+  #geom_vline(xintercept=0, col="red") +
+  #geom_hline(yintercept=0, col="red") +
   
   geom_point(data = subset(plt, probe_type== "I (red & green)"), pch=16, cex=0.001, alpha=0.15) +   
   geom_point(data = subset(plt, probe_type == "II (ligation Allele-A)"), pch=16, cex=0.001, alpha=0.15) + 
@@ -3698,7 +3698,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   theme_nature + theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'))  +
   guides(color = guide_legend(override.aes = list(size = 1, alpha=1) ) )
 
-ggsave(paste0("output/figures/vis_differential__probe_type_I_II.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+ggsave(paste0("output/figures/vis_differential__probe_type_I_II.png"), width=1.8634, height=2.362)
 
 
 
@@ -3800,17 +3800,16 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
   
   coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t)))) +
-  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
   
-  #theme(plot.background = element_rect(fill="white", colour = NA)) + # png export
+  theme(plot.background = element_rect(fill="white", colour = NA)) + # png export
   #theme(axis.line =     element_line(linewidth = theme_nature_lwd / 2)) # somehow w/ png export
 
 
 
 
-ggsave(paste0("output/figures/vis_differential__TACGnn_nnCGTA.png")
-       ,
-       width=(8.5 * 0.975 * (1/5) * 1.12425),
+ggsave(paste0("output/figures/vis_differential__TACGnn_nnCGTA.png"),
+       width=1.8634,
        height=2.215, dpi=600)
 
 

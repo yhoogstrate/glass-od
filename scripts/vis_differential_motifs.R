@@ -320,6 +320,8 @@ plt.motifs.unstranded <- plt.motifs.stranded |>
 ### per probe outcomes (DMP etc.) ----
 
 
+
+
 tmp <- data.mvalues.probes |> 
   (function(.) {
     print(dim(.))
@@ -464,7 +466,7 @@ rm(tmp)
 
 
 
-# plots ----
+# plots GLASS-OD ----
 
 #dev.off()
 
@@ -493,7 +495,7 @@ dev.off()
 
 
 
-## motif: xx[CG]xx violin(s) stranded ----
+## motif: xx[CG]xx violin(s) stranded BARPLOT ----
 
 
 plt <- data.mvalues.probes |> 
@@ -535,7 +537,7 @@ ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc__t)) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
                coef=0.5, fill=NA,linewidth=theme_cellpress_lwd) +
   
-  stat_summary(fun.y = median, fun.min = median, fun.max = median,
+  stat_summary(fun = median, fun.min = median, fun.max = median,
                geom = "crossbar", col="red", width=0.85, linewidth=theme_cellpress_lwd) +
   
   labs(x = NULL, y="Per probe t-score Grade 2 ~ Grade 3") +
@@ -551,7 +553,7 @@ ggsave("output/figures/vis_differential__xxCGxx_violin.pdf", width = 11 * 0.975,
 
 
 
-## motif: xx[CG]xx violin(s) unstranded ----
+## motif: xx[CG]xx violin(s) unstranded BARPLOT ----
 
 
 
@@ -603,6 +605,369 @@ ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc__t)) +
 
 
 ggsave("output/figures/vis_differential_motifs__t_stat_grade_per_motif__unstranded.pdf", width=11 * 0.975, height=3.8)
+
+
+
+## motif: xx[CG]xx violin(s) unstranded + PC1 BARPLOT ----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |>
+  dplyr::mutate(sequence_5p = gsub("[^a-zA-Z]","",gc_sequence_context_2_new)) |> 
+  dplyr::filter(!is.na(sequence_5p)) |> 
+  dplyr::left_join(plt.motifs.stranded |> dplyr::select(sequence_5p, oligo_sequence), by=c('sequence_5p'='sequence_5p'), suffix=c('','')) |> 
+  dplyr::left_join(plt.motifs.unstranded, by=c('oligo_sequence'='oligo_sequence'),suffix=c('',''))
+
+
+
+
+plt <- plt |> 
+  dplyr::group_by(oligo_sequence) |> 
+  dplyr::mutate(facet_rank = median(DMP__g2_g3__pp_nc_PC1__t)) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(facet_name = tolower(oligo_sequence))
+
+
+
+ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc_PC1__t)) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=NA,linewidth=theme_nature_lwd) +
+  
+  stat_summary(fun = median, fun.min = median, fun.max = median,
+               geom = "crossbar", col="red", width=0.85, linewidth=theme_nature_lwd) +
+  
+  labs(x = NULL,
+       y="Per probe t-score Grade 2 ~ Grade 3",
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+
+
+ggsave("output/figures/vis_differential_motifs__t_stat_grade_per_motif__PC1__unstranded.pdf", width=11 * 0.975, height=3.8)
+
+
+
+
+## motif: xx[CG]xx violin(s) PC2 PC3 ----
+
+# https://stackoverflow.com/questions/43407859/how-do-i-find-the-link-between-principal-components-and-raw-datas-variables
+
+tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_prcomp.Rds")
+
+tmp.1a <- tmp$rotation |> 
+  as.data.frame() |> 
+  dplyr::select(PC1, PC2, PC3) |> 
+  dplyr::rename_with( ~ paste0(.x, "__raw_rotation")) |> 
+  tibble::rownames_to_column('probe_id')
+
+tmp.1b <- tmp$rotation |> 
+  as.data.frame() |> 
+  dplyr::mutate(PC1_abs = abs(PC1)) |> 
+  dplyr::mutate(PC2_abs = abs(PC2)) |> 
+  dplyr::mutate(PC3_abs = abs(PC3)) |> 
+  dplyr::select(PC1_abs, PC2_abs, PC3_abs) |> 
+  dplyr::rename_with( ~ paste0(.x, "__raw_rotation")) |> 
+  tibble::rownames_to_column('probe_id')
+
+tmp.2 <- as.data.frame(t(t(abs(tmp$rotation))/rowSums(t(abs(tmp$rotation))))*100) |> 
+  dplyr::select(PC1, PC2, PC3) |> 
+  dplyr::rename_with( ~ paste0(.x, "__scaled_rotation")) |> 
+  tibble::rownames_to_column('probe_id')
+
+
+tmp.3 <- as.data.frame((abs(tmp$rotation)/rowSums(abs(tmp$rotation))) * 100) |> 
+  dplyr::select(PC1, PC2, PC3) |> 
+  dplyr::rename_with( ~ paste0(.x, "__scaled_rotation2")) |> 
+  tibble::rownames_to_column('probe_id')
+
+
+
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(probe_id %in% data.mvalues.good_probes) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |>
+  dplyr::mutate(sequence_5p = gsub("[^a-zA-Z]","",gc_sequence_context_2_new)) |> 
+  dplyr::filter(!is.na(sequence_5p)) |> 
+  dplyr::left_join(plt.motifs.stranded |> dplyr::select(sequence_5p, oligo_sequence), by=c('sequence_5p'='sequence_5p'), suffix=c('','')) |> 
+  dplyr::left_join(plt.motifs.unstranded, by=c('oligo_sequence'='oligo_sequence'),suffix=c('','')) |> 
+  
+  dplyr::left_join(tmp.1a, by=c('probe_id'='probe_id'), suffix = c('','')) |> 
+  dplyr::left_join(tmp.1b, by=c('probe_id'='probe_id'), suffix = c('','')) |> 
+  dplyr::left_join(tmp.2, by=c('probe_id'='probe_id'), suffix = c('','')) |> 
+  dplyr::left_join(tmp.3, by=c('probe_id'='probe_id'), suffix = c('',''))
+
+
+
+
+plt <- plt |> 
+  dplyr::group_by(oligo_sequence) |> 
+  dplyr::mutate(facet_rank = median(DMP__g2_g3__pp_nc_PC1__t)) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(facet_name = tolower(oligo_sequence))
+
+
+
+
+p0a = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__PCs__pp_nc__PC2_t)) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+  labs(x = NULL,
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  coord_cartesian(ylim = c(-8, 8)) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  theme(axis.text.x = element_blank()) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+
+p0b = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__PCs__pp_nc__PC3_t)) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+  labs(x = NULL,
+      caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  coord_cartesian(ylim = c(-5, 5)) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  theme(axis.text.x = element_blank()) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+p0a / p0b
+
+
+p1a = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=abs(DMP__PCs__pp_nc__PC2_t))) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+  labs(x = NULL,
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  coord_cartesian(ylim = c(-0, 8)) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  theme(axis.text.x = element_blank()) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+p1b = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=abs(DMP__PCs__pp_nc__PC3_t))) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+  labs(x = NULL,
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  coord_cartesian(ylim = c(-0, 5)) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  theme(axis.text.x = element_blank()) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+p1a / p1b
+
+
+
+
+p2a = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=PC2__raw_rotation)) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+  
+  labs(x = NULL,
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  coord_cartesian(ylim = c(-0.0011, 0.0011) * 1.6) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  theme(axis.text.x = element_blank()) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+p2b = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=PC3__raw_rotation)) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+  
+  labs(x = NULL,
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  coord_cartesian(ylim = c(-0.0011, 0.0011)) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  theme(axis.text.x = element_blank()) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+p2a / p2b
+
+
+
+p3a = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=PC2_abs__raw_rotation)) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+  
+  labs(x = NULL,
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  coord_cartesian(ylim = c(-0.0, 0.0020)) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  theme(axis.text.x = element_blank()) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+p3b = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=PC3_abs__raw_rotation)) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+  
+  labs(x = NULL,
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  coord_cartesian(ylim = c(-0.0, 0.00155)) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  theme(axis.text.x = element_blank()) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+p3a / p3b
+
+
+
+p4a = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=PC2__scaled_rotation)) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+  
+  labs(x = NULL,
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  coord_cartesian(ylim = c(-0.0, 0.00032)) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  theme(axis.text.x = element_blank()) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+p4b = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=PC3__scaled_rotation)) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+  
+  labs(x = NULL,
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  coord_cartesian(ylim = c(-0.0, 0.00028)) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  #theme(axis.text.x = element_blank()) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+p4a / p4b
+
+
+
+
+p5a = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__pct_detP_signi__pp_nc__t)) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+  
+  labs(x = NULL,
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  #coord_cartesian(ylim = c(-5, 5)) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  #theme(axis.text.x = element_blank()) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+p5a
+
+
+
+source("scripts/load_gene_annotations.R")
+polycomb_probes <- data.mvalues.probes |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED)
+    return(.)
+  })() |>
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+    return(.)
+  })() |>
+  dplyr::rename(gene = GencodeCompV12_NAME) |>
+  dplyr::select(probe_id, gene) |>
+  tibble::tibble() |>
+  tidyr::separate_longer_delim(gene, delim = ";") |>
+  dplyr::filter(gene %in% c(c(genes_polycomb_eed_homeobox,
+                              genes_polycomb_h3k27_homeobox,
+                              genes_polycomb_prc2_homeobox,
+                              genes_polycomb_suz12_homeobox
+  ))) |> 
+  dplyr::filter(grepl('HOX', gene))
+
+plt.polycomb <- plt |> 
+  dplyr::group_by(facet_name) |> 
+  dplyr::summarise(facet_rank = median(facet_rank),
+    n_polycomb = sum(probe_id %in% polycomb_probes$probe_id)) |> 
+  dplyr::ungroup()
+
+
+ggplot(plt.polycomb, aes(x=reorder(facet_name, -facet_rank), y=n_polycomb)) +
+  geom_point() +
+  
+  labs(x = NULL,
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  #theme(axis.text.x = element_blank()) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+
+
+
+
+# 
+# p2 = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__PCs__pp_nc__PC3_adj.P.Val)) +
+#   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+#                coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+#   
+#   labs(x = NULL,
+#        y="Per probe t-score PC3",
+#        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+#   coord_cartesian(ylim = c(-0.5, 0.5)) + # soft clip
+#   theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+#   labs(subtitle=format_subtitle("Differential methylated motif overview"))
+# 
+
+
+
+p3 = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc_PC1__t)) +
+  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+               coef=0.5, fill=NA,linewidth=theme_nature_lwd) +
+  
+  stat_summary(fun = median, fun.min = median, fun.max = median,
+               geom = "crossbar", col="red", width=0.85, linewidth=theme_nature_lwd) +
+  
+  labs(x = NULL,
+       y="Per probe t-score Grade 2 ~ Grade 3",
+       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
+  coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
+  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
+  labs(subtitle=format_subtitle("Differential methylated motif overview"))
+
+
+p1 / p2 / p3
+
+
+ggsave("output/figures/vis_differential_motifs__t_stat_grade_per_motif__PC1__PC2_PC3__unstranded.pdf", width=11 * 0.975, height=3.8)
+
 
 
 
@@ -816,31 +1181,22 @@ ggplot(plt, aes(y=TET3_Ravichandran_SciAdv_2022_stranded, x=DMP__g2_g3__pp_nc__t
 
 
 
+
 ## motif: xx[CG]xx violin(s) unstranded x DNMT1 ----
 
 
 plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
+  dplyr::mutate(col="col")
 
 
-# DMP__g2_g3__pp_nc__t
-# DMP__g2_g3__pp_nc_PC1__t
-# DMP__PCs__pp_nc__PC1_t
-ggplot(plt, aes(y=DNMT1_Adam_NAR_2023_unstranded, x=DMP__g2_g3__pp_nc__t__median, col=adjacent_cg, label=oligo_sequence)) +
+ggplot(plt, aes(y=DNMT1_Adam_NAR_2023_unstranded,
+                x=DMP__g2_g3__pp_nc__t__median,
+                col=col,
+                label=oligo_sequence)) +
   geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
-                   label.x=-0.85) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size, family=theme_nature_font_family, label.x=-0.85) +
+  scale_color_manual(values=c("col"=mixcol('darkblue', 'darkgreen'))) +
   theme_nature +
-  ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
-  
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  #coord_cartesian(ylim=c(0, NA))  +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
        y="DNMT1 (Adam NAR 2023)",
        col="",
@@ -857,25 +1213,17 @@ ggsave("output/figures/vis_differential_motifs__DNMT1_x_grade__unstranded.pdf", 
 
 
 plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
+  dplyr::mutate(col="col")
 
 
-# DMP__g2_g3__pp_nc__t
-# DMP__g2_g3__pp_nc_PC1__t
-# DMP__PCs__pp_nc__PC1_t
-ggplot(plt, aes(y=DNMT3A_Gao_NatCom_2020_unstranded, x=GLASS_OD__DMP__g2_g3__median, col=adjacent_cg, label=oligo_sequence)) +
+ggplot(plt, aes(y=DNMT3A_Gao_NatCom_2020_unstranded,
+                x=DMP__g2_g3__pp_nc__t__median,
+                col=col,
+                label=oligo_sequence)) +
   geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
-                   label.x=-0.85) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size, family=theme_nature_font_family, label.x=-0.85) +
+  scale_color_manual(values=c("col"=mixcol('darkblue', 'darkgreen'))) +
   theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  #coord_cartesian(ylim=c(0, NA))  +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
        y="DNMT3A (Gao NatCom 2020)",
        col="",
@@ -888,29 +1236,22 @@ ggsave("output/figures/vis_differential_motifs__DNMT3A_x_grade__unstranded.pdf",
 
 
 
+
 ## motif: xx[CG]xx violin(s) unstranded x DNMT3B ----
 
 
 plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
+  dplyr::mutate(col="col")
 
 
-# DMP__g2_g3__pp_nc__t
-# DMP__g2_g3__pp_nc_PC1__t
-# DMP__PCs__pp_nc__PC1_t
-ggplot(plt, aes(y=DNMT3B_Gao_NatCom_2020_unstranded, x=GLASS_OD__DMP__g2_g3__median, col=adjacent_cg, label=oligo_sequence)) +
+ggplot(plt, aes(y=DNMT3B_Gao_NatCom_2020_unstranded,
+                x=DMP__g2_g3__pp_nc__t__median,
+                col=col,
+                label=oligo_sequence)) +
   geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
-                   label.x=-0.85) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size, family=theme_nature_font_family, label.x=-0.85) +
+  scale_color_manual(values=c("col"=mixcol('darkblue', 'darkgreen'))) +
   theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  #coord_cartesian(ylim=c(0, NA))  +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
        y="DNMT3B (Gao NatCom 2020)",
        col="",
@@ -928,40 +1269,19 @@ ggsave("output/figures/vis_differential_motifs__DNMT3B_x_grade__unstranded.pdf",
 ## motif: xx[CG]xx violin(s) unstranded x TET1----
 
 
-
 plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
-  #dplyr::filter(oligo_sequence != "*tacgta/tacgta")
+  dplyr::mutate(col="col")
 
-
-# DMP__g2_g3__pp_nc__t__mean -0.82
-# DMP__g2_g3__pp_nc__t__median -0.82
-# DMP__g2_g3__pp_nc_PC1__t__mean -0.73
-# DMP__g2_g3__pp_nc_PC1__t__median -0.73
-
-# DMP__GLASS_NL__prim_rec__pp_nc_naive__t__median -0.11
-# DMP__GLASS_NL__prim_rec__pp_nc_PC1__t__median -0.57
-# DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t__median -0.43
-# DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t__median -0.56
 
 ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded,
-                #x=DMP__g2_g3__pp_nc_PC1__t__mean,
-                #DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t__median,
-                DMP__g2_g3__pp_nc__t__median,
-                #x=,
-                col=adjacent_cg,
+                x=DMP__g2_g3__pp_nc__t__median,
+                col=col,
                 label=oligo_sequence)) +
   geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
-                   label.x=-0.85) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size, family=theme_nature_font_family, label.x=-0.85) +
+  scale_color_manual(values=c("col"=mixcol('darkblue', 'darkgreen'))) +
   theme_nature +
-  ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
   #ggrepel::geom_text_repel(col="black", size=theme_nature_size* 1.4) +
   coord_cartesian(ylim=c(0, NA))  +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
@@ -981,28 +1301,17 @@ ggsave("output/figures/vis_differential_motifs__TET1_x_grade__unstranded.pdf", w
 
 
 plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
+  dplyr::mutate(col="col")
 
 
-
-
-# DMP__g2_g3__pp_nc__t
-# DMP__g2_g3__pp_nc_PC1__t
-# DMP__PCs__pp_nc__PC2_t = mean(DMP__PCs__pp_nc__PC2_t),
 ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded,
-                x=GLASS_OD__DMP__g2_g3__median,
-                col=adjacent_cg, label=oligo_sequence)) +
+                x=DMP__g2_g3__pp_nc__t__median,
+                col=col,
+                label=oligo_sequence)) +
   geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
-                   label.x=-0.85) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size, family=theme_nature_font_family, label.x=-0.85) +
+  scale_color_manual(values=c("col"=mixcol('darkblue', 'darkgreen'))) +
   theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
   coord_cartesian(ylim=c(0, NA))  +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
        y="TET2 5mC (Adam NatCom 2022)",
@@ -1021,27 +1330,18 @@ ggsave("output/figures/vis_differential_motifs__TET2_x_grade__unstranded.pdf", w
 ## motif: xx[CG]xx violin(s) unstranded x TET3----
 
 
-
 plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
+  dplyr::mutate(col="col")
 
 
-
-
-# DMP__g2_g3__pp_nc__t
-# DMP__g2_g3__pp_nc_PC1__t
-ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded, x=GLASS_OD__DMP__g2_g3__median, col=adjacent_cg, label=oligo_sequence)) +
+ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded,
+                x=DMP__g2_g3__pp_nc__t__median,
+                col=col,
+                label=oligo_sequence)) +
   geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size,
-                   label.x=-0.85) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size, family=theme_nature_font_family, label.x=-0.85) +
+  scale_color_manual(values=c("col"=mixcol('darkblue', 'darkgreen'))) +
   theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
        y="-1 * TET3 (Ravichandran SciAdv 2022)",
        col="",
@@ -1055,451 +1355,7 @@ ggsave("output/figures/vis_differential_motifs__TET3_x_grade__unstranded.pdf", w
 
 
 
-## motif: xx[CG]xx violin(s) unstranded x TET1 x PC1 MV pearson ----
-
-
-
-plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence), "Adjacent CG" ,"No adjacent CG"))
-
-
-ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=DMP__PC1_PC2_PC3_multivariate__t_PC1__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   label.x=2) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
-  theme_nature +
-  ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  labs(x="T-score\nPC2 (multivariate)",
-       y="-1 * TET3 (Ravichandran SciAdv 2022)",
-       col="",
-       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
-       subtitle=format_subtitle("TET3 x t-score WHO grade")
-  )
-
-
-
-
-## motif: xx[CG]xx violin(s) unstranded x TET1 x PC2 MV pearson ----
-
-
-
-plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
-
-
-ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC2__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   label.x=2) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  labs(x="T-score\nPC2 (multivariate)",
-       y="-1 * TET3 (Ravichandran SciAdv 2022)",
-       col="",
-       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
-       subtitle=format_subtitle("TET3 x t-score WHO grade")
-  )
-
-
-
-ggsave("output/figures/vis_differential_motifs__TET1_x_PC2mv__Pearson__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
-
-
-
-
-## motif: xx[CG]xx violin(s) unstranded x TET1 x PC3 MV pearson ----
-
-
-
-plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
-
-
-ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC3__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   label.x=-2) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  labs(x="T-score\nPC3 (multivariate)",
-       y="-1 * TET3 (Ravichandran SciAdv 2022)",
-       col="",
-       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
-       subtitle=format_subtitle("TET3 x t-score WHO grade")
-  )
-
-
-
-ggsave("output/figures/vis_differential_motifs__TET1_x_PC3mv__Pearson__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
-
-
-
-
-## motif: xx[CG]xx violin(s) unstranded x TET2 x PC2 MV pearson ----
-
-
-
-plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
-
-
-ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded, x=GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC2__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   label.x=2) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  labs(x="T-score\nPC2 (multivariate)",
-       y="-1 * TET3 (Ravichandran SciAdv 2022)",
-       col="",
-       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
-       subtitle=format_subtitle("TET3 x t-score WHO grade")
-  )
-
-
-
-
-ggsave("output/figures/vis_differential_motifs__TET2_x_PC2mv__Pearson__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
-
-
-
-
-
-
-## motif: xx[CG]xx violin(s) unstranded x TET2 x PC3 MV pearson ----
-
-
-
-plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
-
-
-ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded, x=GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC3__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   label.x=-2) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  labs(x="T-score\nPC3 (multivariate)",
-       y="-1 * TET3 (Ravichandran SciAdv 2022)",
-       col="",
-       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
-       subtitle=format_subtitle("TET3 x t-score WHO grade")
-  )
-
-
-
-ggsave("output/figures/vis_differential_motifs__TET2_x_PC3mv__Pearson__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
-
-
-
-
-## motif: xx[CG]xx violin(s) unstranded x TET3 x PC2 MV pearson ----
-
-
-
-plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
-
-
-ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded, x=GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC2__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   label.x=2) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  labs(x="T-score\nPC2 (multivariate)",
-       y="-1 * TET3 (Ravichandran SciAdv 2022)",
-       col="",
-       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
-       subtitle=format_subtitle("TET3 x t-score WHO grade")
-  )
-
-
-
-
-ggsave("output/figures/vis_differential_motifs__TET3_x_PC2mv__Pearson__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
-
-
-
-
-
-
-## motif: xx[CG]xx violin(s) unstranded x TET3 x PC3 MV pearson ----
-
-
-
-plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
-
-
-ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded, x=GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC3__mean, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   label.x=-2) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  labs(x="T-score\nPC3 (multivariate)",
-       y="-1 * TET3 (Ravichandran SciAdv 2022)",
-       col="",
-       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
-       subtitle=format_subtitle("TET3 x t-score WHO grade")
-  )
-
-
-ggsave("output/figures/vis_differential_motifs__TET3_x_PC3mv__Pearson__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
-
-
-
-## motif: xx[CG]xx violin(s) unstranded x TET1 x PC2 MV spearman ----
-
-
-
-plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
-
-
-ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC2__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   cor.coef.name ="rho", label.x=2) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  labs(x="T-score\nPC2 (multivariate)",
-       y="-1 * TET3 (Ravichandran SciAdv 2022)",
-       col="",
-       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
-       subtitle=format_subtitle("TET3 x t-score WHO grade")
-  )
-
-
-
-ggsave("output/figures/vis_differential_motifs__TET1_x_PC2mv__Spearman__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
-
-
-
-
-## motif: xx[CG]xx violin(s) unstranded x TET1 x PC3 MV spearman ----
-
-
-
-plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
-
-
-ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC3__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   cor.coef.name ="rho", label.x=-2) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  labs(x="T-score\nPC3 (multivariate)",
-       y="-1 * TET3 (Ravichandran SciAdv 2022)",
-       col="",
-       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
-       subtitle=format_subtitle("TET3 x t-score WHO grade")
-  )
-
-
-
-ggsave("output/figures/vis_differential_motifs__TET1_x_PC3mv__Spearman__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
-
-
-
-
-## motif: xx[CG]xx violin(s) unstranded x TET2 x PC2 MV spearman ----
-
-
-
-plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
-
-
-ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded, x=GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC2__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   cor.coef.name ="rho", label.x=2) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  labs(x="T-score\nPC2 (multivariate)",
-       y="-1 * TET3 (Ravichandran SciAdv 2022)",
-       col="",
-       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
-       subtitle=format_subtitle("TET3 x t-score WHO grade")
-  )
-
-
-
-
-ggsave("output/figures/vis_differential_motifs__TET2_x_PC2mv__Spearman__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
-
-
-
-
-
-
-## motif: xx[CG]xx violin(s) unstranded x TET2 x PC3 MV spearman ----
-
-
-
-plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
-
-
-ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded, x=GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC3__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   cor.coef.name ="rho", label.x=-2) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  labs(x="T-score\nPC3 (multivariate)",
-       y="-1 * TET3 (Ravichandran SciAdv 2022)",
-       col="",
-       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
-       subtitle=format_subtitle("TET3 x t-score WHO grade")
-  )
-
-
-
-ggsave("output/figures/vis_differential_motifs__TET2_x_PC3mv__Spearman__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
-
-
-
-
-## motif: xx[CG]xx violin(s) unstranded x TET3 x PC2 MV spearman ----
-
-
-
-plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
-
-
-ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded, x=GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC2__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   cor.coef.name ="rho", label.x=2) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  labs(x="T-score\nPC2 (multivariate)",
-       y="-1 * TET3 (Ravichandran SciAdv 2022)",
-       col="",
-       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
-       subtitle=format_subtitle("TET3 x t-score WHO grade")
-  )
-
-
-
-
-ggsave("output/figures/vis_differential_motifs__TET3_x_PC2mv__Spearman__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
-
-
-
-
-
-
-## motif: xx[CG]xx violin(s) unstranded x TET3 x PC3 MV spearman ----
-
-
-
-plt <- plt.motifs.unstranded |> 
-  dplyr::mutate(adjacent_cg = ifelse(grepl("cgcg", oligo_sequence),"Adjacent CG" ,"No adjacent CG"))
-
-
-ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded, x=GLASS_OD__DMP__PC1_PC2_PC3_multivariate__t_PC3__mean, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   cor.coef.name ="rho", label.x=-2) +
-  scale_color_manual(
-    values=c(
-      'Adjacent CG' = mixcol( 'lightblue', 'lightgreen'),
-      'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
-    )
-  ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
-  labs(x="T-score\nPC3 (multivariate)",
-       y="-1 * TET3 (Ravichandran SciAdv 2022)",
-       col="",
-       caption=paste0("n=",length(unique(plt$oligo_sequence))," motifs (unstranded)"),
-       subtitle=format_subtitle("TET3 x t-score WHO grade")
-  )
-
-
-ggsave("output/figures/vis_differential_motifs__TET3_x_PC3mv__Spearman__unstranded.pdf", width=8.5 * 0.975 * (1/5), height=2.18)
-
+# plots GLASS-NL ----
 
 
 

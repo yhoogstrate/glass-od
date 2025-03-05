@@ -1300,21 +1300,22 @@ rm(tmp)
 ## unsupervised PCA [GLASS-OD + GLASS-NL combi] ----
 
 
-# tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined_no_1P19Q.Rds") |>
-#   dplyr::rename_with( ~ paste0("array_", .x)) |> 
-#   dplyr::rename_with(~ gsub("^array_PC","array_PC.GLASS_OD_NL_combined_excl_1P19Q.",.x), .cols = matches("^array_PC[0-9]", perl = T)) |>
-#   dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
-#   (function(.) {
-#     print(dim(.))
-#     assertthat::assert_that(nrow(.) == 163)
-#     return(.)
-#   })()
-# 
-# 
-# glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
-#   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
-# 
-# rm(tmp)
+tmp <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_GLASS-NL_combined_no_1P19Q.Rds") |>
+  dplyr::rename_with( ~ paste0("array_", .x)) |>
+  dplyr::rename_with(~ gsub("^array_PC","array_PC.GLASS_OD_NL_combined_excl_1P19Q.",.x), .cols = matches("^array_PC[0-9]", perl = T)) |>
+  dplyr::filter(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |>
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(ncol(.) == (CONST_N_GLASS_OD_INCLUDED_SAMPLES + CONST_N_GLASS_NL_INCLUDED_SAMPLES + 1))
+    assertthat::assert_that(nrow(.) == CONST_N_GLASS_OD_INCLUDED_SAMPLES)
+    return(.)
+  })()
+
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+
+rm(tmp)
 
 
 
