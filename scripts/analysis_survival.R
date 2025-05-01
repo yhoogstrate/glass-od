@@ -654,6 +654,98 @@ ggsave("output/figures/analysis_survival_sweep__prim__last_rec.pdf", width=8.5 *
 
 
 
+### TCGA-LGG / 450k ----
+
+
+tmp.stats.tcga_lgg.450k <- tcga_lgg_od.metadata.array_samples |> 
+  dplyr::filter(!is.na(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit_450k)) |> 
+  dplyr::filter(!is.na(survival)) |> 
+  dplyr::filter(!is.na(survival_event)) |> 
+  dplyr::arrange(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit_450k) |> 
+  dplyr::mutate(i = 1:dplyr::n()) |> 
+  dplyr::mutate(tumor_grade = factor(tumor_grade, levels = c("G2", "G3")))
+
+
+tmp.stats.tcga_lgg.450k.surv_fit <- survival::Surv(tmp.stats.tcga_lgg.450k$survival,
+                                                   tmp.stats.tcga_lgg.450k$survival_event)
+
+
+tmp.df <- data.frame(
+  k = 1:nrow(tmp.stats.tcga_lgg.450k),
+  
+  survdiff = rep(1.0, nrow(tmp.stats.tcga_lgg.450k)),
+
+  name = rep("patient", nrow(tmp.stats.tcga_lgg.450k)),
+  
+  censored = tmp.stats.tcga_lgg.450k$survival_event == 0
+)
+
+
+
+tmp.df <- rbind(tmp.df, 
+
+data.frame(
+  k=sum(tmp.stats.tcga_lgg.450k$tumor_grade == "G2") + 0.5,
+  
+  survdiff = survival::survdiff(tmp.stats.tcga_lgg.450k.surv_fit ~ tumor_grade, data=tmp.stats.tcga_lgg.450k) |> purrr::pluck('pvalue'),
+  
+  name = "WHO Grade",
+  censored=F
+))
+
+
+
+
+for(split in ((2:nrow(tmp.stats.tcga_lgg.450k)) - 0.5)) {
+  
+  tmp.stats.tcga_lgg.450k <- tmp.stats.tcga_lgg.450k |> 
+    dplyr::mutate(cgc = factor(ifelse(i < split, "CGC low", "CGC high"), levels=c("CGC low", "CGC high")))
+  
+  tmp <- survival::survdiff(tmp.stats.tcga_lgg.450k.surv_fit ~ cgc, data=tmp.stats.tcga_lgg.450k)
+
+  
+  df <- data.frame(
+    k = split ,
+    survdiff = tmp |> purrr::pluck('pvalue'),
+    name="CGC",
+    censored = F
+  )
+  
+  
+  tmp.df <- rbind(df, tmp.df)
+  
+  rm(df, tmp)
+}
+
+
+tmp.df <- tmp.df |> 
+  dplyr::mutate(col = dplyr::case_when(
+    name == "patient" & censored == T ~ "patient censored",
+    name == "patient" & censored == F ~ "patient uncensored",
+    T ~ name
+  ))
+
+
+ggplot(tmp.df, aes(x=k, y=-log10(survdiff), pch=censored, col=col)) + 
+  geom_hline(yintercept=-log10(0.0000000001), col="gray80", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
+  geom_line(data=subset(tmp.df, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
+  geom_point(data=subset(tmp.df, name == "patient"),y = -0.15, size=theme_nature_size/3) + 
+  geom_point(data=subset(tmp.df, name != "patient"),size=theme_nature_size/3) + 
+  theme_nature + 
+  scale_y_continuous(breaks = -log10(c(0, 0.01, 0.05, 1)),
+                     labels =        c(0, 0.01, 0.05, 1)) +
+  scale_shape_manual(values=c(20, 3)) +
+  scale_color_manual(values=c(`patient uncensored` = 'black',
+                              `patient censored` = 'gray50',
+                              `CGC` = 'black',
+                              `WHO Grade` = 'red')) +
+  labs(y = "p-value logrank test", x=paste0("# TCGA-LGG oligo samples (of ",nrow(tmp.stats.tcga_lgg.450k),") stratified low/high CGC"))
+
+
+ggsave("output/figures/analysis_survival_TCGA-LGG_450k.pdf", width = 11 * 1/3 * 0.85 * 1.5, height = 2.36)
 
 
 
@@ -1051,119 +1143,125 @@ ggsave("output/figures/analysis_survival__Ki67_sweep.pdf", width = 11 * 1/3 * 0.
 
 
 
-# mair berghoff ----
+# validation / mair berghoff ----
 
 
-tmp.mair_berghoff.CGC <- data.frame()
-tmp.stats.mair_berghoff <- stats.mair_berghoff |> 
+
+validation.primary <- glass_od.metadata.array_samples |> 
+  filter_OD_validation_idats(CONST_N_OD_VALIDATION_INCLUDED_SAMPLES) |> 
+  dplyr::filter(!is.na(time_between_resection_and_last_event)) |> 
+  
+  
+  dplyr::mutate(resection_number = ifelse(resection_number == 0, 4, resection_number)) |> # three recurrences of which not resection nr is clear, but only 1 is included
+
+  #dplyr::filter(resection_number > 1) |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::filter(resection_number == max(resection_number)) |> 
+  dplyr::ungroup() |> 
+  
+  
+  assertr::verify(!duplicated(patient_id)) |> 
   dplyr::arrange(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
-  dplyr::mutate(i = 1:dplyr::n())
+  dplyr::mutate(i = 1:dplyr::n()) |>
+  dplyr::mutate(resection_tumor_grade = paste0("G", resection_tumor_grade)) |> 
+  dplyr::mutate(resection_tumor_grade =  factor(resection_tumor_grade, levels=c("G2", "G3")))
 
-for(split in ((2:nrow(stats.mair_berghoff))-0.5) ) {
-  tmp.stats.mair_berghoff <- tmp.stats.mair_berghoff |> 
-    dplyr::mutate(cgc = ifelse(i < split, "CGC low", "CGC high"))
+
+validation.primary.grade <- validation.primary |> 
+  dplyr::filter(!is.na(resection_tumor_grade))
+
+
+validation.primary |>  dplyr::select(patient_id, resection_id, resection_number , resection_tumor_grade) |>  #, time_between_resection_and_last_event, patient_last_follow_up_event)
+  as.data.frame()
+
+
+
+
+validation.primary.surv_fit <- survival::Surv(validation.primary$time_between_resection_and_last_event,
+                                              validation.primary$patient_last_follow_up_event)
+
+validation.primary.grade.surv_fit <- survival::Surv(validation.primary.grade$time_between_resection_and_last_event,
+                                              validation.primary.grade$patient_last_follow_up_event)
+
+
+tmp.df <- data.frame(
+  k = 1:nrow(validation.primary),
+  survdiff = rep(1.0, nrow(validation.primary)),
+  name = rep("patient", nrow(validation.primary)),
+  censored = validation.primary$patient_last_follow_up_event == 0
+)
+
+
+
+tmp.df <- rbind(tmp.df, 
+                
+                data.frame(
+                  k=(sum(validation.primary.grade$resection_tumor_grade == "G2") + 0.5) * (nrow(validation.primary)/nrow(validation.primary.grade)),
+                  
+                  survdiff = survival::survdiff(validation.primary.grade.surv_fit ~ resection_tumor_grade, data=validation.primary.grade) |> purrr::pluck('pvalue'),
+                  name = "WHO Grade",
+                  censored=F
+                )
+                
+                )
+
+
+
+
+for(split in ((2:nrow(validation.primary)) - 0.5)) {
   
-  tmp.mair_berghoff.CGC <- rbind(tmp.mair_berghoff.CGC, data.frame(
-    k = split - 0.5,
-    pval = survival::survdiff(survival::Surv(time_between_resection_and_last_event, patient_last_follow_up_event) ~ cgc, tmp.stats.mair_berghoff) |> purrr::pluck('pvalue'),
-    name="CGC"
-  ))
-}
-rm(tmp.stats.mair_berghoff)
-
-
-
-tmp.mair_berghoff.GMS <- data.frame()
-tmp.stats.mair_berghoff <- stats.mair_berghoff |> 
-  dplyr::arrange(-array_GLASS_NL_g2_g3_sig) |> 
-  dplyr::mutate(i = 1:dplyr::n())
-
-for(split in ((2:nrow(stats.mair_berghoff))-0.5) ) {
-  tmp.stats.mair_berghoff <- tmp.stats.mair_berghoff |> 
-    dplyr::mutate(gms = ifelse(i < split, "GMS lg", "GMS hg"))
+  validation.primary <- validation.primary |> 
+    dplyr::mutate(cgc = factor(ifelse(i < split, "CGC low", "CGC high"), levels=c("CGC low", "CGC high")))
   
-  tmp.mair_berghoff.GMS <- rbind(tmp.mair_berghoff.GMS, data.frame(
-    k = split - 0.5,
-    pval = survival::survdiff(survival::Surv(time_between_resection_and_last_event, patient_last_follow_up_event) ~ gms, tmp.stats.mair_berghoff) |> purrr::pluck('pvalue'),
-    name="GMS"
-  ))
-}
-rm(tmp.stats.mair_berghoff)
-
-
-
-
-tmp.mair_berghoff.PC2 <- data.frame()
-tmp.stats.mair_berghoff <- stats.mair_berghoff |> 
-  dplyr::arrange(-array_PC2) |> 
-  dplyr::mutate(i = 1:dplyr::n())
-
-for(split in ((2:nrow(stats.mair_berghoff))-0.5) ) {
-  tmp.stats.mair_berghoff <- tmp.stats.mair_berghoff |> 
-    dplyr::mutate(pc2 = ifelse(i < split, "PC2 lg", "PC2 hg"))
+  tmp <- survival::survdiff(validation.primary.surv_fit ~ cgc, data=validation.primary)
   
-  tmp.mair_berghoff.PC2 <- rbind(tmp.mair_berghoff.PC2, data.frame(
-    k = split - 0.5,
-    pval = survival::survdiff(survival::Surv(time_between_resection_and_last_event, patient_last_follow_up_event) ~ pc2, tmp.stats.mair_berghoff) |> purrr::pluck('pvalue'),
-    name="PC2"
-  ))
-}
-rm(tmp.stats.mair_berghoff)
-
-
-
-
-tmp.mair_berghoff.PC3 <- data.frame()
-tmp.stats.mair_berghoff <- stats.mair_berghoff |> 
-  dplyr::arrange(-array_PC3) |> 
-  dplyr::mutate(i = 1:dplyr::n())
-
-for(split in ((2:nrow(stats.mair_berghoff))-0.5) ) {
-  tmp.stats.mair_berghoff <- tmp.stats.mair_berghoff |> 
-    dplyr::mutate(pc3 = ifelse(i < split, "PC3 lg", "PC3 hg"))
   
-  tmp.mair_berghoff.PC3 <- rbind(tmp.mair_berghoff.PC3, data.frame(
-    k = split - 0.5,
-    pval = survival::survdiff(survival::Surv(time_between_resection_and_last_event, patient_last_follow_up_event) ~ pc3, tmp.stats.mair_berghoff) |> purrr::pluck('pvalue'),
-    name="PC3"
-  ))
+  df <- data.frame(
+    k = split ,
+    survdiff = tmp |> purrr::pluck('pvalue'),
+    name="CGC",
+    censored = F
+  )
+  
+  
+  tmp.df <- rbind(df, tmp.df)
+  
+  rm(df, tmp)
 }
-rm(tmp.stats.mair_berghoff)
+
+
+tmp.df <- tmp.df |> 
+  dplyr::mutate(col = dplyr::case_when(
+    name == "patient" & censored == T ~ "patient censored",
+    name == "patient" & censored == F ~ "patient uncensored",
+    T ~ name
+  ))
 
 
 
 
-tmp.stats.mair_berghoff <- stats.mair_berghoff |> 
-  dplyr::mutate(resection_tumor_grade = ifelse(resection_tumor_grade == 2, "G2", "G3"))
-
-
-
-plt.mair_berghoff <- rbind(tmp.mair_berghoff.CGC,
-                           tmp.mair_berghoff.GMS,
-                           #tmp.mair_berghoff.PC2,
-                           #tmp.mair_berghoff.PC3,
-                           
-                           data.frame(
-                             k=sum(tmp.stats.mair_berghoff$resection_tumor_grade == "G2"),
-                             pval = survival::survdiff(survival::Surv(time_between_resection_and_last_event, patient_last_follow_up_event) ~ resection_tumor_grade, tmp.stats.mair_berghoff) |> purrr::pluck('pvalue'),
-                             name = "WHO Grade"))
-
-rm(tmp.stats.mair_berghoff, tmp.mair_berghoff.CGC,tmp.mair_berghoff.GMS)
-
-
-
-ggplot(plt.mair_berghoff, aes(x=k, y=-log10(pval), col=name, group=name)) +
-  geom_line(lwd=theme_nature_lwd) +
-  geom_point() + 
+ggplot(tmp.df, aes(x=k, y=-log10(survdiff), pch=censored, col=col)) + 
+  geom_hline(yintercept=-log10(0.0000000001), col="gray80", lty=2, lwd=theme_nature_lwd) +
   geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(0.05), col="gray60", lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(0.5), col="gray60", lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(1), col="gray60", lwd=theme_nature_lwd) +
-  scale_y_continuous(breaks = -log10(c(0,0.01,0.05,0.5,1)),
-                     labels =        c(0,0.01,0.05,0.5,1)) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
+  geom_line(data=subset(tmp.df, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
+  geom_point(data=subset(tmp.df, name == "patient"),y = -0.15, size=theme_nature_size/3) + 
+  geom_point(data=subset(tmp.df, name != "patient"),size=theme_nature_size/3) + 
   theme_nature + 
-  labs(y = "p-value logrank test", x=paste0("# mair_berghoff samples (of ",nrow(stats.mair_berghoff),") stratified low grade"))
+  scale_y_continuous(breaks = -log10(c(0, 0.01, 0.05, 1)),
+                     labels =        c(0, 0.01, 0.05, 1)) +
+  scale_shape_manual(values=c(20, 3)) +
+  scale_color_manual(values=c(`patient uncensored` = 'black',
+                              `patient censored` = 'gray50',
+                              `CGC` = 'black',
+                              `WHO Grade` = 'red')) +
+  labs(y = "p-value logrank test", x=paste0("# validation set oligo samples (of ",nrow(validation.primary),") stratified low/high CGC"))
 
+
+
+ggsave("output/figures/analysis_survival_validation_sweep.pdf", width = 11 * 1/3 * 0.85 * 1.5, height = 2.36)
 
 
 
@@ -1178,10 +1276,7 @@ p2 = survminer::ggsurvplot(s2, data = stats.last_rec, pval = TRUE, risk.table=T,
 p1 = survminer::ggsurvplot(s1, data = stats.last_rec, pval = TRUE, risk.table=T, tables.y.text = FALSE, xlab="Time (days) last recurrence -> death", newpage = FALSE)
 
 
-grid.draw.ggsurvplot <- function(x){
-  survminer:::print.ggsurvplot(x, newpage = FALSE)
-}
-ggsave("output/figures/analysis_survival_gms_at_recurrence.pdf", width=8.3 / 2 * 0.8,height=2.6, scale=2, plot=p1)
+
 
 
 # G-SAM ----
