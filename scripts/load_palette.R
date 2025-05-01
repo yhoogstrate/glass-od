@@ -138,3 +138,4 @@ palette_yes_no_4 <- c('No' = '#009E74', 'Yes' = '#CB75A4')
 palette_infinium_signals <- c('methylated'='darkgreen', 'unmethylated'= mixcol('red', 'black', 0.10))
 
 
+palette_repel_text_col <- "#444444"

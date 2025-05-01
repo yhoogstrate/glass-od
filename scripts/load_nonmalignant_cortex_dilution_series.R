@@ -316,6 +316,7 @@ tmp <- readLines("scripts/analysis_mix_idats.sh") |>
   dplyr::rename(V1 = 1) |> 
   dplyr::filter(!grepl("^#", V1)) |> 
   dplyr::filter(grepl("idat-tools[ ]mix", V1)) |> 
+  dplyr::mutate(array_fraction_normal_brain_est = as.numeric(gsub("^.+cache/mixed-idats/......(..).+$","\\1", V1))) |> 
   dplyr::mutate(array_fraction_normal_brain_cli = as.numeric(gsub("^.+ -r ([0-9\\.]+) .+$","\\1",V1)) * 100.0) |> 
   dplyr::mutate(sentrix_id_tumor = gsub('^.+/([0-9]+_[RC0-9]+)_.+.+/([A-Z0-9]+_[0-9]+_[RC0-9]+)_.+$','\\1',V1)) |> 
   dplyr::mutate(sentrix_id_control = gsub('^.+/([0-9]+_[RC0-9]+)_.+.+/([A-Z0-9]+_[0-9]+_[RC0-9]+)_.+$','\\2',V1)) |> 
@@ -395,9 +396,9 @@ tmp |>
   head(n=5)
 
 
-
-cortex_dilution.metadata.array_samples |>
-  dplyr::select(array_tumor_id, array_control_id, array_fraction_normal_brain, array_fraction_normal_brain_cli) |> 
-  View()
-
+# 
+# cortex_dilution.metadata.array_samples |>
+#   dplyr::select(array_tumor_id, array_control_id, array_fraction_normal_brain, array_fraction_normal_brain_cli) |> 
+#   View()
+# 
 

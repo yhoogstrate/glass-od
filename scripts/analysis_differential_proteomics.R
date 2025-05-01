@@ -18,6 +18,7 @@ source('scripts/load_constants.R')
 source('scripts/load_functions.R')
 source('scripts/load_palette.R')
 source('scripts/load_themes.R')
+source('scripts/load_gene_annotations.R')
 
 
 if(!exists('glass_od.metadata.proteomics')) {
@@ -180,7 +181,8 @@ cor(exp(ki67.joined$MKI67),
 ## WHO Grade ----
 ### regular ----
 
-View(glass_od.metadata.proteomics)
+#View(glass_od.metadata.proteomics)
+
 
 metadata <- glass_od.metadata.proteomics |> 
   dplyr::filter(is.na(proteomics_notes) | (proteomics_notes == "has replicate" & grepl("use this one first", proteomics_notes_zurich))) |> 
@@ -811,10 +813,76 @@ plt |> dplyr::filter(significant) |> dplyr::arrange(adj.P.Val_cgc.cor) |>  dplyr
 
 
 
+### HOX + polycomb ----
 
 
-#### PCNA / Ki67 (MKI67) ----
 
+data.proteomics.glass_od |>
+  tibble::rownames_to_column('protein_id') |> 
+  dplyr::mutate(label = protein_id %in% c(genes_homeobox_nonhox,
+                                          genes_polycomb_eed_homeobox,
+                                          genes_polycomb_h3k27_homeobox,
+                                          genes_polycomb_prc2_homeobox,
+                                          genes_polycomb_suz12_homeobox
+   )) |> 
+  dplyr::select(protein_id, label) |>
+  #dplyr::filter(label) |> 
+  dplyr::pull(label) |> 
+  table()
+  
+
+
+lfc_cut <- log2(1.25)
+
+plt <- plt |>
+  dplyr::filter(!is.na(adj.P.Val_cgc)) |> 
+  dplyr::mutate(significant = adj.P.Val_cgc < 0.01 & abs(logFC_cgc) > lfc_cut) |> 
+  dplyr::mutate(label = protein_id %in% c(genes_homeobox_nonhox,
+                                          genes_polycomb_eed_homeobox,
+                                          genes_polycomb_h3k27_homeobox,
+                                          genes_polycomb_prc2_homeobox,
+                                          genes_polycomb_suz12_homeobox
+                                          ))
+#plt |> dplyr::filter(protein_id %in% genes_polycomb_eed_homeobox) |> dplyr::pull(protein_id)
+#plt |> dplyr::filter(protein_id %in% genes_polycomb_eed) |> dplyr::pull(protein_id)
+#plt |> dplyr::filter(protein_id %in% genes_polycomb_eed) |> dplyr::pull(protein_id)
+
+
+
+
+
+
+ggplot(plt, aes(x= `logFC_cgc`, y= -log(`adj.P.Val_cgc`), col=label, label=protein_id)) +
+  
+  geom_point(data=subset(plt, label==F), size=theme_cellpress_lwd/3) +
+  geom_point(data=subset(plt, label==T), size=theme_cellpress_lwd/3) +
+  
+  geom_hline(yintercept=0,          col="black", lwd=theme_nature_lwd, lty=1) +
+  geom_hline(yintercept=-log(0.01), col="black", lwd=theme_nature_lwd, lty=2) +
+  #geom_hline(yintercept=-log(0.05), col="gray", lwd=theme_nature_lwd) +
+  
+  geom_vline(xintercept=0,        col="black", lwd=theme_nature_lwd, lty=2) +
+  geom_vline(xintercept=-lfc_cut, col="black", lwd=theme_nature_lwd, lty=2) +
+  geom_vline(xintercept= lfc_cut, col="black", lwd=theme_nature_lwd, lty=2) +
+  
+  # ggrepel::geom_text_repel(data=subset(plt, label == T),
+  #                          max.overlaps = Inf, 
+  #                          box.padding = 0.25,
+  #                          nudge_x = 0.05,
+  #                          nudge_y = 3.5,
+  #                          size=theme_nature_size, segment.size=theme_nature_lwd, family = theme_nature_font_family
+  #                          ) + 
+  
+  scale_color_manual(values=c(`TRUE`='red',`FALSE`='darkgray')) +
+  labs(subtitle=paste0(l, collapse = ", ")) +
+  theme_nature
+
+ggsave("output/figures/analysis_differential_proteomics__homeobox_tfs.pdf", width = 8.5 * 0.975 * 1/3, height=2)
+
+
+
+
+### PCNA / Ki67 (MKI67) ----
 
 
 

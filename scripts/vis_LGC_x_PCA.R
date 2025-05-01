@@ -1556,6 +1556,25 @@ glm(as.factor(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) ~ patient + heidelberg_A_I
 
 
 
+plt <- stats |> 
+  dplyr::mutate(label = ifelse(heidelberg_A_IDH_HG_OLIGOSARC, "A_IDH_HG /\nOLIGOSARC_IDH", "other")) |> 
+  dplyr::mutate(label = factor(label, levels=c("other", "A_IDH_HG /\nOLIGOSARC_IDH")))
+
+ggplot(plt, aes(x = label, y=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, col=array_mnp_predictBrain_v12.8_cal_class, group=label)) +
+  ggbeeswarm::geom_quasirandom(size = theme_nature_size/3, width=0.3) +
+  scale_color_manual(values = c(palette_mnp_12.8_6, `GBM_RTK1`="gray40", `GBM_MES_TYP` = "gray40")) +
+  labs(x = NULL, y="CGC") +
+  #annotate("text", family = theme_nature_font_family, 
+  #         size=theme_nature_size,
+  #         x=1.9, y=-10, 
+  #         label=paste0("p < 2e-16 ***\nlm; pat. corrected")) +
+  ggpubr::stat_compare_means(method = "t.test", show_guide  = FALSE, size=theme_cellpress_size, family=theme_nature_font_family) +
+  theme_nature
+
+ggsave("output/figures/vis_LGC_x_PCA__lm_OLIGOSARC_A_IDH_HG__Other.pdf", width=1.5, height=3 * 0.9305)
+
+
+
 ### logistic AcCGAP x resection ----
 
 

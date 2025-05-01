@@ -50,6 +50,13 @@ data.glass_od <- data.mvalues.hq_samples |>
 
 
 
+metadata.tcga_lgg <- tcga_lgg_od.metadata.array_samples
+data.tcga_lgg <- readRDS(file=paste0("cache/mvalues.tcga-lgg.Rds")) |> 
+  tibble::column_to_rownames('probe_id')
+
+
+
+
 metadata.od_validation <- glass_od.metadata.array_samples |> 
   filter_OD_validation_idats(CONST_N_OD_VALIDATION_INCLUDED_SAMPLES)
 
@@ -227,6 +234,8 @@ lm.full.probe_based <- glmnet::glmnet(data.glass_nl |>
                                     lambda = cv_model_probe_based$lambda.min)
 
 
+
+
 ### export final AC-trained classifier ----
 
 
@@ -237,6 +246,37 @@ saveRDS(lm.full.probe_based, file="cache/LGC_predictor_probe_based_lm.Rds")
 
 
 # probes <- names(lm.full.probe_based$beta[which(lm.full.probe_based$beta != 0),1])
+
+
+## build model on full data [450k probes] ----
+
+
+tmp <- data.glass_nl |> 
+  dplyr::select(metadata.glass_nl$array_sentrix_id) |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% rownames(data.tcga_lgg)) |> 
+  tibble::column_to_rownames('probe_id')
+
+
+cv_model_probe_based_450k <- glmnet::cv.glmnet(
+  tmp |> t(),
+  metadata.glass_nl$array_A_IDH_HG__A_IDH_LG_lr_v12.8, alpha = 1, relax=F)
+
+
+lm.full.probe_based.450k <- glmnet::glmnet(tmp |> t(),
+                                           metadata.glass_nl$array_A_IDH_HG__A_IDH_LG_lr_v12.8,
+                                           alpha = 1,
+                                           lambda = cv_model_probe_based_450k$lambda.min)
+
+
+
+saveRDS(rownames(tmp), file="cache/LGC_predictor_probe_based_ordered_probes_450k.Rds")
+saveRDS(lm.full.probe_based.450k, file="cache/LGC_predictor_probe_based_lm_450k.Rds")
+
+
+rm(tmp)
+
+
 
 
 # model 2: on PCA ----
@@ -410,5 +450,32 @@ rm(p, data, data.1, data.2, data.3, data.4)
 
 
 
+# apply 450k model to TCGA-LGG oligo samples ----
 
 
+classifier <- readRDS("cache/LGC_predictor_probe_based_lm_450k.Rds")
+
+data <- data.tcga_lgg |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::filter(probe_id %in% rownames(classifier$beta)) |> 
+  tibble::column_to_rownames('probe_id') |> 
+  t() |>
+  as.data.frame() |> 
+  dplyr::select(readRDS("cache/LGC_predictor_probe_based_ordered_probes_450k.Rds")) |> 
+  as.matrix()
+
+
+p <- predict(classifier, data) |> 
+  as.data.frame() |> 
+  dplyr::rename(`array_A_IDH_HG__A_IDH_LG_lr__lasso_fit_450k` = 1) |> 
+  tibble::rownames_to_column('array_sentrix_id')
+
+
+saveRDS(p, file="cache/analysis_A_IDH_HG__A_IDH_LG_lr__lasso_fit__TCGA-LGG_450k.Rds")
+
+
+rm(classifier, data, p)
+rm(cv_model_probe_based_450k)
+rm(lm.full.probe_based.450k)
+rm(metadata.tcga_lgg)
+rm(data.tcga_lgg)
