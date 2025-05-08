@@ -6,6 +6,7 @@
 
 source('scripts/load_functions.R')
 source('scripts/load_themes.R')
+source('scripts/load_palette.R')
 
 
 if(!exists('glass_od.metadata.array_samples')) {
@@ -71,44 +72,34 @@ ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_training.pdf"
 #"array_A_IDH_HG__A_IDH_LG_lr_v12.8"   
 #"array_A_IDH_HG__A_IDH_LG_lr__lasso_fit"
 
+
 plt <- glass_nl.metadata.array_samples |>
-  filter_GLASS_NL_idats(218) |>
-  dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = ifelse(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH","A_IDH_LG","A_IDH_HG") == F, "other", array_mnp_predictBrain_v12.8_cal_class)) |> 
-  dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = ifelse(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH","A_IDH_LG"), "A_IDH [_LG]", array_mnp_predictBrain_v12.8_cal_class))
+  filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
+  dplyr::mutate(col = dplyr::case_when(
+    array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_LG", "A_IDH_HG") ~ array_mnp_predictBrain_v12.8_cal_class,
+    T ~ "other"
+  ))
 
 
 ggplot(plt, aes(
   y=`array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV_v12.8`,
   x=array_A_IDH_HG__A_IDH_LG_lr_v12.8,
-  col=array_mnp_predictBrain_v12.8_cal_class,
-  fill=array_mnp_predictBrain_v12.8_cal_class
+  col=col,
   #label=sentrix_id
 )) +
-  geom_point(pch=21,cex=0.4) +
+  geom_point(size=theme_nature_size/3) +
   #ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", fill="1", size=theme_cellpress_size) +
-  labs(subtitle = "Linear predictor LGC [10x CV] GLASS-NL", x= "observed", y="predicted [10x CV]", col="", fill="") +
-  scale_color_manual(values = c(
-    'A_IDH [_LG]' = 'lightblue',
-    'A_IDH_HG' =  alpha('darkblue',0.6),
-    'other' = 'orange'
-  )) +
-  scale_fill_manual(values = c(
-    'A_IDH [_LG]' = 'lightblue',
-    'A_IDH_HG' = alpha('darkblue',0.6),
-    'other' = 'orange'
-  )  ) +
-  theme_cellpress
-
-
-out.probe_based <- out.probe_based |> 
-  dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = ifelse(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH","A_IDH_LG","A_IDH_HG") == F, "other", array_mnp_predictBrain_v12.8_cal_class))
-
-
-#  scale_color_manual(values=palette_mnp_12.8_AC_3) +
+  labs(subtitle = "CGC[phi] in GLASS-NL",
+       x= "Actual CGC",
+       y="CGC[Phi] (predicted)", col="", fill="") +
+  scale_color_manual(values = c(`A_IDH_LG`='lightblue',`A_IDH_HG`='darkblue', `other`=mixcol("#444444","red",0.75))) +
+  theme_nature
 
 
 
-ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_scatter_observed_predicted.pdf", width=(8.5*0.975)/3, height=2.65)
+ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_scatter_observed_predicted.pdf",
+       width=2.3725, height=2.65)
+
 
 
 
@@ -158,9 +149,12 @@ plt <- rbind(
 
 
 ggplot(plt, aes(x=class, y=AcCGAP_score, fill=class, col=class)) +
-  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/3, show_guide = FALSE) +
-  ggpubr::stat_compare_means(comparisons=list(c('GLASS-NL:\nLASSO 10xCV','GLASS-OD:\nLASSO full')),method="wilcox.test",
-    label.x.npc=theme_nature_lwd, size=theme_cellpress_size, show_guide = FALSE) +
+  ggbeeswarm::geom_quasirandom(size=theme_nature_size/3, show.legend = FALSE) +
+  ggpubr::stat_compare_means(comparisons=list(c('GLASS-NL:\nLASSO 10xCV',
+                                                'GLASS-OD:\nLASSO full')), method="wilcox.test",
+    label.x.npc=theme_nature_lwd, size=theme_nature_size,
+    family=theme_nature_font_family, 
+    show_guide = FALSE) +
   labs(col="", fill="",x = "", y="AcCGAP score", subtitle=format_subtitle("CGC LASSO"),caption=paste0(
     "GLASS-NL: n=",CONST_N_GLASS_NL_INCLUDED_SAMPLES, "  --  GLASS-OD: n=",CONST_N_GLASS_OD_INCLUDED_SAMPLES, "  --  p: wilcox test"
   )) +
@@ -170,6 +164,8 @@ ggplot(plt, aes(x=class, y=AcCGAP_score, fill=class, col=class)) +
   theme_nature
 
 
-ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_AC_OLI_wilcox.pdf", width=(8.5*0.95)/3, height=2.65)
+ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_AC_OLI_wilcox.pdf",
+       width=(8.5*0.95)/3, 
+       height=2.69)
 
 

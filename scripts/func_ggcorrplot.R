@@ -4,15 +4,17 @@
 
 
 
-ggcorrplot <- function(c,abs=F, reorder=T) {
+ggcorrplot <- function(c,abs=F, reorder=T, cmethod="spearman") {
   if(abs) {
-    d <- abs(cor(c, method="spearman")) 
+    d <- abs(cor(c, method=cmethod)) 
     h <- stats::hclust(stats::as.dist(1 - d), method = "ward.D2")
-    d <- cor(c, method="spearman")
+    d <- cor(c, method=cmethod)
   } else {
-    d <- cor(c, method="spearman")
+    d <- cor(c, method=cmethod)
     h <- stats::hclust(stats::as.dist(1 - d), method = "ward.D2")
   }
+  
+  print(d)
   
   if(reorder) {
     o <- h$labels[h$order] |>
@@ -53,8 +55,8 @@ ggcorrplot <- function(c,abs=F, reorder=T) {
     col = .data$value,
     label = .data$x
   )) +
-    ggplot2::geom_tile(col = "gray", fill = "white", lwd = theme_nature_lwd/2) +
-    ggplot2::geom_rect(data=head(plt.gg, n=1), aes(xmin=0.5, xmax=base::length(o) + 0.5, ymin=0.5, ymax=base::length(o) + 0.5), col = "gray", fill = NA, lwd = theme_nature_lwd) +
+    ggplot2::geom_tile(col = "gray", fill = "white", lwd = theme_nature_lwd) +
+    ggplot2::geom_rect(data=head(plt.gg, n=1), aes(xmin=0.5, xmax=base::length(o) + 0.5, ymin=0.5, ymax=base::length(o) + 0.5), col = "gray", fill = NA, lwd = theme_nature_lwd * 2) +
     ggplot2::scale_fill_gradientn(colours = col2(200), na.value = "grey50", limits = c(-1, 1), guide = "colourbar") + # guide = "colourbar",
     ggplot2::scale_color_gradientn(colours = col2(200), na.value = "grey50", limits = c(-1, 1), guide = "none") +
     recursiveCorPlot::geom_circle(radius.fixed = T) + # from THIS repo

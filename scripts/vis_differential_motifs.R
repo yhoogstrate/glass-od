@@ -470,28 +470,49 @@ rm(tmp)
 
 #dev.off()
 
-plt <- plt.motifs |> 
-  dplyr::select(-c(sequence_5p, sequence_3p, palindromic,
-                   GLASS_OD__DMP__g2_g3__median, 
-                   GLASS_OD__DMP__primary_recurrence__median, GLASS_OD__DMP__primary_recurrence__mean,
-                   TET1_5hmC_Adam_NatCom_2022, TET2_5hmC_Adam_NatCom_2022
-                   )) |> 
-  dplyr::mutate(`-1 * TET3_Ravichandran_SciAdv_2022` = -1 * TET3_Ravichandran_SciAdv_2022, TET3_Ravichandran_SciAdv_2022=NULL) |> 
-  dplyr::mutate(`-1 * GLASS_OD__DMP__g2_g3__mean` = -1 * GLASS_OD__DMP__g2_g3__mean, GLASS_OD__DMP__g2_g3__mean = NULL) |> 
-  tibble::column_to_rownames('oligo_sequence') |> 
-  cor(method="pearson")
+plt <- plt.motifs.unstranded |> 
+  dplyr::select(
+    oligo_sequence,
+    
+    `DNMT1_Adam_NatCom_2020_unstranded`,
+    `DNMT1_Adam_NAR_2023_unstranded`,
+    `DNMT3A_Gao_NatCom_2020_unstranded`,
+    `DNMT3B_Gao_NatCom_2020_unstranded`,
+    
+    DMP__g2_g3__pp_nc_PC1__t__mean,
+    
+    TET1_5mC_Adam_NatCom_2022_unstranded,
+    TET2_5mC_Adam_NatCom_2022_unstranded,
+    TET3_Ravichandran_SciAdv_2022_unstranded
+    
+  ) |> 
+  dplyr::mutate(`-1 * TET3_Ravichandran_SciAdv_2022_unstranded` = -1 * TET3_Ravichandran_SciAdv_2022_unstranded, TET3_Ravichandran_SciAdv_2022_unstranded =NULL) |> 
+  dplyr::mutate(`-1 * DMP__g2_g3__pp_nc_PC1__t__mean` = -1 * DMP__g2_g3__pp_nc_PC1__t__mean, DMP__g2_g3__pp_nc_PC1__t__mean = NULL) |> 
+  tibble::column_to_rownames('oligo_sequence') 
+
+colnames(plt) <- gsub("_unstranded","",colnames(plt))
+rownames(plt) <- gsub("_unstranded","",rownames(plt))
 
 colnames(plt) <- gsub("_"," ",colnames(plt))
 rownames(plt) <- gsub("_"," ",rownames(plt))
 
-pdf("output/figures/vis_differential__motif_tscores_x_enzyme_kinetics__corrplot.pdf", width=4,height=4)
-
-corrplot::corrplot(plt, order="hclust", tl.cex=0.65 * (7/8),
-                   cl.cex=0.65 * (7/8),
-                   bg=NA,  tl.col = "black")
 
 
-dev.off()
+
+ggcorrplot(plt, abs=T, cmethod="pearson", reorder=F)
+
+ggsave("output/figures/vis_differential__motif_tscores_x_enzyme_kinetics__corrplot.pdf", width=2.8,height=2.5)
+
+
+
+# pdf("output/figures/vis_differential__motif_tscores_x_enzyme_kinetics__corrplot.pdf", width=4,height=4)
+# 
+# corrplot::corrplot(plt, order="hclust", tl.cex=0.65 * (7/8),
+#                    cl.cex=0.65 * (7/8),
+#                    bg=NA,  tl.col = "black")
+# 
+# 
+# dev.off()
 
 
 

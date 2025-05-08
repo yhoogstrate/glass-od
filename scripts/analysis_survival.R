@@ -103,6 +103,120 @@ glass_od.stats.last_rec <- glass_od.metadata.array_samples |>
 
 
 
+# KM's fig 2 ----
+## prim ----
+
+
+tmp.stats.primary <- glass_od.stats.primary |> 
+  dplyr::arrange(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(i = 1:dplyr::n()) |> 
+  dplyr::mutate(CGC_cut = cut(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, 2)) |> 
+  dplyr::mutate(CGC = ifelse(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit < median(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit), "below median", "above median"))
+
+
+surv_object.primary <- survival::Surv(time =  tmp.stats.primary$time_between_resection_and_last_event,
+                                      event = tmp.stats.primary$patient_last_follow_up_event)
+
+
+fit1.primary <- survival::survfit(surv_object.primary ~  CGC_cut , data = tmp.stats.primary)
+fit2.primary <- survival::survfit(surv_object.primary ~  CGC , data = tmp.stats.primary)
+#print(survminer::surv_pvalue(fit1)$pval)
+
+
+
+
+p1.primary <- survminer::ggsurvplot(fit2.primary, data = tmp.stats.primary, 
+                           palette = c(
+                             'darkblue', 'darkgreen'
+                             #mixcol( 'lightblue', 'lightgreen'),
+                             #mixcol( 'darkblue', 'darkgreen')
+                           ),
+                           tables.theme = theme_nature, 
+                           ggtheme = theme_nature,
+                           fontsize = theme_nature_size,
+                           censor.size = theme_nature_size * 0.65,
+                           pval.size = theme_nature_size,
+                           size = theme_nature_lwd,
+                           font.family = theme_nature_font_family,
+                           pval=T
+)
+
+p2.primary <- survminer::ggsurvtable(fit2.primary, data = tmp.stats.primary, 
+                            tables.theme = theme_nature, 
+                            ggtheme = theme_nature,
+                            fontsize = theme_nature_size,
+                            font.family = theme_nature_font_family
+)
+
+
+p1.primary$plot / p2.primary$risk.table +   plot_layout(heights = c(4,1))
+
+
+ggsave("output/figures/analysis_survival__KM_median_split_primary.pdf", width=4, height = 2.5)
+
+
+
+
+
+
+## rec ----
+
+
+
+tmp.stats.last_rec <- glass_od.stats.last_rec |> 
+  dplyr::arrange(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(i = 1:dplyr::n()) |> 
+  dplyr::mutate(CGC_cut = cut(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, 2)) |> 
+  dplyr::mutate(CGC = ifelse(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit < median(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit), "below median", "above median"))
+
+
+surv_object.last_rec <- survival::Surv(time =  tmp.stats.last_rec$time_between_resection_and_last_event,
+                              event = tmp.stats.last_rec$patient_last_follow_up_event)
+
+
+fit1.last_rec <- survival::survfit(surv_object.last_rec ~  CGC_cut , data = tmp.stats.last_rec)
+fit2.last_rec <- survival::survfit(surv_object.last_rec ~  CGC , data = tmp.stats.last_rec)
+#print(survminer::surv_pvalue(fit1)$pval)
+
+
+
+
+p1.last_rec <- survminer::ggsurvplot(fit2.last_rec, data = tmp.stats.last_rec, 
+                           palette = c(
+                             'darkblue', 'darkgreen'
+                             #mixcol( 'lightblue', 'lightgreen'),
+                             #mixcol( 'darkblue', 'darkgreen')
+                           ),
+                           tables.theme = theme_nature, 
+                           ggtheme = theme_nature,
+                           fontsize = theme_nature_size,
+                           censor.size = theme_nature_size * 0.65,
+                           pval.size = theme_nature_size,
+                           size = theme_nature_lwd,
+                           font.family = theme_nature_font_family,
+                           pval=T
+)
+
+p2.last_rec <- survminer::ggsurvtable(fit2.last_rec, data = tmp.stats.last_rec, 
+                       tables.theme = theme_nature, 
+                       ggtheme = theme_nature,
+                       fontsize = theme_nature_size,
+                       font.family = theme_nature_font_family
+)
+
+
+p1.last_rec$plot / p2.last_rec$risk.table +   plot_layout(heights = c(4,1))
+
+
+
+ggsave("output/figures/analysis_survival__KM_median_split_tmp.stats.last_rec.pdf", width=4, height = 2.5)
+
+
+
+
+
+
+
 
 
 # full split sweep ----
@@ -663,7 +777,8 @@ tmp.stats.tcga_lgg.450k <- tcga_lgg_od.metadata.array_samples |>
   dplyr::filter(!is.na(survival_event)) |> 
   dplyr::arrange(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit_450k) |> 
   dplyr::mutate(i = 1:dplyr::n()) |> 
-  dplyr::mutate(tumor_grade = factor(tumor_grade, levels = c("G2", "G3")))
+  dplyr::mutate(tumor_grade = factor(tumor_grade, levels = c("G2", "G3"))) |> 
+  dplyr::mutate(`CGC 450k` = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit_450k)
 
 
 tmp.stats.tcga_lgg.450k.surv_fit <- survival::Surv(tmp.stats.tcga_lgg.450k$survival,
@@ -746,6 +861,22 @@ ggplot(tmp.df, aes(x=k, y=-log10(survdiff), pch=censored, col=col)) +
 
 
 ggsave("output/figures/analysis_survival_TCGA-LGG_450k.pdf", width = 11 * 1/3 * 0.85 * 1.5, height = 2.36)
+
+
+
+
+
+
+f1 <- survival::coxph(tmp.stats.tcga_lgg.450k.surv_fit ~ `CGC 450k` , data = tmp.stats.tcga_lgg.450k)
+survminer::ggforest(f1, data = tmp.stats.tcga_lgg.450k, main = "Hazard ratio TCGA-LGG [450k]") + theme_nature
+ggsave("output/figures/analysis_survival_TCGA-LGG_450k_coxph.pdf", width = 5, height = 1.26)
+
+
+
+
+f2 <- survival::coxph(tmp.stats.tcga_lgg.450k.surv_fit ~ `tumor_grade` , data = tmp.stats.tcga_lgg.450k)
+survminer::ggforest(f2, data = tmp.stats.tcga_lgg.450k)
+
 
 
 
@@ -1143,18 +1274,17 @@ ggsave("output/figures/analysis_survival__Ki67_sweep.pdf", width = 11 * 1/3 * 0.
 
 
 
-# validation / mair berghoff ----
+# validation set ----
 
 
 
-validation.primary <- glass_od.metadata.array_samples |> 
+validation.last_available_resection <- glass_od.metadata.array_samples |> 
   filter_OD_validation_idats(CONST_N_OD_VALIDATION_INCLUDED_SAMPLES) |> 
   dplyr::filter(!is.na(time_between_resection_and_last_event)) |> 
   
   
   dplyr::mutate(resection_number = ifelse(resection_number == 0, 4, resection_number)) |> # three recurrences of which not resection nr is clear, but only 1 is included
 
-  #dplyr::filter(resection_number > 1) |> 
   
   dplyr::group_by(patient_id) |> 
   dplyr::filter(resection_number == max(resection_number)) |> 
@@ -1165,31 +1295,32 @@ validation.primary <- glass_od.metadata.array_samples |>
   dplyr::arrange(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
   dplyr::mutate(i = 1:dplyr::n()) |>
   dplyr::mutate(resection_tumor_grade = paste0("G", resection_tumor_grade)) |> 
-  dplyr::mutate(resection_tumor_grade =  factor(resection_tumor_grade, levels=c("G2", "G3")))
+  dplyr::mutate(resection_tumor_grade =  factor(resection_tumor_grade, levels=c("G2", "G3"))) |> 
+  dplyr::mutate(CGC = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) # nicer txt label
 
 
-validation.primary.grade <- validation.primary |> 
+validation.last_available_resection.grade <- validation.last_available_resection |> 
   dplyr::filter(!is.na(resection_tumor_grade))
 
 
-validation.primary |>  dplyr::select(patient_id, resection_id, resection_number , resection_tumor_grade) |>  #, time_between_resection_and_last_event, patient_last_follow_up_event)
+validation.last_available_resection |>  dplyr::select(patient_id, resection_id, resection_number , resection_tumor_grade) |>  #, time_between_resection_and_last_event, patient_last_follow_up_event)
   as.data.frame()
 
 
 
 
-validation.primary.surv_fit <- survival::Surv(validation.primary$time_between_resection_and_last_event,
-                                              validation.primary$patient_last_follow_up_event)
+validation.last_available_resection.surv_fit <- survival::Surv(validation.last_available_resection$time_between_resection_and_last_event,
+                                              validation.last_available_resection$patient_last_follow_up_event)
 
-validation.primary.grade.surv_fit <- survival::Surv(validation.primary.grade$time_between_resection_and_last_event,
-                                              validation.primary.grade$patient_last_follow_up_event)
+validation.last_available_resection.grade.surv_fit <- survival::Surv(validation.last_available_resection.grade$time_between_resection_and_last_event,
+                                              validation.last_available_resection.grade$patient_last_follow_up_event)
 
 
 tmp.df <- data.frame(
-  k = 1:nrow(validation.primary),
-  survdiff = rep(1.0, nrow(validation.primary)),
-  name = rep("patient", nrow(validation.primary)),
-  censored = validation.primary$patient_last_follow_up_event == 0
+  k = 1:nrow(validation.last_available_resection),
+  survdiff = rep(1.0, nrow(validation.last_available_resection)),
+  name = rep("patient", nrow(validation.last_available_resection)),
+  censored = validation.last_available_resection$patient_last_follow_up_event == 0
 )
 
 
@@ -1197,9 +1328,9 @@ tmp.df <- data.frame(
 tmp.df <- rbind(tmp.df, 
                 
                 data.frame(
-                  k=(sum(validation.primary.grade$resection_tumor_grade == "G2") + 0.5) * (nrow(validation.primary)/nrow(validation.primary.grade)),
+                  k=(sum(validation.last_available_resection.grade$resection_tumor_grade == "G2") + 0.5) * (nrow(validation.last_available_resection)/nrow(validation.last_available_resection.grade)),
                   
-                  survdiff = survival::survdiff(validation.primary.grade.surv_fit ~ resection_tumor_grade, data=validation.primary.grade) |> purrr::pluck('pvalue'),
+                  survdiff = survival::survdiff(validation.last_available_resection.grade.surv_fit ~ resection_tumor_grade, data=validation.last_available_resection.grade) |> purrr::pluck('pvalue'),
                   name = "WHO Grade",
                   censored=F
                 )
@@ -1209,12 +1340,12 @@ tmp.df <- rbind(tmp.df,
 
 
 
-for(split in ((2:nrow(validation.primary)) - 0.5)) {
+for(split in ((2:nrow(validation.last_available_resection)) - 0.5)) {
   
-  validation.primary <- validation.primary |> 
+  validation.last_available_resection <- validation.last_available_resection |> 
     dplyr::mutate(cgc = factor(ifelse(i < split, "CGC low", "CGC high"), levels=c("CGC low", "CGC high")))
   
-  tmp <- survival::survdiff(validation.primary.surv_fit ~ cgc, data=validation.primary)
+  tmp <- survival::survdiff(validation.last_available_resection.surv_fit ~ cgc, data=validation.last_available_resection)
   
   
   df <- data.frame(
@@ -1257,7 +1388,7 @@ ggplot(tmp.df, aes(x=k, y=-log10(survdiff), pch=censored, col=col)) +
                               `patient censored` = 'gray50',
                               `CGC` = 'black',
                               `WHO Grade` = 'red')) +
-  labs(y = "p-value logrank test", x=paste0("# validation set oligo samples (of ",nrow(validation.primary),") stratified low/high CGC"))
+  labs(y = "p-value logrank test", x=paste0("# validation set oligo samples (of ",nrow(validation.last_available_resection),") stratified low/high CGC"))
 
 
 
@@ -1267,13 +1398,15 @@ ggsave("output/figures/analysis_survival_validation_sweep.pdf", width = 11 * 1/3
 
 
 
+f1 <- survival::coxph(validation.last_available_resection.surv_fit ~ `CGC` , data = validation.last_available_resection)
+survminer::ggforest(f1, data = validation.last_available_resection, main = "Hazard ratio validation set (last resections)") +
+  theme_nature
+ggsave("output/figures/analysis_survival_validation_coxph.pdf", width = 5, height = 1.26)
 
-s1 <- survfit(Surv(time_between_resection_and_last_event, patient_last_follow_up_event) ~ gms, data = stats.last_rec)
-s2 <- survfit(Surv(time_between_resection_and_last_event, patient_last_follow_up_event) ~ resection_tumor_grade, data = stats.last_rec)
 
+f2 <- survival::coxph(validation.last_available_resection.surv_fit ~ `resection_tumor_grade` , data = validation.last_available_resection)
+survminer::ggforest(f2, data = validation.last_available_resection)
 
-p2 = survminer::ggsurvplot(s2, data = stats.last_rec, pval = TRUE, risk.table=T, tables.y.text = FALSE, xlab="Time (days) last recurrence -> death", newpage = FALSE)
-p1 = survminer::ggsurvplot(s1, data = stats.last_rec, pval = TRUE, risk.table=T, tables.y.text = FALSE, xlab="Time (days) last recurrence -> death", newpage = FALSE)
 
 
 

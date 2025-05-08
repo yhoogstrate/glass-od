@@ -448,7 +448,8 @@ geom_vline(xintercept=0, col="red", lwd=theme_nature_lwd) +
 
 
 ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected.png"),
-       width=(8.5 * 0.975 * (1/4)), height=2.225, dpi=600)
+       width=(8.5 * 0.975 * (1/5) * 1.12425),
+       height=2.362, dpi=600)
 
 
 
@@ -536,6 +537,73 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
 ggsave(paste0("output/figures/vis_differential__detP.png"), 
        width=(8.5 * 0.975 * (1/5) * 1.12425),
        height=2.362, dpi=600)
+
+
+
+
+## B derivative GLASS-NL ----
+
+
+
+data.mvalues.probes |> 
+  dplyr::select(contains("NL")) |> 
+  dplyr::select(contains("nc_PC1")) |> 
+  dplyr::select(contains("__t")) |> 
+  colnames()
+
+
+
+
+n_samples_grade <- 0 #glass_od.metadata.array_samples |> 
+  #filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  #filter_first_G2_and_last_G3(154) |> 
+  #nrow()
+
+n_samples_prim_rec <- 0# glass_od.metadata.array_samples |> 
+  #filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  #filter_primaries_and_last_recurrences(179) |> 
+  #nrow()
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::mutate(col = DMP__AcCGAP__pp_nc__t)
+
+
+
+ggplot(plt, aes(x=DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t,
+                y=DMP__GLASS_NL__prim_rec__pp_nc_PC1__t,
+                color=col)) +
+  #geom_vline(xintercept=0, col="red", alpha=0.1) + # do in illustrator
+  #geom_hline(yintercept=0, col="red", alpha=0.1) + # do in illustrator
+  
+  geom_point(pch=16, cex=0.001 , alpha=0.15) + 
+  
+  labs(x="GLASS-NL: per probe t-score Grade 2 | Grade 3 ~ Grade 4",
+       y="GLASS-NL: per probe t-score Primary ~ Recurrent",
+       col="",
+       caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")) +
+  
+  theme_nature +
+  theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t)), max(abs(plt$DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__GLASS_NL__prim_rec__pp_nc_PC1__t)), max(abs(plt$DMP__GLASS_NL__prim_rec__pp_nc_PC1__t))))+
+  
+  #theme(plot.background = element_rect(fill="white", colour = NA)) + # png export
+  #theme(axis.line =     element_line(linewidth = theme_nature_lwd / 2)) + # somehow w/ png export
+  
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
 
 
 
@@ -762,27 +830,111 @@ plt <- data.mvalues.probes |>
   })()
 
 
-p_C <- ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=glass_nl_prim_rec__deep_significant)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t, y=DMP__primary_recurrence__pp_nc_PC1__t, col=glass_nl_prim_rec__deep_significant)) +
+  geom_vline(xintercept=0, col="red", lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd = theme_nature_lwd) +
   
   geom_point(data = subset(plt, glass_nl_prim_rec__deep_significant == F),pch=16, cex=0.001, alpha=0.15, show.legend=F) + 
-  geom_point(data = subset(plt, glass_nl_prim_rec__deep_significant == T),pch=16, cex=0.1, alpha=0.35, show.legend=F) + 
+  geom_point(data = subset(plt, glass_nl_prim_rec__deep_significant == T),pch=16, cex=0.01, alpha=0.5, show.legend=F) + 
   geom_point(data = head(plt, n=0),pch=16, show.legend=T) + 
-
-  geom_vline(xintercept=0, col="red", alpha=0.1) +
-  geom_hline(yintercept=0, col="red", alpha=0.1) +
   
-  labs(x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrent", col="Significant GLASS-NL\nPrimary ~ Recurrent") +
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
   
-  theme_nature + theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
-  scale_color_manual(values=c('TRUE'= col3(3)[1], 'FALSE'='gray80'))
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrent",
+       col="Significant GLASS-NL Primary ~ Recurrent") +
+  
+  theme_nature +
+  theme(legend.key.size = unit(0.3, 'lines')) + # resize colbox
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc_PC1__t)), max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)))) +
+  
+  scale_color_manual(values=c('TRUE'= col3(3)[1], 'FALSE'='gray80')) +
+  
+  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
 
 
-p_A + p_B + p_C
+ggsave(paste0("output/figures/vis_differential__GLASS-NL_top-signi.png"),
+       width=2.115, height=2.385, dpi=600)
 
 
-#ggsave("/tmp/papbpc.png",width = 8.5*0.975, height=3.2, dpi=600)
+## D: hox & polycomb probes ----
+
+
+
+tmp <- data.mvalues.probes |>
+  dplyr::rename(gene = GencodeCompV12_NAME) |> 
+  dplyr::select(probe_id, gene) |>
+  tibble::tibble() |> 
+  tidyr::separate_longer_delim(gene, delim = ";") |> 
+  dplyr::filter(gene != "") |> 
+  dplyr::distinct() |> 
+  dplyr::mutate(HOX = grepl("^HOX|HOTAIR|HOTTIP", gene) & !grepl("-AS[0-9]$", gene) & !grepl("-AS$", gene)) |> 
+  dplyr::mutate(polycomb =  gene %in% c(genes_polycomb_eed_homeobox, 
+                                        genes_polycomb_h3k27_homeobox,
+                                        genes_polycomb_prc2_homeobox,
+                                        genes_polycomb_suz12_homeobox
+  )) 
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & !MASK_general) |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  dplyr::mutate(col = dplyr::case_when(
+    #probe_id %in% (tmp |> dplyr::filter(HOX & polycomb) |> dplyr::pull(probe_id) |> unique()) ~ "HOX & Polycomb TF",
+    probe_id %in% (tmp |> dplyr::filter(HOX) |> dplyr::pull(probe_id) |> unique()) ~ "HOX",
+    #probe_id %in% (tmp |> dplyr::filter(polycomb) |> dplyr::pull(probe_id) |> unique()) ~ "Polycomb TF",
+    T ~ "other"
+  ))
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t, y=DMP__primary_recurrence__pp_nc_PC1__t, col=col)) +
+  geom_vline(xintercept=0, lwd=theme_nature_lwd, col="red") +
+  geom_hline(yintercept=0, lwd=theme_nature_lwd, col="red") +
+  
+  geom_point(data = subset(plt, col == "other"),pch=16, cex=0.001, alpha=0.15, show.legend=F) + 
+  geom_point(data = subset(plt, col != "other"),pch=16, cex=0.01, alpha=0.5, show.legend=F) + 
+  geom_point(data = head(plt, n=0),pch=16, show.legend=T) + 
+  
+  geom_vline(xintercept=0, lwd=theme_nature_lwd, col="red", alpha=0.1) +
+  geom_hline(yintercept=0, lwd=theme_nature_lwd, col="red", alpha=0.1) +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-score Primary ~ Recurrent",
+       col="Significant GLASS-NL Primary ~ Recurrent") +
+  
+  theme_nature +
+  theme(legend.key.size = unit(0.3, 'lines')) + # resize colbox
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc_PC1__t)), max(abs(plt$DMP__g2_g3__pp_nc_PC1__t))))+
+  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)), max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)))) +
+  
+  scale_color_manual(values=c('HOX'= col3(3)[1],
+                              'other'='gray80')) +
+  
+  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+
+
+ggsave(paste0("output/figures/vis_differential__HOX.png"),
+       width=2.115, height=2.385, dpi=600)
+
+
+
+
+
+
 
 
 ## E: GLASS-OD x GLASS-NL + PC1 ----
