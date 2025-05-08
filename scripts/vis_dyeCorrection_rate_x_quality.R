@@ -53,10 +53,13 @@ ggplot(plt, aes(
   geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.3), lwd=theme_nature_lwd * 2) +
   geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.3), lwd=theme_nature_lwd * 1) +
   geom_smooth(method='lm', formula= y~x, se = F, lty=1, col="#6ba6e5", lwd=theme_nature_lwd) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5", size=theme_nature_size) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)),
+                   #col="#6ba6e5",
+                   family=theme_nature_font_family,
+                   size=theme_nature_size) +
   
-  scale_y_continuous(limits=c(-1.9,1.9)) +
-  labs(x = "log(detP failed / detP passed)",
+  scale_y_continuous(limits=c(-2,2)) +
+  labs(x = "sample quality: log(detP failed / detP passed)",
        y = "log(Red intensity / Green intensity) ctrl probes\n<- [more green]                         [more red] ->",
        subtitle=format_subtitle("det-P x dyeCorrection"),
        caption = paste0("n=",nrow(plt), " GLASS-OD samples")
