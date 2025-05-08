@@ -970,3 +970,31 @@ ggsave("output/figures/vis_mixed_unsupervised__combined_posterior_wilcox.pdf", w
 
 
 
+
+plt.p <- plt.p |> 
+  dplyr::mutate(col_mnp = array_mnp_predictBrain_v12.8_cal_class) |> 
+  dplyr::mutate(col_mnp = gsub("^CTRL_.+$","CTRL_*", col_mnp)) |> 
+  dplyr::mutate(col_mnp = gsub("^GBM_.+$","GBM_*", col_mnp))
+
+
+
+ggplot(plt.p, aes(x=tumor_grade_h_l, y=-log(lda.posterior), col=col_mnp)) +
+  geom_hline(yintercept = 0, lwd=theme_cellpress_lwd) +
+  #facet_grid(cols = vars(dataset)) +
+  facet_wrap(~dataset, scales="free") +
+  ggbeeswarm::geom_quasirandom(size=theme_nature_size/3) +
+  ggpubr::stat_compare_means(aes(group=tumor_grade_h_l), label.x.npc=0.1, method = "wilcox.test", show_guide  = FALSE,  size=theme_cellpress_size, family=theme_nature_font_family) + 
+  labs(y = "-log( LDA posterior probability )") +
+  geom_hline(yintercept = -log(0.5), col="red", lwd=0.5,lty=2) +
+  scale_color_manual(values=c( "GBM_*"="blue", "CTRL_*"="#444444", palette_mnp_12.8_6)) + 
+  theme_nature +
+  labs(x=NULL, col=NULL) +
+  ylim(0, 72) 
+
+
+
+ggsave("output/figures/vis_mixed_unsupervised__combined_posterior_wilcox_MNP_col.pdf", width=(8.5*0.95)/3, height=2.75)
+
+
+
+
