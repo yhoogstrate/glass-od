@@ -95,6 +95,7 @@ ggsave("output/figures/vis_differential__DMP_power.pdf", width=8.5 * 0.975 / 6, 
 
 ### 1. gray scale ----
 
+
 n_samples_grade <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
   filter_first_G2_and_last_G3(154) |> 
@@ -121,12 +122,13 @@ plt <- data.mvalues.probes |>
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
-  #geom_vline(xintercept=0, col="red") +
-  #geom_hline(yintercept=0, col="red") +
-  #geom_vline(xintercept=0, col="red", alpha=0.1) + # do in illustrator
-  #geom_hline(yintercept=0, col="red", alpha=0.1) + # do in illustrator
-  
+  geom_vline(xintercept=0, col="red", lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd = theme_nature_lwd) +
+
   geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
   
   ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black",
                    size=theme_nature_size, 
@@ -140,13 +142,19 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t)) +
   
   theme_nature +
   theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
-  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
-  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))),
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
   
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1)
 
 
-ggsave(paste0("output/figures/vis_differential__overall_density.png"), width=(8.5 * 0.975 * (2/5)), height=3.48, dpi=600)
+
+
+ggsave(paste0("output/figures/vis_differential__overall_density.png"), 
+       width=2.1, height=3.9 , dpi=1200)
 
 
 rm(n_samples_grade, n_samples_prim_rec)
@@ -509,10 +517,14 @@ plt <- data.mvalues.probes |>
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
                 color=col)) +
-  #geom_vline(xintercept=0, col="red", alpha=0.1) + # do in illustrator
-  #geom_hline(yintercept=0, col="red", alpha=0.1) + # do in illustrator
+  geom_vline(xintercept=0, col="red", lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd = theme_nature_lwd) +
   
   geom_point(pch=16, cex=0.001 , alpha=0.15) + 
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
+  
   
   labs(x="Per probe t-score Grade 2 ~ Grade 3",
        y="Per probe t-score Primary ~ Recurrent",
@@ -521,13 +533,16 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
   
   theme_nature +
   theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
-  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
-  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)),
+                          max(abs(plt$DMP__g2_g3__pp_nc__t))),
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), 
+                          max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
   
-  #theme(plot.background = element_rect(fill="white", colour = NA)) + # png export
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
   #theme(axis.line =     element_line(linewidth = theme_nature_lwd / 2)) + # somehow w/ png export
-  
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+  theme(aspect.ratio=1)
 
 
 
@@ -535,8 +550,8 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
 # 871 x 872
 # 436 x 436
 ggsave(paste0("output/figures/vis_differential__detP.png"), 
-       width=(8.5 * 0.975 * (1/5) * 1.12425),
-       height=2.362, dpi=600)
+       width=2.1, height=3.9 , dpi=1200)
+
 
 
 
@@ -792,22 +807,24 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   
   labs(x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrent",
        caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)"),
-       col="Per probe t-score CGC[Ac]") +
+       col="CGC[Ac]") +
   
   theme_nature +
-  theme(legend.key.size = unit(0.3, 'lines')) + # resize colbox
+  #theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
+  theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
   
-  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
-  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc_PC1__t)), max(abs(plt$DMP__g2_g3__pp_nc_PC1__t))),
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)), max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)))) +
   
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
   
-  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1)
 
 
 
 ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected__CGCac.png"),
-       width=(8.5 * 0.975 * (1/4)), height=2.559, dpi=600)
+       width=2.1, height=3.9 , dpi=1200)
 
 
 
@@ -846,18 +863,23 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t, y=DMP__primary_recurrence__pp_nc_PC1
        col="Significant GLASS-NL Primary ~ Recurrent") +
   
   theme_nature +
-  theme(legend.key.size = unit(0.3, 'lines')) + # resize colbox
+  theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
   
-  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc_PC1__t)), max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t))))+
-  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)))) +
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc_PC1__t)),
+                          max(abs(plt$DMP__g2_g3__pp_nc_PC1__t))),
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)),
+                          max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)))) +
   
   scale_color_manual(values=c('TRUE'= col3(3)[1], 'FALSE'='gray80')) +
   
-  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1)
 
 
 ggsave(paste0("output/figures/vis_differential__GLASS-NL_top-signi.png"),
-       width=2.115, height=2.385, dpi=600)
+       width=2.1, height=3.9 , dpi=1200)
+
+
 
 
 ## D: hox & polycomb probes ----
@@ -916,19 +938,23 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t, y=DMP__primary_recurrence__pp_nc_PC1
        col="Significant GLASS-NL Primary ~ Recurrent") +
   
   theme_nature +
-  theme(legend.key.size = unit(0.3, 'lines')) + # resize colbox
+  theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
   
-  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc_PC1__t)), max(abs(plt$DMP__g2_g3__pp_nc_PC1__t))))+
-  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)), max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)))) +
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc_PC1__t)),
+                          max(abs(plt$DMP__g2_g3__pp_nc_PC1__t))),
+                  
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)),
+                          max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)))) +
   
   scale_color_manual(values=c('HOX'= col3(3)[1],
                               'other'='gray80')) +
   
-  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1)
 
 
 ggsave(paste0("output/figures/vis_differential__HOX.png"),
-       width=2.115, height=2.385, dpi=600)
+       width=2.1, height=3.9 , dpi=1200)
 
 
 
@@ -938,6 +964,7 @@ ggsave(paste0("output/figures/vis_differential__HOX.png"),
 
 
 ## E: GLASS-OD x GLASS-NL + PC1 ----
+
 
 
 plt <- data.mvalues.probes |> 
@@ -955,8 +982,8 @@ plt <- data.mvalues.probes |>
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
-                #y=DMP__GLASS_NL__g2.3_g4__pp_nc_PC1__t)) +
-                y=DMP__GLASS_NL__exp9__t)) +
+                y=DMP__GLASS_NL__exp6__t)) +
+  
   geom_vline(xintercept=0, col="red", lwd=theme_nature_lwd) +
   geom_hline(yintercept=0, col="red", lwd=theme_nature_lwd) +
   
@@ -970,9 +997,9 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
   
   ggpubr::stat_cor(
-    label.x = -8,
-    label.y =  8,
-    method = "pearson", aes(label = after_stat(r.label)), col="black",
+    #label.x = -8,
+    #label.y =  8,
+    method = "pearson", aes(label = after_stat(r.label)), col="#444444",
                    size = theme_nature_size,
                    family = theme_nature_font_family) +
   
@@ -982,17 +1009,20 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
        caption="Overlap Grade associated differences oligodendroglioma & astrocytoma (patient and PC1 corrected)"
   ) +
   
-  coord_cartesian(ylim = c(-11.5, 9), xlim = c(-9,6.5)) +
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc_PC1__t)), max(abs(plt$DMP__g2_g3__pp_nc_PC1__t))),
+                  ylim=c(-max(abs(plt$DMP__GLASS_NL__exp6__t)), max(abs(plt$DMP__GLASS_NL__exp6__t))))+
   
   theme_nature +
   theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
-  #scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
-  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+  
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1)
 
 
 
 
-ggsave("output/figures/vis_differential__GLASS_NL__x__GLASS_OD__grade__PC1.png", width=2.115, height=2.385, dpi=600)
+ggsave("output/figures/vis_differential__GLASS_NL__x__GLASS_OD__grade__PC1.png",
+       width=2.1422, height=3.9 , dpi=1200)
 
 
 
@@ -1310,10 +1340,15 @@ plt <- data.mvalues.probes |>
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
                 col=DMP__FFPE_decay_time__pp_nc__t)) +
-  #geom_vline(xintercept=0, col="red") +
-  #geom_hline(yintercept=0, col="red") +
+  
+  geom_vline(xintercept=0, col="red", lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd = theme_nature_lwd) +
   
   geom_point(pch=16, cex=0.001 , alpha=0.15) + 
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
+  
   
   labs(x="Per probe t-score Grade 2 ~ Grade 3",
        y="Per probe t-score Primary ~ Recurrent",
@@ -1324,39 +1359,41 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
   
   theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
   
-  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
-  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)),
+                         max(abs(plt$DMP__g2_g3__pp_nc__t))),
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)),
+                         max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
   
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
   
-  #theme(axis.line = element_line(linewidth = theme_nature_lwd)) 
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1)
 
 
 
 ggsave(paste0("output/figures/vis_differential__FFPE_decay_time.png"), 
-       width=(8.5 * 0.975 * (1/5) * 1.12425),
-       height=2.362, dpi=600)
+       width=2.1, height=3.9 , dpi=1200)
 
 
 
 
 
-ggplot(plt |> dplyr::filter(!grepl(" \\? ", probe_type_orientation)),
-       aes(x=DMP__g2_g3__pp_nc__t,
-           y=DMP__primary_recurrence__pp_nc__t,
-           col=DMP__FFPE_decay_time__pp_nc__t)) +
-  facet_wrap(~probe_type_orientation, ncol=2) + 
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
-  
-  geom_point(pch=16, cex=0.001, alpha=0.15) + 
-  
-  theme_nature + theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
-
-
-rm(plt)
-
+# ggplot(plt |> dplyr::filter(!grepl(" \\? ", probe_type_orientation)),
+#        aes(x=DMP__g2_g3__pp_nc__t,
+#            y=DMP__primary_recurrence__pp_nc__t,
+#            col=DMP__FFPE_decay_time__pp_nc__t)) +
+#   facet_wrap(~probe_type_orientation, ncol=2) + 
+#   geom_vline(xintercept=0, col="red") +
+#   geom_hline(yintercept=0, col="red") +
+#   
+#   geom_point(pch=16, cex=0.001, alpha=0.15) + 
+#   
+#   theme_nature + theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
+#   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+# 
+# 
+# rm(plt)
+# 
 
 
 
@@ -1380,14 +1417,19 @@ plt <- data.mvalues.probes |>
 
 
 
+
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
                 y=DMP__primary_recurrence__pp_nc__t,
               col=DMP__freezer_decay_time__pp_nc__t)) +
   
-  #geom_vline(xintercept=0, col="red") +
-  #geom_hline(yintercept=0, col="red") +
+  geom_vline(xintercept=0, col="red", lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd = theme_nature_lwd) +
+  
   
   geom_point(pch=16, cex=0.001 , alpha=0.15) + 
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
   
   labs(x="Per probe t-score Grade 2 ~ Grade 3",
        y="Per probe t-score Primary ~ Recurrent",
@@ -1397,18 +1439,22 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
   theme_nature +
   
   theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
-  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
-  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)),
+                          max(abs(plt$DMP__g2_g3__pp_nc__t))),
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)),
+                          max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
   
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish)
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
   
-  #theme(axis.line = element_line(linewidth = theme_nature_lwd )) # somehow w/ high-res png export
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1)
+
 
 
 
 ggsave(paste0("output/figures/vis_differential__freezer_decay_time.png"), 
-       width=(8.5 * 0.975 * (1/5) * 1.12425),
-       height=2.362, dpi=600)
+       width=2.1, height=3.9 , dpi=1200)
+
 
 
 
@@ -2073,29 +2119,36 @@ plt <- data.mvalues.probes |>
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
                 y=DMP__primary_recurrence__pp_nc_PC1__t)) +
-  geom_vline(xintercept=0, col="red") +
-  geom_hline(yintercept=0, col="red") +
+  geom_vline(xintercept=0, col="red", lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd = theme_nature_lwd) +
   
   geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +  
   
-  geom_vline(xintercept=0, col="red", alpha=0.1) +
-  geom_hline(yintercept=0, col="red", alpha=0.1) +
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
   
-  geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
-  geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#6ba6e5") +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="#444444", size=theme_nature_size,family=theme_nature_font_family) +
   
   labs(x = "Per probe t-score Grade 2 ~ Grade 3",
          y="Per probe t-score Primary ~ Recurrent"
   ) +
   
-  theme_nature + theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
+  theme_nature +
+  theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc_PC1__t)), max(abs(plt$DMP__g2_g3__pp_nc_PC1__t))),
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)), max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t))))+
+  
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
-  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+  
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1)  # png export
 
 
 
-ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected.png"), width=(8.5 * 0.97 / 2), height=(8.5 * 0.97 / 2))
+ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected.png"),
+       width=2.1, height=3.9 , dpi=1200)
 
 
 
@@ -3272,8 +3325,8 @@ plt <- data.mvalues.probes |>
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probeCpGcnt)) +
   #facet_grid(cols = vars(Infinium_Design_Type))  +
   
-  #geom_vline(xintercept=0, col="red") +
-  #geom_hline(yintercept=0, col="red") +
+  geom_vline(xintercept=0, col="red", lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd = theme_nature_lwd) +
   
   geom_point(data=subset(plt, probeCpGcnt == 0), pch=16, cex=0.001, alpha=0.1) + 
   geom_point(data=subset(plt, probeCpGcnt == 1), pch=16, cex=0.0025, alpha=0.15) + 
@@ -3287,6 +3340,9 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   geom_point(data=subset(plt, probeCpGcnt == 9), pch=16, cex=0.1, alpha=0.55) + 
   geom_point(data=subset(plt, probeCpGcnt == 10), pch=16, cex=0.1, alpha=0.60) + 
   geom_point(data=subset(plt, probeCpGcnt == 11), pch=16, cex=0.1, alpha=0.65) + 
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
   
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", trans = "log1p",
                                  breaks = 0:11,
@@ -3302,10 +3358,13 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
   
   theme_nature +
   
-  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
-  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)),
+                          max(abs(plt$DMP__g2_g3__pp_nc__t))),
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)),
+                          max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
   
-  theme(plot.background = element_rect(fill="white", colour=NA)) +  # png export
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1) +
   
   theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'))
 
@@ -3314,8 +3373,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col
 
 
 ggsave("output/figures/vis_differential__g23_prim-rec__probe_CpG_count.png",
-       width=(8.5 * 0.975 * (1/5) * 1.12425),
-       height=2.362, dpi=600)
+       width=2.1, height=3.9 , dpi=1200)
 
 
 
@@ -3823,18 +3881,34 @@ plt <- data.mvalues.probes |>
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=probe_type)) +
-  #geom_vline(xintercept=0, col="red") +
-  #geom_hline(yintercept=0, col="red") +
+  geom_vline(xintercept=0, col="red", lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd = theme_nature_lwd) +
   
-  geom_point(data = subset(plt, probe_type == "II (ligation Allele-A)"), pch=16, cex=0.001, alpha=0.15) + 
-  geom_point(data = subset(plt, probe_type== "I (red & green)"), pch=16, cex=0.001, alpha=0.15) +   
+  
+  geom_point(data = subset(plt, probe_type == "II (ligation Allele-A)"), pch=16, cex=0.001, alpha=0.225, show.legend=F) + 
+  geom_point(data = subset(plt, probe_type== "I (red & green)"), pch=16, cex=0.001, alpha=0.015, show.legend=F) +   
+  geom_point(data = head(plt, n=0), pch=16, show.legend=T) +   # decoy for legend
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
+  
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)),
+                         max(abs(plt$DMP__g2_g3__pp_nc__t))),
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)),
+                         max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
   
   theme_nature +
+  
+  labs(col = NULL)  +
+  
   theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) +
-  guides(color = guide_legend(override.aes = list(size = 1, alpha=1) ) )
+  guides(color = guide_legend(override.aes = list(size = 1, alpha=1) ) ) +
+  
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1)
 
 
-ggsave(paste0("output/figures/vis_differential__probe_type_II_I.png"), width=1.8634, height=2.362)
+ggsave(paste0("output/figures/vis_differential__probe_type_II_I.png"), width=2.1, height=3.9 , dpi=1200)
 
 
 
@@ -3932,15 +4006,25 @@ plt <- plt |>
 
 
 
-ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, col=is_tacgnn_nncgta)) +
-  #geom_vline(xintercept=0, col="red") +
-  #geom_hline(yintercept=0, col="red") +
+ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t,
+                 y=DMP__primary_recurrence__pp_nc__t, col=is_tacgnn_nncgta)) +
+
+  geom_vline(xintercept=0, col="red", lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd = theme_nature_lwd) +
   
-  geom_point(data=subset(plt, is_tacgnn_nncgta == "No"), pch=16, cex=0.001, alpha=0.025) + 
-  geom_point(data=subset(plt, is_tacgnn_nncgta == "Yes"), pch=16, cex=0.001, alpha=0.0125) + 
-  #geom_point( pch=16, cex=0.001, alpha=0.15) + 
+  #geom_point(data=subset(plt, is_tacgnn_nncgta == "No"), pch=16, cex=0.001, alpha=0.025, show.legend=F) + 
+  #geom_point(data=subset(plt, is_tacgnn_nncgta == "Yes"), pch=16, cex=0.001, alpha=0.0125, show.legend=F) + 
   
-  scale_color_manual(values=palette_yes_no_2) + # 4 not ok
+  geom_point(data = subset(plt, is_tacgnn_nncgta == "No"),pch=16, cex=0.001, alpha=0.15, show.legend=F) + 
+  geom_point(data = subset(plt, is_tacgnn_nncgta == "Yes"),pch=16, cex=0.01, alpha=0.025, show.legend=F) + 
+  
+  
+  geom_point(data = head(plt, n=0),pch=16, show.legend=T) +  # dummy for neat legend with appr. sizes
+
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd = theme_nature_lwd) +
+  
+  #scale_color_manual(values=palette_yes_no_2) + # 4 not ok
   
 
   labs(x="Per probe t-score Grade 2 ~ Grade 3",
@@ -3951,18 +4035,20 @@ ggplot(plt , aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t, co
   theme_nature +
   theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
   
-  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t)))) +
-  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)),
+                          max(abs(plt$DMP__g2_g3__pp_nc__t))),
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)),
+                          max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
   
-  theme(plot.background = element_rect(fill="white", colour = NA)) + # png export
+  theme(plot.background = element_rect(fill="white", colour = NA)) +  # png export
   #theme(axis.line =     element_line(linewidth = theme_nature_lwd / 2)) # somehow w/ png export
-
+  
+  theme(aspect.ratio=1)
 
 
 
 ggsave(paste0("output/figures/vis_differential__TACGnn_nnCGTA.png"),
-       width=1.8634,
-       height=2.215, dpi=600)
+       width=2.1, height=3.9 , dpi=1200)
 
 
 

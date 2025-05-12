@@ -34,14 +34,22 @@ metadata <- glass_od.metadata.array_samples |>
 ## our CNV bin purity fit ----
 
 
+
+
 plt <- metadata |> 
   dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = ifelse(array_mnp_predictBrain_v12.8_cal_class %in% c("O_IDH", "A_IDH_HG", "A_IDH_LG","OLIGOSARC_IDH") == F, "Other", array_mnp_predictBrain_v12.8_cal_class)) |> 
   dplyr::mutate(selected_for_spike_in_with_non_tumor = resection_id %in% c("0017-R3","0008-R2","0121-R3","0054-R3"))
 
 
+
 ggplot(plt, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_methylation_bins_1p19q_purity, col=array_mnp_predictBrain_v12.8_cal_class, label=resection_id)) +
   geom_point(size=theme_nature_size/3) +
-  ggrepel::geom_text_repel(data=subset(plt, selected_for_spike_in_with_non_tumor), col="darkgray", nudge_x = 0.5, nudge_y = 0.03, size=theme_nature_size, segment.size=theme_nature_lwd, family = theme_nature_font_family) +
+  ggrepel::geom_text_repel(data=subset(plt, selected_for_spike_in_with_non_tumor),
+                           
+                           col=palette_repel_text_col, nudge_x = 0.5, nudge_y = 0.03,
+                           segment.size=theme_nature_lwd,
+                           family = theme_nature_font_family,
+                           size=theme_nature_size) +
   
   labs(subtitle=format_subtitle("Cohort overview")) +
   scale_y_continuous(limits = c(0, 0.8)) +
@@ -51,10 +59,14 @@ ggplot(plt, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_methylation_bi
   theme_nature
 
 
+
 ggsave("output/figures/vis_oligosarcoma_and_purity__glass-od_scatter.pdf", width=8.5 * 0.975 / 4, height = 2.4)
 
 
+
 rm(plt)
+
+
 
 
 
@@ -88,14 +100,20 @@ rm(plt)
 ## RFpurity validation ----
 
 
+
 plt <- metadata |> 
   dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = ifelse(array_mnp_predictBrain_v12.8_cal_class %in% c("O_IDH", "A_IDH_HG", "A_IDH_LG","OLIGOSARC_IDH") == F, "Other", array_mnp_predictBrain_v12.8_cal_class)) |> 
   dplyr::mutate(selected_for_spike_in_with_non_tumor = resection_id %in% c("0017-R3","0008-R2","0121-R3","0054-R3"))
 
 
+
 ggplot(plt, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_RFpurity_estimate, col=array_mnp_predictBrain_v12.8_cal_class, label=resection_id)) +
   geom_point(size=theme_nature_size/3) +
-  ggrepel::geom_text_repel(data=subset(plt, selected_for_spike_in_with_non_tumor), col=palette_repel_text_col, nudge_x = 0.5, nudge_y = 0.03,segment.size=theme_nature_lwd,  size=theme_nature_size) +
+  ggrepel::geom_text_repel(data=subset(plt, selected_for_spike_in_with_non_tumor),
+                           col=palette_repel_text_col, nudge_x = 0.5, nudge_y = 0.03,
+                           segment.size=theme_nature_lwd,
+                           family = theme_nature_font_family,
+                           size=theme_nature_size) +
   
   labs(subtitle=format_subtitle("Cohort overview")) +
   #scale_y_continuous(limits = c(0, 0.8)) +
@@ -105,10 +123,16 @@ ggplot(plt, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_RFpurity_estim
   theme_nature
 
 
+
+
 ggsave("output/figures/vis_oligosarcoma_and_purity__glass-od_scatter__RFpurity_estimate.pdf", width=8.5 * 0.975 / 4, height = 2.4)
 
 
+
 rm(plt)
+
+
+
 
 
 
@@ -464,7 +488,7 @@ ggplot(plt, aes(x=DMP__GLASS_OD__oligosarcoma__A_IDH_HG__PC1__logFC,
   geom_hline(yintercept=plt.intervals[2:6], col="#DDDDDD", lwd=theme_nature_lwd) +
   geom_hline(yintercept=plt.intervals[1], col="red", lty=2, lwd=theme_nature_lwd) +
   geom_hline(yintercept=plt.intervals[7], col="darkgray", lwd=theme_nature_lwd) +
-  geom_point(pch=16, cex=0.01, alpha=0.05) +
+  geom_point(cex=0.005, alpha=0.35, pch=16) +
   theme_nature +
   scale_y_continuous(trans=reverselog_trans(base=10),
                      breaks=plt.intervals,
@@ -482,7 +506,7 @@ ggplot(plt, aes(x=DMP__GLASS_OD__oligosarcoma__A_IDH_HG__PC1__logFC,
   theme(plot.background = element_rect(fill="white", colour=NA))  # png export
 
 
-ggsave("output/figures/vis_oligosarcoma_and_purity__volcano_A_IDH_HG.png", width=(8.5 * 0.975)/2,height=2.375, dpi=300)
+ggsave("output/figures/vis_oligosarcoma_and_purity__volcano_A_IDH_HG.png", width=(8.5 * 0.975)/2,height=2.375, dpi=1200)
 
 
 rm(plt, n_oligosarcoma, n_a_idh_hg, plt.intervals)

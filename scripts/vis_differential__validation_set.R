@@ -162,9 +162,9 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t, y=t_validation_g2_g3__PC1, col=col))
   #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
   
   ggpubr::stat_cor(
-    label.x = -8,
-    label.y =  4,
-    method = "pearson", aes(label = after_stat(r.label)), col="black",
+    #label.x = -8,
+    #label.y =  4,
+    method = "pearson", aes(label = after_stat(r.label)), col="#444444",
     size = theme_nature_size,
     family = theme_nature_font_family) +
   
@@ -174,17 +174,25 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t, y=t_validation_g2_g3__PC1, col=col))
        #caption="caption"
   ) +
   
-  coord_cartesian(xlim=c(-10,6), ylim=c(-7,5.5)) +
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc_PC1__t)),
+                          max(abs(plt$DMP__g2_g3__pp_nc_PC1__t))),
+                  ylim=c(-max(abs(plt$t_validation_g2_g3__PC1)),
+                          max(abs(plt$t_validation_g2_g3__PC1)))) +
   
   theme_nature +
   theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
+  
   #scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
-  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+  
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1)
 
 
 
 
 ggsave(paste0("output/figures/vis_differential__GLASS-OD_x_validation__PC1.png"),
-       width=2.115, height=2.385, dpi=600)
+       width=2.1, height=3.9 , dpi=1200)
+
+
 
 
