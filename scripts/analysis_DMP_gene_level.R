@@ -212,6 +212,8 @@ if(!exists(fn)) {
     gene_enrichment_0.GencodeCompV12_NAME = do.call(rbind, pbapply::pblapply(genes.GencodeCompV12_NAME, gene_enrich_mu, mu=0, stats=stat, idx=idx.GencodeCompV12_NAME))
     saveRDS(gene_enrichment_0.GencodeCompV12_NAME, fn)
   }
+} else {
+  gene_enrichment_0.GencodeCompV12_NAME <- readRDS(fn)
 }
 rm(fn)
 
@@ -484,11 +486,11 @@ panels <- c(
   "H3F3A",
   "CIC",
   "FUBP1",
-  "TCF12",
+  "TCF12"
   
-  "GATA6",
-  "GATA4",
-  "^KRT"
+  #"GATA6",
+  #"GATA4",
+  #"^KRT"
   
 )
 
@@ -619,8 +621,8 @@ ggplot(plts, aes(x=reorder(genes, dplyr::desc(genes)),
   #ggbeeswarm::geom_beeswarm(data=subset(plts, is.tf == "Yes"), size=theme_nature_size/3, col="red", side=1, method="compactswarm") +
   geom_point(data=subset(plts, is.tf == "Yes"), size=theme_nature_size, pch="|") +
   ggrepel::geom_text_repel(segment.size=theme_nature_lwd,
-                           data = plts |> dplyr::filter(is.tf == "Yes" & 
-                                                          gene %in% c("HOXD12", "HOXD13") & 
+                           data = plts |> dplyr::filter(is.tf == "Yes" &
+                                                          gene %in% c("HOXD12", "HOXD13") &
                                                           screen == "Homeobox TFs"),
                            size=theme_nature_size,
                            family=theme_nature_font_family,
@@ -641,7 +643,7 @@ ggplot(plts, aes(x=reorder(genes, dplyr::desc(genes)),
 
 
 
-ggsave("output/figures/vis_analysis_DMP_gene_level__TFs_gghalve_l__combi.pdf", width=(8.5 * 0.975), height=5.0, dpi=600)
+ggsave("output/figures/vis_analysis_DMP_gene_level__TFs_gghalve_l__combi.pdf", width=(8.5 * 0.975), height=3.50, dpi=600)
 
 
 

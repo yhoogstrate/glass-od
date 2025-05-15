@@ -264,17 +264,21 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
   theme_nature + 
   #theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
   
-  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
-  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc_PC1__t)),
+                          max(abs(plt$DMP__g2_g3__pp_nc_PC1__t))),
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)),
+                          max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)))) +
   
   scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
-  theme(plot.background = element_rect(fill="white", colour=NA))  # png export
+  theme(plot.background = element_rect(fill="white", colour=NA)) + # png export
+  
+  theme(aspect.ratio=1)
 
 
 
 
 ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected.png"),
-       width=(8.5 * 0.975 * (1/4)), height=2.225, dpi=600)
+       width=2.1, height=3.9 , dpi=1200)
 
 
 
@@ -357,111 +361,6 @@ ggsave("output/figures/vis_differential__PC1__volcano.png",
 
 
 
-
-
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__logFC,
-                y=DMP__g2_g3__pp_nc_PC1__adj.P.Val,
-                col=DMP__PC1_PC2_PC3_multivariate__t_PC1)) +
-  
-  scale_y_continuous(trans=reverselog_trans(base=10)) +
-  geom_point(pch=16, cex=0.05, alpha=0.2)  +
-  
-  
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
-  
-  theme_nature
-
-
-
-
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__logFC,
-                y=DMP__g2_g3__pp_nc_PC1__adj.P.Val,
-                col=DMP__PC1_PC2_PC3_multivariate__t_PC2)) +
-  
-  scale_y_continuous(trans=reverselog_trans(base=10)) +
-  geom_point(pch=16, cex=0.05, alpha=0.2)  +
-  
-  
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
-  
-  theme_nature
-
-
-
-
-
-
-
-
-
-
-
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc__logFC,
-                y=DMP__g2_g3__pp_nc__adj.P.Val,
-                col=DMP__PC1_PC2_PC3_multivariate__t_PC1)) +
-  
-  scale_y_continuous(trans=reverselog_trans(base=10)) +
-  geom_point(pch=16, cex=0.05, alpha=0.2)  +
-  
-  
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
-  
-  theme_nature
-
-
-ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__logFC,
-                y=DMP__g2_g3__pp_nc_PC1__adj.P.Val,
-                col=DMP__PC1_PC2_PC3_multivariate__t_PC3)) +
-  
-  scale_y_continuous(trans=reverselog_trans(base=10)) +
-  geom_point(pch=16, cex=0.05, alpha=0.2)  +
-  
-  
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
-  
-  theme_nature
-
-
-
-
-
-
-geom_vline(xintercept=0, col="red", lwd=theme_nature_lwd) +
-  geom_hline(yintercept=0, col="red", lwd=theme_nature_lwd) +
-  
-  
-  geom_vline(xintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
-  
-  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.5), lwd=theme_nature_lwd) +
-  #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
-  
-  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="black", size=theme_nature_size,
-                   label.x= -7,
-                   family = theme_nature_font_family) +
-  
-  labs(x = "Per probe t-score Grade 2 ~ Grade 3",
-       y = "Per probe t-score Primary ~ Recurrent",
-       caption=paste0("Included samples per test: n=",n_samples_grade, " (grade), n=",n_samples_prim_rec," (resection type)")
-  ) +
-  
-
-  
-  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
-  coord_cartesian(ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t)))) +
-
-#theme(plot.background = element_rect(fill="white", colour=NA))  # png export
-
-
-
-
-ggsave(paste0("output/figures/vis_differential__overall_density__quality_corrected.png"),
-       width=(8.5 * 0.975 * (1/5) * 1.12425),
-       height=2.362, dpi=600)
-
-
-
-rm(n_samples_grade, n_samples_prim_rec, plt)
 
 
 
@@ -1338,8 +1237,42 @@ plt <- data.mvalues.probes |>
 
 
 
+
+plt <- plt |> 
+  dplyr::mutate(FFPE_vs_freezer = NULL) |> 
+  dplyr::left_join(readRDS(file="cache/tmp.Rds"), by=c("probe_id"="probe_id")) |> 
+  dplyr::rename(FFPE_vs_freezer = t) |> 
+  
+  dplyr::mutate(log_time_ffpe = NULL) |> 
+  dplyr::left_join(readRDS(file="cache/tmp2.Rds"), by=c("probe_id"="probe_id")) |> 
+  dplyr::rename(log_time_ffpe = t)
+
+
+
+c <-  plt |> dplyr::select(
+  DMP__primary_recurrence__pp_nc__t,
+  DMP__g2_g3__pp_nc__t,
+  DMP__FFPE_log1p__decay_time__pp_nc__t
+) |> 
+  dplyr::rename_with(~ gsub("DMP__","",.x)) |>
+  dplyr::rename_with(~ gsub("__pp_nc_t","",.x)) |> 
+  dplyr::rename_with(~ gsub("_"," ",.x)) |> 
+  cor()
+
+corrplot::corrplot(c,order="hclust", tl.cex=0.75, tl.pos="l")
+
+
+
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
-                col=DMP__FFPE_decay_time__pp_nc__t)) +
+                
+                #col=-DMP__FFPE_decay_time__pp_nc__t
+                #col=DMP__FFPE_decay_time__pp_nc__t
+                #col=-FFPE_vs_freezer,
+                #col=log_time_ffpe
+                
+                col=DMP__FFPE_log1p__decay_time__pp_nc__t
+                
+                )) +
   
   geom_vline(xintercept=0, col="red", lwd = theme_nature_lwd) +
   geom_hline(yintercept=0, col="red", lwd = theme_nature_lwd) +
@@ -1364,14 +1297,14 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=DMP__primary_recurrence__pp_nc__t,
                   ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)),
                          max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
   
-  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-10, 10), oob = scales::squish) +
+  scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(-6, 6), oob = scales::squish) +
   
   theme(plot.background = element_rect(fill="white", colour=NA)) +
   theme(aspect.ratio=1)
 
 
 
-ggsave(paste0("output/figures/vis_differential__FFPE_decay_time.png"), 
+ggsave(paste0("output/figures/vis_differential__log1p__FFPE_decay_time.png"), 
        width=2.1, height=3.9 , dpi=1200)
 
 

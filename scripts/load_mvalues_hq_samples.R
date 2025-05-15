@@ -968,6 +968,8 @@ rm(fn)
 
 
 
+
+
 ### FFPE Decay time PP ----
 
 
@@ -994,6 +996,38 @@ if(file.exists(fn)) {
 }
 
 rm(fn)
+
+
+
+### log1p FFPE Decay time PP ----
+
+
+fn <- "cache/analysis_differential__log_ffpe_freezer_decay-time__partial_paired_nc__stats.Rds"
+
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |>
+    dplyr::select(probe_id, t, adj.P.Val) |> 
+    dplyr::rename_with(~paste0("DMP__FFPE_log1p__decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |>
+    (function(.) {
+      print(dim(.))
+      assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP)
+      return(.)
+    })()
+  
+  data.mvalues.probes <- data.mvalues.probes |>
+    dplyr::left_join(tmp, by=c('probe_id'='probe_id'), suffix=c('',''))
+  
+  rm(tmp)
+  
+} else {
+  warning("DMP result log1p FFPE decay PP time is missing")
+}
+
+rm(fn)
+
+
+
 
 
 
