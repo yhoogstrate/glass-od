@@ -94,15 +94,24 @@ tmp <- glass_od.metadata.array_samples |>
   dplyr::arrange(resection_id)
 
 
-mvalues_to_table <- data.mvalues.hq_samples |> 
-  dplyr::select(tmp$array_sentrix_id)
+mvalues_to_table <- read.delim("cache/GPL21145-48548.txt", comment.char = "#", stringsAsFactors = F) |> # preserve order and probes from this file
+  dplyr::select(ID) |> 
+  dplyr::rename(ID_REF = ID) |> 
+  dplyr::left_join(
+    data.mvalues.hq_samples |> 
+      dplyr::select(tmp$array_sentrix_id) |> 
+      tibble::rownames_to_column('probe_id'),
+    by=c("ID_REF" = 'probe_id'), suffix=c('','')
+  ) |> 
+  tibble::column_to_rownames('ID_REF')
+
 
 
 test <- mvalues_to_table |> 
   dplyr::rename(!!! tibble::deframe(tmp)) |> 
   dplyr::rename_with( ~ paste0(.x))
 
-stopifnot(sum(mvalues_to_table != test) == 0)
+stopifnot(na.omit(sum(mvalues_to_table != test) == 0))
 
 test <- test |> 
   tibble::rowid_to_column('ID_REF')
