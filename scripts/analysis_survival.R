@@ -114,7 +114,8 @@ tmp.stats.primary <- glass_od.stats.primary |>
   dplyr::mutate(CGC = ifelse(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit < median(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit), "below median", "above median"))
 
 
-surv_object.primary <- survival::Surv(time =  tmp.stats.primary$time_between_resection_and_last_event,
+
+surv_object.primary <- survival::Surv(time =  tmp.stats.primary$time_between_resection_and_last_event / CONST_DAYS_PER_MONTH / 12,
                                       event = tmp.stats.primary$patient_last_follow_up_event)
 
 
@@ -138,18 +139,20 @@ p1.primary <- survminer::ggsurvplot(fit2.primary, data = tmp.stats.primary,
                            pval.size = theme_nature_size,
                            size = theme_nature_lwd,
                            font.family = theme_nature_font_family,
-                           pval=T
+                           pval=T,
+                           xlab = "Time (Years)"
 )
 
 p2.primary <- survminer::ggsurvtable(fit2.primary, data = tmp.stats.primary, 
                             tables.theme = theme_nature, 
                             ggtheme = theme_nature,
                             fontsize = theme_nature_size,
-                            font.family = theme_nature_font_family
+                            font.family = theme_nature_font_family,
+                            xlab = "Time (Years)"
 )
 
 
-p1.primary$plot / p2.primary$risk.table +   plot_layout(heights = c(4,1))
+patchwork:::`/.ggplot`(p1.primary$plot, p2.primary$risk.table) + patchwork::plot_layout(heights = c(4,1))
 
 
 ggsave("output/figures/analysis_survival__KM_median_split_primary.pdf", width=4, height = 2.5)
@@ -170,7 +173,7 @@ tmp.stats.last_rec <- glass_od.stats.last_rec |>
   dplyr::mutate(CGC = ifelse(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit < median(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit), "below median", "above median"))
 
 
-surv_object.last_rec <- survival::Surv(time =  tmp.stats.last_rec$time_between_resection_and_last_event,
+surv_object.last_rec <- survival::Surv(time =  tmp.stats.last_rec$time_between_resection_and_last_event / CONST_DAYS_PER_MONTH / 12,
                               event = tmp.stats.last_rec$patient_last_follow_up_event)
 
 
@@ -194,25 +197,21 @@ p1.last_rec <- survminer::ggsurvplot(fit2.last_rec, data = tmp.stats.last_rec,
                            pval.size = theme_nature_size,
                            size = theme_nature_lwd,
                            font.family = theme_nature_font_family,
-                           pval=T
+                           pval=T,
+                           xlab = "Time (Years)"
 )
 
 p2.last_rec <- survminer::ggsurvtable(fit2.last_rec, data = tmp.stats.last_rec, 
                        tables.theme = theme_nature, 
                        ggtheme = theme_nature,
                        fontsize = theme_nature_size,
-                       font.family = theme_nature_font_family
+                       font.family = theme_nature_font_family,
+                       xlab = "Time (Years)"
 )
 
 
-p1.last_rec$plot / p2.last_rec$risk.table +   plot_layout(heights = c(4,1))
-
-
-
+patchwork:::`/.ggplot`(p1.last_rec$plot , p2.last_rec$risk.table) + patchwork::plot_layout(heights = c(4,1))
 ggsave("output/figures/analysis_survival__KM_median_split_tmp.stats.last_rec.pdf", width=4, height = 2.5)
-
-
-
 
 
 

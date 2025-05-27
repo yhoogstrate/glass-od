@@ -65,7 +65,7 @@ tcga_lgg_od.metadata.array_samples.c <- readxl::read_xlsx('data/tcga-lgg/TCGA me
                 `Survival (months)`) |> 
   dplyr::mutate(c_xlsx_survival_event = as.numeric(ifelse(`Vital status (1=dead)` == "NA", NA, `Vital status (1=dead)`)), `Vital status (1=dead)` = NULL) |> 
   dplyr::mutate(`Survival (months)` = as.numeric(ifelse(`Survival (months)` == "NA", NA , `Survival (months)`))) |> 
-  dplyr::mutate(c_xlsx_survival = round(`Survival (months)` * 30.43686), `Survival (months)` = NULL)
+  dplyr::mutate(c_xlsx_survival = round(`Survival (months)` * DAYS_PER_MONTH), `Survival (months)` = NULL)
 
 
 
