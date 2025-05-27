@@ -114,9 +114,9 @@ test <- mvalues_to_table |>
 stopifnot(na.omit(sum(mvalues_to_table != test) == 0))
 
 test <- test |> 
-  tibble::rowid_to_column('ID_REF')
+  tibble::rownames_to_column('ID_REF')
 
 
-write.table(test, file="geo/GLASS-OD_processed_M-values.txt", sep="\t", quote=T, row.names=F)
+write.table(test, file="geo/GLASS-OD_processed_M-values.txt", sep="\t", quote=F, row.names=F)
 
 
