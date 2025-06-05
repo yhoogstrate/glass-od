@@ -1,6 +1,10 @@
 #!/usr/bin/env R
 
 
+if ("recursiveCorPlot" %in% rownames(installed.packages()) == F) {
+  devtools::install_github("yhoogstrate/recursiveCorPlot")
+}
+
 
 
 

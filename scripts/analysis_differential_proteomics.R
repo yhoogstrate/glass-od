@@ -6,9 +6,8 @@
 library(limma)
 library(ggplot2)
 library(patchwork)
-library(EnhancedVolcano)
-
-library(recursiveCorPlot)
+#library(EnhancedVolcano)
+#library(recursiveCorPlot)
 
 
 # load data ----
@@ -448,6 +447,8 @@ stats.cgc <- limma::topTable(fit,
   tibble::rownames_to_column('protein_id') 
 
 
+#saveRDS(stats.cgc, file="cache/analysis_differential_proteomics__stats.cgc.Rds")
+
 
 rm(design, fit, data, metadata)
 
@@ -571,6 +572,13 @@ plt <- stats.time |>
 
 
 #plt |> dplyr::filter(fn1) |> head()
+
+
+#saveRDS(plt, file="cache/analysis_differential_proteomics__plt.Rds")
+
+
+plt <- readRDS(file="cache/analysis_differential_proteomics__plt.Rds")
+
 
 
 
@@ -1236,6 +1244,196 @@ write.table(
   "output/tables/GSEA_proteins_down_proteomics_cgc_cor.txt",  quote = F, row.names = F, col.names=F)
 
 
+## nega: ----
+
+
+plt |>
+  dplyr::filter(significant & logFC_cgc < 0) |> 
+  dplyr::arrange(P.Value_cgc) |> 
+  dplyr::pull('protein_id')
+
+
+## x GLASS-NL ----
+
+
+metadata <- glass_nl.metadata.array_samples |> 
+  filter_GLASS_NL_idats(CONST_N_GLASS_NL_INCLUDED_SAMPLES) |> 
+  dplyr::filter(!is.na(array_A_IDH_HG__A_IDH_LG_lr_v12.8 & !is.na(proteomics_sid))) |> 
+  dplyr::select(Sample_Name, array_A_IDH_HG__A_IDH_LG_lr_v12.8, proteomics_sid) |> 
+  dplyr::filter(!is.na(proteomics_sid)) |> 
+  dplyr::rename(CGC = array_A_IDH_HG__A_IDH_LG_lr_v12.8) |> 
+  dplyr::mutate(CGC = scale(CGC, center=T))
+
+
+
+data <- glass_nl.proteomics |>
+  dplyr::select(meta$proteomics_sid)
+
+
+
+design <- model.matrix(~CGC, data=metadata)
+fit <- limma::lmFit(data, design)
+fit <- limma::eBayes(fit, trend=T)
+stats.cgc.glass_nl <- limma::topTable(fit,
+                             n=nrow(data),
+                             coef="CGC",
+                             sort.by = "none",
+                             adjust.method="fdr") |> 
+  dplyr::rename_with( ~ paste0("GLASS-NL_CGC__", .x)) |> 
+  tibble::rownames_to_column('protein_id') 
+
+
+b$protein_id[b$protein_id %in% a$protein_id == F]
+
+
+
+
+
+a = readRDS(file="cache/analysis_differential_proteomics__plt.Rds") |> 
+  dplyr::arrange(protein_id) |> 
+  tidyr::separate_rows(protein_id, sep = ";") |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H1-0", "H1F0", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H1-1", "HIST1H1A", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H1-10", "H1FX", protein_id)) |> 
+  
+  dplyr::mutate(protein_id = ifelse(protein_id == "H1-2", "HIST1H1C", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H1-4", "HIST1H1E", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H1-5", "HIST1H1B", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H1-6", "HIST1H1T", protein_id)) |> 
+  
+  dplyr::mutate(protein_id = ifelse(protein_id == "H2AC19", "HIST2H2AA", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H2AC20", "HIST2H2AC", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H2AC21", "HIST2H2AB", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H2AC25", "HIST3H2A", protein_id)) |> 
+  
+  
+  dplyr::mutate(protein_id = ifelse(protein_id == "H2AC6", "HIST1H2AC", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H2AC8", "HIST1H2AE", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H2AZ2", "H2AFV", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H2BC1", "HIST1H2BA", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H2BC11", "HIST1H2BJ", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H2BC21", "HIST2H2BE", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H2BC19P", "HIST2H2BD", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H2BC20P", "HIST2H2BC", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H2BC5", "HIST1H2BD", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H3-3B", "H3F3B", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H3C12", "HIST1H3J", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H3C13", "HIST2H3D", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H3-7", "HIST2H3PS2", protein_id)) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "H4C16", "HIST4H4", protein_id)) 
+
+b = stats.cgc.glass_nl |> 
+  dplyr::arrange(protein_id) |> 
+  dplyr::mutate(protein_id = ifelse(protein_id == "AARS", "AARS1", protein_id))
+
+
+b |> 
+  dplyr::filter(grepl("PCNA", protein_id))
+
+
+
+
+
+
+plt <- a |> 
+  dplyr::left_join(b, by=c('protein_id'='protein_id'), suffix=c('','')) |> 
+  #dplyr::filter(!is.na(t_cgc) & !is.na(`GLASS-NL_CGC__t`)) |>
+  dplyr::mutate(col = dplyr::case_when(
+    grepl("^HISTOX[ABCD]", protein_id) ~ "HOX",
+    T ~ "other"
+  )) |> 
+  dplyr::mutate(FN1 = protein_id == "FINC") |> 
+  dplyr::mutate(cycling = protein_id %in% c(
+    "PCNA", "PNCA", "MKI67", "CDC6", "PLK1", "MCM3" , "MIB","MIB1",'MIB-1' , "MCM4" ,  "MCM5" ,  "MCM7"  , "MCM2" ,  "MCM6", "MCM3","MCM7",
+    "TMPO","DEK","RFC4",
+    "HMGB3", "HMGB1", "HMGB2",
+    "BUB3"
+  )) |> 
+  dplyr::mutate(GO_0002526_acute_inflammatory_response = protein_id %in% c(
+    "BTK","CD6","PTGER3","ITIH4","CREB3L3","TFRC","FCGR2B","PTGS2","GSTP1","B4GALT1","EIF2AK1","OSM","RHBDD3","PIK3CG","EPHB6","TFR2","LIPA","VNN1","IL4","IL1A","ACVR1","FN1","PARK7","ASH1L","PLA2G2D","F3","TNFSF4","CNR1","TNFSF11","IL1B","C3","FFAR2","CCR7","IL22","APOL2","LBP","EPO","ASS1","F12","SELENOS","PPARG","CRP","APCS","ALOX5AP","SAA2","IL6ST","EDNRB","IL6","IL1RN","PRCP","MYLK3","TNFRSF11A","REG3G","AHSG","OSMR","PTGES","SAA4","FCGR1A","ADAM8","IL6R","NLRP3","ADORA1","DNASE1L3","NPY5R","KLKB1","IL31RA","MBL2","SERPINF2","SCN11A","MRGPRX1","REG3A","CEBPB","SAA1","IL20RB","NLRP6","A2M","NUPR1","ANO6","CD163","CTNNBIP1","FCER1A","F2","FUT7","CXCR2","EXT1","F8","SIGIRR","FFAR3","PLSCR1","ZP3","SERPINA3","TRPV1","SERPINA1","SPN","ELANE","C2CD4A","FCGR3A","HLA-E","C2CD4B","IGHG1","DNASE1","ORM2","ORM1","TNF","UGT1A1","INS","SAA2-SAA4","HP"
+  )) |>
+  dplyr::mutate(GO_0062023_collagen_containing_extracellular_matrix = protein_id %in% c(
+    "DCN","SEMA3B","MARCO","SERPINB1","MYOC","TIMP2","VCAN","TNC","USH2A","COL9A2","LTBP1","ELN","LAMC3","COL23A1","LAMA3","ENTPD2","CBLN4","ITIH4","ITIH1","F7","LAMC2","COL11A1","WNT8A","GPC1","CDON","NTN1","COL17A1","FGFR2","PKM","FGF10","SPP2","ADAM11","NTN4","LMAN1","DLG1","GPC4","FBLN1","COL5A3","HSP90AA1","COL4A4","IMPG2","COL19A1","COL16A1","FCN1","ACHE","ADAMTS2","MMP2","NID2","LTBP4","ICAM1","P3H2","LAMB4","LAMB1","APOH","ANGPT2","CCDC80","CMA1","COL9A3","TGFB2","AMELY","HNRNPM","LGALS1","TIMP3","PDGFB","CHADL","CTSG","COCH","MMP9","BMP7","CTSZ","COL20A1","ANGPT4","LAMA1","MXRA5","SRPX","F9","TIMP1","SRPX2","CBLN1","ZP2","CTSH","SFRP1","IL7","FGL1","CLC","APLP1","TGFB1","COMP","WNT2","PTPRZ1","PCOLCE","SERPINE1","PLOD3","RARRES2","AEBP1","MEGF9","OGN",
+    "ASPN","ECM2","AMBP","CXCL12","ACTA2","KAZALD1","LGALS3BP","COL1A1","VTN","SOD3","CTSC","HPX","APOA4","APOC3","MDK","VWF","WNT5B","MGP","COL12A1","COL9A1","SMOC2","IMPG1","LAMA4","ERBIN","LOX","SPARC","THBS4","KNG1","HRG","WNT5A","COL7A1","LOXL3","EFEMP1","FN1","TNR","ANGPTL1","PRG4","NID1","ZP4","MFAP2","P3H1","F3","SERPINC1","CTSD","MMP8","APOA1","CCN2","LTBP2","TGFB3","TNN","TGFBI",
+    "CLU","A1BG","FMOD","PLG","ANXA11","COL10A1","SLPI","MATN4","NDP","F13A1","SERPINB6","COL21A1","AMELX","CFP","PZP","FGL2","LOXL1","APOE","NCAN","PXDN","GDF15","COL5A1","LAMA5","FIBCD1","ANGPTL6","F12","LGALS3","PODNL1","RTBDN","MATN3","EMILIN2","SERPINF1","ITGB4","MATN2","BCAN","HAPLN2","APCS","ANGPTL3","POSTN","LOXL2","ADAMDEC1","WNT2B","COL4A2","ADAMTS8","ANXA1","CTSL","ADAM19","AGT","LAMC1","SERPINE2","ANGPTL2","CCN3","IGFBPL1","TINAG","SULF1","THBS1",
+    "EMILIN1","LOXL4","ANXA7","CILP","SEMA7A","MMRN1","FRAS1","FBN2","COL2A1","INHBE","LUM","FBLN5","PCSK6","LMAN1L","HAPLN3","MFGE8","TGFB1I1","CDH13","COL6A1","COL6A2","ADAMTS10","FCN3","HSPG2","CCN1","TINAGL1","DPT","HDGF","HMCN1","ECM1","ADAMTSL4","ANXA9","S100A8","S100A7","FLG","LEFTY2","COL8A1","AHSG","SFRP2","HAPLN1","CASK","GPC3","HMCN2","SERPING1","SERPINH1","NCAM1","ZP1","FREM2","ITIH2","DST","SPARCL1","ABI3BP","ANGPT1","ADAMTS1","ADAMTS5","ADAMTS3","PRG3","ACAN","COLEC12","ADAMTS4","LAD1","C1QC","CSTB","FCN2","AZGP1","COL26A1","MATN1","SDC3","CTSS","S100A9","COL6A3","IGFBP7","FBLN2","ADAMTS9","CRELD1","PF4","CPA3","TGM4","CLEC3B","ANXA5","EDIL3","EGFLAM","RELL2","SHH","COL1A2","CTSB","SBSPON","CTHRC1","FREM1","VWA2","HTRA1","ADAMTS15","FBN1","SERPINB8","MFAP4","HSP90B1","SERPINB12","NAV2","GREM1","SERPINF2","KRT1","ANGPTL4",
+    "SOST","LTBP3","TNXB","COL3A1","NPNT","LGALS9","COL4A3","THBS3","COL22A1","SDC2","MUC17","SERPINB9","CDH2","COL24A1","FGG","FGA","FGB","LGALS4","COL8A2","ANGPTL7","LAMB2","LRRC15","TPSAB1","EFEMP2","COL6A5","EGFL7","ADAMTS20","MMRN2","C1QA","DAG1","CSPG4","CTSF","PODN","FGFBP3","ZG16","NPPA","A2M","CLEC14A","CD151","CALR","GPC5","VWA1","SSC5D","F2","ADIPOQ","OTOL1","BGN","MXRA7","SNORC","ANXA2","COL18A1","FREM3","GPC6","EMILIN3","EFNA5","THBS2","PRG2","C17orf58","ANGPTL5","BCAM","COL4A1","HAPLN4","AMTN","THSD4","COL14A1","EYS","COL4A5","AGRN","PLSCR1","ZP3","IFNA2","SERPINA5","COL25A1","VWC2","PRELP","MMP23B","SERPINA3","S100A4","PRTN3","LAMA2","COL27A1","LAMB3","ANXA4","ANXA6","SERPINA1","TPSB2","COL13A1","SPN","ELANE","COL4A6","MFAP5","PSAP","S100A10","HRNR","S100A6","SMOC1","EGFL6","L1CAM","TGM2","COL11A2","COL5A2","COL15A1","PRSS1","VIT","DEFA1","COL6A6","COLQ","GPC2","ANG","COL28A1","ORM2","ORM1","DEFA1B","MARCOL","GH1","SPON1","ANXA8","RBP3","GDF10","MMP28"
+  )) |> 
+  dplyr::mutate(`GO_0072562_blood_microparticle` = protein_id %in% c(
+    "CFH","SLC4A1","PON1","ITGA2B","CP","ITIH4","ITIH1","GRIPAP1","TFRC","CD5L","ACTB","AFM","PSMC5","TF","APOL1","TGFB1","AMBP","ENG","PFN1","LGALS3BP","VTN","HSPA8","HPX","APOA4","C9","KNG1","HRG","BCHE","FN1","CFHR3","SLC2A1","SERPINC1","APOA1","CLU","A1BG","PLG","C4BPA","DNPEP","F13A1","C3","HSPA2","PZP","INTS11","APOE","JCHAIN","APCS","AGT","CIB2","SDCBP","TMPRSS13","FCN3","OAZ3","ACTA1","EIF2A","AHSG","GC","MSN","STOM","GSN","SERPING1","ITIH2","C8A","APOA2","C1QC","ACTC1","FCN2","ACTG2","ALB","ANXA5","YWHAZ","ACSM1","SERPINF2","KRT1","ANGPTL4","FGG","FGA","FGB","HSPA6","A2M","C8G","ZBTB38","CPN2","F2","C1S","ACTG1","PROS1","KDM4D","POTEE","HBA2","ZNF177","SERPINA3","HBG2","POTEF","HSPA1B","HSPA1A","HSPA1L","PRSS1","HBA1","IGKV4-1","IGLV1-47","IGLV3-25","IGLV3-21","IGLC2","IGLC3","IGHA2","IGHG4","IGHG2","IGHA1","IGHG1","IGHM","IGHV3-7","IGHV3-13","IGHV3-23","CLIC1","HBE1","HBD","C4B","ORM2","ORM1","IGKV3-20","IGKV1D-33","IGKV1-17","IGKV3-11","IGKV1-33","IGKV1-39","IGKV2D-28","IGKV2-30","IGKV1-5","CFB","CFHR1","IGKV3-15","C4A","HBB","IGKV2D-40","HP","HPR","IGKV1D-12"
+  )) |> 
+  dplyr::mutate(homeobox_tf = protein_id %in% c(genes_homeobox_nonhox,
+                                          genes_polycomb_eed_homeobox,
+                                          genes_polycomb_h3k27_homeobox,
+                                          genes_polycomb_prc2_homeobox,
+                                          genes_polycomb_suz12_homeobox
+  )) |> 
+  dplyr::mutate(od = protein_id %in% c("MAG", "MBP", "SOX10", "NKX2.2", "CNP")) |> 
+  dplyr::mutate(cycling2 = protein_id %in% c("MCM7", "MCM5", "MCM3", "MCM2", "MCM4", 
+                                             "CCNB2", "PCNA","CCNB1", "PLK1", "BUB1","MKI67","CCND3","MYBL2","E2F1", "CCNE2", "CCND2", "CCNE1", "CCND1", "RPM1", "RFC2","PRIM2","RRM2",
+                                             "MCM6"
+                                             )) |> 
+  dplyr::mutate(col = dplyr::case_when(
+    cycling ~ "Proliferation",
+    GO_0062023_collagen_containing_extracellular_matrix ~ "GO:0062023 ECM",
+    T ~ "Other"
+  ))
+
+dim(plt)
+plt$col |> table()
+
+plt |> 
+  dplyr::filter(grepl("^CNP", protein_id)) |> 
+  dplyr::pull(protein_id)
+
+
+
+# 
+# ggplot(plt, aes(x=t_cgc, y=`GLASS-NL_CGC__t`, col=cycling, label=protein_id)) + 
+#   geom_point(size=theme_nature_size/3) +
+#   ggrepel::geom_text_repel(data= subset(plt, cycling), col="black",
+#                           #size=theme_nature_size,
+#                           segment.size=theme_nature_lwd, family = theme_nature_font_family) +
+#   theme_nature
+
+
+
+
+
+
+
+ggplot(plt, aes(x=t_cgc, y=`GLASS-NL_CGC__t`, col=col, label=protein_id)) + 
+  geom_hline(yintercept=0, col="red", lwd=theme_nature_lwd) +
+  geom_vline(xintercept=0, col="red", lwd=theme_nature_lwd) +
+  
+  geom_point(data=subset(plt, col == "Other"), size=theme_nature_size/3) +
+  geom_point(data=subset(plt, col != "Other"), size=theme_nature_size/3) +
+
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  
+  ggrepel::geom_text_repel(data= subset(plt, col == "Proliferation"), col="black", size=theme_nature_size, 
+                           segment.size=theme_nature_lwd, family = theme_nature_font_family,
+                           force=1,
+                           max.overlaps=15,
+                           #nudge_y = -1,
+                           nudge_x = -2.75
+                           ) +
+  scale_color_manual(values = c(`Other`= 'darkgray',
+                                `Proliferation`='blue',
+                                `GO:0062023 ECM` = 'red')) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="1", cor.coef.name ="R", size=theme_nature_size, family=theme_nature_font_family) +
+  labs(col = NULL, x="t-statistic proteomics GLASS-OD", y="t-statistic proteomics GLASS-NL") +
+
+  theme_nature +
+
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1)
+
+
+
+ggsave(paste0("output/figures/vis_differential_proteomix__GLASS-OD_CGC__x__GLASS-NL_CGC.png"),
+       width=2.1, height=3.9 , dpi=1200)
 
 
 

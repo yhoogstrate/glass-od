@@ -3,6 +3,8 @@
 
 library(survival)
 library(survminer)
+library(ggplot2)
+library(patchwork)
 
 
 source('scripts/load_themes.R')
@@ -103,14 +105,13 @@ glass_od.stats.last_rec <- glass_od.metadata.array_samples |>
 
 
 
-# KM's fig 2 ----
+# KM's fig 2 2group ----
 ## prim ----
 
 
 tmp.stats.primary <- glass_od.stats.primary |> 
   dplyr::arrange(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
   dplyr::mutate(i = 1:dplyr::n()) |> 
-  dplyr::mutate(CGC_cut = cut(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, 2)) |> 
   dplyr::mutate(CGC = ifelse(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit < median(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit), "below median", "above median"))
 
 
@@ -119,43 +120,160 @@ surv_object.primary <- survival::Surv(time =  tmp.stats.primary$time_between_res
                                       event = tmp.stats.primary$patient_last_follow_up_event)
 
 
-fit1.primary <- survival::survfit(surv_object.primary ~  CGC_cut , data = tmp.stats.primary)
 fit2.primary <- survival::survfit(surv_object.primary ~  CGC , data = tmp.stats.primary)
-#print(survminer::surv_pvalue(fit1)$pval)
 
 
 
 
 p1.primary <- survminer::ggsurvplot(fit2.primary, data = tmp.stats.primary, 
-                           palette = c(
-                             'darkblue', 'darkgreen'
-                             #mixcol( 'lightblue', 'lightgreen'),
-                             #mixcol( 'darkblue', 'darkgreen')
-                           ),
-                           tables.theme = theme_nature, 
-                           ggtheme = theme_nature,
-                           fontsize = theme_nature_size,
-                           censor.size = theme_nature_size * 0.65,
-                           pval.size = theme_nature_size,
-                           size = theme_nature_lwd,
-                           font.family = theme_nature_font_family,
-                           pval=T,
-                           xlab = "Time (Years)"
+                                    palette = c(
+                                      'darkblue', 'darkgreen'
+                                      #mixcol( 'lightblue', 'lightgreen'),
+                                      #mixcol( 'darkblue', 'darkgreen')
+                                    ),
+                                    tables.theme = theme_nature, 
+                                    ggtheme = theme_nature,
+                                    fontsize = theme_nature_size,
+                                    censor.size = theme_nature_size * 0.65,
+                                    pval.size = theme_nature_size,
+                                    size = theme_nature_lwd,
+                                    font.family = theme_nature_font_family,
+                                    pval=T,
+                                    xlab = "OS from primary (Years)"
 )
 
 p2.primary <- survminer::ggsurvtable(fit2.primary, data = tmp.stats.primary, 
-                            tables.theme = theme_nature, 
-                            ggtheme = theme_nature,
-                            fontsize = theme_nature_size,
-                            font.family = theme_nature_font_family,
-                            xlab = "Time (Years)"
+                                     tables.theme = theme_nature, 
+                                     ggtheme = theme_nature,
+                                     fontsize = theme_nature_size,
+                                     font.family = theme_nature_font_family,
+                                     xlab = "OS from primary (Years)"
 )
 
 
 patchwork:::`/.ggplot`(p1.primary$plot, p2.primary$risk.table) + patchwork::plot_layout(heights = c(4,1))
+#ggsave("output/figures/analysis_survival__KM_median_split_primary.pdf", width=4, height = 2.5)
+ggsave("output/figures/analysis_survival__KM_median_split_primary.pdf", width=2.55, height = 2.5)
 
 
-ggsave("output/figures/analysis_survival__KM_median_split_primary.pdf", width=4, height = 2.5)
+
+rm(tmp.stats.primary, surv_object.primary, fit2.primary, p1.primary, p2.primary)
+
+
+
+## rec ----
+
+
+
+tmp.stats.last_rec <- glass_od.stats.last_rec |> 
+  dplyr::arrange(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(i = 1:dplyr::n()) |> 
+  dplyr::mutate(CGC = ifelse(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit < median(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit), "below median", "above median"))
+
+
+surv_object.last_rec <- survival::Surv(time =  tmp.stats.last_rec$time_between_resection_and_last_event / CONST_DAYS_PER_MONTH / 12,
+                                       event = tmp.stats.last_rec$patient_last_follow_up_event)
+
+
+fit2.last_rec <- survival::survfit(surv_object.last_rec ~  CGC , data = tmp.stats.last_rec)
+
+
+
+
+
+p1.last_rec <- survminer::ggsurvplot(fit2.last_rec, data = tmp.stats.last_rec, 
+                                     palette = c(
+                                       'darkblue', 'darkgreen'
+                                       #mixcol( 'lightblue', 'lightgreen'),
+                                       #mixcol( 'darkblue', 'darkgreen')
+                                     ),
+                                     tables.theme = theme_nature, 
+                                     ggtheme = theme_nature,
+                                     fontsize = theme_nature_size,
+                                     censor.size = theme_nature_size * 0.65,
+                                     pval.size = theme_nature_size,
+                                     size = theme_nature_lwd,
+                                     font.family = theme_nature_font_family,
+                                     pval=T,
+                                     xlab = "OS from recurrent (Years)"
+)
+
+p2.last_rec <- survminer::ggsurvtable(fit2.last_rec, data = tmp.stats.last_rec, 
+                                      tables.theme = theme_nature, 
+                                      ggtheme = theme_nature,
+                                      fontsize = theme_nature_size,
+                                      font.family = theme_nature_font_family,
+                                      xlab = "OS from recurrent (Years)"
+)
+
+
+patchwork:::`/.ggplot`(p1.last_rec$plot , p2.last_rec$risk.table) + patchwork::plot_layout(heights = c(4,1))
+#ggsave("output/figures/analysis_survival__KM_median_split_tmp.stats.last_rec.pdf", width=4, height = 2.5)
+ggsave("output/figures/analysis_survival__KM_median_split_tmp.stats.last_rec.pdf", width=2.55, height = 2.5)
+
+
+rm(tmp.stats.last_rec, surv_object.last_rec, fit2.last_rec, p1.last_rec, p2.last_rec)
+
+
+
+
+# KM's fig 3 3group ----
+## prim ----
+
+
+tmp.stats.primary_3g <- glass_od.stats.primary |> 
+  dplyr::arrange(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(i = 1:dplyr::n()) |> 
+  dplyr::mutate(grp = i / dplyr::n() * 3) |> 
+  dplyr::mutate(CGC = dplyr::case_when(
+    grp <= 1 ~ "low",
+    grp <= 2 ~ "intermediate",
+    T ~ "high"
+  ))
+
+
+
+
+
+surv_object.primary_3g <- survival::Surv(time =  tmp.stats.primary_3g$time_between_resection_and_last_event / CONST_DAYS_PER_MONTH / 12,
+                                         event = tmp.stats.primary_3g$patient_last_follow_up_event)
+
+
+fit2.primary_3g <- survival::survfit(surv_object.primary_3g ~  CGC , data = tmp.stats.primary_3g)
+
+
+
+
+p1.primary_3g <- survminer::ggsurvplot(fit2.primary_3g, data = tmp.stats.primary_3g, 
+                                       palette = c(
+                                         "red",'darkblue', 'darkgreen'
+                                       ),
+                                       tables.theme = theme_nature, 
+                                       ggtheme = theme_nature,
+                                       fontsize = theme_nature_size,
+                                       censor.size = theme_nature_size * 0.65,
+                                       pval.size = theme_nature_size,
+                                       size = theme_nature_lwd,
+                                       font.family = theme_nature_font_family,
+                                       pval=T,
+                                       xlab = "OS from primary (Years)"
+)
+
+p2.primary_3g <- survminer::ggsurvtable(fit2.primary_3g, data = tmp.stats.primary_3g, 
+                                        tables.theme = theme_nature, 
+                                        ggtheme = theme_nature,
+                                        fontsize = theme_nature_size,
+                                        font.family = theme_nature_font_family,
+                                        xlab = "OS from primary (Years)"
+)
+
+
+library(patchwork)
+p1.primary_3g$plot / p2.primary_3g$risk.table + plot_layout(heights = c(4,1))
+#patchwork:::`/.ggplot`(p1.primary_3g$plot, p2.primary_3g$risk.table) + patchwork::plot_layout(heights = c(4,1))
+
+
+ggsave("output/figures/analysis_survival__KM_median_split_primary__3g.pdf", width=2.55, height = 2.5)
 
 
 
@@ -169,49 +287,50 @@ ggsave("output/figures/analysis_survival__KM_median_split_primary.pdf", width=4,
 tmp.stats.last_rec <- glass_od.stats.last_rec |> 
   dplyr::arrange(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
   dplyr::mutate(i = 1:dplyr::n()) |> 
-  dplyr::mutate(CGC_cut = cut(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, 2)) |> 
-  dplyr::mutate(CGC = ifelse(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit < median(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit), "below median", "above median"))
+  dplyr::mutate(grp = i / dplyr::n() * 3) |> 
+  dplyr::mutate(CGC = dplyr::case_when(
+    grp <= 1 ~ "low",
+    grp <= 2 ~ "intermediate",
+    T ~ "high"
+  ))
 
 
 surv_object.last_rec <- survival::Surv(time =  tmp.stats.last_rec$time_between_resection_and_last_event / CONST_DAYS_PER_MONTH / 12,
-                              event = tmp.stats.last_rec$patient_last_follow_up_event)
+                                       event = tmp.stats.last_rec$patient_last_follow_up_event)
 
 
-fit1.last_rec <- survival::survfit(surv_object.last_rec ~  CGC_cut , data = tmp.stats.last_rec)
 fit2.last_rec <- survival::survfit(surv_object.last_rec ~  CGC , data = tmp.stats.last_rec)
-#print(survminer::surv_pvalue(fit1)$pval)
 
 
 
 
 p1.last_rec <- survminer::ggsurvplot(fit2.last_rec, data = tmp.stats.last_rec, 
-                           palette = c(
-                             'darkblue', 'darkgreen'
-                             #mixcol( 'lightblue', 'lightgreen'),
-                             #mixcol( 'darkblue', 'darkgreen')
-                           ),
-                           tables.theme = theme_nature, 
-                           ggtheme = theme_nature,
-                           fontsize = theme_nature_size,
-                           censor.size = theme_nature_size * 0.65,
-                           pval.size = theme_nature_size,
-                           size = theme_nature_lwd,
-                           font.family = theme_nature_font_family,
-                           pval=T,
-                           xlab = "Time (Years)"
+                                     palette = c(
+                                       "red",'darkblue', 'darkgreen'
+                                     ),
+                                     tables.theme = theme_nature, 
+                                     ggtheme = theme_nature,
+                                     fontsize = theme_nature_size,
+                                     censor.size = theme_nature_size * 0.65,
+                                     pval.size = theme_nature_size,
+                                     size = theme_nature_lwd,
+                                     font.family = theme_nature_font_family,
+                                     pval=T,
+                                     xlab = "OS from recurrent (Years)"
 )
 
 p2.last_rec <- survminer::ggsurvtable(fit2.last_rec, data = tmp.stats.last_rec, 
-                       tables.theme = theme_nature, 
-                       ggtheme = theme_nature,
-                       fontsize = theme_nature_size,
-                       font.family = theme_nature_font_family,
-                       xlab = "Time (Years)"
+                                      tables.theme = theme_nature, 
+                                      ggtheme = theme_nature,
+                                      fontsize = theme_nature_size,
+                                      font.family = theme_nature_font_family,
+                                      xlab = "OS from recurrent (Years)"
 )
 
 
 patchwork:::`/.ggplot`(p1.last_rec$plot , p2.last_rec$risk.table) + patchwork::plot_layout(heights = c(4,1))
-ggsave("output/figures/analysis_survival__KM_median_split_tmp.stats.last_rec.pdf", width=4, height = 2.5)
+#ggsave("output/figures/analysis_survival__KM_median_split_tmp.stats.last_rec__3g.pdf", width=4, height = 2.5)
+ggsave("output/figures/analysis_survival__KM_median_split_tmp.stats.last_rec__3g.pdf", width=2.55, height = 2.5)
 
 
 

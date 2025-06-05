@@ -4,6 +4,7 @@
 
 
 source('scripts/load_functions.R')
+source('scripts/load_constants.R')
 
 
 ## idats ----
@@ -526,6 +527,23 @@ tmp <- readRDS("cache/analysis_EPITOC2.Rds") |>
 glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
   dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
 rm(tmp)
+
+
+## RNA + proteomics identifiers ----
+
+tmp <- read.csv("data/GLASS-NL_identifiers.csv") |> 
+  dplyr::mutate(X = NULL) |> 
+  dplyr::filter(!is.na(methylation.sid)) |> 
+  dplyr::rename(array_sentrix_id = methylation.sid) |> 
+  dplyr::rename(RNA_seq_sid = genomescan.sid) |> 
+  dplyr::rename(proteomics_sid = ProtID)
+
+
+glass_nl.metadata.array_samples <- glass_nl.metadata.array_samples |>
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('',''))
+rm(tmp)
+
+
 
 
 
