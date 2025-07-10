@@ -1101,7 +1101,7 @@ stats <- metadata |>
     resection_treatment_status_chemo ~ "other",
     T ~ "No"
   ))
-  
+
 
 n_samples = nrow(stats)
 
@@ -1171,9 +1171,187 @@ p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
                                col="purple",
                                size=theme_nature_size/3,
                                width=0.1) +
-
+  
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & chemo == "other"),
                                col="orange",
+                               size=theme_nature_size/3,
+                               width=0.1) +
+  
+  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
+                        labels=c("0", "", "1"), oob = scales::squish) +
+  
+  theme_nature +
+  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  labs(col="Probability",
+       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("MNP -- samples: ",n_samples)) +
+  scale_x_continuous(breaks = c(0,1),
+                     labels=c("p=0", "p=1")) + 
+  theme(legend.box = "vertical",
+        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.title =  element_text(vjust=1))
+p
+
+
+
+### CDKN2A/B ----
+#### unpaired ----
+
+
+
+
+stats <- metadata |> 
+  dplyr::filter(!is.na(resection_treatment_status_chemo)) |> 
+  dplyr::filter(CDKN2AB != "NA") |> 
+  dplyr::mutate(trt_classes = (CDKN2AB == "HD") * 1) |> 
+  dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)
+
+
+n_samples = nrow(stats)
+
+model <- glm(trt_classes ~ covar, data = stats, family = binomial)
+pval <- model |>
+  summary() |> 
+  purrr::pluck('coefficients') |>
+  as.data.frame() |>  
+  tibble::rownames_to_column('coef') |>
+  dplyr::filter(coef == "covar") |> 
+  dplyr::pull(`Pr(>|z|)`)
+
+
+expnd <- (max(stats$covar)-min(stats$covar)) * 0.075
+Predicted_data <- data.frame(covar=modelr::seq_range(c(min(stats$covar) - expnd, max(stats$covar) + expnd), 500))
+Predicted_data$trt_classes = predict(model, Predicted_data, type="response")
+
+
+
+plt.logit.simplistic <- rbind(
+  stats |>  # left point line:
+    dplyr::select(trt_classes, covar, CDKN2AB) |> 
+    dplyr::mutate(col = -1) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = trt_classes * 1.25 - 0.125) |> 
+    dplyr::rename(y = covar)
+  ,
+  Predicted_data |> # logit fit
+    dplyr::mutate(CDKN2AB = "") |> 
+    dplyr::mutate(group = "logit fit") |> 
+    dplyr::mutate(type = "fit") |> 
+    dplyr::rename(y = covar) |> 
+    dplyr::mutate(x = trt_classes ) |> 
+    dplyr::mutate(col = trt_classes)
+) |> 
+  dplyr::mutate(col = col  + 2)
+
+
+
+p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
+            aes(col=col),
+            lwd=theme_nature_lwd * 5) +
+  
+  ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & CDKN2AB == "HD"),
+                               col='brown',
+                               size=theme_nature_size/3,
+                               width=0.1) +
+  
+  
+  ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & CDKN2AB %in% c("SD, chr", "SD, arm")),#, 
+                               col='red',
+                               size=theme_nature_size/3,
+                               width=0.1) +
+  
+  ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & CDKN2AB %in% c("SD, focal")),
+                               col='orange',
+                               size=theme_nature_size/3,
+                               width=0.1) +
+  
+  ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & CDKN2AB == "wt"),
+                               col="darkgreen",
+                               size=theme_nature_size/3,
+                               width=0.1) +
+  
+  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
+                        labels=c("0", "", "1"), oob = scales::squish) +
+  
+  theme_nature +
+  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  labs(col="Probability",
+       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("MNP -- samples: ",n_samples)) +
+  scale_x_continuous(breaks = c(0,1),
+                     labels=c("p=0", "p=1")) + 
+  theme(legend.box = "vertical",
+        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.title =  element_text(vjust=1))
+p
+
+
+
+### FFPE/FF ----
+#### unpaired ----
+
+
+
+stats <- metadata |> 
+  dplyr::filter(!is.na(isolation_material)) |> 
+  dplyr::filter(CDKN2AB != "NA") |> 
+  dplyr::mutate(trt_classes = ( isolation_material == "ffpe" ) * 1) |> 
+  dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)
+
+
+n_samples = nrow(stats)
+
+model <- glm(trt_classes ~ covar, data = stats, family = binomial)
+pval <- model |>
+  summary() |> 
+  purrr::pluck('coefficients') |>
+  as.data.frame() |>  
+  tibble::rownames_to_column('coef') |>
+  dplyr::filter(coef == "covar") |> 
+  dplyr::pull(`Pr(>|z|)`)
+
+
+expnd <- (max(stats$covar)-min(stats$covar)) * 0.075
+Predicted_data <- data.frame(covar=modelr::seq_range(c(min(stats$covar) - expnd, max(stats$covar) + expnd), 500))
+Predicted_data$trt_classes = predict(model, Predicted_data, type="response")
+
+
+
+plt.logit.simplistic <- rbind(
+  stats |>  # left point line:
+    dplyr::select(trt_classes, covar) |> 
+    dplyr::mutate(col = -1) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = trt_classes * 1.25 - 0.125) |> 
+    dplyr::rename(y = covar)
+  ,
+  Predicted_data |> # logit fit
+    dplyr::mutate(group = "logit fit") |> 
+    dplyr::mutate(type = "fit") |> 
+    dplyr::rename(y = covar) |> 
+    dplyr::mutate(x = trt_classes ) |> 
+    dplyr::mutate(col = trt_classes)
+) |> 
+  dplyr::mutate(col = col  + 2)
+
+
+
+p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
+            aes(col=col),
+            lwd=theme_nature_lwd * 5) +
+  
+  ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+                               col='gray40',
                                size=theme_nature_size/3,
                                width=0.1) +
   
