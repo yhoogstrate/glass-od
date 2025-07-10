@@ -153,7 +153,7 @@ fn <- "cache/analysis_differential__primary_recurrence__partial_paired_nc__stats
 if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
-    dplyr::select(probe_id, t, adj.P.Val) |> 
+    dplyr::select(probe_id, t, adj.P.Val, logFC) |> 
     dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
     (function(.) {
       print(dim(.))
@@ -183,7 +183,7 @@ fn <- "cache/analysis_differential__primary_recurrence__PC1__partial_paired_nc__
 if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
-    dplyr::select(probe_id, t, adj.P.Val) |> 
+    dplyr::select(probe_id, t, logFC, adj.P.Val) |> 
     dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc_PC1__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
     (function(.) {
       print(dim(.))

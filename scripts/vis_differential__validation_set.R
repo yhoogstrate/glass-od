@@ -49,35 +49,60 @@ plt <- data.mvalues.probes |>
   
   dplyr::select(probe_id,
                 DMP__primary_recurrence__pp_nc__t,
+                DMP__primary_recurrence__pp_nc__adj.P.Val,
+                DMP__primary_recurrence__pp_nc__logFC,
+                
                 DMP__primary_recurrence__pp_nc_PC1__t,
+                DMP__primary_recurrence__pp_nc_PC1__adj.P.Val,
+                DMP__primary_recurrence__pp_nc_PC1__logFC,
+                
+                
                 DMP__g2_g3__pp_nc__t,
-                DMP__g2_g3__pp_nc_PC1__t) |> 
+                DMP__g2_g3__pp_nc__adj.P.Val,
+                DMP__g2_g3__pp_nc__logFC,
+                
+                DMP__g2_g3__pp_nc_PC1__t,
+                DMP__g2_g3__pp_nc_PC1__adj.P.Val,
+                DMP__g2_g3__pp_nc_PC1__logFC
+                ) |> 
   dplyr::left_join(
     readRDS("cache/analysis_differential__g2_g3__partial_paired_nc__validationset__stats.Rds") |> 
-      dplyr::select(probe_id, t) |> 
-      dplyr::rename( t_validation_g2_g3 = t),
+      dplyr::select(probe_id, t, adj.P.Val, logFC) |> 
+      dplyr::rename(t_validation_g2_g3 = t,
+                    logFC_validation_g2_g3 = logFC,
+                    adj.P.Val_validation_g2_g3 = adj.P.Val),
     by=c('probe_id'='probe_id')
   )|> 
   dplyr::left_join(
     readRDS("cache/analysis_differential__p_r__partial_paired_nc__validationset__stats.Rds") |> 
-      dplyr::select(probe_id, t) |> 
-      dplyr::rename(t_validation_p_r = t),
+      dplyr::select(probe_id, t, adj.P.Val, logFC) |> 
+      dplyr::rename(t_validation_p_r = t,
+                    logFC_validation_p_r = logFC,
+                    adj.P.Val_validation_p_r = adj.P.Val,
+      ),
     by=c('probe_id'='probe_id')
   ) |> 
   dplyr::left_join(
     readRDS("cache/analysis_differential__g2_g3__PC1__partial_paired_nc__validationset__stats.Rds") |> 
-      dplyr::select(probe_id, t) |> 
-      dplyr::rename( t_validation_g2_g3__PC1 = t),
+      dplyr::select(probe_id, t, adj.P.Val, logFC) |> 
+      dplyr::rename(t_validation_g2_g3__PC1 = t,
+                    logFC_validation_g2_g3__PC1 = logFC,
+                    adj.P.Val_validation_g2_g3__PC1 = adj.P.Val,
+      ),
     by=c('probe_id'='probe_id')
   )|> 
   dplyr::left_join(
     readRDS("cache/analysis_differential__p_r__PC1__partial_paired_nc__validationset__stats.Rds") |> 
-      dplyr::select(probe_id, t) |> 
-      dplyr::rename(t_validation_p_r__PC1 = t),
+      dplyr::select(probe_id, t, adj.P.Val, logFC) |> 
+      dplyr::rename(t_validation_p_r__PC1 = t,
+                    adj.P.Val_validation_p_r__PC1 = adj.P.Val,
+                    logFC_validation_p_r__PC1 = logFC),
     by=c('probe_id'='probe_id')
   ) |> 
   dplyr::filter(!is.na(DMP__primary_recurrence__pp_nc__t)) |> 
   dplyr::mutate(col=factor("black", levels=c("black","white")))
+
+
 
 
 # coorr stuff ----
@@ -144,7 +169,18 @@ ggsave(paste0("output/figures/vis_differential__GLASS-OD_x_validation__naive.png
 
 # scatter GLASS-OD x validatie PC1 ----
 
-
+# contingency table
+tab <- plt |> 
+  dplyr::filter(!is.na(DMP__g2_g3__pp_nc_PC1__adj.P.Val)) |> 
+  dplyr::filter(!is.na(DMP__g2_g3__pp_nc_PC1__logFC)) |> 
+  dplyr::filter(!is.na(adj.P.Val_validation_g2_g3__PC1)) |> 
+  dplyr::filter(!is.na(logFC_validation_g2_g3__PC1)) |> 
+  
+  dplyr::mutate(significant_glass_od = 
+                DMP__g2_g3__pp_nc_PC1__adj.P.Val < 0.01 & abs(DMP__g2_g3__pp_nc_PC1__logFC) > 0.5
+                ) |> 
+  dplyr::mutate(significant_validation = adj.P.Val_validation_g2_g3__PC1 < 0.01 & abs(logFC_validation_g2_g3__PC1) > 0.5) |> 
+  dplyr::select(significant_glass_od, significant_validation)
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t, y=t_validation_g2_g3__PC1, col=col)) +

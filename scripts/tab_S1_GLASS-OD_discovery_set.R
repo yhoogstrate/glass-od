@@ -22,11 +22,19 @@ if(!exists('glass_od.metadata.array_samples')) {
 
 out_meth <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::arrange(resection_id) |> 
   dplyr::select(array_sentrix_id,
+                
+                patient_case_barcode,
+                
                 resection_id,
                 patient_id,
                 resection_number,
                 resection_tumor_grade,
+                
+                isolation_material,
+                
+                
                 
                 array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
                 

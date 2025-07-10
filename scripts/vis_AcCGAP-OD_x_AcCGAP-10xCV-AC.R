@@ -81,12 +81,26 @@ plt <- glass_nl.metadata.array_samples |>
   ))
 
 
+
+rrmse <- function(actual, predicted) {
+  rmse <- sqrt(mean((actual - predicted)^2))
+  sd_y <- sd(actual)
+  return(rmse / sd_y)
+}
+
+s_rmse <- round(sqrt(mean((plt$array_A_IDH_HG__A_IDH_LG_lr_v12.8 - plt$array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV_v12.8)^2)),3)
+s_rrmse = round(rrmse(plt$array_A_IDH_HG__A_IDH_LG_lr_v12.8, plt$array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV_v12.8),3)
+
+
 ggplot(plt, aes(
   y=`array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV_v12.8`,
   x=array_A_IDH_HG__A_IDH_LG_lr_v12.8,
   col=col,
   #label=sentrix_id
 )) +
+  ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,family=theme_nature_font_family) +
+  annotate("text", x = -16, y = 17.8, label = paste0("RMSE = ",s_rmse),hjust = 0, color = "black", size=theme_nature_size,family=theme_nature_font_family) +
+  annotate("text", x = -16, y = 15.8, label = paste0("RRMSE = ",s_rrmse), hjust = 0, color = "black", size=theme_nature_size,family=theme_nature_font_family) +
   geom_point(size=theme_nature_size/3) +
   #ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", fill="1", size=theme_cellpress_size) +
   labs(subtitle = "CGC[phi] in GLASS-NL",

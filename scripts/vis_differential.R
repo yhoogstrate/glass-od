@@ -93,6 +93,81 @@ ggsave("output/figures/vis_differential__DMP_power.pdf", width=8.5 * 0.975 / 6, 
 
 ## A: overall density ----
 
+### 0. as volcano's ----
+
+
+
+n_samples_grade <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_first_G2_and_last_G3(154) |> 
+  nrow()
+
+n_samples_prim_rec <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  filter_primaries_and_last_recurrences(179) |> 
+  nrow()
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })() |> 
+  tidyr::pivot_longer(
+    cols = c(DMP__g2_g3__pp_nc__adj.P.Val,
+             DMP__g2_g3__pp_nc__logFC,
+             DMP__primary_recurrence__pp_nc__adj.P.Val,
+             DMP__primary_recurrence__pp_nc__logFC),
+    names_to = c("comparison", ".value"),
+    names_pattern = "DMP__(.*)__pp_nc__(.*)"
+  ) |> 
+  dplyr::mutate(comparison = dplyr::case_when(
+    comparison == "g2_g3" ~ "CNS WHO Grades",
+    comparison == "primary_recurrence" ~ "Primary - Recurrent",
+    T ~ "error"
+  )) |> 
+  dplyr::mutate(comparison = factor(comparison, levels=c("Primary - Recurrent", "CNS WHO Grades"))) |> 
+  dplyr::mutate(significant = ifelse(adj.P.Val < 0.01 & abs(logFC) > 0.5, 'yes','no'))
+
+
+ggplot(plt, aes(x=logFC, y=-log10(adj.P.Val), col=significant)) +
+  facet_wrap(~comparison) +
+  geom_point(data=head(plt, n=0)) +
+  #geom_vline(xintercept=0, col="red", alpha=1, lwd = theme_nature_lwd) +
+  geom_vline(xintercept=0.5, col="red", alpha=1, lwd = theme_nature_lwd , lty=3) +
+  geom_vline(xintercept=-0.5, col="red", alpha=1, lwd = theme_nature_lwd , lty=3) +
+  
+  #geom_hline(yintercept=0, col="red", alpha=1, lwd = theme_nature_lwd) +
+  geom_hline(yintercept=-log10(0.01), col="red", alpha=1, lwd = theme_nature_lwd, lty=3) +
+  
+  geom_point(pch=16, cex=0.01, alpha=0.085) +
+  labs(x = "log2FoldChange") +
+  theme_nature +
+  scale_color_manual(values = c(`yes` = 'black', `no` = 'darkgray')) +
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  ylim(c(0,12))
+  #theme(aspect.ratio=1)
+
+
+
+
+ggsave(paste0("output/figures/vis_differential__volcanosy.png"), 
+       width=2.1 * 2, height=2.5 , dpi=1200)
+
+
+rm(n_samples_grade, n_samples_prim_rec)
+
+
+
+
+
 ### 1. gray scale ----
 
 
@@ -183,7 +258,7 @@ plt <- data.mvalues.probes |>
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
                 y=DMP__primary_recurrence__pp_nc__t,
                 col = abs(DMP__PCs__pp_nc__PC1_t) - abs(DMP__PCs__pp_nc__PC2_t)
-                )) +
+)) +
   geom_vline(xintercept=0, col="red") +
   geom_hline(yintercept=0, col="red") +
   
@@ -204,6 +279,143 @@ ggsave(paste0("output/figures/vis_differential__EFF1-PC1_EFF2-PC2.png"), width=(
 
 
 rm(n_samples_grade, n_samples_prim_rec)
+
+
+
+### 2. PC1 & PC2 & PC3 ----
+
+#### uncorr ----
+
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+plt <- plt |> 
+  dplyr::mutate(col = dplyr::case_when(
+    (abs(DMP__PCs__pp_nc__PC1_t) > abs(DMP__PCs__pp_nc__PC2_t)) & (abs(DMP__PCs__pp_nc__PC1_t) > abs(DMP__PCs__pp_nc__PC3_t))  ~ "PC1",
+    (abs(DMP__PCs__pp_nc__PC2_t) > abs(DMP__PCs__pp_nc__PC1_t)) & (abs(DMP__PCs__pp_nc__PC2_t) > abs(DMP__PCs__pp_nc__PC3_t))  ~ "PC2",
+    (abs(DMP__PCs__pp_nc__PC3_t) > abs(DMP__PCs__pp_nc__PC1_t)) & (abs(DMP__PCs__pp_nc__PC3_t) > abs(DMP__PCs__pp_nc__PC2_t))  ~ "PC3",
+    T ~ "err"
+  )) |> 
+  dplyr::mutate(col_mv = dplyr::case_when(
+    (abs(DMP__PC1_PC2_PC3_multivariate__t_PC1) > abs(DMP__PC1_PC2_PC3_multivariate__t_PC2)) & (abs(DMP__PC1_PC2_PC3_multivariate__t_PC1) > abs(DMP__PC1_PC2_PC3_multivariate__t_PC3))  ~ "PC1",
+    (abs(DMP__PC1_PC2_PC3_multivariate__t_PC2) > abs(DMP__PC1_PC2_PC3_multivariate__t_PC1)) & (abs(DMP__PC1_PC2_PC3_multivariate__t_PC2) > abs(DMP__PC1_PC2_PC3_multivariate__t_PC3))  ~ "PC2",
+    (abs(DMP__PC1_PC2_PC3_multivariate__t_PC3) > abs(DMP__PC1_PC2_PC3_multivariate__t_PC1)) & (abs(DMP__PC1_PC2_PC3_multivariate__t_PC3) > abs(DMP__PC1_PC2_PC3_multivariate__t_PC2))  ~ "PC3",
+    T ~ "err"
+  ))
+
+plt$col |> table()
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t,
+                y=DMP__primary_recurrence__pp_nc__t,
+                col = col_mv #abs(DMP__PCs__pp_nc__PC2_t) - abs(DMP__PCs__pp_nc__PC3_t)
+)) +
+  geom_vline(xintercept=0, col="red", lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd=theme_nature_lwd) +
+  
+  geom_point(data=head(plt, n=0)) +
+  geom_point(pch=16, cex=0.001, alpha=0.01) +
+  geom_point(data=head(plt, n=0)) +
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrent",col = "Fit to PC1 vs. PC2") +
+  
+  theme_nature +
+  theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))),
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc__t)), max(abs(plt$DMP__primary_recurrence__pp_nc__t))))+
+  
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1) +
+  
+  scale_color_manual(values=c(`PC3`='red',`PC1`='blue', `PC2`='darkgreen'))
+
+
+
+ggsave(paste0("output/figures/vis_differential__EFF2-PC2_EFF3-PC3.png"),width=2.1, height=3.9 , dpi=1200)
+
+
+
+
+#### corr ----
+
+
+plt <- data.mvalues.probes |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED) 
+    return(.)
+  })() |> 
+  dplyr::filter(detP_good_probe & grepl("^cg", probe_id)) |> 
+  (function(.) {
+    print(dim(.))
+    assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
+    return(.)
+  })()
+
+
+plt <- plt |> 
+  dplyr::mutate(col = dplyr::case_when(
+    (abs(DMP__PCs__pp_nc__PC2_t) > abs(DMP__PCs__pp_nc__PC1_t)) ~ "PC2",
+    (abs(DMP__PCs__pp_nc__PC3_t) > abs(DMP__PCs__pp_nc__PC2_t)) ~ "PC3",
+    T ~ "err"
+  )) |> 
+  dplyr::mutate(col_mv = dplyr::case_when(
+    (abs(DMP__PC1_PC2_PC3_multivariate__t_PC2) > abs(DMP__PC1_PC2_PC3_multivariate__t_PC3)) ~ "PC2",
+    (abs(DMP__PC1_PC2_PC3_multivariate__t_PC3) > abs(DMP__PC1_PC2_PC3_multivariate__t_PC2))  ~ "PC3",
+    T ~ "err"
+  ))
+
+#plt <- plt |> 
+#  dplyr::mutate(col_c = abs(DMP__PC1_PC2_PC3_multivariate__t_PC3) - abs(DMP__PC1_PC2_PC3_multivariate__t_PC2))
+
+
+ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,
+                y=DMP__primary_recurrence__pp_nc_PC1__t,
+                col = col
+)) +
+  geom_vline(xintercept=0, col="red", lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", lwd=theme_nature_lwd) +
+  
+  geom_point(data=head(plt, n=0)) +
+  geom_point(pch=16, cex=0.001, alpha=0.04) +
+  geom_point(data=head(plt, n=0)) +
+  
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  
+  labs(x = "Per probe t-score Grade 2 ~ Grade 3", y="Per probe t-score Primary ~ Recurrent",col = "Fit to PC1 vs. PC2") +
+  
+  theme_nature +
+  theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
+  coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc_PC1__t)), max(abs(plt$DMP__g2_g3__pp_nc_PC1__t))),
+                  ylim=c(-max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t)), max(abs(plt$DMP__primary_recurrence__pp_nc_PC1__t))))+
+  
+  theme(plot.background = element_rect(fill="white", colour=NA)) +
+  theme(aspect.ratio=1) +
+  
+  scale_color_manual(values=c(`PC3`='red',`PC2`='blue'))
+  #scale_color_gradientn(colours = c("aquamarine3","white","#d34394ff"), na.value = "grey50", limits = c(-5, 1.4), breaks=c(-5, 0, 1.4),  oob = scales::squish)
+
+
+
+ggsave(paste0("output/figures/vis_differential__EFF2-PC2_EFF3-PC3_cor.png"), width=2.1, height=3.9 , dpi=1200)
+
 
 
 
@@ -878,6 +1090,27 @@ plt <- data.mvalues.probes |>
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
   })()
+
+
+
+# contingency table
+tab <- plt |> 
+  dplyr::filter(!is.na(DMP__g2_g3__pp_nc_PC1__adj.P.Val)) |> 
+  dplyr::filter(!is.na(DMP__g2_g3__pp_nc_PC1__logFC)) |> 
+  dplyr::filter(!is.na(DMP__GLASS_NL__exp6__adj.P.Val)) |> 
+  dplyr::filter(!is.na(DMP__GLASS_NL__exp6__logFC)) |> 
+  
+  dplyr::mutate(significant_glass_od = 
+                     DMP__g2_g3__pp_nc_PC1__adj.P.Val < 0.01 &
+                  abs(DMP__g2_g3__pp_nc_PC1__logFC) > 0.5
+  ) |> 
+  dplyr::mutate(significant_glass_nl =
+                      DMP__GLASS_NL__exp6__adj.P.Val < 0.01 &
+                  abs(DMP__GLASS_NL__exp6__logFC) > 0.5) |> 
+  dplyr::select(significant_glass_od, significant_glass_nl)
+tab |> 
+  table()
+
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t,

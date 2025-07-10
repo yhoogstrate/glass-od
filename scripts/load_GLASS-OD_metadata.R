@@ -1119,6 +1119,21 @@ glass_od.metadata.array_samples <- glass_od.metadata.array_samples |>
 rm(tmp)
 
 
+## chr4 loss CNV call ----
+
+
+tmp <- readRDS(file = "cache/analysis_chr4_del__labels.Rds") |> 
+  assertr::verify(array_sentrix_id %in% glass_od.metadata.array_samples$array_sentrix_id) |> 
+  dplyr::mutate(array_mnp_CNVP_v12.8_v5.2_CNVP_logit_chr4hd = factor(array_mnp_CNVP_v12.8_v5.2_CNVP_logit_chr4hd, levels=c("No","Yes")))
+
+
+glass_od.metadata.array_samples <- glass_od.metadata.array_samples |> 
+  dplyr::left_join(tmp, by=c('array_sentrix_id'='array_sentrix_id'), suffix=c('','')) 
+
+
+rm(tmp)
+
+
 
 
 ## ++ below: re-build because mvalue normalisation ++ ----

@@ -65,7 +65,7 @@ plt <- glass_od.metadata.array_samples |>
   dplyr::select(patient_id, patient_suspected_noncodel, resection_number, resection_tumor_grade,
                 resection_treatment_status_chemo, resection_treatment_status_radio,
                 Source, contains("_cal_class"), 
-                #array_methylscape_bethesda_class, 
+                array_methylscape_bethesda_class, 
                 too_low_purity) |> 
   dplyr::mutate(resection_tumor_grade = dplyr::case_when(
     is.na(resection_tumor_grade) | patient_suspected_noncodel ~ as.character(NA),
@@ -73,11 +73,11 @@ plt <- glass_od.metadata.array_samples |>
   )) |> 
   tidyr::pivot_longer(cols = c(resection_tumor_grade,
                                
-                               array_mnp_predictBrain_v2.0.1_cal_class,
+                               #array_mnp_predictBrain_v2.0.1_cal_class,
                                array_mnp_predictBrain_v12.5_cal_class,
                                array_mnp_predictBrain_v12.8_cal_class,
                                
-                               # array_methylscape_bethesda_class,
+                               array_methylscape_bethesda_class,
                                
                                resection_treatment_status_chemo,
                                resection_treatment_status_radio,
@@ -111,10 +111,15 @@ plt <- glass_od.metadata.array_samples |>
     classifier_version == "resection_treatment_status_radio" ~ "Radio",
     classifier_version == "resection_treatment_status_chemo" ~ "Chemo",
     classifier_version == "too_low_purity" ~ "Insuff. purity",
-    classifier_version == "array_methylscape_bethesda_class" ~ "Bethesda",
+    classifier_version == "array_methylscape_bethesda_class" ~ "Bethesda / NCI",
     T ~ gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version)
   )) |> 
-  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Bethesda", "Insuff. purity", "Source")))
+  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Bethesda / NCI", "Insuff. purity", "Source")))
+
+
+plt |>  dplyr::filter(classifier_version_txt == 'Bethesda') |> 
+  dplyr::select(class) |> 
+  table()
 
 
 plt.resection.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
@@ -341,7 +346,10 @@ plt <- glass_od.metadata.array_samples |>
                 
                 insufficient_quality,
                 insufficient_purity,
-                Source, contains("_cal_class")) |> 
+                Source, contains("_cal_class"),
+                
+                array_methylscape_bethesda_class
+                ) |> 
   dplyr::mutate(resection_tumor_grade = dplyr::case_when(
     is.na(resection_tumor_grade) | patient_suspected_noncodel ~ as.character(NA),
     !patient_suspected_noncodel ~ paste0("Grade ", resection_tumor_grade)
@@ -359,9 +367,11 @@ plt <- glass_od.metadata.array_samples |>
   dplyr::mutate(dataset_source_pivot = dataset_source) |> 
   tidyr::pivot_longer(cols = c(resection_tumor_grade,
                                
-                               array_mnp_predictBrain_v2.0.1_cal_class,
+                               #array_mnp_predictBrain_v2.0.1_cal_class,
                                array_mnp_predictBrain_v12.5_cal_class,
                                array_mnp_predictBrain_v12.8_cal_class,
+                               
+                               array_methylscape_bethesda_class,
                                
                                resection_treatment_status_chemo,
                                resection_treatment_status_radio,
@@ -404,9 +414,10 @@ plt <- glass_od.metadata.array_samples |>
     classifier_version == "insufficient_quality" ~ "Insuff. quality",
     classifier_version == "insufficient_purity" ~ "Insuff. purity",
     classifier_version == "dataset_source_pivot" ~ "Dataset",
+    classifier_version == "array_methylscape_bethesda_class" ~ "Bethesda / NCI",
     T ~ gsub("^array_mnp_predictBrain_(.+)_cal_class$","\\1",classifier_version)
   )) |> 
-  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Dataset", "Insuff. quality", "Insuff. purity", "Source")))
+  dplyr::mutate(classifier_version_txt = factor(classifier_version_txt, levels=c("WHO grade","Radio", "Chemo", "v2.0.1", "v12.5", "v12.8", "Bethesda / NCI", "Dataset", "Insuff. quality", "Insuff. purity", "Source")))
 
 
 plt.resection.counts <- plt |>  dplyr::filter(classifier_version == "array_mnp_predictBrain_v12.8_cal_class") |>
