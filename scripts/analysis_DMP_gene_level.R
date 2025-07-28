@@ -223,6 +223,11 @@ gene_enrichment_0.GencodeCompV12_NAME <- gene_enrichment_0.GencodeCompV12_NAME |
 
 
 
+gene_enrichment_0.GencodeCompV12_NAME |>
+  dplyr::filter(gene %in% c('TERT', 'DAXX'))
+
+
+
 ### plt HOX ----
 
 
