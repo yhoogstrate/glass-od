@@ -205,10 +205,15 @@ plt <- glass_od.metadata.array_samples |>
                 array_epiTOC2_tnsc, array_epiTOC2_hypoSC, contains("array_dnaMethyAge"), array_RepliTali,
                 array_percentage.detP.signi, array_PC1, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`,
                 time_tissue_in_ffpe,
-                array_GLASS_NL_g2_g3_sig, array_PC2, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
+                array_GLASS_NL_g2_g3_sig,array_PC2, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
                 
                 array_PC3,
-                age_at_diagnosis_days
+                age_at_diagnosis_days,
+                array_PC4,
+                array_PC5,
+                array_PC6,
+                
+                array_median.overall.methylation
   ) |> 
   tibble::column_to_rownames('resection_id') |> 
   dplyr::filter(!is.na(time_tissue_in_ffpe)) |> 
@@ -219,6 +224,7 @@ plt <- glass_od.metadata.array_samples |>
   dplyr::mutate(array_GLASS_OD_prim_rec_sig3 = NULL) |> 
   dplyr::mutate(array_GLASS_OD_g2_g3_sig4 = NULL) |> 
   dplyr::mutate(array_GLASS_OD_prim_rec_sig4 = NULL) |> 
+  
   
   dplyr::mutate(array_PC3 = -1 * array_PC3) |> 
   dplyr::mutate(array_percentage.detP.signi = log(array_percentage.detP.signi)) |> 
@@ -237,6 +243,11 @@ plt <- glass_od.metadata.array_samples |>
   dplyr::mutate(`-1 * CGC[Ac]` = -1 * `CGC[Ac]`, `CGC[Ac]`= NULL) |> 
   dplyr::mutate(`array_dnaMethyAge__ZhangY2017` = -1 * `-1 * array_dnaMethyAge__ZhangY2017`, `-1 * array_dnaMethyAge__ZhangY2017`=NULL) |>
   dplyr::mutate(`-1 * array_GLASS_NL_g2_g3_sig` = -1 * array_GLASS_NL_g2_g3_sig, array_GLASS_NL_g2_g3_sig = NULL) |>
+  
+  dplyr::mutate(`-1 * array_median.overall.methylation` = -1 * array_median.overall.methylation) |> 
+  dplyr::mutate(array_median.overall.methylation = NULL) |> 
+
+  
   dplyr::mutate(`-1 * array_PC2` = -1 * array_PC2, array_PC2 = NULL)
 
 
@@ -252,9 +263,16 @@ ggsave(plot = p1, "output/figures/vis_aging_clocks__ggcorrplot.pdf", width= 8.5 
 
 
 order <- c(
+  "PC5",
+  "PC4",
+  "PC6",
+  
+  
   "-1 * PC2",
   "-1 * GLASS_NL_g2_g3_sig",
   "-1 * CGC[Ac]",
+  "-1 * median.overall.methylation",
+  
   "dnaMethyAge__ZhangY2017",
   
   "dnaMethyAge__LuA2023p3",
@@ -305,13 +323,19 @@ tmp <- glass_od.metadata.array_samples |>
   dplyr::select(resection_id,
                 resection_tumor_grade,
                 
+                array_median.overall.methylation,
+                
                 array_epiTOC2_tnsc, array_epiTOC2_hypoSC, contains("array_dnaMethyAge"), array_RepliTali,
                 array_percentage.detP.signi, array_PC1, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`,
                 time_tissue_in_ffpe,
                 array_GLASS_NL_g2_g3_sig, array_PC2, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
                 
                 array_PC3,
-                age_at_diagnosis_days
+                age_at_diagnosis_days,
+                
+                array_PC4,
+                array_PC5,
+                array_PC6
   ) |> 
   tibble::column_to_rownames('resection_id') |> 
   dplyr::filter(!is.na(time_tissue_in_ffpe)) |> 
@@ -322,6 +346,10 @@ tmp <- glass_od.metadata.array_samples |>
   dplyr::mutate(array_GLASS_OD_prim_rec_sig3 = NULL) |> 
   dplyr::mutate(array_GLASS_OD_g2_g3_sig4 = NULL) |> 
   dplyr::mutate(array_GLASS_OD_prim_rec_sig4 = NULL) |> 
+  
+  dplyr::mutate(`-1 * array_median.overall.methylation` = -1 * array_median.overall.methylation) |> 
+  dplyr::mutate(array_median.overall.methylation = NULL) |> 
+  
   
   dplyr::mutate(array_PC3 = -1 * array_PC3) |> 
   dplyr::mutate(array_percentage.detP.signi = log(array_percentage.detP.signi)) |> 
@@ -352,7 +380,7 @@ data <- tmp |>
   dplyr::mutate(array_PC1 = NULL) |> 
   dplyr::mutate(PC1 = NULL) |> 
   as.data.frame() |> 
-  #scale(center=T, scale=T)  |> 
+  scale(center=T, scale=T)  |> 
   t() |>
   as.data.frame() 
 
@@ -382,6 +410,7 @@ stats = rbind(stats,
 plt <- data.frame(covar = order) |>
   dplyr::mutate(y = dplyr::n():1) |> 
   assertr::verify(covar %in% stats$covar) |> 
+  assertr::verify(stats$covar %in% covar) |> 
   dplyr::left_join(stats, by=c('covar'='covar')) 
 
 
@@ -440,13 +469,19 @@ tmp <- glass_od.metadata.array_samples |>
   dplyr::select(resection_id,
                 resection_number,
                 
+                array_median.overall.methylation,
+                
                 array_epiTOC2_tnsc, array_epiTOC2_hypoSC, contains("array_dnaMethyAge"), array_RepliTali,
                 array_percentage.detP.signi, array_PC1, `array_qc_SPECIFICITY_I_GT_Mismatch_6_(PM)_Red_smaller_NA_0.5`,
                 time_tissue_in_ffpe,
                 array_GLASS_NL_g2_g3_sig, array_PC2, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit,
                 
                 array_PC3,
-                age_at_diagnosis_days
+                age_at_diagnosis_days,
+                
+                array_PC4,
+                array_PC5,
+                array_PC6
   ) |> 
   tibble::column_to_rownames('resection_id') |> 
   dplyr::filter(!is.na(time_tissue_in_ffpe)) |> 
@@ -457,6 +492,10 @@ tmp <- glass_od.metadata.array_samples |>
   dplyr::mutate(array_GLASS_OD_prim_rec_sig3 = NULL) |> 
   dplyr::mutate(array_GLASS_OD_g2_g3_sig4 = NULL) |> 
   dplyr::mutate(array_GLASS_OD_prim_rec_sig4 = NULL) |> 
+  
+  
+  dplyr::mutate(`-1 * array_median.overall.methylation` = -1 * array_median.overall.methylation) |> 
+  dplyr::mutate(array_median.overall.methylation = NULL) |> 
   
   dplyr::mutate(array_PC3 = -1 * array_PC3) |> 
   dplyr::mutate(array_percentage.detP.signi = log(array_percentage.detP.signi)) |> 
@@ -473,6 +512,7 @@ tmp <- glass_od.metadata.array_samples |>
   dplyr::rename(`% detP significant probes (log)` = array_percentage.detP.signi) |> 
   
   dplyr::mutate(resection_prim_rec = factor(ifelse(resection_number == 1,"primary", "recurrent"), levels=c("primary","recurrent"))) |> 
+  dplyr::mutate(resection_number = NULL) |> 
   
   dplyr::mutate(`-1 * CGC[Ac]` = -1 * `CGC[Ac]`, `CGC[Ac]`= NULL) |> 
   dplyr::mutate(`array_dnaMethyAge__ZhangY2017` = -1 * `-1 * array_dnaMethyAge__ZhangY2017`, `-1 * array_dnaMethyAge__ZhangY2017`=NULL) |>
@@ -487,7 +527,7 @@ data <- tmp |>
   dplyr::mutate(array_PC1 = NULL) |> 
   dplyr::mutate(PC1 = NULL) |> 
   as.data.frame() |> 
-  #scale(center=T, scale=T)  |> 
+  scale(center=T, scale=T)  |> 
   t() |>
   as.data.frame() 
 
@@ -517,6 +557,7 @@ stats = rbind(stats,
 plt <- data.frame(covar = order) |>
   dplyr::mutate(y = dplyr::n():1) |> 
   assertr::verify(covar %in% stats$covar) |> 
+  assertr::verify(stats$covar %in% covar) |> 
   dplyr::left_join(stats, by=c('covar'='covar')) 
 
 

@@ -13,6 +13,7 @@ source('scripts/load_functions.R')
 
 # a. clinical.tsv ----
 
+
 tcga_lgg_od.metadata.array_samples.a <- read.delim("data/tcga-lgg/clinical.tsv", header = TRUE, sep = "\t", stringsAsFactors = FALSE, check.names = FALSE) |>
   dplyr::filter(project.project_id == "TCGA-LGG") |> 
   dplyr::filter(diagnoses.classification_of_tumor == "primary") |>
@@ -27,7 +28,15 @@ tcga_lgg_od.metadata.array_samples.a <- read.delim("data/tcga-lgg/clinical.tsv",
 
 ## Clinical  -----
 
-clin_lgg <-  TCGAbiolinks::GDCquery_clinic(project = "TCGA-LGG", type = "clinical", save.csv = T)
+
+if(!file.exists('cache/TCGA-LGG.TCGAbiolinks.Rds')) {
+  clin_lgg <-  TCGAbiolinks::GDCquery_clinic(project = "TCGA-LGG", type = "clinical", save.csv = T)
+  saveRDS(clin_lgg, file='cache/TCGA-LGG.TCGAbiolinks.Rds')
+} else {
+  clin_lgg <- readRDS('cache/TCGA-LGG.TCGAbiolinks.Rds')
+}
+
+
 
 tcga_lgg_od.metadata.array_samples.b <- rbind(clin_lgg) |> 
   dplyr::mutate(sites_of_involvement = NULL) |> 
@@ -65,7 +74,7 @@ tcga_lgg_od.metadata.array_samples.c <- readxl::read_xlsx('data/tcga-lgg/TCGA me
                 `Survival (months)`) |> 
   dplyr::mutate(c_xlsx_survival_event = as.numeric(ifelse(`Vital status (1=dead)` == "NA", NA, `Vital status (1=dead)`)), `Vital status (1=dead)` = NULL) |> 
   dplyr::mutate(`Survival (months)` = as.numeric(ifelse(`Survival (months)` == "NA", NA , `Survival (months)`))) |> 
-  dplyr::mutate(c_xlsx_survival = round(`Survival (months)` * DAYS_PER_MONTH), `Survival (months)` = NULL)
+  dplyr::mutate(c_xlsx_survival = round(`Survival (months)` * CONST_DAYS_PER_MONTH), `Survival (months)` = NULL)
 
 
 
@@ -221,7 +230,7 @@ tmp <- list.files(path =  "/data/cognition/data/DNA_methylation/idat/TCGA-LGG/",
   assertr::verify(!duplicated(tcga_sample_id)) |> 
   assertr::verify(!duplicated(tcga_patient_id)) |> 
   
-  dplyr::filter(tcga_patient_id %in% tcga_lgg_od.metadata.array_samples$Case) |> 
+  dplyr::filter(tcga_patient_id %in% tcga_lgg_od.metadata.array_samples$patient_id) |> 
   
   (function(.) {
     print(dim(.))
@@ -234,25 +243,28 @@ tmp <- list.files(path =  "/data/cognition/data/DNA_methylation/idat/TCGA-LGG/",
   dplyr::mutate(Sample_Name = tcga_sample_id)
 
 
-RGSet <- minfi::read.metharray.exp(targets = tmp, force = T, verbose=F) #red/green channel together
-rm(tmp)
-proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = TRUE, verbose = TRUE, dyeMethod="single")  # dyeMeth
+if(!file.exists("cache/mvalues.tcga-lgg.Rds")) {
+  RGSet <- minfi::read.metharray.exp(targets = tmp, force = T, verbose=F) #red/green channel together
+  rm(tmp)
+  proc <- minfi::preprocessNoob(RGSet, offset = 0, dyeCorr = TRUE, verbose = TRUE, dyeMethod="single")  # dyeMeth
+  
+  
+  mvalue <- minfi::ratioConvert(proc, what = "M") |> 
+    assays() |> 
+    purrr::pluck('listData') |> 
+    purrr::pluck("M") |> 
+    data.table::as.data.table(keep.rownames = "probe_id") |> 
+    dplyr::filter(probe_id %in% probes.850k)
+  
+  
+  
+  saveRDS(mvalue, file=paste0("cache/mvalues.tcga-lgg.Rds"))
+  
+  
+  rm(proc, RGSet, mvalue)
+  gc()
+}
 
 
-mvalue <- minfi::ratioConvert(proc, what = "M") |> 
-  assays() |> 
-  purrr::pluck('listData') |> 
-  purrr::pluck("M") |> 
-  data.table::as.data.table(keep.rownames = "probe_id") |> 
-  dplyr::filter(probe_id %in% probes.850k)
-
-
-
-saveRDS(mvalue, file=paste0("cache/mvalues.tcga-lgg.Rds"))
-
-
-rm(proc, RGSet, mvalue)
-gc()
-
-
+tcga_lgg.mvalues <- readRDS("cache/mvalues.tcga-lgg.Rds")
 

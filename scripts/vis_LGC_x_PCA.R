@@ -611,9 +611,197 @@ abline(h=0, col="red")
 
 
 ## Figure 2C: logit ----
-### Grade ----
-#### logistic AcCGAP x WHO grade unpaired ----
 
+### Primary - recurrent ----
+
+
+#### unpaired ----
+
+
+stats <- metadata |> 
+  dplyr::mutate(resection_tumor_grade = NULL) |> 
+  dplyr::mutate(resection_tumor_grade__hg = NULL) |> 
+  
+  dplyr::mutate(resection = ifelse(resection_number == 1, "primary", "recurrent")) |> 
+  dplyr::mutate(resection_recurrent = ifelse(resection == "primary", 0 , 1)) |> 
+  
+  dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(covar_name = "Astrocytoma CGC Lasso")
+
+
+n_samples = nrow(stats)
+n_samples
+
+
+model <- glm(resection_recurrent ~ covar, data = stats, family = binomial)
+pval <- model |>
+  summary() |> 
+  purrr::pluck('coefficients') |>
+  as.data.frame() |>  
+  tibble::rownames_to_column('coef') |>
+  dplyr::filter(coef == "covar") |> 
+  dplyr::pull(`Pr(>|z|)`)
+
+
+expnd <- (max(stats$covar)-min(stats$covar)) * 0.075
+Predicted_data <- data.frame(covar=modelr::seq_range(c(min(stats$covar) - expnd, max(stats$covar) + expnd), 500))
+Predicted_data$resection_recurrent = predict(model, Predicted_data, type="response")
+
+
+
+plt.logit.simplistic <- rbind(
+  stats |>  # left point line:
+    dplyr::select(resection_recurrent, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_recurrent * 1.25 - 0.125) |> 
+    dplyr::rename(y = covar)
+  ,
+  Predicted_data |> # logit fit
+    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+    dplyr::mutate(group = "logit fit") |> 
+    dplyr::mutate(type = "fit") |> 
+    dplyr::rename(y = covar) |> 
+    dplyr::mutate(x = resection_recurrent) |> 
+    dplyr::mutate(col = resection_recurrent)
+) |> 
+  dplyr::mutate(col = col  + 2)
+
+
+
+p_A <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
+            aes(col=col),
+            lwd=theme_nature_lwd * 5) +
+  
+  ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+                               col='gray40',
+                               size=theme_nature_size/3,
+                               width=0.1) +
+  
+  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
+                        labels=c("0", "", "1"), oob = scales::squish) +
+  
+  theme_nature +
+  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  labs(col="Probability",
+       y= "CGC''", fill=NULL, x=NULL, subtitle = "GLASS-OD: primary - recurrent", caption = paste0("n=",n_samples, " samples")) +
+  scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
+  theme(legend.box = "vertical",
+        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.title =  element_text(vjust=1))
+p_A
+
+
+
+
+
+#### paired ----
+
+
+stats <- metadata |> 
+  dplyr::mutate(resection_tumor_grade = NULL) |> 
+  dplyr::mutate(resection_tumor_grade__hg = NULL) |> 
+  
+  dplyr::mutate(resection = ifelse(resection_number == 1, "primary", "recurrent")) |> 
+  dplyr::mutate(resection_recurrent = ifelse(resection == "primary", 0, 1)) |> 
+  
+  dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(covar_name = "Astrocytoma CGC Lasso") |> 
+  
+  dplyr::group_by(patient_id) |> 
+  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(patient = as.factor(paste0("p", ifelse(is.paired,patient_id, "_remainder"))))
+
+
+
+model <- glm(resection_recurrent ~ patient + covar, data = stats, family = binomial)
+pval <- model |>
+  summary() |> 
+  purrr::pluck('coefficients') |>
+  as.data.frame() |>  
+  tibble::rownames_to_column('coef') |>
+  dplyr::filter(coef == "covar") |> 
+  dplyr::pull(`Pr(>|z|)`)
+
+
+#expnd <- (max(stats$covar)-min(stats$covar)) * 0.085
+Predicted_data <- data.frame(covar=modelr::seq_range(c(-15, 15), 500)) |> 
+  dplyr::mutate(patient = "p_remainder")
+Predicted_data$resection_recurrent = predict(model, Predicted_data, type="response")
+
+
+
+plt.logit.simplistic <- rbind(
+  stats |>  # left point line:
+    dplyr::select(resection_recurrent, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1 ) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_recurrent - 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  stats |>  # right point line:
+    dplyr::select(resection_recurrent, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1 ) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_recurrent + 0.06 ) |> 
+    dplyr::rename(y = covar)
+  ,
+  Predicted_data |> # logit fit
+    dplyr::mutate(patient = NULL) |> 
+    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+    dplyr::mutate(group = "logit fit") |> 
+    dplyr::mutate(type = "fit") |> 
+    dplyr::rename(y = covar) |> 
+    dplyr::mutate(x = resection_recurrent) |> 
+    dplyr::mutate(col = resection_recurrent)
+)
+
+
+p4b <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
+            aes(col=col),
+            lwd=theme_nature_lwd * 5) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+            col="white",
+            lwd=theme_nature_lwd * 2, alpha=0.65
+  ) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
+            col="gray",
+            lwd=theme_nature_lwd) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
+            col="darkblue",
+            lwd=theme_nature_lwd) +
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
+            col="#3e9e8b",
+            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1),
+                                                           breaks=c(0, 0.50, 1), labels=c("Primary","","Recurrent"),
+                                                           oob = scales::squish) +
+  theme_nature +
+  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
+  scale_x_continuous(breaks = c(0,1),
+                     labels=c("Primary", "Recurrent")) + 
+  theme(legend.box = "vertical",
+        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.title =  element_text(vjust=1)) +
+  ylim(-15, 15)
+p4b
+
+
+
+
+
+### Grade ----
+#### unpaired ----
 
 
 stats <- metadata |> 
@@ -625,6 +813,12 @@ stats <- metadata |>
   
   dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
   dplyr::mutate(covar_name = "Astrocytoma CGC Lasso")
+
+
+n_samples = nrow(stats)
+n_samples
+
+
 
 
 model <- glm(resection_tumor_grade__hg ~ covar, data = stats, family = binomial)
@@ -649,15 +843,7 @@ plt.logit.simplistic <- rbind(
     dplyr::mutate(col = -1) |> 
     dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
     dplyr::mutate(type = "data") |> 
-    dplyr::mutate(x = resection_tumor_grade__hg - 0.06 ) |> 
-    dplyr::rename(y = covar)
-  ,
-  stats |>  # right point line:
-    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
-    dplyr::mutate(col = -1) |> 
-    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
-    dplyr::mutate(type = "data") |> 
-    dplyr::mutate(x = resection_tumor_grade__hg + 0.06 ) |> 
+    dplyr::mutate(x = resection_tumor_grade__hg * 1.25 - 0.125) |> 
     dplyr::rename(y = covar)
   ,
   Predicted_data |> # logit fit
@@ -665,44 +851,131 @@ plt.logit.simplistic <- rbind(
     dplyr::mutate(group = "logit fit") |> 
     dplyr::mutate(type = "fit") |> 
     dplyr::rename(y = covar) |> 
-    dplyr::mutate(x = resection_tumor_grade__hg) |> 
+    dplyr::mutate(x = resection_tumor_grade__hg ) |> 
     dplyr::mutate(col = resection_tumor_grade__hg)
 ) |> 
   dplyr::mutate(col = col  + 2)
 
 
 
-p3 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+p_B <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
             lwd=theme_nature_lwd * 5) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
-            col="white",
-            lwd=theme_nature_lwd * 2, alpha=0.65
-  ) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
-            col="gray",
-            lwd=theme_nature_lwd) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
-            col="darkblue",
-            lwd=theme_nature_lwd) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
-            col="#3e9e8b",
-            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
+
+  ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+                               col='gray40',
+                               size=theme_nature_size/3,
+                               width=0.1) +
+  
+  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
+                        labels=c("0", "", "1"), oob = scales::squish) +
+  
   theme_nature +
   annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
-  labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
-  scale_x_continuous(breaks = c(0,1),
-                     labels=c("Grade 2", "Grade 3")) + 
+  labs(col="Probability",
+       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: WHO CNS grade"), caption = paste0("n=",n_samples, " samples")) +
+  scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
         legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
-p3
+p_B
+
+
+
+#### unpaired - validation set ----
+
+
+
+stats <- metadata.validation |> 
+  dplyr::filter(!is.na(resection_tumor_grade)) |> 
+  assertr::verify(resection_tumor_grade %in% c(2,3)) |> 
+  dplyr::mutate(resection_tumor_grade__hg = ifelse(resection_tumor_grade == 3, 1 , 0)) |> 
+  
+  dplyr::mutate(resection = NULL) |> 
+  dplyr::mutate(resection_recurrent = NULL) |> 
+  
+  dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(covar_name = "Astrocytoma CGC Lasso") 
+
+n_samples = nrow(stats)
+n_samples
+
+
+model <- glm(resection_tumor_grade__hg ~ covar, data = stats, family = binomial)
+pval <- model |>
+  summary() |> 
+  purrr::pluck('coefficients') |>
+  as.data.frame() |>  
+  tibble::rownames_to_column('coef') |>
+  dplyr::filter(coef == "covar") |> 
+  dplyr::pull(`Pr(>|z|)`)
+
+
+#expnd <- (max(stats$covar)-min(stats$covar)) * 0.085
+Predicted_data <- data.frame(covar=modelr::seq_range(c(-15, 15), 500))
+  #dplyr::mutate(patient = "p_remainder")
+Predicted_data$resection_tumor_grade__hg = predict(model, Predicted_data, type="response")
 
 
 
 
-#### logistic AcCGAP x WHO grade paired ----
+plt.logit.simplistic <- rbind(
+  stats |>  # left point line:
+    dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
+    dplyr::mutate(col = -1) |> 
+    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
+    dplyr::mutate(type = "data") |> 
+    dplyr::mutate(x = resection_tumor_grade__hg * 1.25 - 0.125) |> 
+    dplyr::rename(y = covar)
+  ,
+  Predicted_data |> # logit fit
+    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
+    dplyr::mutate(group = "logit fit") |> 
+    dplyr::mutate(type = "fit") |> 
+    dplyr::rename(y = covar) |> 
+    dplyr::mutate(x = resection_tumor_grade__hg ) |> 
+    dplyr::mutate(col = resection_tumor_grade__hg)
+) |> 
+  dplyr::mutate(col = col  + 2)
+
+
+
+p_C <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+  
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  
+  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
+            aes(col=col),
+            lwd=theme_nature_lwd * 5) +
+  
+  ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
+                               col='gray40',
+                               size=theme_nature_size/3,
+                               width=0.1) +
+  
+  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
+                        labels=c("0", "", "1"), oob = scales::squish) +
+  
+  theme_nature +
+  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  labs(col="Probability",
+       y= "CGC''", fill=NULL, x=NULL, subtitle = "validation: CSN WHO grade", caption = paste0("n=",n_samples, " samples")) +
+  scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
+  theme(legend.box = "vertical",
+        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.title =  element_text(vjust=1))
+p_C
+
+
+
+
+#### paired ----
 
 
 stats <- metadata |> 
@@ -812,6 +1085,11 @@ stats <- metadata |>
   dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
   dplyr::mutate(covar_name = "predictBrain_v12.8")
 
+n_samples = nrow(stats)
+n_samples
+
+
+
 
 model <- glm(high_grade_classes ~ covar, data = stats, family = binomial)
 pval <- model |>
@@ -850,7 +1128,7 @@ plt.logit.simplistic <- rbind(
 
 
 
-p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+p_D <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
   geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
   geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
@@ -891,13 +1169,14 @@ p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   theme_nature +
   annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability",
-       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x MNP")) +
-  scale_x_continuous(breaks = c(0,1),
-                     labels=c("p=0", "p=1")) + 
+       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: MNP CNS 12.8"), caption = paste0("n=",n_samples, " samples")) +
+  scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
         legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
-p
+p_D
+
+
 
 
 ### NCI Methylscape ----
@@ -913,6 +1192,11 @@ stats <- metadata |>
   
   dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
   dplyr::mutate(covar_name = "predictBrain_v12.8")
+
+
+n_samples = nrow(stats)
+n_samples
+
 
 
 model <- glm(high_grade_classes ~ covar, data = stats, family = binomial)
@@ -952,7 +1236,7 @@ plt.logit.simplistic <- rbind(
 
 
 
-p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+p_E <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
   geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
   geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
@@ -995,13 +1279,13 @@ p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   theme_nature +
   annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability",
-       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x MNP")) +
-  scale_x_continuous(breaks = c(0,1),
-                     labels=c("p=0", "p=1")) + 
+       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: NCI MethylScape"), caption = paste0("n=",n_samples, " samples")) +
+  scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
         legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
-p
+p_E
+
 
 
 ### Radiotherapy ----
@@ -1054,7 +1338,7 @@ plt.logit.simplistic <- rbind(
 
 
 
-p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+p_F <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
   geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
   geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
@@ -1074,13 +1358,13 @@ p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   theme_nature +
   annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability",
-       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("MNP -- samples: ",n_samples)) +
-  scale_x_continuous(breaks = c(0,1),
-                     labels=c("p=0", "p=1")) + 
+       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: radiotherapy"), caption = paste0("n=",n_samples, " samples")) +
+  scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
         legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
-p
+p_F
+
 
 
 ### Chemotherapy ----
@@ -1142,7 +1426,7 @@ plt.logit.simplistic <- rbind(
 
 
 
-p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+p_G <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
   geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
   geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
@@ -1183,20 +1467,18 @@ p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   theme_nature +
   annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability",
-       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("MNP -- samples: ",n_samples)) +
-  scale_x_continuous(breaks = c(0,1),
-                     labels=c("p=0", "p=1")) + 
+       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: chemotherapy"), caption = paste0("n=",n_samples, " samples")) +
+  scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
         legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
-p
+p_G
+
 
 
 
 ### CDKN2A/B ----
 #### unpaired ----
-
-
 
 
 stats <- metadata |> 
@@ -1205,8 +1487,12 @@ stats <- metadata |>
   dplyr::mutate(trt_classes = (CDKN2AB == "HD") * 1) |> 
   dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)
 
-
 n_samples = nrow(stats)
+n_samples
+
+table(stats$resection_number)
+
+
 
 model <- glm(trt_classes ~ covar, data = stats, family = binomial)
 pval <- model |>
@@ -1245,7 +1531,7 @@ plt.logit.simplistic <- rbind(
 
 
 
-p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+p_H <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
   geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
   geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
@@ -1281,13 +1567,12 @@ p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   theme_nature +
   annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability",
-       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("MNP -- samples: ",n_samples)) +
-  scale_x_continuous(breaks = c(0,1),
-                     labels=c("p=0", "p=1")) + 
+       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: CDKN2A/B"), caption = paste0("n=",n_samples, " samples")) +
+  scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
         legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
-p
+p_H
 
 
 
@@ -1298,9 +1583,12 @@ p
 
 stats <- metadata |> 
   dplyr::filter(!is.na(isolation_material)) |> 
-  dplyr::filter(CDKN2AB != "NA") |> 
   dplyr::mutate(trt_classes = ( isolation_material == "ffpe" ) * 1) |> 
   dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)
+
+
+n_samples = nrow(stats)
+n_samples
 
 
 n_samples = nrow(stats)
@@ -1341,7 +1629,7 @@ plt.logit.simplistic <- rbind(
 
 
 
-p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
+p_I <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
   geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
   geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
@@ -1361,14 +1649,22 @@ p <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   theme_nature +
   annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
   labs(col="Probability",
-       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("MNP -- samples: ",n_samples)) +
-  scale_x_continuous(breaks = c(0,1),
-                     labels=c("p=0", "p=1")) + 
+       y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: FFPE"), caption = paste0("n=",n_samples, " samples")) +
+  scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
         legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
-p
+p_I
 
+
+
+### plt merge ----
+
+# p_F + p_G +
+
+p_A + p_B + p_C + p_D + p_E + p_H +  p_I + plot_layout(ncol=7)
+
+ggsave("output/figures/vis_LGC_x_PCA__logistic.pdf", width=9*0.9, height=2.8)
 
 
 
@@ -1757,102 +2053,6 @@ ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
 
 
 
-#### logistic AcCGAP x resection paired ----
-
-
-stats <- metadata |> 
-  dplyr::mutate(resection_tumor_grade = NULL) |> 
-  dplyr::mutate(resection_tumor_grade__hg = NULL) |> 
-  
-  dplyr::mutate(resection = ifelse(resection_number == 1, "primary", "recurrent")) |> 
-  dplyr::mutate(resection_recurrent = ifelse(resection == "primary", 0, 1)) |> 
-  
-  dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
-  dplyr::mutate(covar_name = "Astrocytoma CGC Lasso") |> 
-  
-  dplyr::group_by(patient_id) |> 
-  dplyr::mutate(is.paired = dplyr::n() == 2) |> 
-  dplyr::ungroup() |> 
-  dplyr::mutate(patient = as.factor(paste0("p", ifelse(is.paired,patient_id, "_remainder"))))
-
-
-
-model <- glm(resection_recurrent ~ patient + covar, data = stats, family = binomial)
-pval <- model |>
-  summary() |> 
-  purrr::pluck('coefficients') |>
-  as.data.frame() |>  
-  tibble::rownames_to_column('coef') |>
-  dplyr::filter(coef == "covar") |> 
-  dplyr::pull(`Pr(>|z|)`)
-
-
-#expnd <- (max(stats$covar)-min(stats$covar)) * 0.085
-Predicted_data <- data.frame(covar=modelr::seq_range(c(-15, 15), 500)) |> 
-  dplyr::mutate(patient = "p_remainder")
-Predicted_data$resection_recurrent = predict(model, Predicted_data, type="response")
-
-
-
-plt.logit.simplistic <- rbind(
-  stats |>  # left point line:
-    dplyr::select(resection_recurrent, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
-    dplyr::mutate(col = -1 ) |> 
-    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
-    dplyr::mutate(type = "data") |> 
-    dplyr::mutate(x = resection_recurrent - 0.06 ) |> 
-    dplyr::rename(y = covar)
-  ,
-  stats |>  # right point line:
-    dplyr::select(resection_recurrent, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
-    dplyr::mutate(col = -1 ) |> 
-    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
-    dplyr::mutate(type = "data") |> 
-    dplyr::mutate(x = resection_recurrent + 0.06 ) |> 
-    dplyr::rename(y = covar)
-  ,
-  Predicted_data |> # logit fit
-    dplyr::mutate(patient = NULL) |> 
-    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
-    dplyr::mutate(group = "logit fit") |> 
-    dplyr::mutate(type = "fit") |> 
-    dplyr::rename(y = covar) |> 
-    dplyr::mutate(x = resection_recurrent) |> 
-    dplyr::mutate(col = resection_recurrent)
-)
-
-
-p4b <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
-            aes(col=col),
-            lwd=theme_nature_lwd * 5) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
-            col="white",
-            lwd=theme_nature_lwd * 2, alpha=0.65
-  ) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
-            col="gray",
-            lwd=theme_nature_lwd) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
-            col="darkblue",
-            lwd=theme_nature_lwd) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
-            col="#3e9e8b",
-            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1),
-                                                           breaks=c(0, 0.50, 1), labels=c("Primary","","Recurrent"),
-                                                           oob = scales::squish) +
-  theme_nature +
-  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
-  labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
-  scale_x_continuous(breaks = c(0,1),
-                     labels=c("Primary", "Recurrent")) + 
-  theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
-        legend.title =  element_text(vjust=1)) +
-  ylim(-15, 15)
-p4b
-
-
 
 
 #### logistic AcCGAP x WHO grade paired [validation] ----
@@ -2008,151 +2208,6 @@ ggplot(plt, aes(x = label, y=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, col=array_m
   theme_nature
 
 ggsave("output/figures/vis_LGC_x_PCA__lm_OLIGOSARC_A_IDH_HG__Other.pdf", width=1.5, height=3 * 0.9305)
-
-
-
-### logistic AcCGAP x resection ----
-
-
-stats <- metadata |> 
-  dplyr::mutate(resection_tumor_grade = NULL) |> 
-  dplyr::mutate(resection_tumor_grade__hg = NULL) |> 
-  
-  dplyr::mutate(resection = ifelse(resection_number == 1, "primary", "recurrent")) |> 
-  dplyr::mutate(resection_recurrent = ifelse(resection == "primary", 0 , 1)) |> 
-  
-  dplyr::mutate(covar = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
-  dplyr::mutate(covar_name = "Astrocytoma CGC Lasso")
-
-
-model <- glm(resection_recurrent ~ covar, data = stats, family = binomial)
-pval <- model |>
-  summary() |> 
-  purrr::pluck('coefficients') |>
-  as.data.frame() |>  
-  tibble::rownames_to_column('coef') |>
-  dplyr::filter(coef == "covar") |> 
-  dplyr::pull(`Pr(>|z|)`)
-
-
-expnd <- (max(stats$covar)-min(stats$covar)) * 0.075
-Predicted_data <- data.frame(covar=modelr::seq_range(c(min(stats$covar) - expnd, max(stats$covar) + expnd), 500))
-Predicted_data$resection_recurrent = predict(model, Predicted_data, type="response")
-
-
-
-plt.logit.simplistic <- rbind(
-  stats |>  # left point line:
-    dplyr::select(resection_recurrent, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
-    dplyr::mutate(col = -1 ) |> 
-    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
-    dplyr::mutate(type = "data") |> 
-    dplyr::mutate(x = resection_recurrent - 0.06 ) |> 
-    dplyr::rename(y = covar)
-  ,
-  stats |>  # right point line:
-    dplyr::select(resection_recurrent, covar, array_mnp_predictBrain_v12.8_cal_class) |> 
-    dplyr::mutate(col = -1 ) |> 
-    dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
-    dplyr::mutate(type = "data") |> 
-    dplyr::mutate(x = resection_recurrent + 0.06 ) |> 
-    dplyr::rename(y = covar)
-  ,
-  Predicted_data |> # logit fit
-    dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
-    dplyr::mutate(group = "logit fit") |> 
-    dplyr::mutate(type = "fit") |> 
-    dplyr::rename(y = covar) |> 
-    dplyr::mutate(x = resection_recurrent) |> 
-    dplyr::mutate(col = resection_recurrent)
-)
-
-
-p4 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
-            aes(col=col),
-            lwd=theme_nature_lwd * 5) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
-            col="white",
-            lwd=theme_nature_lwd * 2, alpha=0.65
-  ) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
-            col="gray",
-            lwd=theme_nature_lwd) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
-            col="darkblue",
-            lwd=theme_nature_lwd) +
-  geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
-            col="#3e9e8b",
-            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1),
-                        breaks=c(0, 0.50, 1), labels=c("Primary","","Recurrent"),
-                        oob = scales::squish) +
-  theme_nature +
-annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
-  labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
-  scale_x_continuous(breaks = c(0,1),
-                     labels=c("Primary", "Recurrent")) + 
-  theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
-        legend.title =  element_text(vjust=1))
-p4
-
-
-
-# complex color variant:
-# plt.logit.restyled <- rbind(
-#   stats |>  # left point line:
-#     dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class, resection_recurrent) |> 
-#     dplyr::mutate(col = resection_tumor_grade__hg + 2) |> 
-#     dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
-#     dplyr::mutate(type = "data") |> 
-#     dplyr::mutate(x = ifelse(resection_recurrent == 0, resection_recurrent, resection_recurrent - 0.175)) |> 
-#     #dplyr::mutate(x = resection_recurrent - 0.06 ) |> 
-#     dplyr::rename(y = covar)
-#   ,
-#   stats |>  # right point line:
-#     dplyr::select(resection_tumor_grade__hg, covar, array_mnp_predictBrain_v12.8_cal_class, resection_recurrent) |> 
-#     dplyr::mutate(col = resection_tumor_grade__hg + 2) |> 
-#     dplyr::mutate(group = paste0("id",1:dplyr::n())) |> 
-#     dplyr::mutate(type = "data") |> 
-#     #dplyr::mutate(x = resection_recurrent + 0.06 ) |> 
-#     dplyr::mutate(x = ifelse(resection_recurrent == 1, resection_recurrent, resection_recurrent + 0.175)) |>
-#     dplyr::rename(y = covar)
-#   ,
-#   Predicted_data |> # logit fit
-#     dplyr::mutate(array_mnp_predictBrain_v12.8_cal_class = "") |> 
-#     dplyr::mutate(resection_tumor_grade__hg = 0) |> 
-#     dplyr::mutate(group = "logit fit") |> 
-#     dplyr::mutate(type = "fit") |> 
-#     dplyr::rename(y = covar) |> 
-#     dplyr::mutate(x = resection_recurrent) |> 
-#     dplyr::mutate(col = resection_recurrent)
-# )
-
-# plt.logit.restyled.resection <- plt.logit.restyled
-
-# p4 <- ggplot(plt.logit.restyled, aes(x=x, y=y, group=group, col=col)) +
-#   # geom_line(data = plt.logit.restyled |> dplyr::filter(type == "data"),
-#   #           col="white",
-#   #           lwd=theme_nature_lwd * 2, alpha=0.65
-#   # ) +
-#   geom_line(data = plt.logit.restyled |> dplyr::filter(type == "data"),
-#             aes(col=col),
-#             lwd=theme_nature_lwd) +
-#   scale_color_gradientn(colours = c("aquamarine3","aquamarine3","#d34394ff","#d34394ff"), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
-#   labs(col=NULL) +
-#   ggnewscale::new_scale_colour() +
-#   geom_line(data = plt.logit.restyled |> dplyr::filter(type == "fit") ,
-#             aes(col=col),
-#             lwd=1.0) +
-#   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1), breaks=c(0, 1), labels=c("Primary", "Recurrent"), oob = scales::squish) +
-#   theme_nature +
-# annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 16)[15], x = 0.375, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
-#   labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "CGC Lasso x Resection") +
-#   scale_x_continuous(breaks = c(0,1), labels=c("Primary", "Recurrent")) + 
-#   theme(legend.box = "vertical") + # space dependent
-#   theme(legend.key.size = unit(0.6, 'lines'))
-# p4
 
 
 

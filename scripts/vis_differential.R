@@ -4796,12 +4796,13 @@ plt <- data.mvalues.probes |>
   dplyr::filter(wgEncodeUwRepliSeqBjWaveSignalRep1 < 95) |> 
   dplyr::filter(wgEncodeUwRepliSeqBjWaveSignalRep1 > 10) |> 
   dplyr::filter(wgEncodeUwRepliSeqNhekWaveSignalRep1 < 80) |> 
-  dplyr::select(DMP__g2_g3__pp_nc_PC1__t,
+  dplyr::select(DMP__g2_g3__pp_nc_PC1__t,DMP__AcCGAP__pp_nc__t,
                 contains("wgEncodeUwRepliSeq")) |> 
   dplyr::rename_with(~ gsub("wgEncodeUwRepliSeq","RepliSeq: ",.x)) |> 
   dplyr::rename_with(~ gsub("WaveSignalRep2","-rep2",.x)) |>  
   dplyr::rename_with(~ gsub("WaveSignalRep1","",.x)) |> 
-  dplyr::rename(`t-score OD` = DMP__g2_g3__pp_nc_PC1__t)
+  dplyr::rename(`t-statistic CGC"` = DMP__AcCGAP__pp_nc__t)|> 
+  dplyr::rename(`t-statistic WHO grade` = DMP__g2_g3__pp_nc_PC1__t)
 
 
 

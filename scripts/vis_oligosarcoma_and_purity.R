@@ -150,11 +150,33 @@ ggplot(plt, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_methylation_bi
   ggpubr::stat_compare_means(label.x.npc=0.25, method = "t.test", show_guide = FALSE, size=theme_nature_size, family=theme_nature_font_family, color=palette_repel_text_col) +
   
   scale_color_manual(values = c(palette_mnp_12.8_6, `Other`="darkgray")) +
-  labs(x="",y="Tumor cell fraction", col="MNP v12.8") +
+  labs(x="",y="Tumor cell fraction (1p 19q estimate)", col="MNP v12.8") +
   theme_nature
 
 
 ggsave("output/figures/vis_oligosarcoma_and_purity__glass-od_barplot.pdf", width=8.5 * 0.975 / 7, height = 2.4)
+
+
+
+# fig 3a ----
+
+
+plt <- metadata |> 
+  dplyr::filter(array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG" , "OLIGOSARC_IDH"))
+
+
+ggplot(plt, aes(x=array_mnp_predictBrain_v12.8_cal_class, y=array_RFpurity_estimate, col=array_mnp_predictBrain_v12.8_cal_class)) +
+  geom_point(size=theme_nature_size/3) +
+  
+  labs(subtitle=format_subtitle("Purity oligosarc ~ A_IDH_HG")) +
+  ggpubr::stat_compare_means(label.x.npc=0.25, method = "t.test", show_guide = FALSE, size=theme_nature_size, family=theme_nature_font_family, color=palette_repel_text_col) +
+  
+  scale_color_manual(values = c(palette_mnp_12.8_6, `Other`="darkgray")) +
+  labs(x="",y="Tumor cell fraction (RFpurity)", col="MNP v12.8") +
+  theme_nature
+
+
+ggsave("output/figures/vis_oligosarcoma_and_purity__glass-od_barplot__RFpurity_estimate.pdf", width=8.5 * 0.975 / 7, height = 2.4)
 
 
 

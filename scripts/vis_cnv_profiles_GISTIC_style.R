@@ -175,41 +175,48 @@ p1 <- ggplot(plt, aes(x=pos/100000000,y=`quantile.50%`, col=grade)) +
   geom_hline(yintercept = 0, col="gray40",lwd=theme_cellpress_lwd,lty=1, show_guide = FALSE) +
   facet_wrap(~chr, scales="free_x", ncol=22) +
   geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
-  geom_point(pch=19,cex=0.2,alpha=0.05) +
-  geom_smooth(se=F, method = "gam", lwd=theme_cellpress_lwd * 2.5) +
-  coord_cartesian(ylim=c(-1.15, 1.15)) +
+  geom_point(pch=20,cex=0.4, stroke=0, col="gray70") +
+  #geom_point(pch=19,cex=0.2,alpha=0.15, col="gray70") +
+  geom_smooth(se=F, method = "gam", lwd=theme_cellpress_lwd * 2.5, alpha=0.8) +
+  coord_cartesian(ylim=c(-1.05, 1.05)) +
   labs(x=NULL, col=NULL) +
   scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) + 
-  scale_color_manual(values=palette_g2_g3) +
+  #scale_color_manual(values=palette_g2_g3) +
+  scale_color_manual(values=c("Grade 3" = mixcol("red","black",0.1), "Grade 2" = as.character(palette_g2_g3['Grade 3'])))+
   theme_nature
 p1
 
 
 
 
-p2a <- ggplot(stats.g3.g2, aes(x=pos/100000000,y=logFC)) +
+# p2a <- ggplot(stats.g3.g2, aes(x=pos/100000000,y=logFC, col=adj.P.Val)) +
+#   facet_wrap(~chr, scales="free_x", ncol=22) +
+#   geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
+#   #geom_point(pch=19,cex=0.2,alpha=0.05) +
+#   geom_point(pch=19,cex=0.2,alpha=0.15) +
+#   geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd) +
+#   geom_smooth(se=F, lwd=theme_cellpress_lwd * 2, col="black") +
+#   coord_cartesian(ylim=c(-0.3, 0.3)) +
+#   labs(x=NULL) +
+#   scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+#   scale_color_manual(values=c(`TRUE`= 'red', `FALSE`='gray60')) +
+#   theme_nature
+# p2a
+
+
+
+p2b <- ggplot(stats.g3.g2, aes(x=pos/100000000,y=t, col=adj.P.Val < 0.01)) +
   facet_wrap(~chr, scales="free_x", ncol=22) +
   geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
-  geom_point(pch=19,cex=0.2,alpha=0.05) +
-  geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd) +
-  geom_smooth(se=F, lwd=theme_cellpress_lwd * 2, col="black") +
-  coord_cartesian(ylim=c(-0.3, 0.3)) +
-  labs(x=NULL) +
-  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
-  theme_nature
-p2a
-
-
-
-p2b <- ggplot(stats.g3.g2, aes(x=pos/100000000,y=t)) +
-  facet_wrap(~chr, scales="free_x", ncol=22) +
-  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
-  geom_point(pch=19,cex=0.2,alpha=0.05) +
+  #geom_point(pch=19,cex=0.2,alpha=0.05) +
+  #geom_point(pch=19,cex=0.2,alpha=0.15) +
+  geom_point(pch=20,cex=0.4, stroke=0) +
   geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd) +
   geom_smooth(se=F, lwd=theme_cellpress_lwd * 2, col="black") +
   coord_cartesian(ylim=c(-6.5, 6.5)) +
   labs(x=NULL) +
   scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  scale_color_manual(values=c(`TRUE`= 'red', `FALSE`='gray60'), guide="none") +
   theme_nature
 p2b
 
@@ -285,7 +292,7 @@ fit.LR <- limma::eBayes(fit.LR)
 stats.LR <- limma::topTable(fit.LR, n=nrow(fit.LR), sort="p", coef="scale(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)") |> # adjust="BH"
   tibble::rownames_to_column('cnvp_bin')
 
-
+# 
 # fit.PC2 <- limma::lmFit(t(data.cnv.profiles.LR.PC2), design.PC2)
 # fit.PC2 <- limma::eBayes(fit.PC2)
 # stats.PC2 <- limma::topTable(fit.PC2, n=nrow(fit.PC2), sort="p", coef="scale(-array_PC2)") |> # adjust="BH"
@@ -296,6 +303,8 @@ stats.LR <- limma::topTable(fit.LR, n=nrow(fit.LR), sort="p", coef="scale(array_
 # fit.PC3 <- limma::eBayes(fit.PC3)
 # stats.PC3 <- limma::topTable(fit.PC3, n=nrow(fit.PC3), sort="p", coef="scale(-array_PC3)") |> # adjust="BH"
 #   tibble::rownames_to_column('cnvp_bin')
+# 
+
 
 fit.PC2_PC3 <- limma::lmFit(t(data.cnv.profiles.LR.PC2), design.PC2_PC3)
 fit.PC2_PC3 <- limma::eBayes(fit.PC2_PC3)
@@ -323,15 +332,17 @@ plt.LR.padj <- rbind(
   plt.LR.padj |> dplyr::mutate(type = "border", minLogPadj = 0))
 
 
-p4 <- ggplot(plt.LR, aes(x=pos/100000000,y=t)) +
+p4 <- ggplot(plt.LR, aes(x=pos/100000000,y=t, col=adj.P.Val<0.01)) +
   facet_wrap(~chr, scales="free_x", ncol=22) +
   geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
-  geom_point(pch=19,cex=0.2,alpha=0.05) +
+  geom_point(pch=20,cex=0.4, stroke=0) +
+  #geom_point(pch=19,cex=0.2,alpha=0.05) +
   geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd,lty=1) +
   geom_smooth(se=F, lwd=theme_cellpress_lwd * 2, col="black") +
   coord_cartesian(ylim=c(-6.5, 6.5)) +
   labs(x=NULL) +
   scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  scale_color_manual(values=c(`TRUE`= mixcol('red', "gray60", 0.4), `FALSE`='gray60'), guide="none") +
   theme_nature
 p4
 
@@ -354,8 +365,16 @@ p5
 p4 / p5
 
 
-
 ggsave("output/figures/vis_cnv_profiles_GISTIC_style__AcCGAP.png", width=11 * 0.975, height = 2.46) # removal of ticks needs to be incorp
+
+
+
+# ggplot(data.frame(x= c(1), y=c(3)), aes(x=x,y=y)) +
+#   #geom_point(cex=1, pch=19, col = "red", fill="white", alpha=0.3) +
+#   geom_point(pch=20,cex=15,alpha=0.3, col = "red",stroke=0) +
+#   xlim(c(0.9999999,1.0000001)) +
+#   ylim(c(2.9999999,3.0000001)) +
+#   theme_nature
 
 
 
@@ -375,15 +394,17 @@ plt.PC2.padj <- rbind(
   plt.PC2.padj |> dplyr::mutate(type = "border", minLogPadj = 0))
 
 
-p6 <- ggplot(plt.PC2, aes(x=pos/100000000,y=logFC)) +
+
+p6 <- ggplot(plt.PC2, aes(x=pos/100000000, y=logFC, col=adj.P.Val<0.01)) +
   facet_wrap(~chr, scales="free_x", ncol=22) +
   geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
-  geom_point(pch=19,cex=0.2,alpha=0.05) +
+  geom_point(pch=20, cex=0.4, stroke=0) +
   geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd,lty=1) +
   geom_smooth(se=F, lwd=theme_cellpress_lwd * 2, col="black") +
   coord_cartesian(ylim=c(-0.3, 0.3)) +
   labs(x=NULL) +
   scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  scale_color_manual(values=c(`TRUE`= mixcol('red', "gray60", 0.4), `FALSE`='gray60'), guide="none") +
   theme_nature
 p6
 
@@ -410,6 +431,7 @@ ggsave("output/figures/vis_cnv_profiles_GISTIC_style__PC2.png", width=11 * 0.975
 
 
 
+
 ## PC3 ----
 
 
@@ -428,15 +450,17 @@ plt.PC3.padj <- rbind(
   plt.PC3.padj |> dplyr::mutate(type = "border", minLogPadj = 0))
 
 
-p8 <- ggplot(plt.PC3, aes(x=pos/100000000,y=logFC)) +
+p8 <- ggplot(plt.PC3, aes(x=pos/100000000,y=logFC, col=adj.P.Val<0.01)) +
   facet_wrap(~chr, scales="free_x", ncol=22) +
   geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
-  geom_point(pch=19,cex=0.2,alpha=0.05) +
+  geom_point(pch=20, cex=0.4, stroke=0) +
+  #geom_point(pch=19,cex=0.2,alpha=0.05) +
   geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd,lty=1) +
   geom_smooth(se=F, lwd=theme_cellpress_lwd * 2, col="black") +
   coord_cartesian(ylim=c(-0.3, 0.3)) +
   labs(x=NULL) +
   scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  scale_color_manual(values=c(`TRUE`= mixcol('red', "gray60", 0.4), `FALSE`='gray60'), guide="none") +
   theme_nature
 p8
 
@@ -463,9 +487,6 @@ p8 / p9
 ggsave("output/figures/vis_cnv_profiles_GISTIC_style__PC3.png", width=11 * 0.975, height = 2.46) # removal of ticks needs to be incorp
 
 
-
-
-## sandbox ----
 
 
 
@@ -618,6 +639,115 @@ p6 / p7 / p8
 
 
 ggsave("output/figures/vis_cnv_profiles_GISTIC_style__p_x_r.pdf", width=11 * 0.975, height = 3.75) # removal of ticks needs to be incorp
+
+
+
+# CoxPH ----
+
+## post rec svvl ----
+
+
+metadata <- metadata.all |> 
+  dplyr::filter(resection_number > 1) |> 
+  dplyr::group_by(patient_id) |>
+  dplyr::slice_max(resection_number, with_ties = FALSE) |>
+  dplyr::ungroup() |> 
+  assertr::verify(!duplicated(patient_id)) |> 
+  dplyr::filter(!is.na(patient_last_follow_up_event)& !is.na(time_between_resection_and_last_event))
+
+
+
+data.cnv <- data.cnv.profiles |> 
+  t() |> 
+  as.data.frame() |> 
+  dplyr::select(metadata$array_sentrix_id) |> 
+  t() |> 
+  as.data.frame() 
+
+
+
+stopifnot(metadata$array_sentrix_id == rownames(data.cnv))
+
+svvl <- survival::Surv(metadata$time_between_resection_and_last_event, metadata$patient_last_follow_up_event)
+
+
+out <- data.frame()
+for(bin in 1:ncol(data.cnv)) {
+  
+  name <- colnames(data.cnv)[bin]
+  dat <- data.frame(data = data.cnv[,bin],
+                    array_methylation_bins_1p19q_purity = metadata$array_methylation_bins_1p19q_purity
+                    )
+  
+
+  cox_model <- survival::coxph(svvl ~ data +array_methylation_bins_1p19q_purity, data = dat)
+  cox_model_s <- summary(cox_model)
+  
+  append <- cox_model_s$coefficients |> 
+    as.data.frame() |>
+    tibble::rownames_to_column('factor') |>
+    dplyr::filter(factor == "data") |> 
+    dplyr::mutate(cnvp_bin=name)
+  
+  out <- rbind(out, append)
+}
+
+
+
+plt <- out |> 
+  dplyr::left_join(metadata.cnv.profiles, by=('cnvp_bin'='cnvp_bin'), suffix=c('','')) |> 
+  dplyr::mutate(adj.P.Val = p.adjust(`Pr(>|z|)`, method = "BH")) |> 
+  dplyr::mutate(minLogPadj = -log(adj.P.Val))
+
+
+
+plt.padj <- rbind(
+  plt |> dplyr::mutate(type = "data"),
+  plt |> dplyr::mutate(type = "border", minLogPadj = 0)) |> 
+  dplyr::mutate(col = dplyr::case_when(
+    adj.P.Val < 0.01 ~ "significant",
+    adj.P.Val < 0.05 & adj.P.Val >= 0.01  ~ "trend",
+    T ~ "other"
+  ))
+
+
+
+p10 <- ggplot(plt.padj, aes(x=pos/100000000,y=z, col=col)) +
+  facet_wrap(~chr, scales="free_x", ncol=22) +
+  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
+  #geom_point(pch=19,cex=0.2,alpha=0.15) +
+  geom_point(pch=20,cex=0.4, stroke=0) +
+  geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd,lty=1) +
+  geom_smooth(se=F, lwd=theme_cellpress_lwd * 2, col="black") +
+  coord_cartesian(ylim=c(-5, 5)) +
+  labs(x=NULL,y="z-score CoxPH") +
+  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  scale_color_manual(values=c(`significant`= 'red', 
+                              `trend` = 'deeppink',
+                              `other`='gray60'), guide="none") +
+  theme_nature
+p10
+
+
+p11 <- ggplot(plt.padj, aes(x=pos/100000000,y=minLogPadj, group=cnvp_bin)) +
+  facet_wrap(~chr, scales="free_x", ncol=22) +
+  geom_vline(xintercept = 0, col="black",lwd=theme_cellpress_lwd,lty=1) +
+  geom_line(alpha=0.05,col=mixcol("darkgreen", "white", 0.15),lwd=theme_cellpress_lwd) +
+  geom_smooth(data=subset(plt.padj, type == "data"), group=1, se=F, lwd=theme_cellpress_lwd * 2, col="black") +
+  geom_hline(yintercept = 0, col="red",lwd=theme_cellpress_lwd,lty=1) +
+  geom_hline(yintercept = -log(0.05), col="red",lwd=theme_cellpress_lwd,lty=2) +
+  labs(y = "-log(Padj)") +
+  coord_cartesian(ylim=c(0, 3.75)) +
+  labs(x="Chromosomal position (/ 100 MB)") +
+  scale_x_continuous(breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3), labels=c(0,"",1,"",2,"",3), limits=c(0, NA)) +
+  theme_nature
+p11
+
+
+p10 / p11
+
+
+ggsave("output/figures/vis_cnv_profiles_GISTIC_style__post_rec_svvl.png", width=11 * 0.975, height = 2.46) # removal of ticks needs to be incorp
 
 
 

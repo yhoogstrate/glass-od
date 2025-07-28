@@ -593,7 +593,7 @@ ggsave("output/figures/vis_CDKN2AB_incidence__96_114.png", width=8.5 * 0.975, he
 # 9p arm medians ----
 
 
-sel <- c("0007-R2","0012-R3","0018-R3","0024-R2","0031-R2","0032-R1","0036-R2","0038-R2","0042-R3","0045-R2","0051-R2","0054-R3","0055-R2","0061-R2","0064-R4","0070-R3","0090-R3","0092-R3","0094-R2","0099-R2","0111-R2","0114-R2","0116-R2","0117-R3","0119-R2","0124-R2")
+sel <- c("0007-R2", "0010-R2", "0012-R3", "0018-R3", "0024-R2", "0031-R2", "0032-R1", "0036-R2", "0038-R2", "0042-R3", "0045-R2", "0051-R2", "0054-R3", "0055-R2", "0061-R2", "0062-R4", "0064-R4", "0069-R2", "0070-R3", "0079-R3", "0090-R3", "0092-R3", "0094-R2", "0099-R2", "0111-R2", "0114-R2", "0116-R2", "0117-R3", "0119-R2", "0121-R3", "0124-R2", "0130-R2")
 
 
 plt <- plt.bins |> 
@@ -645,7 +645,7 @@ ggplot(plt, aes(x=pos, y=log2fc, col=CDKN2AB, group=bin)) +
   geom_line(data=subset(plt, CDKN2AB == "chr9"), lwd=theme_nature_lwd * 6) +
   geom_line(data=subset(plt, CDKN2AB != "chr9"), lwd=theme_nature_lwd * 15) +
   
-  labs(x = "million bases hg19", y="mean log2fc", col="", caption="last resections with 9p arm losses (n=26, incl 4x HD)") +
+  labs(x = "million bases hg19", y="mean log2fc", col="", caption=paste0("last resections with 9p arm losses (n=",length(sel),", incl 4x HD)")) +
   
   scale_color_manual(values=c(`CDKN2A/B` = mixcol("red","black",0.2),
                               `chr9q` = "#CB75A4",

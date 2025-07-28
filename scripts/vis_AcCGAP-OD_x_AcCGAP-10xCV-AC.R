@@ -99,20 +99,24 @@ ggplot(plt, aes(
   #label=sentrix_id
 )) +
   ggpubr::stat_cor(method = "pearson", aes(label = after_stat(r.label)), col="1", size=theme_nature_size,family=theme_nature_font_family) +
-  annotate("text", x = -16, y = 17.8, label = paste0("RMSE = ",s_rmse),hjust = 0, color = "black", size=theme_nature_size,family=theme_nature_font_family) +
-  annotate("text", x = -16, y = 15.8, label = paste0("RRMSE = ",s_rrmse), hjust = 0, color = "black", size=theme_nature_size,family=theme_nature_font_family) +
+  annotate("text", x = -16, y = 17.2, label = paste0("RMSE = ",s_rmse),hjust = 0, color = "black", size=theme_nature_size,family=theme_nature_font_family) +
+  annotate("text", x = -16, y = 15.2, label = paste0("RRMSE = ",s_rrmse), hjust = 0, color = "black", size=theme_nature_size,family=theme_nature_font_family) +
   geom_point(size=theme_nature_size/3) +
   #ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", fill="1", size=theme_cellpress_size) +
-  labs(subtitle = "CGC[phi] in GLASS-NL",
+  labs(subtitle = paste0("CGC[phi] in GLASS-NL - n=",nrow(plt)),
        x= "Actual CGC",
        y="CGC[Phi] (predicted)", col="", fill="") +
   scale_color_manual(values = c(`A_IDH_LG`='lightblue',`A_IDH_HG`='darkblue', `other`=mixcol("#444444","red",0.75))) +
+  coord_fixed(ratio = diff(range(plt$array_A_IDH_HG__A_IDH_LG_lr_v12.8)) / diff(range(plt$array_A_IDH_HG__A_IDH_LG_lr__lasso_fit__10xCV_v12.8))) +
   theme_nature
 
 
 
 ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_scatter_observed_predicted.pdf",
-       width=2.3725, height=2.65)
+       width=2.3725, height=2.05)
+
+
+
 
 
 
@@ -163,23 +167,24 @@ plt <- rbind(
 
 
 ggplot(plt, aes(x=class, y=AcCGAP_score, fill=class, col=class)) +
-  ggbeeswarm::geom_quasirandom(size=theme_nature_size/3, show.legend = FALSE) +
+  ggbeeswarm::geom_quasirandom(size=theme_nature_size/3, show.legend = FALSE, width=0.45,pch=20, col="gray40") +
   ggpubr::stat_compare_means(comparisons=list(c('GLASS-NL:\nLASSO 10xCV',
                                                 'GLASS-OD:\nLASSO full')), method="wilcox.test",
-    label.x.npc=theme_nature_lwd, size=theme_nature_size,
+    label.x.npc=theme_nature_lwd,
+    size=theme_nature_size,
     family=theme_nature_font_family, 
     show_guide = FALSE) +
-  labs(col="", fill="",x = "", y="AcCGAP score", subtitle=format_subtitle("CGC LASSO"),caption=paste0(
+  labs(col="", fill="",x = "", y='CGC/CGC"', subtitle=format_subtitle("CGC LASSO"),caption=paste0(
     "GLASS-NL: n=",CONST_N_GLASS_NL_INCLUDED_SAMPLES, "  --  GLASS-OD: n=",CONST_N_GLASS_OD_INCLUDED_SAMPLES, "  --  p: wilcox test"
   )) +
-  scale_color_manual(values = c('GLASS-NL:\nLASSO 10xCV'='darkblue',
-                                'GLASS-OD:\nLASSO full'='darkgreen',
-                                'GLASS-NL:\nCGC' = '#888888')) +
+  # scale_color_manual(values = c('GLASS-NL:\nLASSO 10xCV'='darkblue',
+  #                               'GLASS-OD:\nLASSO full'='darkgreen',
+  #                               'GLASS-NL:\nCGC' = '#888888')) +
   theme_nature
 
 
 ggsave("output/figures/vis_AcCGAP-OD_x_AcCGAP-10xCV-AC_LASSO_10xFC_AC_OLI_wilcox.pdf",
-       width=(8.5*0.95)/3, 
-       height=2.69)
+       width=1.25,
+       height=2.05)
 
 

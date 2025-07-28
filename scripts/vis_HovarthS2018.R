@@ -37,7 +37,7 @@ metadata <- glass_od.metadata.array_samples |>
 plt <- metadata |>
   dplyr::select(patient_id, resection_id, resection_number, contains("HorvathS2018"), time_between_birth_and_resection, array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, resection_tumor_grade) |> 
   dplyr::mutate(time_between_birth_and_resection = as.numeric(time_between_birth_and_resection / 365.25) ) |> 
-  dplyr::mutate(col = cut_number(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, 4)) |> 
+  dplyr::mutate(col = cut_number(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, 3)) |> 
   dplyr::mutate(col2 = cut(array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, 5)) |> 
   dplyr::mutate(prim_rec = ifelse(resection_number == 1, "primary", "recurrent")) |> 
   dplyr::mutate(resection_tumor_grade = as.factor(paste0("Grade ",resection_tumor_grade))) |> 
@@ -49,8 +49,12 @@ p1 = ggplot(plt, aes(x = time_between_birth_and_resection, y=array_dnaMethyAge__
   geom_smooth(method="lm", se=F,  lwd=theme_nature_lwd,  formula= y~x) +
   geom_point(size=theme_nature_size/3) +
   
-  labs(x = "Age at resection", y = "PCHorvathS2018", col="CGC") +
-  scale_color_manual(values = rev(col4(4))) +
+  labs(x = "Age at intervention", y = "Epigenetic age (PCHorvathS2018)", col="CGC") +
+  scale_color_manual(values = 
+                      c( mixcol("#154360", "#ffffff",0.1),
+                         mixcol("#FFC300", "gray40", 0.1),
+                        mixcol( "#FF5733", "black", 0.15)
+                       )) +
   theme_nature
 
 
@@ -60,7 +64,7 @@ p2 = ggplot(plt, aes(x = time_between_birth_and_resection, y=array_dnaMethyAge__
   geom_smooth(method="lm", se=F,  lwd=theme_nature_lwd,  formula= y~x) +
   geom_point(size=theme_nature_size/3) +
   
-  labs(x = "Age at resection", y = "PCHorvathS2018 (Epi-genetic age)", col=NULL) +
+  labs(x = "Age at intervention", y = "Epigenetic age (PCHorvathS2018)", col=NULL) +
   scale_color_manual(values=c('#009E74', '#CB75A4')) +
   theme_nature
 
@@ -69,8 +73,9 @@ p3 = ggplot(plt, aes(x = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=(array_dnaMet
   geom_hline(yintercept=0, lwd=theme_nature_lwd, lty=2) +
   geom_point(size=theme_nature_size/3) +
   scale_color_manual(values=c('#009E74', '#CB75A4')) +
-  labs(x = "CGC", y = "Epi-genetic age  beyond  actual age", col=NULL) +
+  labs(x = "CGC", y = "Epigenetic age - age at intervention", col=NULL) +
   theme_nature
+
 
 
 library(patchwork)

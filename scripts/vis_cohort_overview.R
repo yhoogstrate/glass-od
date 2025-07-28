@@ -39,6 +39,21 @@ tmp <- glass_od.metadata.array_samples |>
 # Figure 1A: overview GLASS_OD ----
 
 
+# stats oligosarc prob's
+glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(array_mnp_predictBrain_v12.8_cal_class == "A_IDH_HG") |> 
+  dplyr::select(resection_id, 
+                array_mnp_predictBrain_v12.8_cal_OLIGOSARC_IDH,
+                array_mnp_predictBrain_v12.8_cal_A_IDH_HG,
+                array_mnp_predictBrain_v12.8_cal_OLIGOSARC_IDH,
+                array_mnp_predictBrain_v12.8_cal_OLIGOSARC_IDH,
+                array_mnp_predictBrain_v12.8_cal_class) |> 
+  dplyr::filter(array_mnp_predictBrain_v12.8_cal_A_IDH_HG > 0.84)
+
+
+
+
 plt <- glass_od.metadata.array_samples |> 
   filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES + 18, exclude.suspected.noncodels = F) |> 
   dplyr::mutate(Source = dplyr::recode(isolation_material, `ffpe`="Source: FFPE", `tissue`="Source: fresh")) |> 

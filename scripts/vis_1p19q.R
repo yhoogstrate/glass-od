@@ -136,6 +136,12 @@ plt.ybar <- rbind(
 
 plt <- rbind(plt, plt.ybar)
 
+plt <- plt |> 
+  dplyr::mutate(facet = gsub(" [A_IDH_HG]",": high-grade astrocytoma", facet, fixed=T)) |> 
+  dplyr::mutate(facet = gsub(" [OLIGOSARC_IDH]",": oligosarcoma", facet, fixed=T))
+
+plt$facet |>  table()
+
 
 ggplot(plt, aes(x=pos, y=log2fc, group=group, col=col)) +
   facet_wrap(~facet) + # , scales="free"

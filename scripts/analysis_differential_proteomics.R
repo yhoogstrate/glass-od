@@ -26,6 +26,11 @@ if(!exists('glass_od.metadata.proteomics')) {
 
 
 
+if(!exists('glass_nl.proteomics')) {
+  source('scripts/load_GLASS-NL_proteomics.R')
+}
+
+
 
 
 # limma N/A ----
@@ -1267,7 +1272,7 @@ metadata <- glass_nl.metadata.array_samples |>
 
 
 data <- glass_nl.proteomics |>
-  dplyr::select(meta$proteomics_sid)
+  dplyr::select(metadata$proteomics_sid)
 
 
 

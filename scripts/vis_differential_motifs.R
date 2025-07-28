@@ -616,7 +616,7 @@ ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc__t)) +
                geom = "crossbar", col="red", width=0.85, linewidth=theme_nature_lwd) +
   
   labs(x = NULL,
-       y="Per probe t-score Grade 2 ~ Grade 3",
+       y="Per probe t-statistic WHO Grades",
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
   theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
@@ -657,19 +657,19 @@ plt <- plt |>
   dplyr::group_by(oligo_sequence) |> 
   dplyr::mutate(facet_rank = median(DMP__g2_g3__pp_nc_PC1__t)) |> 
   dplyr::ungroup() |> 
-  dplyr::mutate(facet_name = tolower(oligo_sequence))
+  dplyr::mutate(facet_name = tolower(gsub("/.*$","",oligo_sequence)))
 
 
 
 ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc_PC1__t)) +
-  geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
+  geom_boxplot(width=0.8, outlier.shape=NA, outlier.color=NA, col="gray40",
                coef=0.5, fill=NA,linewidth=theme_nature_lwd) +
   
   stat_summary(fun = median, fun.min = median, fun.max = median,
                geom = "crossbar", col="red", width=0.85, linewidth=theme_nature_lwd) +
   
   labs(x = NULL,
-       y="Per probe t-score Grade 2 ~ Grade 3",
+       y="Mean per-probe t-statistics WHO grades",
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
   theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
@@ -678,7 +678,7 @@ ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc_PC1__t))
 
 
 
-ggsave("output/figures/vis_differential_motifs__t_stat_grade_per_motif__PC1__unstranded.pdf", width=11 * 0.975, height=3.8)
+ggsave("output/figures/vis_differential_motifs__t_stat_grade_per_motif__PC1__unstranded.pdf", width=8.4, height=3)
 
 
 
