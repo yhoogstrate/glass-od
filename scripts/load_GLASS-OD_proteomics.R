@@ -19,7 +19,7 @@ if(!exists('glass_od.metadata.proteomics')) {
 #tmp <- readxl::read_xlsx('data/GLASS_OD/Protein - Tobias Weiss/GLODprot_raw_protein_matrix.xlsx')
 
 
-# metadata.proteomics.proteins <- tmp |> 
+# metadata.proteomics.glass_od <- tmp |> 
 #     dplyr::select(Precursor.Id, Protein.Group, Protein.Ids,  Protein.Names, Genes,  First.Protein.Description, Proteotypic,  Stripped.Sequence, Modified.Sequence,  Precursor.Charge) |> 
 #     dplyr::mutate(peptide_id = Precursor.Id) |> 
 #     tibble::column_to_rownames("Precursor.Id")|> 
@@ -63,7 +63,7 @@ if(!exists('glass_od.metadata.proteomics')) {
 #   dplyr::filter(Genes != "")
 # 
 # 
-# metadata.proteomics.proteins <- tmp |> 
+# metadata.proteomics.glass_od <- tmp |> 
 #   dplyr::select(Protein.Group,
 #                 Protein.Ids,   
 #                 Protein.Names,  
@@ -121,7 +121,7 @@ tmp.2 <- read.csv('data/GLASS_OD/Protein - Tobias Weiss/WU300344_report.pg_matri
 
 
 
-metadata.proteomics.proteins <- tmp |> 
+metadata.proteomics.glass_od <- tmp |> 
   dplyr::select(Protein.Group,
                 Protein.Ids,   
                 Protein.Names,  
@@ -135,9 +135,9 @@ metadata.proteomics.proteins <- tmp |>
 
 data.proteomics.glass_od <- tmp |> 
   dplyr::select(Protein.Names, contains("_GLODprot_")) |> 
-  dplyr::filter(Protein.Names %in% metadata.proteomics.proteins$Protein.Names) |> 
+  dplyr::filter(Protein.Names %in% metadata.proteomics.glass_od$Protein.Names) |> 
   dplyr::left_join(
-    metadata.proteomics.proteins |> dplyr::select(Protein.Names, Genes), by=c('Protein.Names'='Protein.Names')
+    metadata.proteomics.glass_od |> dplyr::select(Protein.Names, Genes), by=c('Protein.Names'='Protein.Names')
   ) |> 
   dplyr::mutate(Protein.Names = NULL) |> 
   tibble::column_to_rownames("Genes") |> 
@@ -205,7 +205,7 @@ clng <- c("AAAS","AATF","ABCB1","ABL1","ABRAXAS1","ABRAXAS2","ACTB","ACTL6A","AC
 
 
 
-metadata.proteomics.proteins <- metadata.proteomics.proteins |> 
+metadata.proteomics.glass_od <- metadata.proteomics.glass_od |> 
   dplyr::mutate(cellcycling_go_ = Genes %in% clng)
 
 
@@ -220,9 +220,130 @@ rm(clng)
 # add fibronectin / FN1 ----
 
 
-metadata.proteomics.proteins <- metadata.proteomics.proteins |> 
+metadata.proteomics.glass_od <- metadata.proteomics.glass_od |> 
   dplyr::mutate(is_fibronectin_fn1 = Genes %in% c("FN1", "FINC", "FIBRONETIN", "FIBRONETIN1", "FN", "CIG", "GFND2", "LETS", "MSF"))
 
-metadata.proteomics.proteins |>
-  dplyr::filter(is_fibronectin_fn1) 
+
+#metadata.proteomics.glass_od |>
+#  dplyr::filter(is_fibronectin_fn1) 
+
+
+
+# DPA: CGC ----
+
+fn <- "cache/analysis_differential_proteomics__GLASS-OD__stats.cgc.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::select(protein_id, logFC, t, P.Value, adj.P.Val) |> 
+    dplyr::rename_with(~paste0("DPA__GLASS_OD__CGC__", .x), .cols=!matches("^protein_id$", perl = T))
+  
+  
+  metadata.proteomics.glass_od <- metadata.proteomics.glass_od |> 
+    dplyr::left_join(tmp, by=c('Genes'='protein_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
+} else {
+  warning("DPA GLASS-OD x CGC is missing")
+}
+
+rm(fn)
+
+
+
+# DPA: prim - rec (naive) ----
+
+fn <- "cache/analysis_differential_proteomics__GLASS-OD__stats.prim-rec.naive.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::select(protein_id, logFC, t, P.Value, adj.P.Val) |> 
+    dplyr::rename_with(~paste0("DPA__GLASS_OD__prim-rec__naive__", .x), .cols=!matches("^protein_id$", perl = T))
+  
+  
+  metadata.proteomics.glass_od <- metadata.proteomics.glass_od |> 
+    dplyr::left_join(tmp, by=c('Genes'='protein_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
+} else {
+  warning("DPA GLASS-OD x prim-rec (naive) is missing")
+}
+
+rm(fn)
+
+
+
+# DPA: prim - rec (pat corrected) ----
+
+fn <- "cache/analysis_differential_proteomics__GLASS-OD__stats.prim-rec.pat-corrected.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::select(protein_id, logFC, t, P.Value, adj.P.Val) |> 
+    dplyr::rename_with(~paste0("DPA__GLASS_OD__prim-rec__pat_corrected__", .x), .cols=!matches("^protein_id$", perl = T))
+  
+  
+  metadata.proteomics.glass_od <- metadata.proteomics.glass_od |> 
+    dplyr::left_join(tmp, by=c('Genes'='protein_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
+} else {
+  warning("DPA GLASS-OD x prim-rec (naive) is missing")
+}
+
+rm(fn)
+
+
+
+
+# DPA: grade (naive) ----
+
+fn <- "cache/analysis_differential_proteomics__GLASS-OD__stats.grade.naive.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::select(protein_id, logFC, t, P.Value, adj.P.Val) |> 
+    dplyr::rename_with(~paste0("DPA__GLASS_OD__grade__naive__", .x), .cols=!matches("^protein_id$", perl = T))
+  
+  
+  metadata.proteomics.glass_od <- metadata.proteomics.glass_od |> 
+    dplyr::left_join(tmp, by=c('Genes'='protein_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
+} else {
+  warning("DPA GLASS-OD x prim-rec (naive) is missing")
+}
+
+rm(fn)
+
+
+
+# DPA: grade (pat corrected) ----
+
+fn <- "cache/analysis_differential_proteomics__GLASS-OD__stats.grade.pat-corrected.Rds"
+if(file.exists(fn)) {
+  
+  tmp <- readRDS(fn) |> 
+    dplyr::select(protein_id, logFC, t, P.Value, adj.P.Val) |> 
+    dplyr::rename_with(~paste0("DPA__GLASS_OD__grade__pat_corrected__", .x), .cols=!matches("^protein_id$", perl = T))
+  
+  
+  metadata.proteomics.glass_od <- metadata.proteomics.glass_od |> 
+    dplyr::left_join(tmp, by=c('Genes'='protein_id'), suffix=c('','') )
+  
+  rm(tmp)
+  
+} else {
+  warning("DPA GLASS-OD x prim-rec (naive) is missing")
+}
+
+rm(fn)
+
+
+
+
 
