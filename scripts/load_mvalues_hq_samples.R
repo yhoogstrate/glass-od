@@ -153,7 +153,7 @@ fn <- "cache/analysis_differential__primary_recurrence__partial_paired_nc__stats
 if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
-    dplyr::select(probe_id, t, adj.P.Val, logFC) |> 
+    dplyr::select(probe_id, t, adj.P.Val, P.Value, logFC) |> 
     dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
     (function(.) {
       print(dim(.))
@@ -183,7 +183,7 @@ fn <- "cache/analysis_differential__primary_recurrence__PC1__partial_paired_nc__
 if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
-    dplyr::select(probe_id, t, logFC, adj.P.Val) |> 
+    dplyr::select(probe_id, t, adj.P.Val, P.Value, logFC) |> 
     dplyr::rename_with(~paste0("DMP__primary_recurrence__pp_nc_PC1__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
     (function(.) {
       print(dim(.))
@@ -270,8 +270,8 @@ rm(fn)
 fn <- "cache/analysis_differential__g2_g3__partial_paired_nc__stats.Rds"
 if(file.exists(fn)) {
   
-  tmp <-  readRDS(fn) |> 
-    dplyr::select(probe_id, t, adj.P.Val, logFC) |> 
+  tmp <- readRDS(fn) |> 
+    dplyr::select(probe_id, t, adj.P.Val, P.Value, logFC) |> 
     dplyr::rename_with(~paste0("DMP__g2_g3__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
     (function(.) {
       print(dim(.))
@@ -300,7 +300,7 @@ fn <- "cache/analysis_differential__g2_g3__PC1__partial_paired_nc__stats.Rds"
 if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |> 
-    dplyr::select(probe_id, t, adj.P.Val, logFC) |> 
+    dplyr::select(probe_id, t, adj.P.Val, P.Value, logFC) |> 
     dplyr::rename_with(~paste0("DMP__g2_g3__pp_nc_PC1__", .x), .cols=!matches("^probe_id$",perl = T)) |> 
     (function(.) {
       print(dim(.))
@@ -1007,7 +1007,7 @@ fn <- "cache/analysis_differential__log_ffpe_freezer_decay-time__partial_paired_
 if(file.exists(fn)) {
   
   tmp <- readRDS(fn) |>
-    dplyr::select(probe_id, t, adj.P.Val) |> 
+    dplyr::select(probe_id, t, adj.P.Val, P.Value, logFC) |>  
     dplyr::rename_with(~paste0("DMP__FFPE_log1p__decay_time__pp_nc__", .x), .cols=!matches("^probe_id$",perl = T)) |>
     (function(.) {
       print(dim(.))
