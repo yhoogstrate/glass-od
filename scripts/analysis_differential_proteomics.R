@@ -464,10 +464,12 @@ stats.cgc <- limma::topTable(fit,
   tibble::rownames_to_column('protein_id')
 
 
+rm(design, fit, data, metadata)
+
+
 saveRDS(stats.cgc, file="cache/analysis_differential_proteomics__GLASS-OD__stats.cgc.Rds")
 
-
-rm(design, fit, data, metadata)
+rm(stats.cgc)
 
 
 
@@ -486,7 +488,7 @@ metadata <- glass_nl.metadata.array_samples |>
 
 
 
-data <- glass_nl.proteomics |>
+data <- data.proteomics.glass_nl |>
   dplyr::select(metadata$proteomics_sid)
 
 
@@ -499,8 +501,16 @@ stats.cgc.glass_nl <- limma::topTable(fit,
                                       coef="CGC",
                                       sort.by = "none",
                                       adjust.method="fdr") |> 
-  dplyr::rename_with( ~ paste0("GLASS-NL_CGC__", .x)) |> 
+  as.data.frame() |> 
   tibble::rownames_to_column('protein_id') 
+
+
+
+saveRDS(stats.cgc.glass_nl, file="cache/analysis_differential_proteomics__GLASS-NL__stats.cgc.Rds")
+
+rm(stats.cgc.glass_nl)
+
+
 
 
 
