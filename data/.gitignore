@@ -10,3 +10,5 @@ Improved DNA Methylation Array Probe Annotation
 *.txt
 *.xlsx
 *.Rds
+*.csv
+/*.tsv

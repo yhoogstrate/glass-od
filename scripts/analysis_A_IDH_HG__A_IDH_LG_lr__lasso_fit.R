@@ -278,6 +278,55 @@ rm(tmp)
 
 
 
+## build model on full data [epicv2/950k probes] ----
+
+# BiocManager::install("IlluminaHumanMethylationEPICv2manifest")
+# BiocManager::install("IlluminaHumanMethylationEPICv2anno.20a1.hg38")
+
+# file comes from mLiftOver
+small_delta <- read.table("data/EPICv2ToEPIC_conversion.tsv",header=T) |> # mLiftover considered the delta between v1 and v2, those with large delta correlate poorly, so exclude
+  dplyr::filter(big_delta == F) |> # exclude probes with big delta between V1 / V2 replicates
+  dplyr::filter(!grepl("^gc", ID_EPIC1)) |> # only use Cg probes, no qc/snp probes
+  dplyr::mutate(rmse = sqrt(rowMeans(dplyr::across(dplyr::starts_with("EPIC1"), ~ .x^2)))) |> 
+  dplyr::group_by(ID_EPIC1) |> 
+  dplyr::slice_min(rmse, with_ties = FALSE) |>  # pick the best matching per replicate probe, if there are reps
+  dplyr::ungroup() |>
+  dplyr::select(ID_EPIC1, ID_EPIC2) # translation table format
+
+
+stopifnot(!duplicated(small_delta$ID_EPIC1)) # only 1 to 1 mapping allowed
+
+
+tmp <- data.glass_nl |> 
+  dplyr::select(metadata.glass_nl$array_sentrix_id) |> 
+  tibble::rownames_to_column('probe_id') |> 
+  dplyr::left_join(small_delta, by=c('probe_id' = 'ID_EPIC1')) |> 
+  dplyr::filter(!is.na(ID_EPIC2)) |> 
+  tibble::column_to_rownames('ID_EPIC2') |>  # ID conversion
+  dplyr::mutate(probe_id = NULL)
+
+
+
+cv_model_probe_based_epicv2 <- glmnet::cv.glmnet(
+  tmp |> t(),
+  metadata.glass_nl$array_A_IDH_HG__A_IDH_LG_lr_v12.8, alpha = 1, relax=F)
+
+
+lm.full.probe_based.epicv2 <- glmnet::glmnet(tmp |> t(),
+                                           metadata.glass_nl$array_A_IDH_HG__A_IDH_LG_lr_v12.8,
+                                           alpha = 1,
+                                           lambda = cv_model_probe_based_epicv2$lambda.min)
+
+
+
+saveRDS(rownames(tmp), file="cache/LGC_predictor_probe_based_ordered_probes_epicv2.Rds")
+saveRDS(lm.full.probe_based.epicv2, file="cache/LGC_predictor_probe_based_lm_epicv2.Rds")
+
+
+rm(tmp)
+
+
+
 
 # model 2: on PCA ----
 
