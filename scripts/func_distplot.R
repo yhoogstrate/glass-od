@@ -50,7 +50,7 @@ distplot <- function(d) {
     ggplot2::coord_fixed() +
     ggplot2::scale_x_discrete(labels = NULL, expand = c(0, 0)) +
     ggplot2::scale_y_continuous(name = NULL, breaks = nrow(o.join):1, labels = o.join$name, expand = c(0, 0)) +
-    theme_nature +
+    theme_cellpress +
     ggplot2::theme(
       legend.position = "bottom",
       axis.text.y = ggplot2::element_text(angle = 0, hjust = 1, vjust = 0.5), # used to be [3,6] reduce font size here, should become argument

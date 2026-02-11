@@ -59,8 +59,8 @@ ggcorrplot <- function(c,abs=F, reorder=T, cmethod="spearman") {
     col = .data$value,
     label = .data$x
   )) +
-    ggplot2::geom_tile(col = "gray", fill = "white", lwd = theme_nature_lwd / 2) +
-    ggplot2::geom_rect(data=head(plt.gg, n=1), aes(xmin=0.5, xmax=base::length(o) + 0.5, ymin=0.5, ymax=base::length(o) + 0.5), col = "gray", fill = NA, lwd = theme_nature_lwd ) +
+    ggplot2::geom_tile(col = "gray", fill = "white", lwd = theme_cellpress_lwd / 2) +
+    ggplot2::geom_rect(data=head(plt.gg, n=1), aes(xmin=0.5, xmax=base::length(o) + 0.5, ymin=0.5, ymax=base::length(o) + 0.5), col = "gray", fill = NA, lwd = theme_cellpress_lwd ) +
     ggplot2::scale_fill_gradientn(colours = col2(200), na.value = "grey50", limits = c(-1, 1), guide = "colourbar") + # guide = "colourbar",
     ggplot2::scale_color_gradientn(colours = col2(200), na.value = "grey50", limits = c(-1, 1), guide = "none") +
     recursiveCorPlot::geom_circle(radius.fixed = T) + # from THIS repo
@@ -68,7 +68,7 @@ ggcorrplot <- function(c,abs=F, reorder=T, cmethod="spearman") {
     ggplot2::coord_fixed() +
     ggplot2::scale_x_discrete(labels = NULL, expand = c(0, 0)) +
     ggplot2::scale_y_continuous(name = NULL, breaks = base::length(o):1, labels = o, expand = c(0, 0)) +
-    theme_nature +
+    theme_cellpress +
     ggplot2::theme(
       legend.position = "bottom",
       axis.text.y = ggplot2::element_text(angle = 0, hjust = 1, vjust = 0.5), # used to be [3,6] reduce font size here, should become argument

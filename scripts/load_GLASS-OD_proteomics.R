@@ -13,6 +13,7 @@ if(!exists('glass_od.metadata.proteomics')) {
 }
 
 
+
 # load proteomics raw per-peptide ----
 
 
@@ -215,17 +216,6 @@ rm(clng)
 # GO:996023 Collagen containing ECM ----
 
 
-
-
-# add fibronectin / FN1 ----
-
-
-metadata.proteomics.glass_od <- metadata.proteomics.glass_od |> 
-  dplyr::mutate(is_fibronectin_fn1 = Genes %in% c("FN1", "FINC", "FIBRONETIN", "FIBRONETIN1", "FN", "CIG", "GFND2", "LETS", "MSF"))
-
-
-#metadata.proteomics.glass_od |>
-#  dplyr::filter(is_fibronectin_fn1) 
 
 
 

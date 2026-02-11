@@ -563,7 +563,7 @@ ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc__t)) +
   
   labs(x = NULL, y="Per probe t-score Grade 2 ~ Grade 3") +
   coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
 
@@ -610,16 +610,16 @@ plt <- plt |>
 
 ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc__t)) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-               coef=0.5, fill=NA,linewidth=theme_nature_lwd) +
+               coef=0.5, fill=NA,linewidth=theme_cellpress_lwd) +
   
   stat_summary(fun = median, fun.min = median, fun.max = median,
-               geom = "crossbar", col="red", width=0.85, linewidth=theme_nature_lwd) +
+               geom = "crossbar", col="red", width=0.85, linewidth=theme_cellpress_lwd) +
   
   labs(x = NULL,
        y="Per probe t-statistic WHO Grades",
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
 
@@ -648,12 +648,7 @@ plt <- data.mvalues.probes |>
   dplyr::mutate(sequence_5p = gsub("[^a-zA-Z]","",gc_sequence_context_2_new)) |> 
   dplyr::filter(!is.na(sequence_5p)) |> 
   dplyr::left_join(plt.motifs.stranded |> dplyr::select(sequence_5p, oligo_sequence), by=c('sequence_5p'='sequence_5p'), suffix=c('','')) |> 
-  dplyr::left_join(plt.motifs.unstranded, by=c('oligo_sequence'='oligo_sequence'),suffix=c('',''))
-
-
-
-
-plt <- plt |> 
+  dplyr::left_join(plt.motifs.unstranded, by=c('oligo_sequence'='oligo_sequence'),suffix=c('',''))  |> 
   dplyr::group_by(oligo_sequence) |> 
   dplyr::mutate(facet_rank = median(DMP__g2_g3__pp_nc_PC1__t)) |> 
   dplyr::ungroup() |> 
@@ -661,24 +656,57 @@ plt <- plt |>
 
 
 
-ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc_PC1__t)) +
+p1 = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc_PC1__t)) +
   geom_boxplot(width=0.8, outlier.shape=NA, outlier.color=NA, col="gray40",
-               coef=0.5, fill=NA,linewidth=theme_nature_lwd) +
+               coef=0.5, fill=NA,linewidth=theme_cellpress_lwd) +
+  
+  geom_hline(yintercept=0, col="gray20", lwd=theme_cellpress_lwd, lty=1) +
   
   stat_summary(fun = median, fun.min = median, fun.max = median,
-               geom = "crossbar", col="red", width=0.85, linewidth=theme_nature_lwd) +
+               geom = "crossbar", col="red", width=0.85, linewidth=theme_cellpress_lwd) +
   
   labs(x = NULL,
-       y="Mean per-probe t-statistics WHO grades",
+       y="Median per-probe t-statistics WHO grades",
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
-  coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  coord_cartesian(ylim = c(-6.0, 3.0)) + # soft clip
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
 
 
 
-ggsave("output/figures/vis_differential_motifs__t_stat_grade_per_motif__PC1__unstranded.pdf", width=8.4, height=3)
+soloW <- plt |>  
+  dplyr::select(facet_name, is_solo_WCGW) |> 
+  table() |> 
+  as.data.frame() |> 
+  dplyr::filter(is_solo_WCGW == T & Freq > 0) |> 
+  dplyr::pull(facet_name) |>
+  as.character()
+
+
+
+tmp  <- plt |> 
+  dplyr::mutate(contains_solo_WCGW = facet_name %in% c(soloW)) |> 
+  dplyr::select(facet_name, facet_rank, oligo_sequence, contains_solo_WCGW) |> 
+  dplyr::distinct() |> 
+  dplyr::mutate(y="y")
+
+
+
+p2 = ggplot(tmp, aes(x=reorder(facet_name, -facet_rank),y=y, col=contains_solo_WCGW)) +
+  geom_point(y=2, pch=15) +
+  geom_point(data = subset(tmp, contains_solo_WCGW), pch=15, col="gray40", size=theme_cellpress_size/4) +
+  theme_cellpress +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono"))
+
+
+
+p1 / p2
+
+
+
+ggsave("output/figures/vis_differential_motifs__t_stat_grade_per_motif__PC1__unstranded.pdf", width=6.7 + 0.07, 
+       height=5)
 
 
 
@@ -756,11 +784,11 @@ plt <- plt |>
 
 p0a = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__PCs__pp_nc__PC2_t)) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_cellpress_lwd) +
   labs(x = NULL,
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-8, 8)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   theme(axis.text.x = element_blank()) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
@@ -768,11 +796,11 @@ p0a = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__PCs__pp_nc__PC2
 
 p0b = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__PCs__pp_nc__PC3_t)) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_cellpress_lwd) +
   labs(x = NULL,
       caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-5, 5)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   theme(axis.text.x = element_blank()) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
@@ -782,22 +810,22 @@ p0a / p0b
 
 p1a = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=abs(DMP__PCs__pp_nc__PC2_t))) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_cellpress_lwd) +
   labs(x = NULL,
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-0, 8)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   theme(axis.text.x = element_blank()) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
 
 p1b = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=abs(DMP__PCs__pp_nc__PC3_t))) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_cellpress_lwd) +
   labs(x = NULL,
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-0, 5)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   theme(axis.text.x = element_blank()) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
@@ -809,24 +837,24 @@ p1a / p1b
 
 p2a = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=PC2__raw_rotation)) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_cellpress_lwd) +
   
   labs(x = NULL,
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-0.0011, 0.0011) * 1.6) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   theme(axis.text.x = element_blank()) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
 
 p2b = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=PC3__raw_rotation)) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_cellpress_lwd) +
   
   labs(x = NULL,
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-0.0011, 0.0011)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   theme(axis.text.x = element_blank()) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
@@ -837,24 +865,24 @@ p2a / p2b
 
 p3a = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=PC2_abs__raw_rotation)) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_cellpress_lwd) +
   
   labs(x = NULL,
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-0.0, 0.0020)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   theme(axis.text.x = element_blank()) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
 
 p3b = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=PC3_abs__raw_rotation)) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_cellpress_lwd) +
   
   labs(x = NULL,
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-0.0, 0.00155)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   theme(axis.text.x = element_blank()) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
@@ -865,24 +893,24 @@ p3a / p3b
 
 p4a = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=PC2__scaled_rotation)) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_cellpress_lwd) +
   
   labs(x = NULL,
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-0.0, 0.00032)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   theme(axis.text.x = element_blank()) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
 
 p4b = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=PC3__scaled_rotation)) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_cellpress_lwd) +
   
   labs(x = NULL,
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-0.0, 0.00028)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   #theme(axis.text.x = element_blank()) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
@@ -894,12 +922,12 @@ p4a / p4b
 
 p5a = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__pct_detP_signi__pp_nc__t)) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+               coef=0.5, fill=mixcol("red", "white"),linewidth=theme_cellpress_lwd) +
   
   labs(x = NULL,
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   #coord_cartesian(ylim = c(-5, 5)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   #theme(axis.text.x = element_blank()) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
@@ -943,7 +971,7 @@ ggplot(plt.polycomb, aes(x=reorder(facet_name, -facet_rank), y=n_polycomb)) +
   
   labs(x = NULL,
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   #theme(axis.text.x = element_blank()) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
@@ -955,13 +983,13 @@ ggplot(plt.polycomb, aes(x=reorder(facet_name, -facet_rank), y=n_polycomb)) +
 # 
 # p2 = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__PCs__pp_nc__PC3_adj.P.Val)) +
 #   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-#                coef=0.5, fill=mixcol("red", "white"),linewidth=theme_nature_lwd) +
+#                coef=0.5, fill=mixcol("red", "white"),linewidth=theme_cellpress_lwd) +
 #   
 #   labs(x = NULL,
 #        y="Per probe t-score PC3",
 #        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
 #   coord_cartesian(ylim = c(-0.5, 0.5)) + # soft clip
-#   theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+#   theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
 #   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
 #   labs(subtitle=format_subtitle("Differential methylated motif overview"))
 # 
@@ -970,16 +998,16 @@ ggplot(plt.polycomb, aes(x=reorder(facet_name, -facet_rank), y=n_polycomb)) +
 
 p3 = ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc_PC1__t)) +
   geom_boxplot(width=0.75, outlier.shape=NA, outlier.color=NA, col="darkgray",
-               coef=0.5, fill=NA,linewidth=theme_nature_lwd) +
+               coef=0.5, fill=NA,linewidth=theme_cellpress_lwd) +
   
   stat_summary(fun = median, fun.min = median, fun.max = median,
-               geom = "crossbar", col="red", width=0.85, linewidth=theme_nature_lwd) +
+               geom = "crossbar", col="red", width=0.85, linewidth=theme_cellpress_lwd) +
   
   labs(x = NULL,
        y="Per probe t-score Grade 2 ~ Grade 3",
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   labs(subtitle=format_subtitle("Differential methylated motif overview"))
 
@@ -1037,7 +1065,7 @@ plt <- plt |>
 
 ggplot(data.mvalues.probes, aes(x=median.beta.primary, y=log1p(ATAC_counts_per_bin_per_base))) +
   geom_point(pch=19, cex=0.1, alpha=0.1) +
-  theme_nature
+  theme_cellpress
 
 
 
@@ -1049,7 +1077,7 @@ ggplot(plt, aes(x=reorder(facet_name, -facet_rank), y=DMP__g2_g3__pp_nc__t, col=
        y="Per probe t-score Grade 2 ~ Grade 3",
        caption=paste0("n=",length(unique(plt$facet_name))," sequence motifs, corrected palindromic motifs for strand (*)")) +
   coord_cartesian(ylim = c(-6.75, 3.5)) + # soft clip
-  theme_nature + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
+  theme_cellpress + theme(legend.key.size = unit(0.6, 'lines')) + # resize colbox +
   #theme(legend.key.size = unit(1.6, 'lines')) + # resize colbox +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, family = "mono")) +
   labs(subtitle=format_subtitle("Differential methylated motif overview")) +
@@ -1211,13 +1239,15 @@ plt <- plt.motifs.unstranded |>
 
 
 ggplot(plt, aes(y=DNMT1_Adam_NAR_2023_unstranded,
-                x=DMP__g2_g3__pp_nc__t__median,
+                #x=DMP__g2_g3__pp_nc__t__median,
+                x=DMP__g2_g3__pp_nc_PC1__t__median,
+                
                 col=col,
                 label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size, family=theme_nature_font_family, label.x=-0.85) +
+  geom_point(size=theme_cellpress_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_cellpress_size, family=theme_cellpress_font_family, label.x=-0.85) +
   scale_color_manual(values=c("col"=mixcol('darkblue', 'darkgreen'))) +
-  theme_nature +
+  theme_cellpress +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
        y="DNMT1 (Adam NAR 2023)",
        col="",
@@ -1238,13 +1268,15 @@ plt <- plt.motifs.unstranded |>
 
 
 ggplot(plt, aes(y=DNMT3A_Gao_NatCom_2020_unstranded,
-                x=DMP__g2_g3__pp_nc__t__median,
+                #x=DMP__g2_g3__pp_nc__t__median,
+                x=DMP__g2_g3__pp_nc_PC1__t__median,
+                
                 col=col,
                 label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size, family=theme_nature_font_family, label.x=-0.85) +
+  geom_point(size=theme_cellpress_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_cellpress_size, family=theme_cellpress_font_family, label.x=-0.85) +
   scale_color_manual(values=c("col"=mixcol('darkblue', 'darkgreen'))) +
-  theme_nature +
+  theme_cellpress +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
        y="DNMT3A (Gao NatCom 2020)",
        col="",
@@ -1266,13 +1298,15 @@ plt <- plt.motifs.unstranded |>
 
 
 ggplot(plt, aes(y=DNMT3B_Gao_NatCom_2020_unstranded,
-                x=DMP__g2_g3__pp_nc__t__median,
+                #x=DMP__g2_g3__pp_nc__t__median,
+                x=DMP__g2_g3__pp_nc_PC1__t__median,
+                
                 col=col,
                 label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size, family=theme_nature_font_family, label.x=-0.85) +
+  geom_point(size=theme_cellpress_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_cellpress_size, family=theme_cellpress_font_family, label.x=-0.85) +
   scale_color_manual(values=c("col"=mixcol('darkblue', 'darkgreen'))) +
-  theme_nature +
+  theme_cellpress +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
        y="DNMT3B (Gao NatCom 2020)",
        col="",
@@ -1295,15 +1329,19 @@ plt <- plt.motifs.unstranded |>
 
 
 ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded,
-                x=DMP__g2_g3__pp_nc__t__median,
+                #x=DMP__g2_g3__pp_nc__t__median,
+                x=DMP__g2_g3__pp_nc_PC1__t__median,
+                #x=DMP__g2_g3__pp_nc_PC1__t__mean,
                 col=col,
                 label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size, family=theme_nature_font_family, label.x=-0.85) +
+  geom_point(size=theme_cellpress_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)),
+                   col="1", cor.coef.name ="rho", 
+                   size=theme_cellpress_size, family=theme_cellpress_font_family, label.x=-0.85) +
   scale_color_manual(values=c("col"=mixcol('darkblue', 'darkgreen'))) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
-  #ggrepel::geom_text_repel(col="black", size=theme_nature_size* 1.4) +
+  theme_cellpress +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_cellpress_size * 1.4) +
+  #ggrepel::geom_text_repel(col="black", size=theme_cellpress_size* 1.4) +
   coord_cartesian(ylim=c(0, NA))  +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
        y="TET1 5mC (Adam NatCom 2022)",
@@ -1326,13 +1364,15 @@ plt <- plt.motifs.unstranded |>
 
 
 ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded,
-                x=DMP__g2_g3__pp_nc__t__median,
+                                #x=DMP__g2_g3__pp_nc__t__median,
+                x=DMP__g2_g3__pp_nc_PC1__t__median,
+
                 col=col,
                 label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size, family=theme_nature_font_family, label.x=-0.85) +
+  geom_point(size=theme_cellpress_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_cellpress_size, family=theme_cellpress_font_family, label.x=-0.85) +
   scale_color_manual(values=c("col"=mixcol('darkblue', 'darkgreen'))) +
-  theme_nature +
+  theme_cellpress +
   coord_cartesian(ylim=c(0, NA))  +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
        y="TET2 5mC (Adam NatCom 2022)",
@@ -1356,13 +1396,14 @@ plt <- plt.motifs.unstranded |>
 
 
 ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded,
-                x=DMP__g2_g3__pp_nc__t__median,
+                #x=DMP__g2_g3__pp_nc__t__median,
+                x=DMP__g2_g3__pp_nc_PC1__t__median,
                 col=col,
                 label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_nature_size, family=theme_nature_font_family, label.x=-0.85) +
+  geom_point(size=theme_cellpress_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)), col="1", cor.coef.name ="rho", size=theme_cellpress_size, family=theme_cellpress_font_family, label.x=-0.85) +
   scale_color_manual(values=c("col"=mixcol('darkblue', 'darkgreen'))) +
-  theme_nature +
+  theme_cellpress +
   labs(x="T-score\nWHO grade 2 <> WHO grade 3",
        y="-1 * TET3 (Ravichandran SciAdv 2022)",
        col="",
@@ -1389,10 +1430,10 @@ plt <- plt.motifs.unstranded |>
 
 
 ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=DMP__GLASS_NL__exp6__t__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
+  geom_point(size=theme_cellpress_size/3) +
   ggpubr::stat_cor(method = "pearson",
-                   aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   family=theme_nature_font_family,
+                   aes(label = after_stat(r.label)), col="1", size=theme_cellpress_size,
+                   family=theme_cellpress_font_family,
                    label.x.npc = "right", hjust=1
   ) +
   scale_color_manual(
@@ -1401,9 +1442,9 @@ ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded, x=DMP__GLASS_NL__exp6__t
       'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
     )
   ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
+  theme_cellpress +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_cellpress_size * 1.4) +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_cellpress_size) +
   labs(x="T-score\nWHO grade 2 & 4 <> WHO grade 4\nAstrocytoma (GLASS-NL)",
        y="TET1 5mC (Adam NatCom 2022)",
        col="",
@@ -1427,10 +1468,10 @@ plt <- plt.motifs.unstranded |>
 
 
 ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded, x=DMP__GLASS_NL__exp6__t__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
+  geom_point(size=theme_cellpress_size/3) +
   ggpubr::stat_cor(method = "pearson",
-                   aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   family=theme_nature_font_family,
+                   aes(label = after_stat(r.label)), col="1", size=theme_cellpress_size,
+                   family=theme_cellpress_font_family,
                    label.x.npc = "right", hjust=1
   ) +
   scale_color_manual(
@@ -1439,9 +1480,9 @@ ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded, x=DMP__GLASS_NL__exp6__t
       'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
     )
   ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
+  theme_cellpress +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_cellpress_size * 1.4) +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_cellpress_size) +
   labs(x="T-score\nWHO grade 2 & 4 <> WHO grade 4\nAstrocytoma (GLASS-NL)",
        y="TET2 5mC (Adam NatCom 2022)",
        col="",
@@ -1465,10 +1506,10 @@ plt <- plt.motifs.unstranded |>
 
 
 ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded, x=DMP__GLASS_NL__exp6__t__median, col=adjacent_cg, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
+  geom_point(size=theme_cellpress_size/3) +
   ggpubr::stat_cor(method = "pearson",
-                   aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   family=theme_nature_font_family,
+                   aes(label = after_stat(r.label)), col="1", size=theme_cellpress_size,
+                   family=theme_cellpress_font_family,
                    label.x.npc = "right", hjust=1
   ) +
   scale_color_manual(
@@ -1477,9 +1518,9 @@ ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded, x=DMP__GLASS_NL__ex
       'No adjacent CG' = mixcol( 'darkblue', 'darkgreen')
     )
   ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
+  theme_cellpress +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_cellpress_size * 1.4) +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_cellpress_size) +
   labs(x="T-score\nWHO grade 2 & 4 <> WHO grade 4\nAstrocytoma (GLASS-NL)",
        y="-1 * TET3 (Ravichandran SciAdv 2022)",
        col="",
@@ -1509,15 +1550,15 @@ ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded,
                 x=DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t__median,
                 col=col,
                 label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
+  geom_point(size=theme_cellpress_size/3) +
   ggpubr::stat_cor(method = "pearson",
-                   aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   family=theme_nature_font_family,
+                   aes(label = after_stat(r.label)), col="1", size=theme_cellpress_size,
+                   family=theme_cellpress_font_family,
                    label.x.npc = "left", hjust=0
   ) +
   ggpubr::stat_cor(method = "pearson",
-                   aes(label = after_stat(r.label)), size=theme_nature_size,
-                   family=theme_nature_font_family,
+                   aes(label = after_stat(r.label)), size=theme_cellpress_size,
+                   family=theme_cellpress_font_family,
                    label.x.npc = "right", hjust=1
   ) +
   scale_color_manual(
@@ -1526,9 +1567,9 @@ ggplot(plt, aes(y=TET1_5mC_Adam_NatCom_2022_unstranded,
       'other' = 'aquamarine4',
       'TA[CG]TA' = 'purple'
     ) ) +
-  theme_nature +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_nature_size * 1.4) +
-  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_nature_size) +
+  theme_cellpress +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("tacg", oligo_sequence)), col="black", size=theme_cellpress_size * 1.4) +
+  #ggrepel::geom_text_repel(data = subset(plt, grepl("cgcgcg|aacgtt|aacgtc|aacgtg", oligo_sequence)), col="black", size=theme_cellpress_size) +
   labs(x="T-score\nWHO grade 2 & 4 <> WHO grade 4\nAstrocytoma (GLASS-NL)",
        y="TET1 5mC (Adam NatCom 2022)",
        col="",
@@ -1560,15 +1601,15 @@ plt <- plt.motifs.unstranded |>
 ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded,
                 x=DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t__median, 
                 col=col, label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
+  geom_point(size=theme_cellpress_size/3) +
   ggpubr::stat_cor(method = "pearson",
-                   aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   family=theme_nature_font_family,
+                   aes(label = after_stat(r.label)), col="1", size=theme_cellpress_size,
+                   family=theme_cellpress_font_family,
                    label.x.npc = "left", hjust=0
   ) +
   ggpubr::stat_cor(method = "pearson",
-                   aes(label = after_stat(r.label)), size=theme_nature_size,
-                   family=theme_nature_font_family,
+                   aes(label = after_stat(r.label)), size=theme_cellpress_size,
+                   family=theme_cellpress_font_family,
                    label.x.npc = "right", hjust=1
   ) +
   scale_color_manual(
@@ -1577,7 +1618,7 @@ ggplot(plt, aes(y=TET2_5mC_Adam_NatCom_2022_unstranded,
       'other' = 'aquamarine4',
       'TA[CG]TA' = 'purple'
     )  ) +
-  theme_nature +
+  theme_cellpress +
   labs(x="T-score\nWHO grade 2 & 4 <> WHO grade 4\nAstrocytoma (GLASS-NL)",
        y="TET2 5mC (Adam NatCom 2022)",
        col="",
@@ -1609,15 +1650,15 @@ ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded,
                 x=DMP__GLASS_NL__g2.3_g4__pp_nc_naive__t__median,
                 col=col,
                 label=oligo_sequence)) +
-  geom_point(size=theme_nature_size/3) +
+  geom_point(size=theme_cellpress_size/3) +
   ggpubr::stat_cor(method = "pearson",
-                   aes(label = after_stat(r.label)), col="1", size=theme_nature_size,
-                   family=theme_nature_font_family,
+                   aes(label = after_stat(r.label)), col="1", size=theme_cellpress_size,
+                   family=theme_cellpress_font_family,
                    label.x.npc = "left", hjust=0
   ) +
   ggpubr::stat_cor(method = "pearson",
-                   aes(label = after_stat(r.label)), size=theme_nature_size,
-                   family=theme_nature_font_family,
+                   aes(label = after_stat(r.label)), size=theme_cellpress_size,
+                   family=theme_cellpress_font_family,
                    label.x.npc = "right", hjust=1
   ) +
   scale_color_manual(
@@ -1626,7 +1667,7 @@ ggplot(plt, aes(y=-TET3_Ravichandran_SciAdv_2022_unstranded,
       'other' = 'aquamarine4',
       'TA[CG]TA' = 'purple'
     )  ) +
-  theme_nature +
+  theme_cellpress +
   labs(x="T-score\nWHO grade 2 & 4 <> WHO grade 4\nAstrocytoma (GLASS-NL)",
        y="-1 * TET3 (Ravichandran SciAdv 2022)",
        col="",

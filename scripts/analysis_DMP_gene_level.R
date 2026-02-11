@@ -96,7 +96,9 @@ stat <- data.mvalues.probes |>
     print(dim(.))
     assertthat::assert_that(nrow(.) == CONST_N_PROBES_UNMASKED_AND_DETP) 
     return(.)
-  })()
+  })() |> 
+  dplyr::filter(Regulatory_Feature_Group %in% c("Promoter_Associated", "Promoter_Associated_Cell_type_specific"))
+
 
 
 
@@ -113,13 +115,13 @@ idx.GencodeCompV12_NAME <- stat |>
   dplyr::distinct() |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 604185)
+    #assertthat::assert_that(nrow(.) == 604185)
     return(.)
   })() |> 
   dplyr::filter(!grepl("^RP[0-9]+-", gene)) |> 
   (function(.) {
     print(dim(.))
-    assertthat::assert_that(nrow(.) == 532000)
+    #assertthat::assert_that(nrow(.) == 532000)
     return(.)
   })() 
   
@@ -137,14 +139,18 @@ data.per.gene.GencodeCompV12_NAME <- idx.GencodeCompV12_NAME |>
   ) |> 
   dplyr::group_by(gene) |> 
   dplyr::summarise(
-    DMP__g2_g3__pp_nc_PC1__t = mean(DMP__g2_g3__pp_nc_PC1__t)
+    DMP__g2_g3__pp_nc_PC1__t__mean = mean(DMP__g2_g3__pp_nc_PC1__t),
+    DMP__g2_g3__pp_nc_PC1__t__median = median(DMP__g2_g3__pp_nc_PC1__t)
   ) |> 
   dplyr::ungroup()
 
 
 out.per.gene.GencodeCompV12_NAME <- data.per.gene.GencodeCompV12_NAME |> 
-  dplyr::mutate(p.value = dnorm(DMP__g2_g3__pp_nc_PC1__t, mean=0, sd=sd(data.per.gene.GencodeCompV12_NAME$DMP__g2_g3__pp_nc_PC1__t))) |> 
-  dplyr::mutate(p.adj = p.adjust(p.value, method="fdr"))
+  dplyr::mutate(p.value_mean = dnorm(DMP__g2_g3__pp_nc_PC1__t__mean, mean=0, sd=sd(data.per.gene.GencodeCompV12_NAME$DMP__g2_g3__pp_nc_PC1__t__mean))) |> 
+  dplyr::mutate(p.adj_mean = p.adjust(p.value_mean, method="fdr")) |> 
+  
+  dplyr::mutate(p.value_median = dnorm(DMP__g2_g3__pp_nc_PC1__t__median, mean=0, sd=sd(data.per.gene.GencodeCompV12_NAME$DMP__g2_g3__pp_nc_PC1__t__median))) |> 
+  dplyr::mutate(p.adj_median = p.adjust(p.value_median, method="fdr"))
 
 
 rm(data.per.gene.GencodeCompV12_NAME)
@@ -153,38 +159,38 @@ rm(data.per.gene.GencodeCompV12_NAME)
 ggplot(out.per.gene.GencodeCompV12_NAME, aes(x = DMP__g2_g3__pp_nc_PC1__t, y=-log(p.value), col=grepl("^HOX", gene))) + 
   geom_point(data=subset(out.per.gene.GencodeCompV12_NAME, !grepl("^HOX", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(out.per.gene.GencodeCompV12_NAME, grepl("^HOX", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(out.per.gene.GencodeCompV12_NAME, aes(x = DMP__g2_g3__pp_nc_PC1__t, y=-log(p.value), col=grepl("^RP[0-9]+-", gene))) + 
   geom_point(data=subset(out.per.gene.GencodeCompV12_NAME, !grepl("^RP[0-9]+-", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(out.per.gene.GencodeCompV12_NAME, grepl("^RP[0-9]+-", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 
 ggplot(out.per.gene.GencodeCompV12_NAME, aes(x = DMP__g2_g3__pp_nc_PC1__t, y=-log(p.adj), col=grepl("^COL", gene))) + 
   geom_point(data=subset(out.per.gene.GencodeCompV12_NAME, !grepl("^COL", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(out.per.gene.GencodeCompV12_NAME, grepl("^COL", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(out.per.gene.GencodeCompV12_NAME, aes(x = DMP__g2_g3__pp_nc_PC1__t, y=-log(p.adj), col=grepl("^RP", gene))) + 
   geom_point(data=subset(out.per.gene.GencodeCompV12_NAME, !grepl("^RP", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(out.per.gene.GencodeCompV12_NAME, grepl("^RP", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(out.per.gene.GencodeCompV12_NAME, aes(x = DMP__g2_g3__pp_nc_PC1__t, y=-log(p.adj), col=grepl("^H[0-9]+", gene))) + 
   geom_point(data=subset(out.per.gene.GencodeCompV12_NAME, !grepl("^H[0-9]+", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(out.per.gene.GencodeCompV12_NAME, grepl("^H[0-9]+", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(out.per.gene.GencodeCompV12_NAME, aes(x = DMP__g2_g3__pp_nc_PC1__t, y=-log(p.adj), col=grepl("^HIST[0-9]+", gene))) + 
   geom_point(data=subset(out.per.gene.GencodeCompV12_NAME, !grepl("^HIST", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(out.per.gene.GencodeCompV12_NAME, grepl("^HIST", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 
@@ -363,21 +369,21 @@ plts <- plts |>
 ggplot(plts, aes(x=mean, y=`-log(p.value)`, col=is.tf, label=gene, shape=log_pval_truncated)) + 
   facet_wrap(~facet, scale="free") + #,ncol=6,nrow=5) +
   geom_point(data=subset(plts, is.tf == "No" & !log_pval_truncated), cex=0.01, alpha=0.5) +
-  geom_point(data=subset(plts, is.tf == "No" & log_pval_truncated), cex=theme_nature_size/6) +
+  geom_point(data=subset(plts, is.tf == "No" & log_pval_truncated), cex=theme_cellpress_size/6) +
   ggrepel::geom_text_repel(data=subset(plts, gene %in% c("HOXD13", "TMPRSS3", "DAXX", "TERT")),
                            box.padding = 0.65,
                            col="black", 
-                           size=theme_nature_size,
-                           family = theme_nature_font_family,
-                           segment.size=theme_nature_lwd) +
-  geom_point(data=subset(plts, gene %in% c("HOXD13", "TMPRSS3", "DAXX", "TERT")), col="black", cex=theme_nature_size/3, pch=1) +
-  geom_point(data=subset(plts, is.tf == "Yes"), size=theme_nature_size/3) +
+                           size=theme_cellpress_size,
+                           family = theme_cellpress_font_family,
+                           segment.size=theme_cellpress_lwd) +
+  geom_point(data=subset(plts, gene %in% c("HOXD13", "TMPRSS3", "DAXX", "TERT")), col="black", cex=theme_cellpress_size/3, pch=1) +
+  geom_point(data=subset(plts, is.tf == "Yes"), size=theme_cellpress_size/3) +
   coord_cartesian(xlim = c(-7.5, 7.5)) + 
   coord_cartesian(ylim = c(0, 125)) + 
   scale_shape_manual(values=c(T=8,F=19,'TRUE'=8,'FALSE'=16)) +
   scale_color_manual(values=c('Yes'='red', 'No'=mixcol(col3(11)[10], "white", 0.25))) + 
   labs(x = "Mean t-score per gene") +
-  theme_nature +
+  theme_cellpress +
   theme(plot.background = element_rect(fill="white", colour=NA))   # png export
 
 
@@ -389,16 +395,16 @@ ggsave("output/figures/vis_analysis_DMP_gene_level.png", width=(8.5 * 0.975), he
 ggplot(plts, aes(x=genes,
                  y=`mean`
                  )) + 
-  #ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "darkgray", adjust = 1.95) +
+  #ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_cellpress_lwd, col = "darkgray", adjust = 1.95) +
   #see::geom_violinhalf() +
-  geom_hline(yintercept=0, col="darkgray", lwd=theme_nature_lwd, lty=2) +
-  gghalves::geom_half_violin(fill=mixcol("#FFFFFF", "#EEEEEE"),side = "r", draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "darkgray", width = 1.6) +
-  #geom_point(data=subset(plts, is.tf == "Yes"), size=theme_nature_size/3, col="red") +
-  #ggbeeswarm::geom_beeswarm(data=subset(plts, is.tf == "Yes"), size=theme_nature_size/3, col="red", side=1, method="compactswarm") +
-  geom_point(data=subset(plts, is.tf == "Yes"), size=theme_nature_size, col="red", pch="|") +
+  geom_hline(yintercept=0, col="darkgray", lwd=theme_cellpress_lwd, lty=2) +
+  gghalves::geom_half_violin(fill=mixcol("#FFFFFF", "#EEEEEE"),side = "r", draw_quantiles = c(0.5), linewidth=theme_cellpress_lwd, col = "darkgray", width = 1.6) +
+  #geom_point(data=subset(plts, is.tf == "Yes"), size=theme_cellpress_size/3, col="red") +
+  #ggbeeswarm::geom_beeswarm(data=subset(plts, is.tf == "Yes"), size=theme_cellpress_size/3, col="red", side=1, method="compactswarm") +
+  geom_point(data=subset(plts, is.tf == "Yes"), size=theme_cellpress_size, col="red", pch="|") +
   coord_flip() +
   labs(y= "Mean t-score for all CpGs per genes", x=NULL) +
-  theme_nature
+  theme_cellpress
 
 ggsave("output/figures/vis_analysis_DMP_gene_level__TFs_gghalve.pdf", width=(8.5 * 0.975), height=4.0, dpi=600)
 
@@ -408,21 +414,21 @@ ggsave("output/figures/vis_analysis_DMP_gene_level__TFs_gghalve.pdf", width=(8.5
 ggplot(plts, aes(x=median, y=`-log(p.value)`, col=is.tf, label=gene, shape=log_pval_truncated)) + 
   facet_wrap(~facet, scale="free") + #,ncol=6,nrow=5) +
   geom_point(data=subset(plts, is.tf == "No" & !log_pval_truncated), cex=0.01, alpha=0.5) +
-  geom_point(data=subset(plts, is.tf == "No" & log_pval_truncated), cex=theme_nature_size/6) +
+  geom_point(data=subset(plts, is.tf == "No" & log_pval_truncated), cex=theme_cellpress_size/6) +
   ggrepel::geom_text_repel(data=subset(plts, gene %in% c("HOXD13", "TMPRSS3", "DAXX", "TERT")),
                            box.padding = 0.65,
                            col="black", 
-                           size=theme_nature_size,
-                           family = theme_nature_font_family,
-                           segment.size=theme_nature_lwd) +
-  geom_point(data=subset(plts, gene %in% c("HOXD13", "TMPRSS3", "DAXX", "TERT")), col="black", cex=theme_nature_size/3, pch=1) +
-  geom_point(data=subset(plts, is.tf == "Yes"), size=theme_nature_size/3) +
+                           size=theme_cellpress_size,
+                           family = theme_cellpress_font_family,
+                           segment.size=theme_cellpress_lwd) +
+  geom_point(data=subset(plts, gene %in% c("HOXD13", "TMPRSS3", "DAXX", "TERT")), col="black", cex=theme_cellpress_size/3, pch=1) +
+  geom_point(data=subset(plts, is.tf == "Yes"), size=theme_cellpress_size/3) +
   coord_cartesian(xlim = c(-7.5, 7.5)) + 
   coord_cartesian(ylim = c(0, 125)) + 
   scale_shape_manual(values=c(T=8,F=19,'TRUE'=8,'FALSE'=16)) +
   scale_color_manual(values=c('Yes'='red', 'No'=mixcol(col3(11)[10], "white", 0.25))) + 
   labs(x = "Mean t-score for all probes per gene") +
-  theme_nature +
+  theme_cellpress +
   theme(plot.background = element_rect(fill="white", colour=NA))   # png export
 
 
@@ -618,19 +624,24 @@ ggplot(plts, aes(x=reorder(genes, dplyr::desc(genes)),
                  label=gene
 )) + 
   facet_grid(rows = vars(screen), scales = "free", space="free") +
-  #ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "darkgray", adjust = 1.95) +
+  #ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_cellpress_lwd, col = "darkgray", adjust = 1.95) +
   #see::geom_violinhalf() +
-  geom_hline(yintercept=0, col="darkgray", lwd=theme_nature_lwd, lty=2) +
-  gghalves::geom_half_violin(fill=mixcol("#FFFFFF", "#EEEEEE"),side = "r", draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "darkgray", width = 1.6) +
-  #geom_point(data=subset(plts, is.tf == "Yes"), size=theme_nature_size/3, col="red") +
-  #ggbeeswarm::geom_beeswarm(data=subset(plts, is.tf == "Yes"), size=theme_nature_size/3, col="red", side=1, method="compactswarm") +
-  geom_point(data=subset(plts, is.tf == "Yes"), size=theme_nature_size, pch="|") +
-  ggrepel::geom_text_repel(segment.size=theme_nature_lwd,
+  geom_hline(yintercept=0, col="darkgray", lwd=theme_cellpress_lwd, lty=2) +
+  gghalves::geom_half_violin(fill=mixcol("#FFFFFF", "#EEEEEE"),
+                             side = "r",
+                             draw_quantiles = c(0.5), 
+                             linewidth=theme_cellpress_lwd, 
+                             col = "darkgray", 
+                             width = 1.6) +
+  #geom_point(data=subset(plts, is.tf == "Yes"), size=theme_cellpress_size/3, col="red") +
+  #ggbeeswarm::geom_beeswarm(data=subset(plts, is.tf == "Yes"), size=theme_cellpress_size/3, col="red", side=1, method="compactswarm") +
+  geom_point(data=subset(plts, is.tf == "Yes"), size=theme_cellpress_size /2, pch="|") +
+  ggrepel::geom_text_repel(segment.size=theme_cellpress_lwd,
                            data = plts |> dplyr::filter(is.tf == "Yes" &
                                                           gene %in% c("HOXD12", "HOXD13") &
                                                           screen == "Homeobox TFs"),
-                           size=theme_nature_size,
-                           family=theme_nature_font_family,
+                           size=theme_cellpress_size,
+                           family=theme_cellpress_font_family,
                            col="#444444",
                            nudge_x = -1.5,
                            nudge_y = 0.5,
@@ -638,7 +649,7 @@ ggplot(plts, aes(x=reorder(genes, dplyr::desc(genes)),
                            ) +
   coord_flip() +
   labs(y= "Mean t-score (methylation change Grade 2 - Grade 3) for all CpGs per genes", x=NULL) +
-  theme_nature +
+  theme_cellpress +
   scale_color_manual(values=c(
     `see y-axis` = 'red',
     `polycomb` = col3(11)[10],
@@ -648,7 +659,7 @@ ggplot(plts, aes(x=reorder(genes, dplyr::desc(genes)),
 
 
 
-ggsave("output/figures/vis_analysis_DMP_gene_level__TFs_gghalve_l__combi.pdf", width=(8.5 * 0.975), height=3.50, dpi=600)
+ggsave("output/figures/vis_analysis_DMP_gene_level__TFs_gghalve_l__combi.pdf", width=7, height=3.40, dpi=600)
 
 
 
@@ -685,15 +696,15 @@ plt <- plt |>
 
 ggplot(plt, aes(x=mean, y=`-log(p.value)`, col=col, label=gene, shape=log_pval_truncated)) + 
   geom_point(data=subset(plt, col == "other" & !log_pval_truncated), cex=0.01, alpha=0.7) +
-  geom_point(data=subset(plt, log_pval_truncated), cex=theme_nature_size/4) +
-  geom_point(data=subset(plt, col != "other"), cex=theme_nature_size/6) +
+  geom_point(data=subset(plt, log_pval_truncated), cex=theme_cellpress_size/4) +
+  geom_point(data=subset(plt, col != "other"), cex=theme_cellpress_size/6) +
   ggrepel::geom_text_repel(data=subset(plt, gene %in% c("HOXD12", "HOXD13", "DAXX", "TERT")),
                            box.padding = 0.95,
                            col="black",
-                           size=theme_nature_size,
-                           family = theme_nature_font_family,
-                           segment.size=theme_nature_lwd) +
-  geom_point(data=subset(plt, gene %in% c("HOXD12", "HOXD13", "DAXX", "TERT")), col="black", cex=theme_nature_size/2, pch=1) +
+                           size=theme_cellpress_size,
+                           family = theme_cellpress_font_family,
+                           segment.size=theme_cellpress_lwd) +
+  geom_point(data=subset(plt, gene %in% c("HOXD12", "HOXD13", "DAXX", "TERT")), col="black", cex=theme_cellpress_size/2, pch=1) +
   scale_shape_manual(values=c(T=8,F=19,'TRUE'=8,'FALSE'=19)) +
   scale_color_manual(values=c(
     `polycomb` = col3(11)[10],
@@ -703,7 +714,7 @@ ggplot(plt, aes(x=mean, y=`-log(p.value)`, col=col, label=gene, shape=log_pval_t
     )) +
   xlim(c(-8,8)) +
   labs(x = "mean t-score probes per gene") +
-  theme_nature +
+  theme_cellpress +
   theme(plot.background = element_rect(fill="white", colour=NA))   # png export
 
 
@@ -740,35 +751,35 @@ ggplot(gene_enrichment_0, aes(x=mean, y=-log(p.value), col=grepl("^HIST[0-9]+", 
   geom_point(data=subset(gene_enrichment_0, !grepl("^HIST[0-9]+", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(gene_enrichment_0, grepl("^HIST[0-9]+", gene)), pch=19,cex=1) +
   xlim(c(-25,25)) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(gene_enrichment_0, aes(x=t, y=-log(p.value), col=grepl("^H[0-9]+", gene))) + 
   geom_point(data=subset(gene_enrichment_0, !grepl("^H[0-9]+", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(gene_enrichment_0, grepl("^H[0-9]+", gene)), pch=19,cex=1) +
   xlim(c(-25,25)) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(gene_enrichment_0, aes(x=t, y=-log(p.value), col=grepl("^DAXX$", gene))) + 
   geom_point(data=subset(gene_enrichment_0, !grepl("^DAXX$", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(gene_enrichment_0, grepl("^DAXX$", gene)), pch=19,cex=1) +
   xlim(c(-25,25)) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(gene_enrichment_0, aes(x=t, y=-log(p.value), col=grepl("^ATRX$", gene))) + 
   geom_point(data=subset(gene_enrichment_0, !grepl("^ATRX$", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(gene_enrichment_0, grepl("^ATRX$", gene)), pch=19,cex=1) +
   xlim(c(-25,25)) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(gene_enrichment_0, aes(x=t, y=-log(p.value), col=grepl("^MKI67$", gene))) + 
   geom_point(data=subset(gene_enrichment_0, !grepl("^MKI67$", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(gene_enrichment_0, grepl("^MKI67$", gene)), pch=19,cex=1) +
   xlim(c(-25,25)) +
-  theme_nature
+  theme_cellpress
 
 
 gene_enrichment_0 |>
@@ -981,19 +992,19 @@ ggplot(plts, aes(x=reorder(genes, dplyr::desc(genes)),
                  label=gene
 )) + 
   facet_grid(rows = vars(screen), scales = "free", space="free") +
-  #ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "darkgray", adjust = 1.95) +
+  #ggplot2::geom_violin(draw_quantiles = c(0.5), linewidth=theme_cellpress_lwd, col = "darkgray", adjust = 1.95) +
   #see::geom_violinhalf() +
-  geom_hline(yintercept=0, col="darkgray", lwd=theme_nature_lwd, lty=2) +
-  gghalves::geom_half_violin(fill=mixcol("#FFFFFF", "#EEEEEE"),side = "r", draw_quantiles = c(0.5), linewidth=theme_nature_lwd, col = "darkgray", width = 1.6) +
-  #geom_point(data=subset(plts, is.tf == "Yes"), size=theme_nature_size/3, col="red") +
-  #ggbeeswarm::geom_beeswarm(data=subset(plts, is.tf == "Yes"), size=theme_nature_size/3, col="red", side=1, method="compactswarm") +
-  geom_point(data=subset(plts, is.tf == "Yes"), size=theme_nature_size, pch="|") +
-  ggrepel::geom_text_repel(segment.size=theme_nature_lwd,
+  geom_hline(yintercept=0, col="darkgray", lwd=theme_cellpress_lwd, lty=2) +
+  gghalves::geom_half_violin(fill=mixcol("#FFFFFF", "#EEEEEE"),side = "r", draw_quantiles = c(0.5), linewidth=theme_cellpress_lwd, col = "darkgray", width = 1.6) +
+  #geom_point(data=subset(plts, is.tf == "Yes"), size=theme_cellpress_size/3, col="red") +
+  #ggbeeswarm::geom_beeswarm(data=subset(plts, is.tf == "Yes"), size=theme_cellpress_size/3, col="red", side=1, method="compactswarm") +
+  geom_point(data=subset(plts, is.tf == "Yes"), size=theme_cellpress_size, pch="|") +
+  ggrepel::geom_text_repel(segment.size=theme_cellpress_lwd,
                            data = plts |> dplyr::filter(is.tf == "Yes" & 
                                                           gene %in% c("HOXD12", "HOXD13") & 
                                                           screen == "Homeobox TFs"),
-                           size=theme_nature_size,
-                           family=theme_nature_font_family,
+                           size=theme_cellpress_size,
+                           family=theme_cellpress_font_family,
                            col="#444444",
                            nudge_x = -1.5,
                            nudge_y = 0.5,
@@ -1001,7 +1012,7 @@ ggplot(plts, aes(x=reorder(genes, dplyr::desc(genes)),
   ) +
   coord_flip() +
   labs(y= "Mean t-score (methylation change Grade 2 - Grade 3) for all CpGs per genes", x=NULL) +
-  theme_nature +
+  theme_cellpress +
   scale_color_manual(values=c(
     `see y-axis` = 'red',
     `polycomb` = col3(11)[10],
@@ -1031,8 +1042,8 @@ plt <- plt |>
 
 ggplot(plt, aes(x=mean, y=`-log(p.value)`, col=col, label=gene, shape=log_pval_truncated)) + 
   geom_point(data=subset(plt, col == F ), cex=0.01, alpha=0.7) +
-  #geom_point(data=subset(plt, log_pval_truncated), cex=theme_nature_size/4) +
-  geom_point(data=subset(plt, col == T), cex=theme_nature_size/6) +
+  #geom_point(data=subset(plt, log_pval_truncated), cex=theme_cellpress_size/4) +
+  geom_point(data=subset(plt, col == T), cex=theme_cellpress_size/6) +
   scale_shape_manual(values=c(T=8,F=19,'TRUE'=8,'FALSE'=19)) +
   scale_color_manual(values=c(
     'TRUE' = 'red',
@@ -1040,7 +1051,7 @@ ggplot(plt, aes(x=mean, y=`-log(p.value)`, col=col, label=gene, shape=log_pval_t
   )) +
   xlim(c(-8,8)) +
   labs(x = "mean t-score probes per gene") +
-  theme_nature +
+  theme_cellpress +
   theme(plot.background = element_rect(fill="white", colour=NA))   # png export
 
 
@@ -1076,7 +1087,7 @@ tmp <- gene_enrichment_0.GencodeCompV12_NAME |>
 
 
 ggplot(tmp, aes(x=t, y=DMP__g2_g3__pp_nc_PC1__t)) +
-  geom_point(size=theme_nature_size) + 
+  geom_point(size=theme_cellpress_size) + 
   xlim(-60,60)
 
 
@@ -1198,31 +1209,31 @@ dat <- data.per.gene |>
 ggplot(dat, aes(x = DMP__g2_g3__pp_nc_PC1__t, y=-log(p.adj), col=grepl("^HOX", gene))) + 
   geom_point(data=subset(dat, !grepl("^HOX", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(dat, grepl("^HOX", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(dat, aes(x = median.t, y=-log(p.adj), col=grepl("^COL", gene))) + 
   geom_point(data=subset(dat, !grepl("^COL", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(dat, grepl("^COL", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(dat, aes(x = median.t, y=-log(p.adj), col=grepl("^RP", gene))) + 
   geom_point(data=subset(dat, !grepl("^RP", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(dat, grepl("^RP", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(dat, aes(x = median.t, y=-log(p.adj), col=grepl("^H[0-9]+", gene))) + 
   geom_point(data=subset(dat, !grepl("^H[0-9]+", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(dat, grepl("^H[0-9]+", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(dat, aes(x = median.t, y=-log(p.adj), col=grepl("^HIST[0-9]+", gene))) + 
   geom_point(data=subset(dat, !grepl("^HIST", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(dat, grepl("^HIST", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 
@@ -1304,31 +1315,31 @@ dat <- data.per.gene |>
 ggplot(dat, aes(x = DMP__g2_g3__pp_nc_PC1__t, y=-log(p.adj), col=grepl("^HOX", gene))) + 
   geom_point(data=subset(dat, !grepl("^HOX", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(dat, grepl("^HOX", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(dat, aes(x = median.t, y=-log(p.adj), col=grepl("^COL", gene))) + 
   geom_point(data=subset(dat, !grepl("^COL", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(dat, grepl("^COL", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(dat, aes(x = median.t, y=-log(p.adj), col=grepl("^RP", gene))) + 
   geom_point(data=subset(dat, !grepl("^RP", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(dat, grepl("^RP", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(dat, aes(x = median.t, y=-log(p.adj), col=grepl("^H[0-9]+", gene))) + 
   geom_point(data=subset(dat, !grepl("^H[0-9]+", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(dat, grepl("^H[0-9]+", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 ggplot(dat, aes(x = median.t, y=-log(p.adj), col=grepl("^HIST[0-9]+", gene))) + 
   geom_point(data=subset(dat, !grepl("^HIST", gene)), pch=19,cex=0.01) +
   geom_point(data=subset(dat, grepl("^HIST", gene)), pch=19,cex=1) +
-  theme_nature
+  theme_cellpress
 
 
 ## t-test per all t-values ----

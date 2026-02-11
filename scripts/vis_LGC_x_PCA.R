@@ -101,7 +101,7 @@ ggplot(plt, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=-array_PC2, col=col2
   geom_line(lwd = 0.3, col="black") +
   geom_point(data = subset(plt, col2 %in% c("Batch [EU]", "Batch [US]")), alpha=0.26) +
   geom_point(data = subset(plt, col2 %in% c("Batch [EU]", "Batch [US]") == F)) +
-  theme_nature
+  theme_cellpress
 
 
 
@@ -176,9 +176,9 @@ plt.split <- rbind(
 ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL_g2_g3_sig, col=col)) + 
   facet_wrap(~facet, scales="free",ncol=5) +
   ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat), 
-                   size=theme_nature_size,
-                   family=theme_nature_font_family ,cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
-  geom_point(size=theme_nature_size/3) +
+                   size=theme_cellpress_size,
+                   family=theme_cellpress_font_family ,cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
+  geom_point(size=theme_cellpress_size/3) +
   scale_color_manual(values=c(
     "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
     "Grade 3"="red", "A_IDH_HG"="red", "recurrent"="red",
@@ -205,7 +205,7 @@ ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL
   #coord_equal() +
   labs(x="Astrocytoma CGC Lasso",y = "GLASS-NL signature (supervised primary - recurrent)", col="") +
   labs(subtitle=format_subtitle("Logit WHO grade")) +
-  theme_nature
+  theme_cellpress
 
 
 ggsave("output/figures/vis_LGC_x_PCA__scatter_A1.pdf",width=8.5 * 0.975, height = 4.42)
@@ -216,8 +216,8 @@ ggsave("output/figures/vis_LGC_x_PCA__scatter_A1.pdf",width=8.5 * 0.975, height 
 # array_PC2 ~ 202 | array_GLASS_NL_g2_g3_sig ~ 218
 ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_PC2, col=col)) + 
   facet_wrap(~facet, scales="free",ncol=5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_nature_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
-  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
+  geom_point(size=theme_cellpress_size/3) +
   scale_color_manual(values=c(
     "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
     "Grade 3"="red", "A_IDH_HG"="red", "recurrent"="red",
@@ -230,7 +230,7 @@ ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_PC2, col
   )) +
   labs(x="Astrocytoma CGC Lasso",y = "Unsupervised PC2", col="") +
   labs(subtitle=format_subtitle("Logit WHO grade")) +
-  theme_nature
+  theme_cellpress
 
 
 ggsave("output/figures/vis_LGC_x_PCA__scatter_A2.pdf",width=8.5 * 0.975, height = 2.72)
@@ -299,8 +299,8 @@ plt.split <- rbind(
 #ggplot(plt.split, aes(x=array_methylation_bins_1p19q_purity, y=-array_PC3, col=col)) + 
 ggplot(plt.split, aes(x=array_dnaMethyAge__PCHorvathS2018, y=-array_PC3, col=col)) +
   facet_wrap(~facet, scales="free",ncol=5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_nature_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "top") +
-  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "top") +
+  geom_point(size=theme_cellpress_size/3) +
   scale_color_manual(values=c(
     "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
     "Grade 3"="red", "A_IDH_HG"="red", "recurrent"="red",
@@ -320,7 +320,7 @@ ggplot(plt.split, aes(x=array_dnaMethyAge__PCHorvathS2018, y=-array_PC3, col=col
   )) +
   labs(x="Horvath [S] 2018 (PC)",y = "(-) Unsupervised PC3", col="") +
   labs(subtitle=format_subtitle("Logit WHO grade")) +
-  theme_nature
+  theme_cellpress
 
 
 ggsave("output/figures/vis_LGC_x_PCA__scatter_A2_PC3.pdf",width=8.5 * 0.975, height = 2.72)
@@ -394,8 +394,8 @@ plt.split <- plt.split.raw |>
 # array_PC2 ~ 202 | array_GLASS_NL_g2_g3_sig ~ 218
 ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL_g2_g3_sig, col=col)) + 
   facet_wrap(~facet, scales="free",ncol=5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_nature_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
-  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
+  geom_point(size=theme_cellpress_size/3) +
   scale_color_manual(values=c(
     "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
     "Grade 3"="red", "A_IDH_HG"="red", "recurrent"="red",
@@ -416,7 +416,7 @@ ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL
   )) +
   labs(x="Astrocytoma CGC Lasso",y = "CGC[Ac]", col="") +
   labs(subtitle=format_subtitle("Logit WHO grade")) +
-  theme_nature
+  theme_cellpress
 
 
 ggsave("output/figures/vis_LGC_x_PCA__scatter_A1__validationset__mair.pdf",width=8.5 * 0.975, height = 2.72)
@@ -466,8 +466,8 @@ plt.split |> dplyr::filter(facet == "A) Dataset") |> dplyr::pull(array_notes) |>
 # array_PC2 ~ 202 | array_GLASS_NL_g2_g3_sig ~ 218
 ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL_g2_g3_sig, col=col, label=label)) + 
   facet_wrap(~facet, scales="free",ncol=5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_nature_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
-  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "bottom") +
+  geom_point(size=theme_cellpress_size/3) +
   scale_color_manual(values=c(
     "Grade 2"= col3(11)[10], "O_IDH"=col3(11)[10], "primary"=col3(11)[10], 
     "Grade 3"="red", "A_IDH_HG"="red", "recurrent"="red",
@@ -488,7 +488,7 @@ ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_GLASS_NL
   )) +
   labs(x="Astrocytoma CGC Lasso",y = "CGC[Ac]", col="") +
   labs(subtitle=format_subtitle("Logit WHO grade")) +
-  theme_nature +
+  theme_cellpress +
   ggrepel::geom_text_repel()
 
 
@@ -530,8 +530,8 @@ plt.split <- rbind(
 ggplot(plt.split, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_PC2, col=col)) + 
   #facet_grid(cols = vars(facet), scales = "free", space="free") +
   facet_wrap(~facet, scales="free",ncol=5) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_nature_size, cor.coef.name ="rho", show_guide = FALSE) +
-  geom_point(size=theme_nature_size/3) +
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label), col=stat),  size=theme_cellpress_size, cor.coef.name ="rho", show_guide = FALSE) +
+  geom_point(size=theme_cellpress_size/3) +
   scale_color_manual(values=c(
     "Grade 2"= col3(11)[10],"O_IDH"=col3(11)[10], 
     "Grade 3"="red","A_IDH_HG"="red",  
@@ -672,31 +672,34 @@ plt.logit.simplistic <- rbind(
 
 p_A <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
-  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
-  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_cellpress_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_cellpress_lwd)  + 
   
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
                                col='gray40',
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
                         labels=c("0", "", "1"), oob = scales::squish) +
   
-  theme_nature +
-  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  theme_cellpress +
+  annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability",
        y= "CGC''", fill=NULL, x=NULL, subtitle = "GLASS-OD: primary - recurrent", caption = paste0("n=",n_samples, " samples")) +
   scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p_A
 
+
+
+rm(stats, n_samples, model, pval)
 
 
 
@@ -769,29 +772,29 @@ plt.logit.simplistic <- rbind(
 p4b <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="white",
-            lwd=theme_nature_lwd * 2, alpha=0.65
+            lwd=theme_cellpress_lwd * 2, alpha=0.65
   ) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
             col="gray",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
             col="darkblue",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
             col="#3e9e8b",
-            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1),
+            lwd=theme_cellpress_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1),
                                                            breaks=c(0, 0.50, 1), labels=c("Primary","","Recurrent"),
                                                            oob = scales::squish) +
-  theme_nature +
-  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  theme_cellpress +
+  annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Primary", "Recurrent")) + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1)) +
   ylim(-15, 15)
 p4b
@@ -860,30 +863,35 @@ plt.logit.simplistic <- rbind(
 
 p_B <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
-  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
-  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_cellpress_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_cellpress_lwd)  + 
   
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
 
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
                                col='gray40',
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
                         labels=c("0", "", "1"), oob = scales::squish) +
   
-  theme_nature +
-  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  theme_cellpress +
+  annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability",
        y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: WHO CNS grade"), caption = paste0("n=",n_samples, " samples")) +
   scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p_B
+
+
+
+rm(stats, n_samples, model, pval)
+
 
 
 
@@ -947,31 +955,33 @@ plt.logit.simplistic <- rbind(
 
 p_C <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
-  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
-  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_cellpress_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_cellpress_lwd)  + 
   
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
                                col='gray40',
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
                         labels=c("0", "", "1"), oob = scales::squish) +
   
-  theme_nature +
-  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  theme_cellpress +
+  annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability",
        y= "CGC''", fill=NULL, x=NULL, subtitle = "validation: CSN WHO grade", caption = paste0("n=",n_samples, " samples")) +
   scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p_C
 
+
+rm(stats, n_samples, model, pval)
 
 
 
@@ -1044,27 +1054,27 @@ plt.logit.simplistic <- rbind(
 p3b <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="white",
-            lwd=theme_nature_lwd * 2, alpha=0.65
+            lwd=theme_cellpress_lwd * 2, alpha=0.65
   ) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
             col="gray",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
             col="darkblue",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
             col="#3e9e8b",
-            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
-  theme_nature +
-  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+            lwd=theme_cellpress_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
+  theme_cellpress +
+  annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1)) +
   ylim(-15, 15)
 
@@ -1130,52 +1140,56 @@ plt.logit.simplistic <- rbind(
 
 p_D <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
-  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
-  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_cellpress_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_cellpress_lwd)  + 
   
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   
   #  A_IDH_HG      A_IDH_LG   GBM_MES_TYP      GBM_RTK1         O_IDH OLIGOSARC_IDH 
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
                                col=palette_mnp_12.8_6['A_IDH_HG'],
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_LG") == T),
                                col=palette_mnp_12.8_6['A_IDH_LG'],
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("O_IDH") == T),
                                col=palette_mnp_12.8_6['O_IDH'],
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
                                col=palette_mnp_12.8_6['OLIGOSARC_IDH'],
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("GBM_MES_TYP","GBM_RTK1","CTRL_CORPCAL") == T),
                                col='gray40',
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
                         labels=c("0", "", "1"), oob = scales::squish) +
   
-  theme_nature +
-  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  theme_cellpress +
+  annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability",
        y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: MNP CNS 12.8"), caption = paste0("n=",n_samples, " samples")) +
   scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p_D
 
+
+
+
+rm(stats, n_samples, model, pval)
 
 
 
@@ -1238,53 +1252,59 @@ plt.logit.simplistic <- rbind(
 
 p_E <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
-  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
-  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_cellpress_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_cellpress_lwd)  + 
   
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   
   #  metadata$array_methylscape_bethesda_class |> table()
   # A_IDH      A_IDH_HG CONTR_CORPCAL   CONTR_REACT     GBM_RTK_I         MELAN         O_IDH    O_SARC_IDH 
   #2             4             2             1             1             1           197             3 
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_methylscape_bethesda_class %in% c("A_IDH_HG") == T),
                                col=palette_mnp_12.8_6['A_IDH_HG'],
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_methylscape_bethesda_class %in% c("A_IDH_LG", "A_IDH") == T),
                                col=palette_mnp_12.8_6['A_IDH_LG'],
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_methylscape_bethesda_class %in% c("O_IDH") == T),
                                col=palette_mnp_12.8_6['O_IDH'],
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_methylscape_bethesda_class %in% c("O_SARC_IDH") == T),
                                col=palette_mnp_12.8_6['OLIGOSARC_IDH'],
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_methylscape_bethesda_class %in% c("CONTR_CORPCAL","CONTR_REACT","GBM_RTK_I","MELAN") == T),
                                col='gray40',
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
                         labels=c("0", "", "1"), oob = scales::squish) +
   
-  theme_nature +
-  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  theme_cellpress +
+  annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability",
        y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: NCI MethylScape"), caption = paste0("n=",n_samples, " samples")) +
   scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p_E
+
+
+
+
+rm(stats, n_samples, model, pval)
+
 
 
 
@@ -1340,28 +1360,28 @@ plt.logit.simplistic <- rbind(
 
 p_F <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
-  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
-  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_cellpress_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_cellpress_lwd)  + 
   
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" ),
                                col='gray40',
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
                         labels=c("0", "", "1"), oob = scales::squish) +
   
-  theme_nature +
-  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  theme_cellpress +
+  annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability",
        y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: radiotherapy"), caption = paste0("n=",n_samples, " samples")) +
   scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p_F
 
@@ -1428,49 +1448,49 @@ plt.logit.simplistic <- rbind(
 
 p_G <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
-  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
-  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_cellpress_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_cellpress_lwd)  + 
   
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & chemo == "No"),
                                col='gray40',
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & chemo == "TMZ"),
                                col='red',
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & chemo == "PCV"),
                                col=col3(11)[10],
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & chemo == "TMZ & PCV"),
                                col="purple",
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & chemo == "other"),
                                col="orange",
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
                         labels=c("0", "", "1"), oob = scales::squish) +
   
-  theme_nature +
-  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  theme_cellpress +
+  annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability",
        y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: chemotherapy"), caption = paste0("n=",n_samples, " samples")) +
   scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p_G
 
@@ -1533,46 +1553,50 @@ plt.logit.simplistic <- rbind(
 
 p_H <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
-  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
-  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_cellpress_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_cellpress_lwd)  + 
   
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & CDKN2AB == "HD"),
                                col='brown',
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & CDKN2AB %in% c("SD, chr", "SD, arm")),#, 
                                col='red',
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & CDKN2AB %in% c("SD, focal")),
                                col='orange',
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data" & CDKN2AB == "wt"),
                                col="darkgreen",
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
                         labels=c("0", "", "1"), oob = scales::squish) +
   
-  theme_nature +
-  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  theme_cellpress +
+  annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability",
        y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: CDKN2A/B"), caption = paste0("n=",n_samples, " samples")) +
   scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p_H
+
+
+
+rm(stats, n_samples, model, pval)
 
 
 
@@ -1631,30 +1655,33 @@ plt.logit.simplistic <- rbind(
 
 p_I <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   
-  geom_vline(aes(xintercept=0), lty=3, lwd=theme_nature_lwd)  + 
-  geom_vline(aes(xintercept=1), lty=3, lwd=theme_nature_lwd)  + 
+  geom_vline(aes(xintercept=0), lty=3, lwd=theme_cellpress_lwd)  + 
+  geom_vline(aes(xintercept=1), lty=3, lwd=theme_cellpress_lwd)  + 
   
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   
   ggbeeswarm::geom_quasirandom(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
                                col='gray40',
-                               size=theme_nature_size/3,
+                               size=theme_cellpress_size/4,
                                width=0.1) +
   
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3),
                         labels=c("0", "", "1"), oob = scales::squish) +
   
-  theme_nature +
-  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  theme_cellpress +
+  annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability",
        y= "CGC''", fill=NULL, x=NULL, subtitle = paste0("GLASS-OD: FFPE"), caption = paste0("n=",n_samples, " samples")) +
   scale_x_continuous(breaks = c(-0.125,0,1,1.125), labels=c("","p=0", "p=1","")) + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p_I
+
+
+rm(stats, n_samples, model, pval)
 
 
 
@@ -1662,9 +1689,9 @@ p_I
 
 # p_F + p_G +
 
-p_A + p_B + p_C + p_D + p_E + p_H +  p_I + plot_layout(ncol=7)
+p_A + p_B + p_D  + p_E + p_H +  p_I + p_C +  plot_layout(ncol=7)
 
-ggsave("output/figures/vis_LGC_x_PCA__logistic.pdf", width=9*0.9, height=2.8)
+ggsave("output/figures/vis_LGC_x_PCA__logistic.pdf", width=7.0, height=2 + (1.103 - 0.9336))
 
 
 
@@ -1734,29 +1761,29 @@ plt.logit.simplistic <- rbind(
 ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="white",
-            lwd=theme_nature_lwd * 2, alpha=0.65
+            lwd=theme_cellpress_lwd * 2, alpha=0.65
   ) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
             col="gray",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
             col="darkblue",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
             col="#3e9e8b",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
-  theme_nature +
-annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+  theme_cellpress +
+annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
   scale_y_reverse() + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 
 
@@ -1823,28 +1850,28 @@ plt.logit.simplistic <- rbind(
 p2 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd= theme_nature_lwd * 5) +
+            lwd= theme_cellpress_lwd * 5) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="white",
-            lwd=theme_nature_lwd * 2, alpha=0.65
+            lwd=theme_cellpress_lwd * 2, alpha=0.65
   ) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
             col="gray",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
             col="darkblue",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
             col="#3e9e8b",
-            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1), breaks=c(0, 0.50, 1), labels=c("Primary","", "Recurrent"), oob = scales::squish) +
-  theme_nature +
-annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+            lwd=theme_cellpress_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1), breaks=c(0, 0.50, 1), labels=c("Primary","", "Recurrent"), oob = scales::squish) +
+  theme_cellpress +
+annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Primary", "Recurrent")) + 
   scale_y_reverse() + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p2
 
@@ -1888,14 +1915,14 @@ p2
 #   ggnewscale::new_scale_colour() +
 #   geom_line(data = plt.logit.restyled |> dplyr::filter(type == "data"),
 #             col="white",
-#             lwd=theme_nature_lwd * 2, alpha=0.65
+#             lwd=theme_cellpress_lwd * 2, alpha=0.65
 #   ) +
 #   geom_line(data = plt.logit.restyled |> dplyr::filter(type == "data"),
 #             aes(col=col),
-#             lwd=theme_nature_lwd) +
+#             lwd=theme_cellpress_lwd) +
 #   scale_color_gradientn(colours = c("aquamarine3","aquamarine3","#d34394ff","#d34394ff"), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
-#   theme_nature +
-# annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) +
+#   theme_cellpress +
+# annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.2, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) +
 #   labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "GLASS-NL MedMeth x Resection") +
 #   scale_x_continuous(breaks = c(0,1),
 #                      labels=c("Primary", "Recurrent")) + 
@@ -1969,27 +1996,27 @@ plt.logit.simplistic <- rbind(
 ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="white",
-            lwd=theme_nature_lwd * 2, alpha=0.65
+            lwd=theme_cellpress_lwd * 2, alpha=0.65
   ) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
             col="gray",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
             col="darkblue",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
             col="#3e9e8b",
-            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
-  theme_nature +
-  annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+            lwd=theme_cellpress_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
+  theme_cellpress +
+  annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 
 
@@ -2030,16 +2057,16 @@ ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
 # p3 <- ggplot(plt.logit.restyled, aes(x=x, y=y, group=group, col=col)) +
 #   geom_line(data = plt.logit.restyled |> dplyr::filter(type == "data"),
 #             aes(col=col),
-#             lwd=theme_nature_lwd) +
+#             lwd=theme_cellpress_lwd) +
 #   scale_color_gradientn(colours = c("aquamarine3","aquamarine3","#d34394ff","#d34394ff"), na.value = "grey50", limits = c(1, 2), breaks=c(1, 1.50, 1.50, 2), labels=c("primary","","", "recurrent"), oob = scales::squish) +
 #   labs(col=NULL) +
 #   ggnewscale::new_scale_colour() +
 #   geom_line(data = plt.logit.restyled |> dplyr::filter(type == "fit") ,
 #             aes(col=col),
 #             lwd=1.0) +
-#   theme_nature +
+#   theme_cellpress +
 #   scale_fill_manual(values = palette_mnp_12.8_6) +
-# annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 16)[15], x = 0.375, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+# annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 16)[15], x = 0.375, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
 #   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1), breaks=c(0, 1), labels=c("Grade 2", "Grade 3"), oob = scales::squish) +
 #   labs(col=NULL, y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = "CGC Lasso x WHO Grade") +
 #   scale_x_continuous(breaks = c(0,1), labels=c("Grade 2", "Grade 3")) + 
@@ -2125,27 +2152,27 @@ plt.logit.simplistic <- rbind(
 p5b <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="white",
-            lwd=theme_nature_lwd * 2, alpha=0.65
+            lwd=theme_cellpress_lwd * 2, alpha=0.65
   ) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
             col="gray",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
             col="darkblue",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
             col="#3e9e8b",
-            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
-  theme_nature +
-annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_nature_size) +
+            lwd=theme_cellpress_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 3), labels=c("Grade 2", "", "Grade 3"), oob = scales::squish) +
+  theme_cellpress +
+annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[7], x = 0.3, label = paste0("p = ",format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1)) +
   ylim(-15, 15)
 p5b
@@ -2197,15 +2224,15 @@ plt <- stats |>
   dplyr::mutate(label = factor(label, levels=c("other", "A_IDH_HG /\nOLIGOSARC_IDH")))
 
 ggplot(plt, aes(x = label, y=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, col=array_mnp_predictBrain_v12.8_cal_class, group=label)) +
-  ggbeeswarm::geom_quasirandom(size = theme_nature_size/3, width=0.3) +
+  ggbeeswarm::geom_quasirandom(size = theme_cellpress_size/3, width=0.3) +
   scale_color_manual(values = c(palette_mnp_12.8_6, `GBM_RTK1`="gray40", `GBM_MES_TYP` = "gray40")) +
   labs(x = NULL, y="CGC") +
-  #annotate("text", family = theme_nature_font_family, 
-  #         size=theme_nature_size,
+  #annotate("text", family = theme_cellpress_font_family, 
+  #         size=theme_cellpress_size,
   #         x=1.9, y=-10, 
   #         label=paste0("p < 2e-16 ***\nlm; pat. corrected")) +
-  ggpubr::stat_compare_means(method = "t.test", show_guide  = FALSE, size=theme_nature_size, family=theme_nature_font_family) +
-  theme_nature
+  ggpubr::stat_compare_means(method = "t.test", show_guide  = FALSE, size=theme_cellpress_size, family=theme_cellpress_font_family) +
+  theme_cellpress
 
 ggsave("output/figures/vis_LGC_x_PCA__lm_OLIGOSARC_A_IDH_HG__Other.pdf", width=1.5, height=3 * 0.9305)
 
@@ -2275,28 +2302,28 @@ plt.logit.simplistic <- rbind(
 p5 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="white",
-            lwd=theme_nature_lwd * 2, alpha=0.65
+            lwd=theme_cellpress_lwd * 2, alpha=0.65
   ) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
             col="gray",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
             col="darkblue",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
             col="#3e9e8b",
-            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
-  theme_nature +
-annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
+            lwd=theme_cellpress_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
+  theme_cellpress +
+annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
   scale_y_reverse() + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p5
 
@@ -2373,30 +2400,30 @@ plt.logit.simplistic <- rbind(
 p6 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="white",
-            lwd=theme_nature_lwd * 2, alpha=0.65
+            lwd=theme_cellpress_lwd * 2, alpha=0.65
   ) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
             col="gray",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
             col="darkblue",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
             col="#3e9e8b",
-            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1),
+            lwd=theme_cellpress_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1),
                                                            breaks=c(0, 0.50, 1), labels=c("Primary","","Recurrent"),
                                                            oob = scales::squish) +
-  theme_nature +
-annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
+  theme_cellpress +
+annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Primary", "Recurrent")) + 
   scale_y_reverse() + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p6
 
@@ -2466,28 +2493,28 @@ plt.logit.simplistic <- rbind(
 p7 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="white",
-            lwd=theme_nature_lwd * 2, alpha=0.65
+            lwd=theme_cellpress_lwd * 2, alpha=0.65
   ) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
             col="gray",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
             col="darkblue",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
             col="#3e9e8b",
-            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
-  theme_nature +
-annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
+            lwd=theme_cellpress_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 2.50, 2.50, 3), labels=c("Grade 2","","", "Grade 3"), oob = scales::squish) +
+  theme_cellpress +
+annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x WHO Grade")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Grade 2", "Grade 3")) + 
   scale_y_reverse() + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p7
 
@@ -2564,30 +2591,30 @@ plt.logit.simplistic <- rbind(
 p8 <- ggplot(plt.logit.simplistic, aes(x=x, y=y, group=group, col=col)) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "fit") ,
             aes(col=col),
-            lwd=theme_nature_lwd * 5) +
+            lwd=theme_cellpress_lwd * 3.5) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data"),
             col="white",
-            lwd=theme_nature_lwd * 2, alpha=0.65
+            lwd=theme_cellpress_lwd * 2, alpha=0.65
   ) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH","A_IDH_HG") == F),
             col="gray",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("A_IDH_HG") == T),
             col="darkblue",
-            lwd=theme_nature_lwd) +
+            lwd=theme_cellpress_lwd) +
   geom_line(data = plt.logit.simplistic |> dplyr::filter(type == "data" & array_mnp_predictBrain_v12.8_cal_class %in% c("OLIGOSARC_IDH") == T),
             col="#3e9e8b",
-            lwd=theme_nature_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1),
+            lwd=theme_cellpress_lwd) +  scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(0, 1),
                                                            breaks=c(0, 0.50, 1), labels=c("Primary","","Recurrent"),
                                                            oob = scales::squish) +
-  theme_nature +
-annotate("text", family = theme_nature_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_nature_size) +
+  theme_cellpress +
+annotate("text", family = theme_cellpress_font_family,  y = modelr::seq_range(stats$covar, 8)[2], x = 0.3, label = paste0("p = ", format.pval(pval, digits=3)), size=theme_cellpress_size) +
   labs(col="Probability", y= stats |> dplyr::pull(covar_name) |> unique(), fill=NULL, x=NULL, subtitle = paste0(unique(stats$covar_name)," x Resection")) +
   scale_x_continuous(breaks = c(0,1),
                      labels=c("Primary", "Recurrent")) + 
   scale_y_reverse() + 
   theme(legend.box = "vertical",
-        legend.key.size = unit(theme_nature_lwd * 1.5, 'lines'),
+        legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines'),
         legend.title =  element_text(vjust=1))
 p8
 
@@ -2616,7 +2643,7 @@ p1 + p3 + p5 + p2 + p4 + p6 + plot_layout(ncol=3) + plot_annotation( subtitle = 
 
 
 library(patchwork)
-p3 + p5 + p4 + p6 + plot_layout(ncol=4) + plot_annotation(subtitle = format_subtitle("PC2 & CGC x Grade & Resection timing"), theme=theme_nature )
+p3 + p5 + p4 + p6 + plot_layout(ncol=4) + plot_annotation(subtitle = format_subtitle("PC2 & CGC x Grade & Resection timing"), theme=theme_cellpress )
 
 ggsave("output/figures/vis_LGC_PCA_logistic.pdf", width=(8.5*0.975)*(4/5), height=2.5)
 
@@ -2672,7 +2699,7 @@ p3 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
   geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin_wash,xmax=xmax_wash,ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
-annotate("text", family = theme_nature_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) + 
+annotate("text", family = theme_cellpress_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
   scale_y_continuous(breaks = c(2,3)) + 
   labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
@@ -2745,7 +2772,7 @@ p4 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
   geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin_wash,xmax=xmax_wash,ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
-annotate("text", family = theme_nature_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) + 
+annotate("text", family = theme_cellpress_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
   scale_y_continuous(breaks = c(2,3)) + 
   labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
@@ -2818,7 +2845,7 @@ p3 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
   geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin-(5 * scaling_factor_x),xmax=xmax+(5 * scaling_factor_x),ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
-annotate("text", family = theme_nature_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) + 
+annotate("text", family = theme_cellpress_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
   scale_y_continuous(breaks = c(2,3)) + 
   labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
@@ -2876,7 +2903,7 @@ p4 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
   geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin_wash,xmax=xmax_wash,ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
-annotate("text", family = theme_nature_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) + 
+annotate("text", family = theme_cellpress_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
   scale_y_continuous(breaks = c(2,3)) + 
   labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
   ggplot2::scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
@@ -2937,7 +2964,7 @@ p6 <- ggplot(plt.logit, aes(x = covar, y=`resection tumor grade`)) +
   geom_line(data = plt.logit |> dplyr::filter(type == "fit"), aes(col=`resection tumor grade`),lwd=2) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin_wash,xmax=xmax_wash,ymin=ymin,ymax=ymax), fill=alpha("white",0.65)) +
   geom_rect(data = plt.logit |> dplyr::filter(type == "data"), aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax,fill=`array_mnp_predictBrain_v12.8_cal_class`)) +
-annotate("text", family = theme_nature_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_nature_size) + 
+annotate("text", family = theme_cellpress_font_family,  x = modelr::seq_range(stats$covar, 8)[2], y = 2.5, label = paste0("p = ",format.pval(pval)), size=theme_cellpress_size) + 
   scale_y_continuous(breaks = c(2,3)) + 
   labs(col=NULL, x = stats |> dplyr::pull(covar_name) |> unique(), fill=NULL) +
   scale_color_gradientn(colours = rev(col3(200)), na.value = "grey50", limits = c(2, 3), breaks=c(2, 3), oob = scales::squish) +
@@ -3020,7 +3047,7 @@ data <- data.mvalues.hq_samples |>
 ggplot(metadata, aes(x=resection, y=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)) +
   ggbeeswarm::geom_quasirandom() +
   ggpubr::stat_compare_means(method = "t.test") +
-  theme_nature
+  theme_cellpress
 
 
 model <- glm(resection__rec ~  A_IDH_HG__A_IDH_LG_lr, 
@@ -3057,7 +3084,7 @@ ggplot(plt.logit, aes(x = A_IDH_HG__A_IDH_LG_lr, y=`resection__rec`, col= mnp_pr
   geom_point(data = plt.logit |> dplyr::filter(type == "data"),pch="|",size=5) +
   geom_line(data = plt.logit |> dplyr::filter(type == "fit"), col="darkgreen") +
   theme_bw() + 
-annotate("text", family = theme_nature_font_family,  x = 2.5, y = 0.5, label = paste0("p = ",format.pval(pval))) + 
+annotate("text", family = theme_cellpress_font_family,  x = 2.5, y = 0.5, label = paste0("p = ",format.pval(pval))) + 
   theme(legend.position = 'bottom') + 
   scale_y_continuous(breaks = c(0,1)) + 
   labs(col="mnp v12.8", y = "Resection (0 primary, 1 recurrent)")
@@ -3111,12 +3138,12 @@ forest_data <- data.frame(
   dplyr::mutate(Term = "recurrent resection")
 
 ggplot(forest_data, aes(x = Estimate, y = Term)) +
-  geom_point(size=theme_nature_size/3) + 
-  geom_vline(xintercept = 0, linetype="dotted",  color = "gray", lwd=theme_nature_lwd) +
-  geom_errorbarh(aes(xmin = Lower, xmax = Upper), height = 0.52, lwd=theme_nature_lwd) + 
+  geom_point(size=theme_cellpress_size/3) + 
+  geom_vline(xintercept = 0, linetype="dotted",  color = "gray", lwd=theme_cellpress_lwd) +
+  geom_errorbarh(aes(xmin = Lower, xmax = Upper), height = 0.52, lwd=theme_cellpress_lwd) + 
   labs(x="CGC: LM Estimate (glioblastoma)", y=NULL) +
-  annotate("text", x = p_x, y = 1.4, label = paste0("p = ",round(p, 3)), size=theme_nature_size, family  = theme_nature_font_family) +
-  theme_nature
+  annotate("text", x = p_x, y = 1.4, label = paste0("p = ",round(p, 3)), size=theme_cellpress_size, family  = theme_cellpress_font_family) +
+  theme_cellpress
 
 ggsave("output/figures/vis_LGC_x_PCA__GSAM__lm.pdf", width=8.5*0.975*1/3, height=0.6)
 
@@ -3138,9 +3165,9 @@ ggcorrplot(metadata)
 
 
 ggplot(metadata, aes(x=array_A_IDH_HG__A_IDH_LG_lr__lasso_fit, y=array_PC1)) +
-  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)),  size=theme_nature_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "top", label.x.npc = "right", hjust=1) + # spearman bc of  outlier at bottom
-  geom_point(size=theme_nature_size/3) +
-  theme_nature
+  ggpubr::stat_cor(method = "spearman", aes(label = after_stat(r.label)),  size=theme_cellpress_size, cor.coef.name ="rho", show.legend = FALSE, label.y.npc = "top", label.x.npc = "right", hjust=1) + # spearman bc of  outlier at bottom
+  geom_point(size=theme_cellpress_size/3) +
+  theme_cellpress
 
 
 

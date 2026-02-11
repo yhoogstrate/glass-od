@@ -1,5 +1,6 @@
 #!/usr/bin/env R
 
+
 a <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_prcomp.Rds")
 b <- readRDS("cache/analysis_unsupervised_PCA_GLASS-OD_x.Rds")
 
@@ -72,6 +73,7 @@ factoextra::fviz_pca_biplot(a,
 factoextra::fviz_pca_biplot(a, geom="point",
                             label="none")
 
+
 # plots ----
 
 
@@ -80,7 +82,11 @@ factoextra::fviz_pca_var(a, axes = c(3,2),
                          #geom="point",
                          label="none",
                          col.var = "red",
-                         alpha.var  = 0.025,
+                         alpha.var  = 0.0375,
+                         
+                         arrowsize = 0.35,
+                         circlesize = 0.35,
+                         
                          select.var =
                            list(
                              name = polycomb_probes$probe_id #[1:1500]
@@ -89,28 +95,38 @@ factoextra::fviz_pca_var(a, axes = c(3,2),
   xlim(-1,1) +
   ylim(-1,1) +
   coord_equal() +
-  theme_nature
+  theme_cellpress +
+  theme(plot.background = element_rect(fill="white", colour=NA))
 
-ggsave("output/figures/vis_PCA_loadings__fvis_pca_var__PC3_PC2.png", width=8.5*0.975/2, height=8.5*0.975/2 * 1.2, dpi=600)
+  
+ggsave("output/figures/vis_PCA_loadings__fvis_pca_var__PC3_PC2.png", width=8.5*0.975/2* 0.6,
+       height=8.5*0.975/2 * 1.2* 0.6, 
+       dpi=600)
 
 
 
 factoextra::fviz_pca_var(a, axes = c(3,1),
                          #geom="point",
                          label="none",
+                         
+                         ##col.var = mixol("red","white",0.99),
                          col.var = "red",
-                         alpha.var  = 0.025,
+                         alpha.var  = 0.0375,
+                         
+                         arrowsize = 0.35,
+                         circlesize = 0.35,
                          select.var =
                            list(
-                             name = polycomb_probes$probe_id #[1:1500]
+                             name = polycomb_probes$probe_id
                            )
 ) +
   xlim(-1,1) +
   ylim(-1,1) +
   coord_equal() +
-  theme_nature
+  theme_cellpress +
+  theme(plot.background = element_rect(fill="white", colour=NA))
 
-ggsave("output/figures/vis_PCA_loadings__fvis_pca_var__PC3_PC1.png", width=8.5*0.975/2, height=8.5*0.975/2 * 1.2, dpi=600)
+ggsave("output/figures/vis_PCA_loadings__fvis_pca_var__PC3_PC1.png", width=8.5*0.975/2 * 0.6, height=8.5*0.975/2 * 1.2 * 0.6, dpi=600)
 
 
 

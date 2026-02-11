@@ -52,13 +52,13 @@ ggplot(plt.facet, aes(x=staining_KI67_pos_per_area_um2 * 1000000 ,
                           y=y,
                           col=col)) +
   facet_wrap(~facet, scales="free",ncol=4) +
-  geom_point(size=theme_nature_size/3) + 
+  geom_point(size=theme_cellpress_size/4) + 
   ggpubr::stat_cor(method = "pearson",
                    aes(label = after_stat(r.label)),
                    label.x.npc = "left", hjust=0,
                    col="black",
-                   size=theme_nature_size,
-                   family = theme_nature_font_family) +
+                   size=theme_cellpress_size,
+                   family = theme_cellpress_font_family) +
   scale_color_manual(values = c(palette_mnp_12.8_6, `Other`="darkgray")) +
   
   scale_x_continuous(
@@ -71,7 +71,7 @@ ggplot(plt.facet, aes(x=staining_KI67_pos_per_area_um2 * 1000000 ,
        col=NULL,
        subtitle=format_subtitle("KI67 correlations"),
        caption=paste0("n=",nrow(plt)," samples with KI67 staining and EPIC array data")) + 
-  theme_nature
+  theme_cellpress
 
 
 
@@ -162,6 +162,29 @@ ggcorrplot(dat)
 ggsave("output/figures/vis_KI67_classifications__corrplot.pdf",width=2.81, height=2.15)
 
 
+## exp ----
+
+
+exp <- glass_od.metadata.array_samples |> 
+  filter_GLASS_OD_idats(CONST_N_GLASS_OD_INCLUDED_SAMPLES) |> 
+  dplyr::filter(!is.na(staining_KI67_lr_pos_neg_cells) | !is.na(staining_KI67_lr_pos_neg_cells)) |> 
+  dplyr::select(resection_id, contains("KI67")) |> 
+  dplyr::mutate(staining_KI67_filename = NULL) |> 
+  dplyr::mutate(staining_KI67_md5sum = NULL) |> 
+  dplyr::mutate(staining_KI67_pathology_number =NULL) |> 
+  dplyr::mutate(staining_KI67_primary_coupe = NULL) |> 
+  dplyr::mutate(staining_KI67_reason_excluded = NULL) |> 
+  dplyr::mutate(staining_KI67_comments = NULL) |> 
+  dplyr::mutate(staining_KI67_pos_neg_cell_density = NULL) |> 
+  dplyr::mutate(staining_KI67_pos_per_detected_cells = NULL)
+
+"staining_KI67_lr_pos_neg_cells" %in% colnames(exp)
+"staining_KI67_pos_per_area_um2" %in% colnames(exp)
+
+
+write.table(exp, "output/tables/tab_Ki67_estimation.txt", sep="\t", quote = F, row.names = F)
+
+rm(exp)
 
 
 
@@ -191,23 +214,23 @@ ggplot(plt, aes(x=reorder(resection_id, rank),
                 y=staining_KI67_pos_per_detected_cells,
                 col=col,
                 label=paste0(round(staining_KI67_pos_per_detected_cells * 100,1),"%"))) +
-  geom_hline(yintercept=0.05, col="red", lty=2,lwd=theme_nature_lwd) +
-  geom_hline(yintercept=0.1, col="red", lty=2,lwd=theme_nature_lwd) +
+  geom_hline(yintercept=0.05, col="red", lty=2,lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=0.1, col="red", lty=2,lwd=theme_cellpress_lwd) +
   scale_y_continuous(labels = scales::percent, breaks = c(0,5,10,20,30,40,50)/100) +
-  geom_point(size=theme_nature_size/3) +
+  geom_point(size=theme_cellpress_size/4) +
   ggrepel::geom_text_repel(data=subset(plt, highlighted),
                            col="black",
-                           size=theme_nature_size,
-                           family=theme_nature_font_family,
-                           segment.size=theme_nature_lwd,
+                           size=theme_cellpress_size,
+                           family=theme_cellpress_font_family,
+                           segment.size=theme_cellpress_lwd,
                            nudge_y = 0.075) +
   scale_color_manual(values = c(palette_mnp_12.8_6, `Other`="darkgray")) +
-  theme_nature +
+  theme_cellpress +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   labs(x='resection', y="Percentage cells classified Ki67+", col=NULL)
 
 
-ggsave("output/figures/vis_KI67_classifications.pdf", width=0.975 * 8.5 * 0.6, height=2.0)
+ggsave("output/figures/vis_KI67_classifications.pdf", width=4.3, height=1.8)
 
 
 
@@ -225,7 +248,7 @@ plt <- glass_od.metadata.array_samples |>
 
 
 ggplot(plt, aes(x=resection_grade, y=staining_KI67_lr_pos_neg_cells)) +
-  ggbeeswarm::geom_quasirandom(size=theme_nature_size/3,width=0.33) + 
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/4,width=0.33) + 
   labs(subtitle=format_subtitle("KI67 x WHO Grade"),
        caption=paste0("",
                       "Grade 2: n=", (plt |> dplyr::filter(resection_grade == "WHO Grade 2") |>  nrow()), "  --  ",
@@ -234,14 +257,14 @@ ggplot(plt, aes(x=resection_grade, y=staining_KI67_lr_pos_neg_cells)) +
   ggpubr::stat_compare_means(label.x.npc=0.5, method = "t.test",
                              #show_guide  = FALSE, 
                              show.legend=F,
-                             size=theme_nature_size, family = theme_nature_font_family,
-                             col="#777777") +
+                             size=theme_cellpress_size, family = theme_cellpress_font_family,
+                             col="black") +
   labs(y="log(Ki-67 positive cells / Ki-67 negative cells)", x=NULL) +
-  theme_nature
+  theme_cellpress
 
 
 
-ggsave("output/figures/vis_KI67_classifications__who_grade__lr_p_n.pdf",width=0.9, height=2.1)
+ggsave("output/figures/vis_KI67_classifications__who_grade__lr_p_n.pdf",width=0.9, height=2.1 - 0.57)
 
 
 
@@ -258,7 +281,7 @@ plt <- glass_od.metadata.array_samples |>
 
 
 ggplot(plt, aes(x=resection_type, y=staining_KI67_lr_pos_neg_cells)) +
-  ggbeeswarm::geom_quasirandom(size=theme_nature_size/3, width=0.33) + 
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/4, width=0.33) + 
   labs(subtitle=format_subtitle("KI67 x resection type"),
        caption=paste0("",
                       "primary: n=",   (plt |> dplyr::filter(resection_type == "primary") |>    nrow()),"  --  ",
@@ -266,14 +289,14 @@ ggplot(plt, aes(x=resection_type, y=staining_KI67_lr_pos_neg_cells)) +
                       ))) +
   ggpubr::stat_compare_means(
     label.x.npc=0.5, method = "t.test", show.legend  = FALSE, 
-    size=theme_nature_size, 
-    family = theme_nature_font_family,
-    col="#777777") +
+    size=theme_cellpress_size, 
+    family = theme_cellpress_font_family,
+    col="black") +
   labs(y="log(Ki-67 positive cells / Ki-67 negative cells)", x=NULL) +
-  theme_nature
+  theme_cellpress
 
 
-ggsave("output/figures/vis_KI67_classifications__prim_rec__lr_p_n.pdf",width=0.9, height=2.1)
+ggsave("output/figures/vis_KI67_classifications__prim_rec__lr_p_n.pdf",width=0.9, height=2.1 - 0.57)
 
 
 
@@ -295,7 +318,7 @@ log1p_trans <- function() scales::trans_new("log1p", transform = function(x) log
 
 
 ggplot(plt, aes(x=resection_grade, y=staining_KI67_pos_per_area_um2 * 1000000)) +
-  ggbeeswarm::geom_quasirandom(size=theme_nature_size/3, width=0.33) + 
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/4, width=0.33) + 
   labs(subtitle=format_subtitle("KI67 x WHO Grade"),
        caption=paste0("",
                       "Grade 2: n=", (plt |> dplyr::filter(resection_grade == "WHO Grade 2") |>  nrow()),
@@ -305,8 +328,8 @@ ggplot(plt, aes(x=resection_grade, y=staining_KI67_pos_per_area_um2 * 1000000)) 
   ggpubr::stat_compare_means(label.x.npc=0.5, method = "t.test",
                              #show_guide  = FALSE, 
                              show.legend=F,
-                             size=theme_nature_size, family = theme_nature_font_family,
-                             col="#777777") +
+                             size=theme_cellpress_size, family = theme_cellpress_font_family,
+                             col="black") +
   labs(y="Ki-67+ cells per cm2", x=NULL) +
   scale_y_continuous(
     trans = log1p_trans(),
@@ -315,12 +338,12 @@ ggplot(plt, aes(x=resection_grade, y=staining_KI67_pos_per_area_um2 * 1000000)) 
     #breaks = scales::trans_breaks("log1p", function(x) log1p(x))
     #labels = scales::trans_format("log1p", scales::math_format(10^x))
   ) +
-  theme_nature
+  theme_cellpress
 
 
 
 
-ggsave("output/figures/vis_KI67_classifications__who_grade__p_cm2.pdf",width=0.9, height=2.1)
+ggsave("output/figures/vis_KI67_classifications__who_grade__p_cm2.pdf",width=0.9, height=2.1 - 0.57)
 
 
 
@@ -337,7 +360,7 @@ plt <- glass_od.metadata.array_samples |>
 
 
 ggplot(plt, aes(x=resection_type, y=staining_KI67_pos_per_area_um2 * 1000000)) +
-  ggbeeswarm::geom_quasirandom(size=theme_nature_size/3,width=0.33) + 
+  ggbeeswarm::geom_quasirandom(size=theme_cellpress_size/4,width=0.33) + 
   labs(subtitle=format_subtitle("KI67 x resection type"),
        caption=paste0("",
                       "primary: n=",   (plt |> dplyr::filter(resection_type == "primary") |>    nrow()),"  --  ",
@@ -345,18 +368,18 @@ ggplot(plt, aes(x=resection_type, y=staining_KI67_pos_per_area_um2 * 1000000)) +
                       ))) +
   ggpubr::stat_compare_means(
     label.x.npc=0.5, method = "t.test", show.legend  = FALSE, 
-    size=theme_nature_size, 
-    family = theme_nature_font_family,
-    col="#777777") +
+    size=theme_cellpress_size, 
+    family = theme_cellpress_font_family,
+    col="black") +
   labs(y="Ki-67+ cells per cm2", x=NULL) +
   scale_y_continuous(
     trans = log1p_trans(),
     breaks = c(1,10,100,1000,10000)
   ) +
-  theme_nature
+  theme_cellpress
 
 
-ggsave("output/figures/vis_KI67_classifications__prim_rec__p_cm2.pdf",width=0.9, height=2.1)
+ggsave("output/figures/vis_KI67_classifications__prim_rec__p_cm2.pdf",width=0.9, height=2.1 - 0.57)
 
 
 

@@ -137,29 +137,30 @@ p1.primary <- survminer::ggsurvplot(fit2.primary, data = tmp.stats.primary,
                                       #mixcol( 'lightblue', 'lightgreen'),
                                       #mixcol( 'darkblue', 'darkgreen')
                                     ),
-                                    tables.theme = theme_nature, 
-                                    ggtheme = theme_nature,
-                                    fontsize = theme_nature_size,
-                                    censor.size = theme_nature_size * 0.65,
-                                    pval.size = theme_nature_size,
-                                    size = theme_nature_lwd,
-                                    font.family = theme_nature_font_family,
+                                    tables.theme = theme_cellpress, 
+                                    ggtheme = theme_cellpress,
+                                    fontsize = theme_cellpress_size,
+                                    censor.size = theme_cellpress_size * 0.65,
+                                    pval.size = theme_cellpress_size,
+                                    size = theme_cellpress_lwd,
+                                    font.family = theme_cellpress_font_family,
                                     pval=T,
                                     xlab = "OS from primary (Years)"
 )
 
-p2.primary <- survminer::ggsurvtable(fit2.primary, data = tmp.stats.primary, 
-                                     tables.theme = theme_nature, 
-                                     ggtheme = theme_nature,
-                                     fontsize = theme_nature_size,
-                                     font.family = theme_nature_font_family,
+p2.primary <- survminer::ggsurvtable(fit2.primary,
+                                     data = tmp.stats.primary, 
+                                     tables.theme = theme_cellpress, 
+                                     ggtheme = theme_cellpress,
+                                     fontsize = theme_cellpress_size,
+                                     font.family = theme_cellpress_font_family,
                                      xlab = "OS from primary (Years)"
 )
 
 
 patchwork:::`/.ggplot`(p1.primary$plot, p2.primary$risk.table) + patchwork::plot_layout(heights = c(4,1))
 #ggsave("output/figures/analysis_survival__KM_median_split_primary.pdf", width=4, height = 2.5)
-ggsave("output/figures/analysis_survival__KM_median_split_primary.pdf", width=2.55, height = 2.5)
+ggsave("output/figures/analysis_survival__KM_median_split_primary.pdf", width=2.53, height = 2.2)
 
 
 
@@ -193,29 +194,29 @@ p1.last_rec <- survminer::ggsurvplot(fit2.last_rec, data = tmp.stats.last_rec,
                                        #mixcol( 'lightblue', 'lightgreen'),
                                        #mixcol( 'darkblue', 'darkgreen')
                                      ),
-                                     tables.theme = theme_nature, 
-                                     ggtheme = theme_nature,
-                                     fontsize = theme_nature_size,
-                                     censor.size = theme_nature_size * 0.65,
-                                     pval.size = theme_nature_size,
-                                     size = theme_nature_lwd,
-                                     font.family = theme_nature_font_family,
+                                     tables.theme = theme_cellpress, 
+                                     ggtheme = theme_cellpress,
+                                     fontsize = theme_cellpress_size,
+                                     censor.size = theme_cellpress_size * 0.65,
+                                     pval.size = theme_cellpress_size,
+                                     size = theme_cellpress_lwd,
+                                     font.family = theme_cellpress_font_family,
                                      pval=T,
                                      xlab = "OS from recurrent (Years)"
 )
 
 p2.last_rec <- survminer::ggsurvtable(fit2.last_rec, data = tmp.stats.last_rec, 
-                                      tables.theme = theme_nature, 
-                                      ggtheme = theme_nature,
-                                      fontsize = theme_nature_size,
-                                      font.family = theme_nature_font_family,
+                                      tables.theme = theme_cellpress, 
+                                      ggtheme = theme_cellpress,
+                                      fontsize = theme_cellpress_size,
+                                      font.family = theme_cellpress_font_family,
                                       xlab = "OS from recurrent (Years)"
 )
 
 
 patchwork:::`/.ggplot`(p1.last_rec$plot , p2.last_rec$risk.table) + patchwork::plot_layout(heights = c(4,1))
 #ggsave("output/figures/analysis_survival__KM_median_split_tmp.stats.last_rec.pdf", width=4, height = 2.5)
-ggsave("output/figures/analysis_survival__KM_median_split_tmp.stats.last_rec.pdf", width=2.55, height = 2.5)
+ggsave("output/figures/analysis_survival__KM_median_split_tmp.stats.last_rec.pdf", width=2.53, height = 2.2)
 
 
 rm(tmp.stats.last_rec, surv_object.last_rec, fit2.last_rec, p1.last_rec, p2.last_rec)
@@ -254,22 +255,22 @@ p1.primary_3g <- survminer::ggsurvplot(fit2.primary_3g, data = tmp.stats.primary
                                        palette = c(
                                          "red",'darkblue', 'darkgreen'
                                        ),
-                                       tables.theme = theme_nature, 
-                                       ggtheme = theme_nature,
-                                       fontsize = theme_nature_size,
-                                       censor.size = theme_nature_size * 0.65,
-                                       pval.size = theme_nature_size,
-                                       size = theme_nature_lwd,
-                                       font.family = theme_nature_font_family,
+                                       tables.theme = theme_cellpress, 
+                                       ggtheme = theme_cellpress,
+                                       fontsize = theme_cellpress_size,
+                                       censor.size = theme_cellpress_size * 0.65,
+                                       pval.size = theme_cellpress_size,
+                                       size = theme_cellpress_lwd,
+                                       font.family = theme_cellpress_font_family,
                                        pval=T,
                                        xlab = "OS from primary (Years)"
 )
 
 p2.primary_3g <- survminer::ggsurvtable(fit2.primary_3g, data = tmp.stats.primary_3g, 
-                                        tables.theme = theme_nature, 
-                                        ggtheme = theme_nature,
-                                        fontsize = theme_nature_size,
-                                        font.family = theme_nature_font_family,
+                                        tables.theme = theme_cellpress, 
+                                        ggtheme = theme_cellpress,
+                                        fontsize = theme_cellpress_size,
+                                        font.family = theme_cellpress_font_family,
                                         xlab = "OS from primary (Years)"
 )
 
@@ -279,7 +280,7 @@ p1.primary_3g$plot / p2.primary_3g$risk.table + plot_layout(heights = c(4,1))
 #patchwork:::`/.ggplot`(p1.primary_3g$plot, p2.primary_3g$risk.table) + patchwork::plot_layout(heights = c(4,1))
 
 
-ggsave("output/figures/analysis_survival__KM_median_split_primary__3g.pdf", width=2.55, height = 2.5)
+ggsave("output/figures/analysis_survival__KM_median_split_primary__3g.pdf", width=2.53, height = 2.2)
 
 
 
@@ -314,29 +315,29 @@ p1.last_rec <- survminer::ggsurvplot(fit2.last_rec, data = tmp.stats.last_rec,
                                      palette = c(
                                        "red",'darkblue', 'darkgreen'
                                      ),
-                                     tables.theme = theme_nature, 
-                                     ggtheme = theme_nature,
-                                     fontsize = theme_nature_size,
-                                     censor.size = theme_nature_size * 0.65,
-                                     pval.size = theme_nature_size,
-                                     size = theme_nature_lwd,
-                                     font.family = theme_nature_font_family,
+                                     tables.theme = theme_cellpress, 
+                                     ggtheme = theme_cellpress,
+                                     fontsize = theme_cellpress_size,
+                                     censor.size = theme_cellpress_size * 0.65,
+                                     pval.size = theme_cellpress_size,
+                                     size = theme_cellpress_lwd,
+                                     font.family = theme_cellpress_font_family,
                                      pval=T,
                                      xlab = "OS from recurrent (Years)"
 )
 
 p2.last_rec <- survminer::ggsurvtable(fit2.last_rec, data = tmp.stats.last_rec, 
-                                      tables.theme = theme_nature, 
-                                      ggtheme = theme_nature,
-                                      fontsize = theme_nature_size,
-                                      font.family = theme_nature_font_family,
+                                      tables.theme = theme_cellpress, 
+                                      ggtheme = theme_cellpress,
+                                      fontsize = theme_cellpress_size,
+                                      font.family = theme_cellpress_font_family,
                                       xlab = "OS from recurrent (Years)"
 )
 
 
 patchwork:::`/.ggplot`(p1.last_rec$plot , p2.last_rec$risk.table) + patchwork::plot_layout(heights = c(4,1))
 #ggsave("output/figures/analysis_survival__KM_median_split_tmp.stats.last_rec__3g.pdf", width=4, height = 2.5)
-ggsave("output/figures/analysis_survival__KM_median_split_tmp.stats.last_rec__3g.pdf", width=2.55, height = 2.5)
+ggsave("output/figures/analysis_survival__KM_median_split_tmp.stats.last_rec__3g.pdf", width=2.53, height = 2.2)
 
 
 
@@ -457,13 +458,13 @@ plt.facet <- plt.primary |>
 
 ggplot(plt.facet, aes(x=k, y=-log10(pvalue), col=name, group=name, pch=censored)) +
   facet_grid(cols = vars(pval_method)) +
-  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
-  geom_line(data=subset(plt.facet, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
-  geom_point(data=subset(plt.facet, name == "patient"),y = -0.15, size=theme_nature_size/3) + 
-  geom_point(data=subset(plt.facet, name != "patient"),size=theme_nature_size/3) + 
-  theme_nature + 
+  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_cellpress_lwd) +
+  geom_line(data=subset(plt.facet, name != "patient"), lwd=theme_cellpress_lwd, alpha=0.5) +
+  geom_point(data=subset(plt.facet, name == "patient"),y = -0.15, size=theme_cellpress_size/3) + 
+  geom_point(data=subset(plt.facet, name != "patient"),size=theme_cellpress_size/3) + 
+  theme_cellpress + 
   scale_y_continuous(breaks = -log10(c(0, 0.01, 0.05, 1)),
                      labels =        c(0, 0.01, 0.05, 1)) +
   scale_shape_manual(values=c(20, 3)) +
@@ -767,13 +768,13 @@ plt.facet <- plt.last_rec |>
 
 ggplot(plt.facet, aes(x=k, y=-log10(pvalue), col=name, group=name, pch=censored)) +
   facet_grid(cols = vars(pval_method)) +
-  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
-  geom_line(data=subset(plt.facet, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
-  geom_point(data=subset(plt.facet, name == "patient"),y = -0.15, size=theme_nature_size/3) + 
-  geom_point(data=subset(plt.facet, name != "patient"),size=theme_nature_size/3) + 
-  theme_nature + 
+  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_cellpress_lwd) +
+  geom_line(data=subset(plt.facet, name != "patient"), lwd=theme_cellpress_lwd, alpha=0.5) +
+  geom_point(data=subset(plt.facet, name == "patient"),y = -0.15, size=theme_cellpress_size/3) + 
+  geom_point(data=subset(plt.facet, name != "patient"),size=theme_cellpress_size/3) + 
+  theme_cellpress + 
   scale_y_continuous(breaks = -log10(c(0, 0.01, 0.05, 1)),
                      labels =        c(0, 0.01, 0.05, 1)) +
   scale_shape_manual(values=c(20, 3)) +
@@ -871,15 +872,15 @@ plt.facet <- rbind(
 
 ggplot(plt.facet, aes(x=k, y=-log10(survdiff_MH_p), col=name, group=name, pch=censored)) +
   facet_grid(cols = vars(sample_selection), scales="free_x", space="free_x") +
-  geom_hline(yintercept=-log10(0.0000000001), col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
-  geom_line(data=subset(plt.facet, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
-  geom_point(data=subset(plt.facet, name == "patient" & censored),y = -0.25, size=theme_nature_size/8) + 
-  geom_point(data=subset(plt.facet, name == "patient" & !censored),y = -0.25, size=theme_nature_size/3 * 0.75, alpha=0.5) + 
-  geom_point(data=subset(plt.facet, name != "patient"),size=theme_nature_size/3) + 
-  theme_nature + 
+  geom_hline(yintercept=-log10(0.0000000001), col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_cellpress_lwd) +
+  geom_line(data=subset(plt.facet, name != "patient"), lwd=theme_cellpress_lwd, alpha=0.5) +
+  geom_point(data=subset(plt.facet, name == "patient" & censored),y = -0.25, size=theme_cellpress_size/8 / 2) + 
+  geom_point(data=subset(plt.facet, name == "patient" & !censored),y = -0.25, size=theme_cellpress_size/3 * 0.75 / 2, alpha=0.5) + 
+  geom_point(data=subset(plt.facet, name != "patient"),size=theme_cellpress_size/3) + 
+  theme_cellpress + 
   scale_y_continuous(breaks = -log10(c(0,0.0000000001, 0.01, 0.05, 1)),
                      labels =        c(0,0.0000000001, 0.01, 0.05, 1)) +
   scale_shape_manual(values=c(16, 3)) +
@@ -888,7 +889,8 @@ ggplot(plt.facet, aes(x=k, y=-log10(survdiff_MH_p), col=name, group=name, pch=ce
 
 
 
-ggsave("output/figures/analysis_survival_sweep__prim__last_rec.pdf", width=8.5 * 0.975 * 0.9* 1.02,height=2.9 * 0.85)
+ggsave("output/figures/analysis_survival_sweep__prim__last_rec.pdf", width=5.2 + 0.15,height=1.6 + 0.2672)
+
 
 
 
@@ -912,22 +914,44 @@ tmp.stats.tcga_lgg.450k.surv_fit <- survival::Surv(tmp.stats.tcga_lgg.450k$survi
 
 
 f1 <- survival::coxph(tmp.stats.tcga_lgg.450k.surv_fit ~ `CGC 450k` , data = as.data.frame(tmp.stats.tcga_lgg.450k))
-survminer::ggforest(f1, data = as.data.frame(tmp.stats.tcga_lgg.450k), main = "Hazard ratio TCGA-LGG [450k]") + theme_nature
+survminer::ggforest(f1, data = as.data.frame(tmp.stats.tcga_lgg.450k), main = "Hazard ratio TCGA-LGG [450k]") + theme_cellpress
 ggsave("output/figures/analysis_survival_TCGA-LGG_450k_coxph.pdf", width = 5, height = 1.26)
 
 
-f1 <- survival::coxph(tmp.stats.tcga_lgg.450k.surv_fit ~ `tumor_grade` , data = as.data.frame(tmp.stats.tcga_lgg.450k))
-survminer::ggforest(f1, data = as.data.frame(tmp.stats.tcga_lgg.450k), main = "Hazard ratio TCGA-LGG [450k]") + theme_nature
+f2 <- survival::coxph(tmp.stats.tcga_lgg.450k.surv_fit ~ `tumor_grade` , data = as.data.frame(tmp.stats.tcga_lgg.450k))
+survminer::ggforest(f2, data = as.data.frame(tmp.stats.tcga_lgg.450k), main = "Hazard ratio TCGA-LGG [450k]") + theme_cellpress
 ggsave("output/figures/analysis_survival_TCGA-LGG_450k_coxph__grade.pdf", width = 5, height = 1.66)
 
 
-f1b <- survival::coxph(tmp.stats.tcga_lgg.450k.surv_fit ~ `CGC 450k` + tumor_grade , data = as.data.frame(tmp.stats.tcga_lgg.450k))
-survminer::ggforest(f1b, data = as.data.frame(tmp.stats.tcga_lgg.450k), main = "Hazard ratio TCGA-LGG [450k]") + theme_nature
+f3 <- survival::coxph(tmp.stats.tcga_lgg.450k.surv_fit ~ `CGC 450k` + tumor_grade , data = as.data.frame(tmp.stats.tcga_lgg.450k))
+survminer::ggforest(f3, data = as.data.frame(tmp.stats.tcga_lgg.450k), main = "Hazard ratio TCGA-LGG [450k]") + theme_cellpress
 ggsave("output/figures/analysis_survival_TCGA-LGG_450k_coxph__combi.pdf", width = 5, height = 1.66 + 0.4)
 
 
-#f2 <- survival::coxph(tmp.stats.tcga_lgg.450k.surv_fit ~ `tumor_grade` , data = tmp.stats.tcga_lgg.450k)
-#survminer::ggforest(f2, data = tmp.stats.tcga_lgg.450k)
+p1 = svvl_forest(f1) +
+  theme_cellpress +
+  scale_x_continuous(
+    trans = "log",  # natural log spacing
+    breaks = c(1/10,1/5,1/2, 1, 2, 5, 10, 20),  # original values
+    labels = c(1/10,1/5,1/2, 1, 2, 5, 10, 20),  # original values
+    limits = c(1,20)
+  )
+p1
+
+p2 = svvl_forest(f2) +
+  theme_cellpress +
+  scale_x_continuous(
+    trans = "log",  # natural log spacing
+    breaks = c(1/10,1/5,1/2, 1, 2, 5, 10, 20),  # original values
+    labels = c(1/10,1/5,1/2, 1, 2, 5, 10, 20),  # original values
+    limits = c(1,20)
+  )
+p2
+
+p1 / p2
+ggsave("output/figures/analysis_survival_TCGA-LGG_450k_coxph__combi_stacked.pdf", width = 4-0.3844-0.75, height = 1.45)
+
+
 
 
 
@@ -989,14 +1013,14 @@ ggsave("output/figures/analysis_survival_TCGA-LGG_450k_coxph__combi.pdf", width 
 # 
 # 
 # ggplot(tmp.df, aes(x=k, y=-log10(survdiff), pch=censored, col=col)) + 
-#   geom_hline(yintercept=-log10(0.0000000001), col="gray80", lty=2, lwd=theme_nature_lwd) +
-#   geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
-#   geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
-#   geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
-#   geom_line(data=subset(tmp.df, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
-#   geom_point(data=subset(tmp.df, name == "patient"),y = -0.15, size=theme_nature_size/3) + 
-#   geom_point(data=subset(tmp.df, name != "patient"),size=theme_nature_size/3) + 
-#   theme_nature + 
+#   geom_hline(yintercept=-log10(0.0000000001), col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+#   geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_cellpress_lwd) +
+#   geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_cellpress_lwd) +
+#   geom_hline(yintercept=-log10(1), col="black", lwd=theme_cellpress_lwd) +
+#   geom_line(data=subset(tmp.df, name != "patient"), lwd=theme_cellpress_lwd, alpha=0.5) +
+#   geom_point(data=subset(tmp.df, name == "patient"),y = -0.15, size=theme_cellpress_size/3) + 
+#   geom_point(data=subset(tmp.df, name != "patient"),size=theme_cellpress_size/3) + 
+#   theme_cellpress + 
 #   scale_y_continuous(breaks = -log10(c(0, 0.01, 0.05, 1)),
 #                      labels =        c(0, 0.01, 0.05, 1)) +
 #   scale_shape_manual(values=c(20, 3)) +
@@ -1026,15 +1050,15 @@ plt <- rbind(
 ggplot(plt, aes(x=k, y=-log10(pval), col=name, group=name)) +
   #facet_wrap(~facet, space="free_x") +
   facet_grid(cols = vars(facet), scales="free_x", space="free_x") +
-  geom_line(lwd=theme_nature_lwd) +
-  geom_point(size=theme_nature_size/3) + 
-  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(0.05), col="gray60", lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(0.5), col="gray60", lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(1), col="gray60", lwd=theme_nature_lwd) +
+  geom_line(lwd=theme_cellpress_lwd) +
+  geom_point(size=theme_cellpress_size/3) + 
+  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(0.5), col="gray60", lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(1), col="gray60", lwd=theme_cellpress_lwd) +
   scale_y_continuous(breaks = -log10(c(0,0.01,0.05,0.5,1)),
                      labels =        c(0,0.01,0.05,0.5,1)) +
-  theme_nature + 
+  theme_cellpress + 
   labs(y = "p-value logrank test", x=paste0("P-value for cut-off samples stratified as low grade"))
 
 
@@ -1052,12 +1076,13 @@ tmp <- glass_od.stats.primary |>
   dplyr::mutate(`CGC` = CGC_scaled) |> 
   dplyr::rename(Sex = sex) |> 
   dplyr::rename(`WHO Grade` = resection_tumor_grade) |> 
-  dplyr::mutate(placeholder_2factor = factor(rep("a",nrow(glass_od.stats.primary)),levels=c("a","b"))) |> 
-  dplyr::mutate(placeholder_continuous = rep(1.0,nrow(glass_od.stats.primary)))
+  dplyr::mutate(WHO_placeholder_2factor = factor(rep("a",nrow(glass_od.stats.primary)),levels=c("a","b"))) |> 
+  dplyr::mutate(CGC_placeholder_continuous = rep(1.0,nrow(glass_od.stats.primary)))
 
 
 
 ### all ----
+
 
 svvl.prim <- survival::Surv(tmp$time_between_resection_and_last_event,
                             tmp$patient_last_follow_up_event)
@@ -1066,16 +1091,44 @@ fit.cox <- survival::coxph(svvl.prim ~
                              `CGC`+
                              `WHO Grade` + 
                              #`CDKN2A/B HD` +
-                             Sex +
-                             `Chemotherapy before` +
-                             `Radiotherapy before`
+                             Sex
+                             #`Chemotherapy before` +
+                             #`Radiotherapy before`
                            ,
                            data = tmp)
 
+
 survminer::ggforest(fit.cox, data = as.data.frame(tmp))
-
-
 ggsave("output/figures/analysis_survival__forest__prim__all.pdf", width=8.5 * 0.975 * 0.67,height=3.2)
+
+
+p1 = svvl_forest(fit.cox) +
+  theme_cellpress +
+  scale_x_continuous(
+    trans = "log",  # natural log spacing
+    breaks = c(1/10,1/5,1/2, 1, 2, 5, 10),  # original values
+    labels = c(1/10,1/5,1/2, 1, 2, 5, 10),  # original values
+    limits = c(0.6,10)
+  )
+p1
+
+
+
+
+
+
+
+rms::vif(survival::coxph(svvl.prim ~
+                           `CGC`+
+                           `WHO Grade` + 
+                           #`CDKN2A/B HD` # dummy - not estimated at primary
+                           Sex
+                         #`Chemotherapy before` # dummy - untreated patients only
+                         #`Radiotherapy before` # dummy - untreated patients only
+                         ,
+                         data = tmp,x=T,y=T))
+
+
 
 
 
@@ -1089,17 +1142,32 @@ svvl.prim <- survival::Surv(tmp$time_between_resection_and_last_event,
 fit.cox <- survival::coxph(svvl.prim ~
                              `CGC`+
                              #`WHO Grade` + 
-                             placeholder_2factor +
-                             Sex +
-                             `Chemotherapy before` +
-                             `Radiotherapy before`
+                             WHO_placeholder_2factor +
+                             Sex
+                             #`Chemotherapy before` +
+                             #`Radiotherapy before`
                            ,
                            data = tmp)
 
+
+
+
 survminer::ggforest(fit.cox, data = as.data.frame(tmp))
-
-
 ggsave("output/figures/analysis_survival__forest__prim__CGC-only.pdf", width=8.5 * 0.975 * 0.67,height=3.2)
+
+
+
+
+p2 = svvl_forest(fit.cox) +
+  theme_cellpress +
+  scale_x_continuous(
+    trans = "log",  # natural log spacing
+    breaks = c(1/10,1/5,1/2, 1, 2, 5, 10),  # original values
+    labels = c(1/10,1/5,1/2, 1, 2, 5, 10),  # original values
+    limits = c(0.6,10)
+  )
+p2
+
 
 
 
@@ -1112,18 +1180,36 @@ svvl.prim <- survival::Surv(tmp$time_between_resection_and_last_event,
 
 fit.cox <- survival::coxph(svvl.prim ~
                              #`CGC` +
-                             placeholder_continuous +
+                             CGC_placeholder_continuous +
                              `WHO Grade` + 
-                             Sex +
-                             `Chemotherapy before` +
-                             `Radiotherapy before`
+                             Sex
+                             #`Chemotherapy before` +
+                             #`Radiotherapy before`
                            ,
                            data = tmp)
 
+
 survminer::ggforest(fit.cox, data = as.data.frame(tmp))
-
-
 ggsave("output/figures/analysis_survival__forest__prim__who-only.pdf", width=8.5 * 0.975 * 0.67,height=3.2)
+
+
+
+p3 = svvl_forest(fit.cox) +
+  theme_cellpress +
+  scale_x_continuous(
+    trans = "log",  # natural log spacing
+    breaks = c(1/10,1/5,1/2, 1, 2, 5, 10),  # original values
+    labels = c(1/10,1/5,1/2, 1, 2, 5, 10),  # original values
+    limits = c(0.6,10)
+  )
+p3
+
+
+
+
+p1 + p2 + p3
+ggsave("output/figures/analysis_survival__forest__prim__stacked.pdf", width=8.58,height=1.0)
+
 
 
 
@@ -1138,8 +1224,8 @@ tmp <- glass_od.stats.last_rec |>
   dplyr::rename(Sex = sex) |> 
   dplyr::rename(`WHO Grade` = resection_tumor_grade) |> 
   dplyr::mutate(`CDKN2AB HD` = ifelse(`CDKN2A/B deletion status last recurrence` == "HD","Yes","No")) |> 
-  dplyr::mutate(placeholder_2factor = factor(rep("a",nrow(glass_od.stats.last_rec)),levels=c("a","b"))) |> 
-  dplyr::mutate(placeholder_continuous = rep(1.0,nrow(glass_od.stats.last_rec)))
+  dplyr::mutate(WHO_placeholder_2factor = factor(rep("a",nrow(glass_od.stats.last_rec)),levels=c("a","b"))) |> 
+  dplyr::mutate(CGC_placeholder_continuous = rep(1.0,nrow(glass_od.stats.last_rec)))
 
 
 
@@ -1166,6 +1252,20 @@ ggsave("output/figures/analysis_survival__forest__last_rec__all.pdf", width=8.5 
 
 
 
+p1 = svvl_forest(fit.cox) +
+  theme_cellpress +
+  scale_x_continuous(
+    trans = "log",  # natural log spacing
+    breaks = c(1/10,1/5,1/2, 1, 2, 5, 10),  # original values
+    labels = c(1/10,1/5,1/2, 1, 2, 5, 10),  # original values
+    limits = c(0.165,10)
+  )
+p1
+
+
+
+
+
 ### CGC only ----
 
 
@@ -1176,7 +1276,7 @@ fit.cox <- survival::coxph(svvl.last_rec ~
                              `CGC` + 
                              Sex +
                              #`WHO Grade` +
-                             `placeholder_2factor` + 
+                             `WHO_placeholder_2factor` + 
                            `CDKN2AB HD` +
                              `Chemotherapy before` +
                              `Radiotherapy before`
@@ -1189,6 +1289,22 @@ ggsave("output/figures/analysis_survival__forest__last_rec__CGC-only.pdf", width
 
 
 
+
+p2 = svvl_forest(fit.cox) +
+  theme_cellpress +
+  scale_x_continuous(
+    trans = "log",  # natural log spacing
+    breaks = c(1/10,1/5,1/2, 1, 2, 5, 10),  # original values
+    labels = c(1/10,1/5,1/2, 1, 2, 5, 10),  # original values
+    limits = c(0.165,10)
+  )
+p2
+
+
+
+
+
+
 ### WHO only ----
 
 
@@ -1197,7 +1313,7 @@ svvl.last_rec <- survival::Surv(tmp$time_between_resection_and_last_event,
 
 fit.cox <- survival::coxph(svvl.last_rec ~
                              #`CGC` + 
-                             placeholder_continuous +
+                             CGC_placeholder_continuous +
                              Sex +
                              `WHO Grade` +
                            `CDKN2AB HD` +
@@ -1213,16 +1329,21 @@ ggsave("output/figures/analysis_survival__forest__last_rec__who-only.pdf", width
 
 
 
+p3 = svvl_forest(fit.cox) +
+  theme_cellpress +
+  scale_x_continuous(
+    trans = "log",  # natural log spacing
+    breaks = c(1/10,1/5,1/2, 1, 2, 5, 10),  # original values
+    labels = c(1/10,1/5,1/2, 1, 2, 5, 10),  # original values
+    limits = c(0.165,10)
+  )
+p3
 
 
-tmp |> 
-  dplyr::select(
-    `WHO Grade`,
-    #`Chemotherapy before`,
-    `Radiotherapy before`
-  ) |> 
-  table()
 
+
+p1 + p2 + p3
+ggsave("output/figures/analysis_survival__forest__rec__stacked.pdf", width=9,height=1.275)
 
 
 
@@ -1299,7 +1420,8 @@ tmp <- glass_od.metadata.array_samples |>
                 
                 ) |> 
   dplyr::mutate(Ki67_pos_per_area_um2_scaled = scale(log1p(staining_KI67_pos_per_area_um2 * 1000000))) |> 
-  dplyr::mutate(`CGC` = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit)
+  dplyr::mutate(`CGC` = array_A_IDH_HG__A_IDH_LG_lr__lasso_fit) |> 
+  dplyr::mutate(Ki67 = Ki67_pos_per_area_um2_scaled)
 
 
 
@@ -1308,28 +1430,70 @@ tmp.surv_fit <- survival::Surv(tmp$time_between_resection_and_last_event,
 
 
 
-f1a <- survival::coxph(tmp.surv_fit ~ Ki67_pos_per_area_um2_scaled , data = as.data.frame(tmp))
-survminer::ggforest(f1a, data = as.data.frame(tmp), main = "Hazard ratio validation set (last resections)") +
-  theme_nature
-
-ggsave("output/figures/ki67_coxph.pdf",  width = 5, height = 1.26)
-
-#f1b <- survival::coxph(tmp.surv_fit ~ `CGC` , data = as.data.frame(tmp))
-#survminer::ggforest(f1b, data = as.data.frame(tmp), main = "Hazard ratio validation set (last resections)") +
-#  theme_nature
+f1a <- survival::coxph(tmp.surv_fit ~ Ki67, data = as.data.frame(tmp))
+survminer::ggforest(f1a, data = as.data.frame(tmp), main = "Hazard ratio validation set (last resections)",
+                    fontsize=0.5,
+                    refLabel = "ref"
+                    )
+ggsave("output/figures/ki67_coxph_ki.pdf",  width = 4, height = 1.26)
 
 
-f1c <- survival::coxph(tmp.surv_fit ~ `CGC` + Ki67_pos_per_area_um2_scaled , data = as.data.frame(tmp))
-survminer::ggforest(f1c, data = as.data.frame(tmp), main = "Hazard ratio validation set (last resections)") +
-  theme_nature
+f1b <- survival::coxph(tmp.surv_fit ~ `CGC` , data = as.data.frame(tmp))
+survminer::ggforest(f1b, data = as.data.frame(tmp), main = "Hazard ratio validation set (last resections)",
+                    fontsize=0.5,
+                    refLabel = "ref"
+                    ) +
+  theme_cellpress
+ggsave("output/figures/ki67_coxph_CGC.pdf",  width = 4, height = 1.26)
 
-ggsave("output/figures/ki67_coxph_CGC.pdf",  width = 5, height = 1.66)
+
+f1c <- survival::coxph(tmp.surv_fit ~ `CGC` + Ki67, data = as.data.frame(tmp))
+survminer::ggforest(f1c, data = as.data.frame(tmp), main = "Hazard ratio validation set (last resections)",
+                    fontsize=0.5,
+                    refLabel = "ref"
+                    ) +
+  theme_cellpress
+ggsave("output/figures/ki67_coxph_ki_and_CGC.pdf",  width = 4, height = 1.85)
 
 
-#ki67 = tmp |> dplyr::select(resection_id, contains("i67")) 
-#rank(ki67$staining_KI67_pos_per_detected_cells) == rank(ki67$staining_KI67_lr_pos_neg_cells)
-#rank(ki67$staining_KI67_pos_per_area_um2)
-##rank(ki67$staining_KI67_pos_neg_cell_density)
+
+
+p1 = svvl_forest(f1a) +
+  theme_cellpress +
+  scale_x_continuous(
+    trans = "log",  # natural log spacing
+    breaks = c(1/2, 1, 2, 3, 4, 5),  # original values
+    labels = c(1/2, 1, 2, 3, 4, 5),  # original values
+    limits = c(1/2,4.2)
+  )
+p1
+
+p2 = svvl_forest(f1b) +
+  theme_cellpress +
+  scale_x_continuous(
+    trans = "log",  # natural log spacing
+    breaks = c(1/2, 1, 2, 3, 4, 5),  # original values
+    labels = c(1/2, 1, 2, 3, 4, 5),  # original values
+    limits = c(1/2,4.2)
+  )
+p2
+
+p3 = svvl_forest(f1c) +
+  theme_cellpress +
+  scale_x_continuous(
+    trans = "log",  # natural log spacing
+    breaks = c(1/2, 1, 2, 3, 4, 5),  # original values
+    labels = c(1/2, 1, 2, 3, 4, 5),  # original values
+    limits = c(1/2,4.2)
+  )
+p3
+
+
+(p3 / p2 / p1) + plot_layout(heights = c(2, 1, 1))
+
+ggsave("output/figures/ki67_coxph_multi.pdf",  width = 3.5, height = 2.25)
+
+
 
 
 # 
@@ -1414,13 +1578,13 @@ for(split in ((2:nrow(tmp)) - 0.5)) {
 
 ggplot(df, aes(x=k, y=-log10(survdiff_p), col=name, group=name)) +
   #facet_grid(cols = vars(pval_method)) +
-  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
-  geom_line(data=subset(df, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
-  geom_point(data=subset(df, name == "patient"),y = -0.15, size=theme_nature_size/3) + 
-  geom_point(data=subset(df, name != "patient"),size=theme_nature_size/3) + 
-  theme_nature + 
+  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_cellpress_lwd) +
+  geom_line(data=subset(df, name != "patient"), lwd=theme_cellpress_lwd, alpha=0.5) +
+  geom_point(data=subset(df, name == "patient"),y = -0.15, size=theme_cellpress_size/3) + 
+  geom_point(data=subset(df, name != "patient"),size=theme_cellpress_size/3) + 
+  theme_cellpress + 
   scale_y_continuous(breaks = -log10(c(0, 0.01, 0.05, 1)),
                      labels =        c(0, 0.01, 0.05, 1)) +
   #scale_shape_manual(values=c(20, 3)) +
@@ -1469,21 +1633,55 @@ validation.last_available_resection.surv_fit <- survival::Surv(validation.last_a
 
 f1a <- survival::coxph(validation.last_available_resection.surv_fit ~ `resection_tumor_grade` , data = as.data.frame(validation.last_available_resection))
 survminer::ggforest(f1a, data = as.data.frame(validation.last_available_resection), main = "Hazard ratio validation set (last resections)") +
-  theme_nature
+  theme_cellpress
 ggsave("output/figures/analysis_survival_validation_coxph___WHO.pdf", width = 5, height = 1.66)
+
+
+
+p1 = svvl_forest(f1a) +
+  theme_cellpress +
+  scale_x_continuous(
+    trans = "log",  # natural log spacing
+    breaks = c(1/10,1/5,1/2, 1, 2, 5, 10, 20),  # original values
+    labels = c(1/10,1/5,1/2, 1, 2, 5, 10, 20),  # original values
+    limits = c(0.3,26)
+  )
+p1
 
 
 
 f1b <- survival::coxph(validation.last_available_resection.surv_fit ~ `CGC` , data = as.data.frame(validation.last_available_resection))
 survminer::ggforest(f1b, data = as.data.frame(validation.last_available_resection), main = "Hazard ratio validation set (last resections)") +
-  theme_nature
+  theme_cellpress
 ggsave("output/figures/analysis_survival_validation_coxph__CGC.pdf", width = 5, height = 1.26)
+
+
+p2 = svvl_forest(f1b) +
+  theme_cellpress +
+  scale_x_continuous(
+    trans = "log",  # natural log spacing
+    breaks = c(1/10,1/5,1/2, 1, 2, 5, 10, 20),  # original values
+    labels = c(1/10,1/5,1/2, 1, 2, 5, 10, 20),  # original values
+    limits = c(0.3,26)
+  )
+p2
+
+
+
 
 
 f1c <- survival::coxph(validation.last_available_resection.surv_fit ~ `CGC` + `resection_tumor_grade` , data = as.data.frame(validation.last_available_resection))
 survminer::ggforest(f1c, data = as.data.frame(validation.last_available_resection), main = "Hazard ratio validation set (last resections)") +
-  theme_nature
+  theme_cellpress
 ggsave("output/figures/analysis_survival_validation_coxph__combi.pdf", width = 5, height = 1.26)
+
+
+
+
+
+
+p1 / p2
+ggsave("output/figures/analysis_survival_validation_coxph__combi_forest.pdf", width = 4-0.75, height = 1.45)
 
 
 #f2 <- survival::coxph(validation.last_available_resection.surv_fit ~ `resection_tumor_grade` , data = validation.last_available_resection)
@@ -1562,14 +1760,14 @@ ggsave("output/figures/analysis_survival_validation_coxph__combi.pdf", width = 5
 # 
 # 
 # ggplot(tmp.df, aes(x=k, y=-log10(survdiff), pch=censored, col=col)) + 
-#   geom_hline(yintercept=-log10(0.0000000001), col="gray80", lty=2, lwd=theme_nature_lwd) +
-#   geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
-#   geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
-#   geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
-#   geom_line(data=subset(tmp.df, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
-#   geom_point(data=subset(tmp.df, name == "patient"),y = -0.15, size=theme_nature_size/3) + 
-#   geom_point(data=subset(tmp.df, name != "patient"),size=theme_nature_size/3) + 
-#   theme_nature + 
+#   geom_hline(yintercept=-log10(0.0000000001), col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+#   geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_cellpress_lwd) +
+#   geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_cellpress_lwd) +
+#   geom_hline(yintercept=-log10(1), col="black", lwd=theme_cellpress_lwd) +
+#   geom_line(data=subset(tmp.df, name != "patient"), lwd=theme_cellpress_lwd, alpha=0.5) +
+#   geom_point(data=subset(tmp.df, name == "patient"),y = -0.15, size=theme_cellpress_size/3) + 
+#   geom_point(data=subset(tmp.df, name != "patient"),size=theme_cellpress_size/3) + 
+#   theme_cellpress + 
 #   scale_y_continuous(breaks = -log10(c(0, 0.01, 0.05, 1)),
 #                      labels =        c(0, 0.01, 0.05, 1)) +
 #   scale_shape_manual(values=c(20, 3)) +
@@ -1619,8 +1817,8 @@ survminer::ggsurvplot(fit1, data = stats, pval = TRUE, risk.table=T, tables.y.te
                         mixcol( 'lightblue', 'lightgreen')
                       ),
                       font.size = 20,
-                      ggtheme = theme_nature,
-                      tables.theme = theme_nature,
+                      ggtheme = theme_cellpress,
+                      tables.theme = theme_cellpress,
                       font.family = "Times New Roman"
 )
 
@@ -1632,21 +1830,21 @@ p1 = survminer::ggsurvplot(fit1, data = stats,
                              mixcol( 'darkblue', 'darkgreen'),
                              mixcol( 'lightblue', 'lightgreen')
                            ),
-                           tables.theme = theme_nature, 
-                           ggtheme = theme_nature,
-                           fontsize = theme_nature_size,
-                           censor.size = theme_nature_size,
-                           pval.size = theme_nature_size,
-                           size = theme_nature_lwd,
-                           font.family = theme_nature_font_family,
+                           tables.theme = theme_cellpress, 
+                           ggtheme = theme_cellpress,
+                           fontsize = theme_cellpress_size,
+                           censor.size = theme_cellpress_size,
+                           pval.size = theme_cellpress_size,
+                           size = theme_cellpress_lwd,
+                           font.family = theme_cellpress_font_family,
                            pval=T
 )
 
 p2 = survminer::ggsurvtable(fit1, data = stats, 
-                            tables.theme = theme_nature, 
-                            ggtheme = theme_nature,
-                            fontsize = theme_nature_size,
-                            font.family = theme_nature_font_family
+                            tables.theme = theme_cellpress, 
+                            ggtheme = theme_cellpress,
+                            fontsize = theme_cellpress_size,
+                            font.family = theme_cellpress_font_family
 )
 
 
@@ -1723,13 +1921,13 @@ plt.facet <- tmp.primary.CGC |>
 
 ggplot(plt.facet, aes(x=k, y=-log10(pvalue), col=name, group=name, pch=censored)) +
   facet_grid(cols = vars(pval_method)) +
-  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
-  geom_line(data=subset(plt.facet, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
-  geom_point(data=subset(plt.facet, name == "patient"),y = -0.15, size=theme_nature_size/3) + 
-  geom_point(data=subset(plt.facet, name != "patient"),size=theme_nature_size/3) + 
-  theme_nature + 
+  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_cellpress_lwd) +
+  geom_line(data=subset(plt.facet, name != "patient"), lwd=theme_cellpress_lwd, alpha=0.5) +
+  geom_point(data=subset(plt.facet, name == "patient"),y = -0.15, size=theme_cellpress_size/3) + 
+  geom_point(data=subset(plt.facet, name != "patient"),size=theme_cellpress_size/3) + 
+  theme_cellpress + 
   scale_y_continuous(breaks = -log10(c(0, 0.01, 0.05, 1)),
                      labels =        c(0, 0.01, 0.05, 1)) +
   scale_shape_manual(values=c(20, 3)) +
@@ -1798,8 +1996,8 @@ survminer::ggsurvplot(fit1, data = stats, pval = TRUE, risk.table=T, tables.y.te
                          mixcol( 'lightblue', 'lightgreen')
                       ),
                       font.size = 20,
-                      ggtheme = theme_nature,
-                      tables.theme = theme_nature,
+                      ggtheme = theme_cellpress,
+                      tables.theme = theme_cellpress,
                       font.family = "Times New Roman"
                       )
 
@@ -1811,21 +2009,21 @@ p1 = survminer::ggsurvplot(fit1, data = stats,
                              mixcol( 'darkblue', 'darkgreen'),
                              mixcol( 'lightblue', 'lightgreen')
                            ),
-                       tables.theme = theme_nature, 
-                       ggtheme = theme_nature,
-                      fontsize = theme_nature_size,
-                      censor.size = theme_nature_size,
-                      pval.size = theme_nature_size,
-                      size = theme_nature_lwd,
-                      font.family = theme_nature_font_family,
+                       tables.theme = theme_cellpress, 
+                       ggtheme = theme_cellpress,
+                      fontsize = theme_cellpress_size,
+                      censor.size = theme_cellpress_size,
+                      pval.size = theme_cellpress_size,
+                      size = theme_cellpress_lwd,
+                      font.family = theme_cellpress_font_family,
                       pval=T
                       )
 
 p2 = survminer::ggsurvtable(fit1, data = stats, 
-                       tables.theme = theme_nature, 
-                       ggtheme = theme_nature,
-                       fontsize = theme_nature_size,
-                       font.family = theme_nature_font_family
+                       tables.theme = theme_cellpress, 
+                       ggtheme = theme_cellpress,
+                       fontsize = theme_cellpress_size,
+                       font.family = theme_cellpress_font_family
                        )
 
 
@@ -1905,13 +2103,13 @@ plt.facet <- tmp.recurrent.CGC |>
 
 ggplot(plt.facet, aes(x=k, y=-log10(pvalue), col=name, group=name, pch=censored)) +
   facet_grid(cols = vars(pval_method)) +
-  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
-  geom_line(data=subset(plt.facet, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
-  geom_point(data=subset(plt.facet, name == "patient"),y = -0.15, size=theme_nature_size/3) + 
-  geom_point(data=subset(plt.facet, name != "patient"),size=theme_nature_size/3) + 
-  theme_nature + 
+  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_cellpress_lwd) +
+  geom_line(data=subset(plt.facet, name != "patient"), lwd=theme_cellpress_lwd, alpha=0.5) +
+  geom_point(data=subset(plt.facet, name == "patient"),y = -0.15, size=theme_cellpress_size/3) + 
+  geom_point(data=subset(plt.facet, name != "patient"),size=theme_cellpress_size/3) + 
+  theme_cellpress + 
   scale_y_continuous(breaks = -log10(c(0, 0.01, 0.05, 1)),
                      labels =        c(0, 0.01, 0.05, 1)) +
   scale_shape_manual(values=c(20, 3)) +
@@ -1968,13 +2166,13 @@ plt <- rbind(
 
 ggplot(plt, aes(x=k, y=-log10(pvalue), col=name, group=name, pch=censored)) +
   facet_grid(cols = vars(set)) +
-  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=-log10(1), col="black", lwd=theme_nature_lwd) +
-  geom_line(data=subset(plt, name != "patient"), lwd=theme_nature_lwd, alpha=0.5) +
-  geom_point(data=subset(plt, name == "patient"),y = -0.15, size=theme_nature_size/3) + 
-  geom_point(data=subset(plt, name != "patient"),size=theme_nature_size/3) + 
-  theme_nature + 
+  geom_hline(yintercept=-log10(0.01), col="red", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(0.05), col="gray60", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=-log10(1), col="black", lwd=theme_cellpress_lwd) +
+  geom_line(data=subset(plt, name != "patient"), lwd=theme_cellpress_lwd, alpha=0.5) +
+  geom_point(data=subset(plt, name == "patient"),y = -0.15, size=theme_cellpress_size/3) + 
+  geom_point(data=subset(plt, name != "patient"),size=theme_cellpress_size/3) + 
+  theme_cellpress + 
   scale_y_continuous(breaks = -log10(c(0, 0.01, 0.05, 1)),
                      labels =        c(0, 0.01, 0.05, 1)) +
   scale_shape_manual(values=c(20, 3)) +

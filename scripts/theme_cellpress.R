@@ -36,26 +36,27 @@
 
 
 theme_cellpress_lwd <- 0.5 / 2.14 # pt?
-theme_cellpress_size <- 7 * (3.88 / 11) # ~2.47
-
+theme_cellpress_font_size <- 6 #  "Text should be about 6–8 pt at the desired print size" - https://www.cell.com/information-for-authors/figure-guidelines#artwork
+theme_cellpress_font_family <- "Arial"
+theme_cellpress_size <- theme_cellpress_font_size * (3.88 / 11)
 
 
 theme_cellpress <- theme_bw() +
   theme(
-    text =          element_text(size = 7, family = "Arial", face = "plain"),
-    axis.text =     element_text(size = 7, family = "Arial", face = "plain", color="black"), # , angle=90, vjust =0.5
-    axis.title.x =  element_text(size = 7, family = "Arial", face = "plain", color="black"), # , vjust = -0.2
-    axis.title.y =  element_text(size = 7, family = "Arial", face = "plain", color="black"),
+    text =          element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain"),
+    axis.text =     element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"), # , angle=90, vjust =0.5
+    axis.title.x =  element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"), # , vjust = -0.2
+    axis.title.y =  element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"),
     axis.line =     element_line(linewidth = theme_cellpress_lwd),
     axis.ticks =    element_line(linewidth = theme_cellpress_lwd),
     
-    strip.text =    element_text(size = 7, family = "Arial", face = "plain", margin=margin(1,1,1,1), color="black"),
-    strip.text.x =  element_text(size = 7, family = "Arial", face = "plain", margin=margin(1,1,1,1), color="black"),
-    strip.text.y =  element_text(size = 7, family = "Arial", face = "plain", margin=margin(1,1,1,1), color="black"),
+    strip.text =    element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", margin=margin(1,1,1,1), color="black"),
+    strip.text.x =  element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", margin=margin(1,1,1,1), color="black"),
+    strip.text.y =  element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", margin=margin(1,1,1,1), color="black"),
     strip.background = element_blank(), # clean as possible
     
-    legend.title =  element_text(size = 7, family = "Arial", face = "plain", color="black"),
-    legend.text =   element_text(size = 7, family = "Arial", face = "plain", color="black"),
+    legend.title =  element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"),
+    legend.text =   element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"),
     legend.position = 'bottom',
     legend.margin   = margin(t=-2),
     legend.key.size = unit(0.2, 'lines'),
@@ -63,9 +64,9 @@ theme_cellpress <- theme_bw() +
     legend.background = element_blank(),
     legend.box.background = element_blank(),
     
-    plot.title =      element_text(size = 7, family = "Arial", face = "plain", color="black"), # `title` covers both title and subtitle
-    plot.subtitle =   element_text(size = 7, family = "Arial", face = "italic", color="darkgray"),
-    plot.caption =    element_text(size = 7, family = "Arial", face = "italic", color="black"),
+    plot.title =      element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"), # `title` covers both title and subtitle
+    plot.subtitle =   element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "italic", color="darkgray"),
+    plot.caption =    element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "italic", color="black"),
     plot.background = element_blank(),
     
     panel.grid.major.x = element_blank(),

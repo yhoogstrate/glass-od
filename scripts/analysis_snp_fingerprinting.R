@@ -364,6 +364,7 @@ c <- s |>
 ggcorrplot(c, abs=T, reorder=T) +
   theme(plot.background = element_rect(fill="white", colour=NA))
 
+
 ggsave("output/figures/analysis_snp_fingerprinting__main_dataset_HQ_cor.png", width=15, height=15)
 
 
@@ -603,11 +604,12 @@ d <- minfi::getSnpBeta(RGSet) |>
 rm(dat)
 
 
-distplot(d)
+distplot(d) +
+  theme(plot.background = element_rect(fill="white", colour=NA))
 
 
 
-ggsave("output/figures/analysis_snp_fingerprinting__validation_dataset.png", width=9, height=9)
+ggsave("output/figures/analysis_snp_fingerprinting__validation_dataset.png", , width=9, height=9,dpi=600)
 
 
 rm(d)

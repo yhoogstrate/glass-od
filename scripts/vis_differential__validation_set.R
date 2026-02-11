@@ -123,24 +123,24 @@ corrplot::corrplot(c, order="hclust", shade.lwd=0.5, tl.cex=0.4, cl.cex=0.4, tl.
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=t_validation_g2_g3)) +
-  geom_vline(xintercept=0, col="red", lwd=theme_nature_lwd) +
-  geom_hline(yintercept=0, col="red", lwd=theme_nature_lwd) +
+  geom_vline(xintercept=0, col="red", lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=0, col="red", lwd=theme_cellpress_lwd) +
   
   geom_point(pch=16, cex=0.001, alpha=0.01, col="black") +  
   
-  geom_vline(xintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd=theme_cellpress_lwd) +
   
-  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 4) +
-  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 2) +
-  #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_cellpress_lwd * 4) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_cellpress_lwd * 2) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_cellpress_lwd) +
   
   ggpubr::stat_cor(
     label.x = -8,
     label.y =  5,
     method = "pearson", aes(label = after_stat(r.label)), col="black",
-    size = theme_nature_size,
-    family = theme_nature_font_family) +
+    size = theme_cellpress_size,
+    family = theme_cellpress_font_family) +
   
   labs(x = "Per probe t-score GLASS-OD Grade 2 ~ Grade 3",
        y = "Per probe t-score GLASS-NL Grade 2 & 3 ~ Grade 4",
@@ -151,8 +151,8 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc__t, y=t_validation_g2_g3)) +
   coord_cartesian(xlim=c(-max(abs(plt$DMP__g2_g3__pp_nc__t)), max(abs(plt$DMP__g2_g3__pp_nc__t))))+
   coord_cartesian(ylim=c(-max(abs(plt$t_validation_g2_g3)), max(abs(plt$t_validation_g2_g3)))) +
   
-  theme_nature +
-  theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
+  theme_cellpress +
+  theme(legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines')) + # resize colbox
   #scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
   theme(plot.background = element_rect(fill="white", colour=NA))  # png export
 
@@ -169,6 +169,7 @@ ggsave(paste0("output/figures/vis_differential__GLASS-OD_x_validation__naive.png
 
 # scatter GLASS-OD x validatie PC1 ----
 
+
 # contingency table
 tab <- plt |> 
   dplyr::filter(!is.na(DMP__g2_g3__pp_nc_PC1__adj.P.Val)) |> 
@@ -184,25 +185,25 @@ tab <- plt |>
 
 
 ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t, y=t_validation_g2_g3__PC1, col=col)) +
-  geom_vline(xintercept=0, col="red", lwd=theme_nature_lwd) +
-  geom_hline(yintercept=0, col="red", lwd=theme_nature_lwd) +
+  geom_vline(xintercept=0, col="red", lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=0, col="red", lwd=theme_cellpress_lwd) +
   
   #geom_point(pch=16, cex=0.001, alpha=0.01, col="black") +  
   geom_point(pch=16, cex=0.001, alpha=0.0085, col="black") +
   
-  geom_vline(xintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
-  geom_hline(yintercept=0, col="red", alpha=0.1, lwd=theme_nature_lwd) +
+  geom_vline(xintercept=0, col="red", alpha=0.1, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept=0, col="red", alpha=0.1, lwd=theme_cellpress_lwd) +
   
-  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 4) +
-  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_nature_lwd * 2) +
-  #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_nature_lwd) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_cellpress_lwd * 4) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=1, col=alpha("white",0.1), lwd=theme_cellpress_lwd * 2) +
+  #geom_smooth(method='lm', formula= y~x, se = F, lty=2, col="#6ba6e5", lwd=theme_cellpress_lwd) +
   
   ggpubr::stat_cor(
     #label.x = -8,
     #label.y =  4,
-    method = "pearson", aes(label = after_stat(r.label)), col="#444444",
-    size = theme_nature_size,
-    family = theme_nature_font_family) +
+    method = "pearson", aes(label = after_stat(r.label)), col="black",
+    size = theme_cellpress_size,
+    family = theme_cellpress_font_family) +
   
   labs(x = "Per probe t-score GLASS-OD Grade 2 ~ Grade 3 (quality corrected)",
        y = "Per probe t-score validation set Grade 2 ~ Grade 3 (quality corrected)"
@@ -215,8 +216,8 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t, y=t_validation_g2_g3__PC1, col=col))
                   ylim=c(-max(abs(plt$t_validation_g2_g3__PC1)),
                           max(abs(plt$t_validation_g2_g3__PC1)))) +
   
-  theme_nature +
-  theme(legend.key.size = unit(theme_nature_lwd * 1.5, 'lines')) + # resize colbox
+  theme_cellpress +
+  theme(legend.key.size = unit(theme_cellpress_lwd * 1.5, 'lines')) + # resize colbox
   
   #scale_color_gradientn(colours = col3(200), na.value = "grey50", limits = c(0, 1), oob = scales::squish) +
   
@@ -227,7 +228,7 @@ ggplot(plt, aes(x=DMP__g2_g3__pp_nc_PC1__t, y=t_validation_g2_g3__PC1, col=col))
 
 
 ggsave(paste0("output/figures/vis_differential__GLASS-OD_x_validation__PC1.png"),
-       width=2.1, height=3.9 , dpi=1200)
+       width=2.1 - 0.37, height=3.9 , dpi=1200)
 
 
 

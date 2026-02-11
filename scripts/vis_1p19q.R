@@ -148,16 +148,16 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=col)) +
   coord_cartesian(ylim = c(-1.2, 1.7)) +
   
   
-  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
   
   
-  geom_line(data=subset(plt, type=="bin"), lwd=theme_nature_lwd * 6) +
-  geom_line(data=subset(plt, type=="purity estimate 1"), lwd=theme_nature_lwd, lty=1, col="red") +
-  geom_line(data=subset(plt, type=="purity estimate 2"), lwd=theme_nature_lwd, lty=3, col="red") +
+  geom_line(data=subset(plt, type=="bin"), lwd=theme_cellpress_lwd * 6) +
+  geom_line(data=subset(plt, type=="purity estimate 1"), lwd=theme_cellpress_lwd, lty=1, col="red") +
+  geom_line(data=subset(plt, type=="purity estimate 2"), lwd=theme_cellpress_lwd, lty=3, col="red") +
   
-  geom_line(data=subset(plt, type=="y-bar"), lwd=theme_nature_lwd, lty=1, col="black") +
+  geom_line(data=subset(plt, type=="y-bar"), lwd=theme_cellpress_lwd, lty=1, col="black") +
   
   labs(x = "million bases", col="") +
   
@@ -167,7 +167,7 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=col)) +
                               `chr19q` = "darkgreen")) +
 
   
-  theme_nature +
+  theme_cellpress +
   theme(plot.background = element_rect(fill="white", colour = NA)) # png export, white background, no border
 
 

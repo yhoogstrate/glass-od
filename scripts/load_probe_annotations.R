@@ -184,7 +184,7 @@ rm(tmp, fn)
 
 
 fn <- "cache/infinium-methylationepic-v-1-0-b5-manifest-file.csv.Rds"
-#unlink(fn)
+unlink(fn)
 
 if(file.exists(fn)) {
   
@@ -203,21 +203,23 @@ if(file.exists(fn)) {
     dplyr::rename(Forward_Sequence_hg19 = Forward_Sequence) |> 
     dplyr::select(
       -c(
-        Phantom4_Enhancers , SNP_DISTANCE, SNP_MinorAlleleFrequency, Random_Loci, MFG_Change_Flagged, SNP_ID, Coordinate_36, Chromosome_36, Methyl27_Loci, TFBS_Evidence_Count,
+        Phantom4_Enhancers , SNP_DISTANCE, SNP_MinorAlleleFrequency, Random_Loci,
+        MFG_Change_Flagged, SNP_ID, Coordinate_36, Chromosome_36, Methyl27_Loci, TFBS_Evidence_Count,
         
         #Forward_Sequence_hg19,
         Genome_Build,
         SourceSeq, # SourceSeq: The original, genomic sequence used for probe design before bisulfite conversion. - built against, not the exact probe seq
         
-        UCSC_RefGene_Accession, UCSC_RefGene_Group, UCSC_CpG_Islands_Name,
+        UCSC_RefGene_Accession, UCSC_CpG_Islands_Name, #UCSC_RefGene_Group, 
         Phantom5_Enhancers, DMR, HMM_Island, Regulatory_Feature_Name,
-        Regulatory_Feature_Group,
+        #Regulatory_Feature_Group,
         
         GencodeBasicV12_NAME, GencodeBasicV12_Accession,
-        GencodeBasicV12_Group, GencodeCompV12_Accession,
-        GencodeCompV12_Group,
+        #GencodeBasicV12_Group,
+        GencodeCompV12_Accession,
+        #GencodeCompV12_Group,
         UCSC_RefGene_Accession,
-        UCSC_RefGene_Group,
+        #UCSC_RefGene_Group,
         X450k_Enhancer,
         OpenChromatin_Evidence_Count, OpenChromatin_NAME,
         TFBS_NAME
@@ -244,8 +246,8 @@ if(file.exists(fn)) {
   #colnames(tmp)[colnames(tmp) %in% colnames(metadata.cg_probes.epic)]
   
   #validate 
-  setdiff(colnames(tmp), readRDS(fn) |> colnames())
-  setdiff(readRDS(fn) |> colnames(), colnames(tmp))
+  #setdiff(colnames(tmp), readRDS(fn) |> colnames())
+  #setdiff(readRDS(fn) |> colnames(), colnames(tmp))
   
   
   saveRDS(tmp, file=fn)

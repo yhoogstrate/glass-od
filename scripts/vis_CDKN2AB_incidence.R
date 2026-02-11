@@ -97,19 +97,19 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=CDKN2AB)) +
   #facet_wrap(~facet) + # , scales="free"
   coord_cartesian(ylim = c(-1.5, 1.3)) +
   
-  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
   
-  #geom_vline(xintercept = (21.967751+21.994391)/2, col="lightgreen", lty=1, lwd=theme_nature_lwd) +
-  #geom_vline(xintercept = (22.002902+22.009304)/2, col="lightgreen", lty=1, lwd=theme_nature_lwd) +
+  #geom_vline(xintercept = (21.967751+21.994391)/2, col="lightgreen", lty=1, lwd=theme_cellpress_lwd) +
+  #geom_vline(xintercept = (22.002902+22.009304)/2, col="lightgreen", lty=1, lwd=theme_cellpress_lwd) +
   
   
-  geom_line(data=subset(plt, type=="bin" & CDKN2AB == "chr9"), lwd=theme_nature_lwd * 6) +
-  geom_line(data=subset(plt, type=="bin" & CDKN2AB != "chr9"), lwd=theme_nature_lwd * 15) +
-  geom_line(data=subset(plt, type=="purity estimate"), lwd=theme_nature_lwd, lty=1, col="darkblue") +
+  geom_line(data=subset(plt, type=="bin" & CDKN2AB == "chr9"), lwd=theme_cellpress_lwd * 6) +
+  geom_line(data=subset(plt, type=="bin" & CDKN2AB != "chr9"), lwd=theme_cellpress_lwd * 15) +
+  geom_line(data=subset(plt, type=="purity estimate"), lwd=theme_cellpress_lwd, lty=1, col="darkblue") +
   
-  #geom_line(data=subset(plt, type=="y-bar"), lwd=theme_nature_lwd, lty=1, col="black") +
+  #geom_line(data=subset(plt, type=="y-bar"), lwd=theme_cellpress_lwd, lty=1, col="black") +
   
   labs(x = "million bases", col="") +
   
@@ -118,8 +118,8 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=CDKN2AB)) +
                               `chr9` = "#DDDDDD")) +
   
   
-  theme_nature +
-  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_nature_lwd)) +
+  theme_cellpress +
+  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_cellpress_lwd)) +
   theme(plot.background = element_rect(fill="white", colour = NA)) # png export, white background, no border
 
 
@@ -192,19 +192,19 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=CDKN2AB)) +
   #facet_wrap(~facet) + # , scales="free"
   coord_cartesian(ylim = c(-1.5, 1.3)) +
   
-  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
   
-  #geom_vline(xintercept = (21.967751+21.994391)/2, col="lightgreen", lty=1, lwd=theme_nature_lwd) +
-  #geom_vline(xintercept = (22.002902+22.009304)/2, col="lightgreen", lty=1, lwd=theme_nature_lwd) +
+  #geom_vline(xintercept = (21.967751+21.994391)/2, col="lightgreen", lty=1, lwd=theme_cellpress_lwd) +
+  #geom_vline(xintercept = (22.002902+22.009304)/2, col="lightgreen", lty=1, lwd=theme_cellpress_lwd) +
   
   
-  geom_line(data=subset(plt, type=="bin" & CDKN2AB == "chr9"), lwd=theme_nature_lwd * 6) +
-  geom_line(data=subset(plt, type=="bin" & CDKN2AB != "chr9"), lwd=theme_nature_lwd * 15) +
-  geom_line(data=subset(plt, type=="purity estimate"), lwd=theme_nature_lwd, lty=1, col="darkblue") +
+  geom_line(data=subset(plt, type=="bin" & CDKN2AB == "chr9"), lwd=theme_cellpress_lwd * 6) +
+  geom_line(data=subset(plt, type=="bin" & CDKN2AB != "chr9"), lwd=theme_cellpress_lwd * 15) +
+  geom_line(data=subset(plt, type=="purity estimate"), lwd=theme_cellpress_lwd, lty=1, col="darkblue") +
   
-  #geom_line(data=subset(plt, type=="y-bar"), lwd=theme_nature_lwd, lty=1, col="black") +
+  #geom_line(data=subset(plt, type=="y-bar"), lwd=theme_cellpress_lwd, lty=1, col="black") +
   
   labs(x = "million bases", col="") +
   
@@ -213,8 +213,8 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=CDKN2AB)) +
                               `chr9` = "#DDDDDD")) +
   
   
-  theme_nature +
-  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_nature_lwd)) +
+  theme_cellpress +
+  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_cellpress_lwd)) +
   theme(plot.background = element_rect(fill="white", colour = NA)) # png export, white background, no border
 
 
@@ -283,19 +283,19 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=CDKN2AB)) +
   #facet_wrap(~facet) + # , scales="free"
   coord_cartesian(ylim = c(-1.5, 1.3)) +
   
-  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
   
-  #geom_vline(xintercept = (21.967751+21.994391)/2, col="lightgreen", lty=1, lwd=theme_nature_lwd) +
-  #geom_vline(xintercept = (22.002902+22.009304)/2, col="lightgreen", lty=1, lwd=theme_nature_lwd) +
+  #geom_vline(xintercept = (21.967751+21.994391)/2, col="lightgreen", lty=1, lwd=theme_cellpress_lwd) +
+  #geom_vline(xintercept = (22.002902+22.009304)/2, col="lightgreen", lty=1, lwd=theme_cellpress_lwd) +
   
   
-  geom_line(data=subset(plt, type=="bin" & CDKN2AB == "chr9"), lwd=theme_nature_lwd * 6) +
-  geom_line(data=subset(plt, type=="bin" & CDKN2AB != "chr9"), lwd=theme_nature_lwd * 15) +
-  geom_line(data=subset(plt, type=="purity estimate"), lwd=theme_nature_lwd, lty=1, col="darkblue") +
+  geom_line(data=subset(plt, type=="bin" & CDKN2AB == "chr9"), lwd=theme_cellpress_lwd * 6) +
+  geom_line(data=subset(plt, type=="bin" & CDKN2AB != "chr9"), lwd=theme_cellpress_lwd * 15) +
+  geom_line(data=subset(plt, type=="purity estimate"), lwd=theme_cellpress_lwd, lty=1, col="darkblue") +
   
-  #geom_line(data=subset(plt, type=="y-bar"), lwd=theme_nature_lwd, lty=1, col="black") +
+  #geom_line(data=subset(plt, type=="y-bar"), lwd=theme_cellpress_lwd, lty=1, col="black") +
   
   labs(x = "million bases", col="") +
   
@@ -304,8 +304,8 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=CDKN2AB)) +
                               `chr9` = "#DDDDDD")) +
   
   
-  theme_nature +
-  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_nature_lwd)) +
+  theme_cellpress +
+  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_cellpress_lwd)) +
   theme(plot.background = element_rect(fill="white", colour = NA)) # png export, white background, no border
 
 
@@ -374,19 +374,19 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=CDKN2AB)) +
   #facet_wrap(~facet) + # , scales="free"
   coord_cartesian(ylim = c(-1.5, 1.3)) +
   
-  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
   
-  #geom_vline(xintercept = (21.967751+21.994391)/2, col="lightgreen", lty=1, lwd=theme_nature_lwd) +
-  #geom_vline(xintercept = (22.002902+22.009304)/2, col="lightgreen", lty=1, lwd=theme_nature_lwd) +
+  #geom_vline(xintercept = (21.967751+21.994391)/2, col="lightgreen", lty=1, lwd=theme_cellpress_lwd) +
+  #geom_vline(xintercept = (22.002902+22.009304)/2, col="lightgreen", lty=1, lwd=theme_cellpress_lwd) +
   
   
-  geom_line(data=subset(plt, type=="bin" & CDKN2AB == "chr9"), lwd=theme_nature_lwd * 6) +
-  geom_line(data=subset(plt, type=="bin" & CDKN2AB != "chr9"), lwd=theme_nature_lwd * 15) +
-  geom_line(data=subset(plt, type=="purity estimate"), lwd=theme_nature_lwd, lty=1, col="darkblue") +
+  geom_line(data=subset(plt, type=="bin" & CDKN2AB == "chr9"), lwd=theme_cellpress_lwd * 6) +
+  geom_line(data=subset(plt, type=="bin" & CDKN2AB != "chr9"), lwd=theme_cellpress_lwd * 15) +
+  geom_line(data=subset(plt, type=="purity estimate"), lwd=theme_cellpress_lwd, lty=1, col="darkblue") +
   
-  #geom_line(data=subset(plt, type=="y-bar"), lwd=theme_nature_lwd, lty=1, col="black") +
+  #geom_line(data=subset(plt, type=="y-bar"), lwd=theme_cellpress_lwd, lty=1, col="black") +
   
   labs(x = "million bases", col="") +
   
@@ -395,8 +395,8 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=CDKN2AB)) +
                               `chr9` = "#DDDDDD")) +
   
   
-  theme_nature +
-  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_nature_lwd)) +
+  theme_cellpress +
+  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_cellpress_lwd)) +
   theme(plot.background = element_rect(fill="white", colour = NA)) # png export, white background, no border
 
 
@@ -467,19 +467,19 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=CDKN2AB)) +
   #facet_wrap(~facet) + # , scales="free"
   coord_cartesian(ylim = c(-1.5, 1.3)) +
   
-  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
   
-  #geom_vline(xintercept = (21.967751+21.994391)/2, col="lightgreen", lty=1, lwd=theme_nature_lwd) +
-  #geom_vline(xintercept = (22.002902+22.009304)/2, col="lightgreen", lty=1, lwd=theme_nature_lwd) +
+  #geom_vline(xintercept = (21.967751+21.994391)/2, col="lightgreen", lty=1, lwd=theme_cellpress_lwd) +
+  #geom_vline(xintercept = (22.002902+22.009304)/2, col="lightgreen", lty=1, lwd=theme_cellpress_lwd) +
   
   
-  geom_line(data=subset(plt, type=="bin" & CDKN2AB == "chr9"), lwd=theme_nature_lwd * 6) +
-  geom_line(data=subset(plt, type=="bin" & CDKN2AB != "chr9"), lwd=theme_nature_lwd * 15) +
-  geom_line(data=subset(plt, type=="purity estimate"), lwd=theme_nature_lwd, lty=1, col="darkblue") +
+  geom_line(data=subset(plt, type=="bin" & CDKN2AB == "chr9"), lwd=theme_cellpress_lwd * 6) +
+  geom_line(data=subset(plt, type=="bin" & CDKN2AB != "chr9"), lwd=theme_cellpress_lwd * 15) +
+  geom_line(data=subset(plt, type=="purity estimate"), lwd=theme_cellpress_lwd, lty=1, col="darkblue") +
   
-  #geom_line(data=subset(plt, type=="y-bar"), lwd=theme_nature_lwd, lty=1, col="black") +
+  #geom_line(data=subset(plt, type=="y-bar"), lwd=theme_cellpress_lwd, lty=1, col="black") +
   
   labs(x = "million bases", col="") +
   
@@ -488,8 +488,8 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=CDKN2AB)) +
                               `chr9` = "#DDDDDD")) +
   
   
-  theme_nature +
-  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_nature_lwd)) +
+  theme_cellpress +
+  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_cellpress_lwd)) +
   theme(plot.background = element_rect(fill="white", colour = NA)) # png export, white background, no border
 
 
@@ -559,19 +559,19 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=CDKN2AB)) +
   #facet_wrap(~facet) + # , scales="free"
   coord_cartesian(ylim = c(-1.5, 1.3)) +
   
-  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept = 0, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = -1, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
   
-  #geom_vline(xintercept = (21.967751+21.994391)/2, col="lightgreen", lty=1, lwd=theme_nature_lwd) +
-  #geom_vline(xintercept = (22.002902+22.009304)/2, col="lightgreen", lty=1, lwd=theme_nature_lwd) +
+  #geom_vline(xintercept = (21.967751+21.994391)/2, col="lightgreen", lty=1, lwd=theme_cellpress_lwd) +
+  #geom_vline(xintercept = (22.002902+22.009304)/2, col="lightgreen", lty=1, lwd=theme_cellpress_lwd) +
   
   
-  geom_line(data=subset(plt, type=="bin" & CDKN2AB == "chr9"), lwd=theme_nature_lwd * 6) +
-  geom_line(data=subset(plt, type=="bin" & CDKN2AB != "chr9"), lwd=theme_nature_lwd * 15) +
-  geom_line(data=subset(plt, type=="purity estimate"), lwd=theme_nature_lwd, lty=1, col="darkblue") +
+  geom_line(data=subset(plt, type=="bin" & CDKN2AB == "chr9"), lwd=theme_cellpress_lwd * 6) +
+  geom_line(data=subset(plt, type=="bin" & CDKN2AB != "chr9"), lwd=theme_cellpress_lwd * 15) +
+  geom_line(data=subset(plt, type=="purity estimate"), lwd=theme_cellpress_lwd, lty=1, col="darkblue") +
   
-  #geom_line(data=subset(plt, type=="y-bar"), lwd=theme_nature_lwd, lty=1, col="black") +
+  #geom_line(data=subset(plt, type=="y-bar"), lwd=theme_cellpress_lwd, lty=1, col="black") +
   
   labs(x = "million bases", col="") +
   
@@ -580,8 +580,8 @@ ggplot(plt, aes(x=pos, y=log2fc, group=group, col=CDKN2AB)) +
                               `chr9` = "#DDDDDD")) +
   
   
-  theme_nature +
-  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_nature_lwd)) +
+  theme_cellpress +
+  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_cellpress_lwd)) +
   theme(plot.background = element_rect(fill="white", colour = NA)) # png export, white background, no border
 
 
@@ -635,17 +635,17 @@ plt <- plt.bins |>
 ggplot(plt, aes(x=pos, y=log2fc, col=CDKN2AB, group=bin)) +
   coord_cartesian(ylim = c(-0.65, 0.125)) +
   
-  geom_hline(yintercept = 0, col="gray80", lty=1, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = -0.5, col="gray80", lty=2, lwd=theme_nature_lwd) +
-  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_nature_lwd) +
+  geom_hline(yintercept = 0, col="gray80", lty=1, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = -0.5, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
+  geom_hline(yintercept = 1.5, col="gray80", lty=2, lwd=theme_cellpress_lwd) +
   
-  #geom_vline(xintercept = 29.8, lwd=theme_nature_lwd) +
+  #geom_vline(xintercept = 29.8, lwd=theme_cellpress_lwd) +
   
   
-  geom_line(data=subset(plt, CDKN2AB == "chr9"), lwd=theme_nature_lwd * 6) +
-  geom_line(data=subset(plt, CDKN2AB != "chr9"), lwd=theme_nature_lwd * 15) +
+  geom_line(data=subset(plt, CDKN2AB == "chr9"), lwd=theme_cellpress_lwd * 6) +
+  geom_line(data=subset(plt, CDKN2AB != "chr9"), lwd=theme_cellpress_lwd * 15) +
   
-  labs(x = "million bases hg19", y="mean log2fc", col="", caption=paste0("last resections with 9p arm losses (n=",length(sel),", incl 4x HD)")) +
+  labs(x = "million bases at hg19", y="mean log2fc per bin", col="", caption=paste0("hemizygous deletion, (partial)chromosomal arm: n=22\nhomozygous deletion: n=10")) +
   
   scale_color_manual(values=c(`CDKN2A/B` = mixcol("red","black",0.2),
                               `chr9q` = "#CB75A4",
@@ -654,11 +654,12 @@ ggplot(plt, aes(x=pos, y=log2fc, col=CDKN2AB, group=bin)) +
   scale_x_continuous(breaks=(0:15)*10) +
   scale_y_continuous(breaks=c(0,-0.25,-0.5)) +
   
-  theme_nature +
-  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_nature_lwd)) +
+  theme_cellpress +
+  theme(panel.border = element_rect(colour = "black", fill=NA, linewidth=theme_cellpress_lwd)) +
   theme(plot.background = element_rect(fill="white", colour = NA)) + # png export, white background, no border
   theme(legend.position = "right")
 
 
-ggsave("output/figures/vis_CDKN2AB_incidence__9p_arm__mean.png", width=6.5, height=2.25, dpi=600)
+ggsave("output/figures/vis_CDKN2AB_incidence__9p_arm__mean.pdf", width=6.5, height=2.25)
+#ggsave("output/figures/vis_CDKN2AB_incidence__9p_arm__mean.png", width=6.5, height=2.25, dpi=600)
 

@@ -1544,8 +1544,28 @@ glass_od.metadata.proteomics <- glass_od.metadata.proteomics |>
 rm(tmp)
 
 
-# not needed
-#tmp <- readxl::read_xlsx('data/GLASS_OD/Protein - Tobias Weiss/Oligodendroglioma_protein matrices.xlsx')
+# verify
+tmp <- readxl::read_xlsx('data/GLASS_OD/Protein - Tobias Weiss/Oligodendroglioma_protein matrices.xlsx') |> 
+  dplyr::select(Name, Group_, Subject_) |> 
+  dplyr::filter(Subject_ != "pool") |> 
+  dplyr::mutate(patient_id = sprintf("%04d", as.integer(Subject_)))
+
+
+for (i in 1:nrow(tmp)) {
+  row <- tmp[i, ]
+  print(row)
+  
+    
+  check <- glass_od.metadata.proteomics |> 
+    dplyr::filter(patient_id == row$patient_id[1]) |> 
+    dplyr::filter((row$Group_ == "Primary" & resection_number == 1) |
+                    (row$Group_ != "Primary" & resection_number > 1))
+  
+  #print(check |> dplyr::select(resection_id, proteomics_id))
+  print(row$Name %in% (check |> dplyr::pull(proteomics_id)))
+  print("--")
+}
+
 
 
 

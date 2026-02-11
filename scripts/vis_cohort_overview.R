@@ -174,17 +174,17 @@ cols = c('A_IDH [_LG]' = 'lightblue',
 
 ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
   facet_grid(cols=vars(patient_suspected_noncodel),  rows=vars(classifier_version_txt), scales = "free", space="free") +
-  geom_point(pch=15,size=1.4,alpha=0.65) +
+  geom_point(pch=15,size=1.15,alpha=0.65) +
   labs(x = "patient", y="resection #", col="",fill="") +
   labs(subtitle=format_subtitle("Cohort overview")) +
   ylim(0.5, 5.5) +
   scale_color_manual(values=cols) +
-  theme_nature +
+  theme_cellpress +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_nature_lwd , linetype="solid"))
+  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_cellpress_lwd , linetype="solid"))
 
 
-ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975, height = 4.0)
+ggsave("output/figures/vis_cohort_overview_MNP_classes.pdf", width=6.5 + 0.076, height = 3.5)
 
 
 
@@ -301,9 +301,9 @@ ggplot(plt, aes(x = patient_id, y = resection_number, col=col)) +
   labs(subtitle=format_subtitle("DMP sample selection")) +
   ylim(0.5, 5.5) +
   scale_color_manual(values=cols) +
-  theme_nature +
+  theme_cellpress +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_nature_lwd , linetype="solid")) +
+  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_cellpress_lwd , linetype="solid")) +
   labs(caption = paste0("Top: ",
                         "first grade 2 - last grade 3: ",
                         n_first_grade_2, " - ",n_last_grade_3,
@@ -489,9 +489,9 @@ ggplot(plt, aes(x = x, y = resection_number, col=col)) +
   #ylim(0.5, 4.5) +
   scale_color_manual(values=cols) +
   scale_y_continuous(limits = c(0.5, 4.5),breaks = c(1,2,3,4), labels = c(1,2,3,"N/A")) +
-  theme_nature +
+  theme_cellpress +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_nature_lwd , linetype="solid"))
+  theme(panel.border = element_rect(fill=NA, color="black", linewidth=theme_cellpress_lwd , linetype="solid"))
 
 
 ggsave("output/figures/vis_validation_cohort_overview_MNP_classes.pdf", width=8.5 * 0.975 * 0.68, height = 5.3)
@@ -547,7 +547,7 @@ p1 <- ggplot(plt.exp1, aes(x = reorder(array_sentrix_id, array_PC1),
                               'tissue' = mixcol(mixcol('red','pink',0.3), "white", 0.2),
                               'N/A'= 'darkgray')) +
   labs(x="Sample", y=NULL) +
-  theme_nature +
+  theme_cellpress +
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank())
@@ -604,10 +604,10 @@ p2 <- ggplot(plt.exp2, aes(x = reorder(array_sentrix_id, array_PC1),
                            y = y,
                            col = value)) +
   facet_grid(cols=vars(isolation_material), scales = "free", space="free_x") +
-  geom_point(pch=15,size=theme_nature_size / 3, alpha=0.65) +
+  geom_point(pch=15,size=theme_cellpress_size / 3, alpha=0.65) +
   scale_color_manual(values=cols) +
   labs(x=NULL, y=NULL) +
-  theme_nature +
+  theme_cellpress +
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank())
@@ -665,12 +665,12 @@ ggplot(plt.exp1, aes(x = reorder(array_sentrix_id, array_PC1),
                            y = y,
                            col = isolation_material)) +
   facet_grid(rows=vars(panel), cols=vars(isolation_material), scales = "free", space="free_x") +
-  geom_line(lwd=theme_nature_lwd * 2.4) +
+  geom_line(lwd=theme_cellpress_lwd * 2.4) +
   scale_color_manual(values=c('ffpe'=mixcol('purple', "white", 0.2),
                               'tissue' = mixcol(mixcol('red','pink',0.3), "white", 0.2),
                               'N/A'= 'darkgray')) +
   labs(x="Sample", y=NULL) +
-  theme_nature +
+  theme_cellpress +
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank())
@@ -710,7 +710,7 @@ plt <- glass_od.metadata.array_samples |>
 ggplot(plt, aes(x=stage_disease, y = Freq, fill=misclass)) + 
   geom_bar(stat="identity") +
   labs(y= "frequency", x=NULL, col="Oligo misclassified") +
-  theme_nature
+  theme_cellpress
 
 
 ## A_IDH_ratio ----
