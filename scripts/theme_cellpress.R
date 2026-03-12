@@ -41,42 +41,42 @@ theme_cellpress_font_family <- "Arial"
 theme_cellpress_size <- theme_cellpress_font_size * (3.88 / 11)
 
 
-theme_cellpress <- theme_bw() +
-  theme(
-    text =          element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain"),
-    axis.text =     element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"), # , angle=90, vjust =0.5
-    axis.title.x =  element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"), # , vjust = -0.2
-    axis.title.y =  element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"),
-    axis.line =     element_line(linewidth = theme_cellpress_lwd),
-    axis.ticks =    element_line(linewidth = theme_cellpress_lwd),
-    
-    strip.text =    element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", margin=margin(1,1,1,1), color="black"),
-    strip.text.x =  element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", margin=margin(1,1,1,1), color="black"),
-    strip.text.y =  element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", margin=margin(1,1,1,1), color="black"),
-    strip.background = element_blank(), # clean as possible
-    
-    legend.title =  element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"),
-    legend.text =   element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"),
-    legend.position = 'bottom',
-    legend.margin   = margin(t=-2),
-    legend.key.size = unit(0.2, 'lines'),
-    legend.key = element_blank(), # this should remove the white squares around the legend items, but seems to fail sometimes, probably due to the key.size above?
-    legend.background = element_blank(),
-    legend.box.background = element_blank(),
-    
-    plot.title =      element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"), # `title` covers both title and subtitle
-    plot.subtitle =   element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "italic", color="darkgray"),
-    plot.caption =    element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "italic", color="black"),
-    plot.background = element_blank(),
-    
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    panel.grid.major.y = element_blank(),
-    panel.grid.minor.y = element_blank(),
-    panel.spacing =      unit(0.1, "lines"), # facet_grid margin
-    panel.border =       element_blank(), # no sqaure, but two lines instead (axis.line)
-    panel.background =   element_blank()
-  )
+theme_cellpress <- ggplot2::theme_bw(base_size = theme_cellpress_font_size, base_family = theme_cellpress_font_family) +
+    ggplot2::theme(
+        text =          ggplot2::element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain"),
+        axis.text =     ggplot2::element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"), # , angle=90, vjust =0.5
+        axis.title.x =  ggplot2::element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"), # , vjust = -0.2
+        axis.title.y =  ggplot2::element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"),
+        axis.line =     ggplot2::element_line(linewidth = theme_cellpress_lwd),
+        axis.ticks =    ggplot2::element_line(linewidth = theme_cellpress_lwd),
+        
+        strip.text =    ggplot2::element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", margin=ggplot2::margin(1,1,1,1), color="black"),
+        strip.text.x =  ggplot2::element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", margin=ggplot2::margin(1,1,1,1), color="black"),
+        strip.text.y =  ggplot2::element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", margin=ggplot2::margin(1,1,1,1), color="black"),
+        strip.background = ggplot2::element_blank(), # clean as possible
+        
+        legend.title =  ggplot2::element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"),
+        legend.text =   ggplot2::element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"),
+        legend.position = 'bottom',
+        legend.margin   = ggplot2::margin(t=-2),
+        legend.key.size = ggplot2::unit(0.2, 'lines'),
+        legend.key = ggplot2::element_blank(), # this should remove the white squares around the legend items, but seems to fail sometimes, probably due to the key.size above?
+        legend.background = ggplot2::element_blank(),
+        legend.box.background = ggplot2::element_blank(),
+        
+        plot.title =      ggplot2::element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "plain", color="black"), # `title` covers both title and subtitle
+        plot.subtitle =   ggplot2::element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "italic", color="darkgray"),
+        plot.caption =    ggplot2::element_text(size = theme_cellpress_font_size, family = theme_cellpress_font_family, face = "italic", color="black"),
+        plot.background = ggplot2::element_blank(),
+        
+        panel.grid.major.x = ggplot2::element_blank(),
+        panel.grid.minor.x = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_blank(),
+        panel.grid.minor.y = ggplot2::element_blank(),
+        panel.spacing =      ggplot2::unit(0.1, "lines"), # facet_grid margin
+        panel.border =       ggplot2::element_blank(), # no sqaure, but two lines instead (axis.line)
+        panel.background =   ggplot2::element_blank()
+    )
 
 
 # Facette: use facet_wrap with scales="free" rather than facet_grid, for nice borders
